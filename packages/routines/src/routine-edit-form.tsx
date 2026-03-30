@@ -5,6 +5,7 @@
 import type { TriggerType, Skill } from "./types"
 import type { RoutineFormState } from "./types"
 import { cn } from "@deck-ui/core"
+import { ScheduleBuilder } from "./schedule-builder"
 
 export type { RoutineFormState }
 
@@ -12,6 +13,10 @@ export interface RoutineEditFormProps {
   form: RoutineFormState
   skills: Skill[]
   onChange: (patch: Partial<RoutineFormState>) => void
+  /** Current trigger config (cron expression) for schedule builder */
+  triggerConfig?: string
+  /** Called when schedule builder changes the cron expression */
+  onTriggerConfigChange?: (cronExpression: string) => void
 }
 
 const TRIGGER_OPTIONS: { value: TriggerType; label: string }[] = [
@@ -29,11 +34,18 @@ const inputClass = cn(
 
 const labelClass = "text-xs font-medium text-muted-foreground mb-1.5 block"
 
+const SCHEDULE_TRIGGERS: TriggerType[] = ["scheduled", "periodic"]
+
 export function RoutineEditForm({
   form,
   skills,
   onChange,
+  triggerConfig,
+  onTriggerConfigChange,
 }: RoutineEditFormProps) {
+  const showScheduleBuilder =
+    SCHEDULE_TRIGGERS.includes(form.triggerType) &&
+    onTriggerConfigChange !== undefined
   return (
     <div className="space-y-5">
       {/* Name */}
@@ -109,6 +121,17 @@ export function RoutineEditForm({
           </select>
         </div>
       </div>
+
+      {/* Schedule builder (shown for scheduled/periodic triggers) */}
+      {showScheduleBuilder && (
+        <div>
+          <label className={labelClass}>Schedule</label>
+          <ScheduleBuilder
+            value={triggerConfig ?? "0 9 * * *"}
+            onChange={onTriggerConfigChange!}
+          />
+        </div>
+      )}
 
       {/* Approval mode */}
       <div>

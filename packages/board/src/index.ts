@@ -1,4 +1,3 @@
-// Kanban components (primary API)
 export { KanbanBoard } from "./kanban-board"
 export type { KanbanBoardProps } from "./kanban-board"
 export { KanbanColumn } from "./kanban-column"
@@ -8,14 +7,3 @@ export type { KanbanCardProps } from "./kanban-card"
 export { KanbanDetailPanel } from "./kanban-detail-panel"
 export type { KanbanDetailPanelProps } from "./kanban-detail-panel"
 export type { KanbanItem, KanbanColumn as KanbanColumnConfig } from "./types"
-
-// Legacy aliases (deprecated — use Kanban* instead)
-export { Board } from "./board"
-export type { BoardProps } from "./board"
-export { Column } from "./column"
-export type { ColumnProps } from "./column"
-export { Card } from "./card"
-export type { CardProps } from "./card"
-export { DetailPanel } from "./detail-panel"
-export type { DetailPanelProps } from "./detail-panel"
-export type { BoardItem, BoardColumn } from "./types"

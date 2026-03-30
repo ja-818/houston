@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ViewMode = "activity" | "skills" | "routines" | "connections";
+export type ViewMode = "activity" | "events" | "memory" | "skills" | "routines" | "connections";
 
 interface UIState {
   viewMode: ViewMode;

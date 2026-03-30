@@ -19,3 +19,10 @@ uuid = { version = "1", features = ["v4"] }
 keel-tauri = { git = "https://github.com/ja-818/keel-and-deck.git" }
 keel-db = { git = "https://github.com/ja-818/keel-and-deck.git" }
 keel-sessions = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-events = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-scheduler = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-channels = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-memory = { git = "https://github.com/ja-818/keel-and-deck.git" }
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+libsql = "0.6"

@@ -1,151 +1,17 @@
+mod commands;
+
+use keel_tauri::keel_db::Database;
+use keel_tauri::keel_events::EventQueue;
+use keel_tauri::keel_memory::MemoryStore;
+use keel_tauri::keel_scheduler::Scheduler;
 use keel_tauri::state::AppState;
-use keel_tauri::keel_db::{self, Database, Project, Issue};
-use tauri::State;
-
-// ---------------------------------------------------------------------------
-// Commands: Projects
-// ---------------------------------------------------------------------------
-
-#[tauri::command]
-async fn list_projects(state: State<'_, AppState>) -> Result<Vec<Project>, String> {
-    state.db.list_projects().await.map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn create_project(
-    state: State<'_, AppState>,
-    name: String,
-    folder_path: String,
-) -> Result<Project, String> {
-    state
-        .db
-        .create_project(&name, &folder_path)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-// ---------------------------------------------------------------------------
-// Commands: Issues
-// ---------------------------------------------------------------------------
-
-#[tauri::command]
-async fn list_issues(
-    state: State<'_, AppState>,
-    project_id: String,
-) -> Result<Vec<Issue>, String> {
-    state
-        .db
-        .list_issues(&project_id)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn create_issue(
-    state: State<'_, AppState>,
-    project_id: String,
-    title: String,
-    description: String,
-) -> Result<Issue, String> {
-    state
-        .db
-        .create_issue(&project_id, &title, &description, None)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-// ---------------------------------------------------------------------------
-// Commands: Sessions
-// ---------------------------------------------------------------------------
-
-#[tauri::command]
-async fn start_session(
-    app_handle: tauri::AppHandle,
-    state: State<'_, AppState>,
-    project_id: String,
-    prompt: String,
-) -> Result<String, String> {
-    use keel_tauri::keel_sessions::{SessionManager, SessionUpdate};
-    use keel_tauri::events::KeelEvent;
-    use tauri::Emitter;
-
-    // Look up project for working directory.
-    let project = state
-        .db
-        .get_project(&project_id)
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Project not found".to_string())?;
-
-    let session_key = uuid::Uuid::new_v4().to_string();
-    let working_dir = std::path::PathBuf::from(&project.folder_path);
-
-    let (mut rx, _handle) = SessionManager::spawn_session(
-        prompt,
-        None,           // resume_session_id
-        Some(working_dir),
-        None,           // model
-        None,           // effort
-        None,           // system_prompt
-        None,           // mcp_config
-        false,          // disable_builtin_tools
-        false,          // disable_all_tools
-    );
-
-    let key = session_key.clone();
-    let handle = app_handle.clone();
-    tokio::spawn(async move {
-        while let Some(update) = rx.recv().await {
-            match update {
-                SessionUpdate::Feed(item) => {
-                    let _ = handle.emit(
-                        "keel-event",
-                        KeelEvent::FeedItem {
-                            session_key: key.clone(),
-                            item,
-                        },
-                    );
-                }
-                SessionUpdate::Status(status) => {
-                    let (status_str, error) = match &status {
-                        keel_tauri::keel_sessions::SessionStatus::Starting => {
-                            ("starting".to_string(), None)
-                        }
-                        keel_tauri::keel_sessions::SessionStatus::Running => {
-                            ("running".to_string(), None)
-                        }
-                        keel_tauri::keel_sessions::SessionStatus::Completed => {
-                            ("completed".to_string(), None)
-                        }
-                        keel_tauri::keel_sessions::SessionStatus::Error(e) => {
-                            ("error".to_string(), Some(e.clone()))
-                        }
-                    };
-                    let _ = handle.emit(
-                        "keel-event",
-                        KeelEvent::SessionStatus {
-                            session_key: key.clone(),
-                            status: status_str,
-                            error,
-                        },
-                    );
-                }
-                _ => {}
-            }
-        }
-    });
-
-    Ok(session_key)
-}
-
-// ---------------------------------------------------------------------------
-// Tauri setup
-// ---------------------------------------------------------------------------
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            let data_dir = keel_db::db::default_data_dir("{{APP_NAME_SNAKE}}");
+            let data_dir = keel_tauri::keel_db::db::default_data_dir("{{APP_NAME_SNAKE}}");
             let db_path = data_dir.join("{{APP_NAME_SNAKE}}.db");
 
             let db = tauri::async_runtime::block_on(async {
@@ -154,15 +20,63 @@ pub fn run() {
                     .expect("Failed to open database")
             });
 
-            app.manage(AppState { db });
+            // Initialize memory store with its own connection to the same DB.
+            let memory_dir = data_dir.join("memories");
+            let memory_store = tauri::async_runtime::block_on(async {
+                let mem_db = libsql::Builder::new_local(&db_path)
+                    .build()
+                    .await
+                    .expect("Failed to open memory DB connection");
+                let mem_conn = Arc::new(
+                    mem_db.connect().expect("Failed to connect for memory store"),
+                );
+                MemoryStore::new_with_markdown_dir(mem_conn, memory_dir)
+                    .await
+                    .expect("Failed to initialize memory store")
+            });
+
+            // Initialize event queue.
+            let (_event_queue, queue_handle) = EventQueue::new();
+
+            // Initialize scheduler with queue handle.
+            let scheduler = Scheduler::new(queue_handle.clone());
+
+            app.manage(AppState {
+                db,
+                event_queue: Some(queue_handle),
+                scheduler: Some(Arc::new(Mutex::new(scheduler))),
+            });
+            app.manage(memory_store);
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            list_projects,
-            create_project,
-            list_issues,
-            create_issue,
-            start_session,
+            // Projects
+            commands::projects::list_projects,
+            commands::projects::create_project,
+            // Issues
+            commands::issues::list_issues,
+            commands::issues::create_issue,
+            // Sessions
+            commands::sessions::start_session,
+            // Memory
+            commands::memory::list_memories,
+            commands::memory::create_memory,
+            commands::memory::delete_memory,
+            commands::memory::search_memories,
+            // Events
+            commands::events::list_events,
+            // Scheduler
+            commands::scheduler::add_heartbeat,
+            commands::scheduler::remove_heartbeat,
+            commands::scheduler::add_cron,
+            commands::scheduler::remove_cron,
+            // Channels
+            commands::channels::list_channels,
+            commands::channels::add_channel,
+            commands::channels::remove_channel,
+            commands::channels::connect_channel,
+            commands::channels::disconnect_channel,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

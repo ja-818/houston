@@ -23,7 +23,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export function RoutineCard({ routine, onClick }: RoutineCardProps) {
-  const displayName = routine.name || routine.title || "Untitled"
+  const displayName = routine.name || "Untitled"
   const triggerLabel =
     TRIGGER_LABELS[routine.trigger_type as keyof typeof TRIGGER_LABELS] ??
     routine.trigger_type

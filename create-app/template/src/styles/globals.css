@@ -12,6 +12,9 @@
 @source "../../node_modules/@deck-ui/skills/src";
 @source "../../node_modules/@deck-ui/routines/src";
 @source "../../node_modules/@deck-ui/connections/src";
+@source "../../node_modules/@deck-ui/events/src";
+@source "../../node_modules/@deck-ui/memory/src";
+@source "../../node_modules/@deck-ui/review/src";
 
 body {
   margin: 0;

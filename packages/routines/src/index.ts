@@ -8,8 +8,10 @@ export type {
   RoutineStatus,
   ApprovalMode,
   RunStatus,
+  HeartbeatConfig,
+  SchedulePreset,
 } from "./types"
-export { TRIGGER_LABELS } from "./types"
+export { TRIGGER_LABELS, SCHEDULE_PRESET_LABELS } from "./types"
 
 // Components
 export { RoutinesGrid } from "./routines-grid"
@@ -32,3 +34,9 @@ export type { RoutineRunPageProps } from "./routine-run-page"
 
 export { RunHistory } from "./routine-run-history"
 export type { RunHistoryProps } from "./routine-run-history"
+
+export { HeartbeatConfig as HeartbeatConfigPanel } from "./heartbeat-config"
+export type { HeartbeatConfigProps } from "./heartbeat-config"
+
+export { ScheduleBuilder } from "./schedule-builder"
+export type { ScheduleBuilderProps } from "./schedule-builder"

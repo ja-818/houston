@@ -1,12 +1,19 @@
 import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { ConnectionRow } from "./connection-row";
-import type { Connection, ConnectionsResult } from "./types";
+import { ChannelsSection } from "./channels-section";
+import type { Connection, ConnectionsResult, ChannelConnection, ChannelType } from "./types";
 
 export interface ConnectionsViewProps {
   result: ConnectionsResult | null;
   loading: boolean;
   onRetry: () => void;
   onManage: () => void;
+  channels?: ChannelConnection[];
+  onChannelConnect?: (channel: ChannelConnection) => void;
+  onChannelDisconnect?: (channel: ChannelConnection) => void;
+  onChannelConfigure?: (channel: ChannelConnection) => void;
+  onChannelDelete?: (channel: ChannelConnection) => void;
+  onAddChannel?: (type: ChannelType) => void;
 }
 
 export function ConnectionsView({
@@ -14,6 +21,12 @@ export function ConnectionsView({
   loading,
   onRetry,
   onManage,
+  channels,
+  onChannelConnect,
+  onChannelDisconnect,
+  onChannelConfigure,
+  onChannelDelete,
+  onAddChannel,
 }: ConnectionsViewProps) {
   const items: Connection[] =
     result?.status === "ok" ? result.connections : [];
@@ -162,6 +175,20 @@ export function ConnectionsView({
             {items.map((conn) => (
               <ConnectionRow key={conn.toolkit} connection={conn} />
             ))}
+          </div>
+        )}
+
+        {/* Channels section */}
+        {!loading && channels && (
+          <div className="mt-8">
+            <ChannelsSection
+              channels={channels}
+              onConnect={onChannelConnect}
+              onDisconnect={onChannelDisconnect}
+              onConfigure={onChannelConfigure}
+              onDelete={onChannelDelete}
+              onAddChannel={onAddChannel}
+            />
           </div>
         )}
       </div>

@@ -108,6 +108,67 @@ impl Database {
             .await
             .ok();
 
+        // Event log (persisted event history for the event queue).
+        self.conn()
+            .execute_batch(
+                "CREATE TABLE IF NOT EXISTS event_log (
+                id TEXT PRIMARY KEY,
+                event_type TEXT NOT NULL,
+                source_channel TEXT NOT NULL,
+                source_identifier TEXT NOT NULL,
+                payload TEXT NOT NULL DEFAULT '{}',
+                session_key TEXT,
+                project_id TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                summary TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                processed_at TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_event_log_project ON event_log(project_id);
+            CREATE INDEX IF NOT EXISTS idx_event_log_type ON event_log(event_type);
+            CREATE INDEX IF NOT EXISTS idx_event_log_created ON event_log(created_at);",
+            )
+            .await
+            .ok();
+
+        // Webhook configurations.
+        self.conn()
+            .execute_batch(
+                "CREATE TABLE IF NOT EXISTS webhooks (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                endpoint_path TEXT NOT NULL UNIQUE,
+                secret TEXT,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                project_id TEXT REFERENCES projects(id),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );",
+            )
+            .await
+            .ok();
+
+        // Channel configurations (Slack, Telegram, etc.).
+        self.conn()
+            .execute_batch(
+                "CREATE TABLE IF NOT EXISTS channels (
+                id TEXT PRIMARY KEY,
+                channel_type TEXT NOT NULL,
+                name TEXT NOT NULL,
+                config TEXT NOT NULL DEFAULT '{}',
+                status TEXT NOT NULL DEFAULT 'disconnected',
+                enabled INTEGER NOT NULL DEFAULT 1,
+                last_active_at TEXT,
+                message_count INTEGER NOT NULL DEFAULT 0,
+                error TEXT,
+                project_id TEXT REFERENCES projects(id),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );",
+            )
+            .await
+            .ok();
+
         Ok(())
     }
 }

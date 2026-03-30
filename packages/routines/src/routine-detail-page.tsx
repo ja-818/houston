@@ -41,7 +41,7 @@ export function RoutineDetailPage({
   useEffect(() => {
     if (routine) {
       setForm({
-        name: routine.name || routine.title || "",
+        name: routine.name,
         description: routine.description,
         context: routine.context,
         triggerType: routine.trigger_type as RoutineFormState["triggerType"],

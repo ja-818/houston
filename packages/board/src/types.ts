@@ -15,7 +15,3 @@ export interface KanbanColumn {
   label: string
   statuses: string[]
 }
-
-// Legacy aliases
-export type BoardItem = KanbanItem
-export type BoardColumn = KanbanColumn

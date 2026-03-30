@@ -38,7 +38,7 @@ export function RoutineRunPage({
   const isRunning = run?.status === "running"
   const isNeedsYou = run?.status === "needs_you"
 
-  const displayName = routine?.name || routine?.title || "Routine"
+  const displayName = routine?.name || "Routine"
   const statusLabel = run ? (RUN_STATUS_LABEL[run.status] ?? run.status) : ""
   const runDate = run
     ? new Date(run.created_at).toLocaleDateString("en-US", {

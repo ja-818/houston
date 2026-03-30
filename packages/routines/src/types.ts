@@ -30,11 +30,6 @@ export interface Routine {
   last_run_at: string | null
   created_at: string
   updated_at: string
-  /** v1 compat — may be present from older DBs */
-  title?: string
-  skill_name?: string | null
-  enabled?: boolean
-  is_system?: boolean
 }
 
 export interface RoutineRun {
@@ -77,4 +72,34 @@ export interface RoutineFormState {
   triggerType: TriggerType
   approvalMode: ApprovalMode
   skillId: string | null
+}
+
+// --- Heartbeat & schedule types ---
+
+export interface HeartbeatConfig {
+  enabled: boolean
+  intervalMinutes: number
+  prompt: string
+  activeHoursStart?: string
+  activeHoursEnd?: string
+  suppressionToken: string
+}
+
+export type SchedulePreset =
+  | "every_30min"
+  | "hourly"
+  | "daily"
+  | "weekdays"
+  | "weekly"
+  | "monthly"
+  | "custom"
+
+export const SCHEDULE_PRESET_LABELS: Record<SchedulePreset, string> = {
+  every_30min: "Every 30 minutes",
+  hourly: "Every hour",
+  daily: "Daily",
+  weekdays: "Weekdays only",
+  weekly: "Weekly",
+  monthly: "Monthly",
+  custom: "Custom (cron)",
 }

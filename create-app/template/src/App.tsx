@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { AppSidebar, TabBar, SplitView } from "@deck-ui/layout";
 import { KanbanBoard } from "@deck-ui/board";
 import { ChatPanel } from "@deck-ui/chat";
+import { EventFeed } from "@deck-ui/events";
+import { MemoryBrowser } from "@deck-ui/memory";
 import { SkillsGrid } from "@deck-ui/skills";
 import { RoutinesGrid } from "@deck-ui/routines";
 import { ConnectionsView } from "@deck-ui/connections";
@@ -10,6 +12,8 @@ import { useUIStore, type ViewMode } from "./stores/ui";
 import { useProjectStore } from "./stores/projects";
 import { useIssueStore } from "./stores/issues";
 import { useFeedStore } from "./stores/feeds";
+import { useEventStore } from "./stores/events";
+import { useMemoryStore } from "./stores/memory";
 import { useSessionEvents } from "./hooks/use-session-events";
 import type { KanbanItem, KanbanColumn as KanbanColumnConfig } from "@deck-ui/board";
 
@@ -21,6 +25,8 @@ const COLUMNS: KanbanColumnConfig[] = [
 
 const TABS = [
   { id: "activity", label: "Activity" },
+  { id: "events", label: "Events" },
+  { id: "memory", label: "Memory" },
   { id: "skills", label: "Skills" },
   { id: "routines", label: "Routines" },
   { id: "connections", label: "Connections" },
@@ -32,6 +38,8 @@ export function App() {
     useProjectStore();
   const { issues, loadIssues } = useIssueStore();
   const feedItems = useFeedStore((s) => s.items);
+  const events = useEventStore((s) => s.events);
+  const { memories, loading: memoriesLoading, loadMemories } = useMemoryStore();
 
   useSessionEvents();
 
@@ -40,8 +48,11 @@ export function App() {
   }, [loadProjects]);
 
   useEffect(() => {
-    if (currentProject) loadIssues(currentProject.id);
-  }, [currentProject, loadIssues]);
+    if (currentProject) {
+      loadIssues(currentProject.id);
+      loadMemories(currentProject.id);
+    }
+  }, [currentProject, loadIssues, loadMemories]);
 
   const kanbanItems: KanbanItem[] = issues.map((issue) => ({
     id: issue.id,
@@ -80,6 +91,16 @@ export function App() {
                 No tasks yet. Open Chat to create one.
               </p>
             }
+          />
+        )}
+        {viewMode === "events" && (
+          <EventFeed events={events} emptyMessage="No events yet." />
+        )}
+        {viewMode === "memory" && (
+          <MemoryBrowser
+            memories={memories}
+            loading={memoriesLoading}
+            emptyMessage="No memories yet."
           />
         )}
         {viewMode === "skills" && (

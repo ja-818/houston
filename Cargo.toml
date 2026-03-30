@@ -1,6 +1,15 @@
 [workspace]
 resolver = "2"
-members = ["crates/keel-sessions", "crates/keel-db", "crates/keel-tauri", "crates/keel-cli"]
+members = [
+    "crates/keel-sessions",
+    "crates/keel-db",
+    "crates/keel-tauri",
+    "crates/keel-cli",
+    "crates/keel-events",
+    "crates/keel-scheduler",
+    "crates/keel-channels",
+    "crates/keel-memory",
+]
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -9,6 +18,12 @@ tokio = { version = "1", features = ["full"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1"
+async-trait = "0.1"
+tracing = "0.1"
 keel-sessions = { version = "0.1.0", path = "crates/keel-sessions" }
 keel-db = { version = "0.2.0", path = "crates/keel-db" }
-keel-tauri = { version = "0.1.0", path = "crates/keel-tauri" }
+keel-tauri = { version = "0.2.0", path = "crates/keel-tauri" }
+keel-events = { version = "0.1.0", path = "crates/keel-events" }
+keel-scheduler = { version = "0.1.0", path = "crates/keel-scheduler" }
+keel-channels = { version = "0.1.0", path = "crates/keel-channels" }
+keel-memory = { version = "0.1.0", path = "crates/keel-memory" }

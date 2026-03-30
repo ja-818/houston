@@ -29,8 +29,8 @@ export function RoutinesGrid({
       const sa = STATUS_ORDER[a.status] ?? 9
       const sb = STATUS_ORDER[b.status] ?? 9
       if (sa !== sb) return sa - sb
-      const nameA = (a.name || a.title || "").toLowerCase()
-      const nameB = (b.name || b.title || "").toLowerCase()
+      const nameA = a.name.toLowerCase()
+      const nameB = b.name.toLowerCase()
       return nameA.localeCompare(nameB)
     })
   }, [routines])
