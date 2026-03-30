@@ -71,6 +71,43 @@ impl Database {
             )
             .await;
 
+        // Routines: recurring autonomous tasks.
+        self.conn()
+            .execute_batch(
+                "CREATE TABLE IF NOT EXISTS routines (
+                id TEXT PRIMARY KEY,
+                project_id TEXT NOT NULL REFERENCES projects(id),
+                name TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                trigger_type TEXT NOT NULL DEFAULT 'daily',
+                schedule_type TEXT NOT NULL DEFAULT 'daily',
+                trigger_config TEXT NOT NULL DEFAULT '{}',
+                status TEXT NOT NULL DEFAULT 'active',
+                schedule_time TEXT NOT NULL DEFAULT '09:00',
+                autonomy TEXT NOT NULL DEFAULT 'notify',
+                enabled INTEGER NOT NULL DEFAULT 1,
+                is_system INTEGER NOT NULL DEFAULT 0,
+                run_count INTEGER NOT NULL DEFAULT 0,
+                approval_count INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS routine_runs (
+                id TEXT PRIMARY KEY,
+                routine_id TEXT NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
+                project_id TEXT NOT NULL REFERENCES projects(id),
+                status TEXT NOT NULL DEFAULT 'running',
+                output_summary TEXT,
+                created_at TEXT NOT NULL,
+                completed_at TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_routine_runs_routine
+                ON routine_runs(routine_id);",
+            )
+            .await
+            .ok();
+
         Ok(())
     }
 }

@@ -12,11 +12,13 @@ pub mod repo_issue_feed;
 pub mod repo_issues;
 pub mod repo_issues_update;
 pub mod repo_projects;
+pub mod repo_routine_runs;
+pub mod repo_routines;
 pub mod repo_session_events;
 pub mod repo_sessions;
 
 // Re-export key types for convenience.
 pub use db::Database;
 pub use issue_types::IssueStatus;
-pub use models::{Issue, Project, Session, SessionEvent};
+pub use models::{Issue, Project, Routine, RoutineRun, Session, SessionEvent};
 pub use repo_issue_feed::IssueFeedRow;

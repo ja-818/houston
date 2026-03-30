@@ -76,3 +76,28 @@ pub struct SessionEvent {
     pub content: String,
     pub timestamp: String,
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Routine {
+    pub id: String,
+    pub project_id: String,
+    pub name: String,
+    pub description: String,
+    pub trigger_type: String,
+    pub trigger_config: String,
+    pub status: String,
+    pub run_count: i64,
+    pub approval_count: i64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RoutineRun {
+    pub id: String,
+    pub routine_id: String,
+    pub status: String,
+    pub output_summary: Option<String>,
+    pub created_at: String,
+    pub completed_at: Option<String>,
+}

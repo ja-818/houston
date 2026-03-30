@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/keel-sessions", "crates/keel-db", "crates/keel-tauri"]
+members = ["crates/keel-sessions", "crates/keel-db", "crates/keel-tauri", "crates/keel-cli"]
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
