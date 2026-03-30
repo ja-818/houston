@@ -2,11 +2,9 @@
 
 ## What This Is
 
-A component library for building AI agent desktop apps. Two halves of one ship:
-- **Keel** (Rust) — session management, database, backend infrastructure (future)
-- **Deck** (React) — UI components for chat, kanban boards, layouts, and design system
-
-Currently only Deck (React packages) exists. Keel (Rust crates) will be extracted from Houston later.
+A framework for building AI agent desktop apps. Two halves of one ship:
+- **Keel** (Rust crates) — session management, database, CLI tools, Tauri integration
+- **Deck** (React packages) — UI components for chat, kanban boards, layouts, and design system
 
 ## Origin
 
@@ -18,14 +16,20 @@ Extracted from [Houston](https://github.com/ja-818/houston), a Tauri 2 desktop a
 
 ```
 keel-and-deck/
+├── crates/
+│   ├── keel-cli/       keel CLI          — Board management via bash commands
+│   ├── keel-db/        keel-db           — Database models, repos, migrations (libsql)
+│   ├── keel-sessions/  keel-sessions     — Claude CLI session management, parser, streaming
+│   └── keel-tauri/     keel-tauri        — Tauri command helpers, event types
 ├── packages/
-│   ├── core/          @deck-ui/core     — Design system, shadcn/ui, utilities
-│   ├── chat/          @deck-ui/chat     — Chat panel, AI Elements, streaming
-│   ├── board/         @deck-ui/board    — Kanban board, cards, animations
-│   └── layout/        @deck-ui/layout   — Sidebar, tab bar, split view
-├── package.json       pnpm workspace root
+│   ├── core/           @deck-ui/core     — Design system, shadcn/ui, utilities
+│   ├── chat/           @deck-ui/chat     — Chat panel, AI Elements, streaming
+│   ├── board/          @deck-ui/board    — Kanban board, cards, animations
+│   └── layout/         @deck-ui/layout   — Sidebar, tab bar, split view
+├── Cargo.toml          Rust workspace root
+├── package.json        pnpm workspace root
 ├── pnpm-workspace.yaml
-└── tsconfig.json      Base TypeScript config
+└── tsconfig.json       Base TypeScript config
 ```
 
 ---
@@ -115,6 +119,42 @@ App shell components.
 | `TabBar` | Configurable tabs with badges and action/menu slots |
 | `SplitView` | Resizable two-panel layout (default 55/45 split) |
 | `Resizable` | Low-level resizable panel primitives |
+
+---
+
+## Crate Details
+
+### keel-cli
+CLI tool for managing AI agent tasks and routines. Replaces MCP servers with direct bash commands that any Claude agent can invoke.
+
+**Commands:**
+- `keel task create/list/update/delete` — Kanban board task management
+- `keel routine create/list/update/delete/pause/resume/history/run` — Recurring routine management
+- `keel schema [command]` — JSON schema introspection for runtime tool discovery
+
+**Global flags:** `--db-path PATH --project-id ID [--exclude-issue ID] [--pretty]`
+
+**SKILL.md pattern:** Ships with `crates/keel-cli/skills/SKILL.md` — a self-describing document that any Claude agent can read to learn all available commands, flags, and output formats. The planning agent's system prompt references this skill so it knows how to construct keel commands.
+
+**Key design decisions:**
+- Stateless: each invocation opens DB, performs operation, exits
+- JSON output: stdout for success, stderr `{"error": "..."}` for failures
+- No process management needed — always available via bash
+
+### keel-db
+Database layer. Models, repositories, and migrations for libsql/SQLite.
+
+**What it provides:** `Database`, `Issue`, `IssueStatus`, `Project`, `Session`, `SessionEvent`, `Routine`, `RoutineRun`, migration runner.
+
+### keel-sessions
+Claude CLI session management. Spawns `claude -p --output-format stream-json`, parses NDJSON output, manages concurrency.
+
+**What it provides:** `SessionManager`, `ClaudeEvent`, `FeedItem`, `StreamAccumulator`, `claude_path`, concurrency semaphores.
+
+### keel-tauri
+Tauri-specific helpers for apps built on Keel & Deck.
+
+**What it provides:** Tauri command registration helpers, event type definitions, app state management.
 
 ---
 
