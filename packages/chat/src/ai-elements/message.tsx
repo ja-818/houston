@@ -36,7 +36,7 @@ export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   avatar?: React.ReactNode;
 };
 
-export const Message = ({ className, from, avatar, ...props }: MessageProps) => (
+export const Message = ({ className, from, avatar, children, ...props }: MessageProps) => (
   <div
     className={cn(
       "group relative flex w-full flex-col gap-2",
@@ -45,6 +45,7 @@ export const Message = ({ className, from, avatar, ...props }: MessageProps) => 
     )}
     {...props}
   >
+    {children}
     {avatar && (
       <div className="absolute -bottom-1.5 group-[.is-user]:right-full group-[.is-user]:mr-2 group-[.is-assistant]:left-full group-[.is-assistant]:ml-2">
         {avatar}
