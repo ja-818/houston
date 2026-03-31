@@ -1,4 +1,5 @@
-import { ChatPanel } from "@deck-ui/chat";
+import { ChatPanel, ChannelAvatar } from "@deck-ui/chat";
+import type { ChatMessage } from "@deck-ui/chat";
 import { CodeBlock } from "../../components/code-block";
 import { PropsTable } from "../../components/props-table";
 import {
@@ -42,6 +43,9 @@ export function ChatPanelPage() {
             isLoading={false}
             placeholder="Try typing a message..."
             status="ready"
+            renderMessageAvatar={(msg: ChatMessage) =>
+              msg.source ? <ChannelAvatar source={msg.source} /> : undefined
+            }
           />
         </div>
       </div>

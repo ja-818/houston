@@ -4,6 +4,8 @@ import type { FeedItem } from "@deck-ui/chat";
 /* -- Sample data --------------------------------------------------------- */
 
 export const SAMPLE_FEED: FeedItem[] = [
+  { feed_type: "user_message", data: "[Telegram] Hey, what's my schedule today?" },
+  { feed_type: "assistant_text", data: "Checking your calendar... You have a standup at 10am and a design review at 2pm." },
   { feed_type: "user_message", data: "What tasks are pending?" },
   { feed_type: "thinking", data: "The user wants a status update. Let me check the board." },
   { feed_type: "tool_call", data: { name: "Bash", input: { command: "keel task list" } } },
@@ -122,7 +124,7 @@ type FeedItem =
 interface ChatMessage {
   key: string; from: "user" | "assistant"; content: string
   isStreaming: boolean; reasoning?: { content: string; isStreaming: boolean }
-  tools: ToolEntry[]
+  tools: ToolEntry[]; source?: string  // auto-detected from [Channel] prefix
 }
 
 // ToolEntry — a single tool call with optional result
@@ -148,6 +150,7 @@ export const CHAT_PANEL_PROPS: PropDef[] = [
   { name: "toolLabels", type: "Record<string, string>", description: "Custom tool name to label mappings" },
   { name: "isSpecialTool", type: "(name) => boolean", description: "Identify tools needing custom rendering" },
   { name: "renderToolResult", type: "(tool, index) => ReactNode", description: "Custom renderer for special tool results" },
+  { name: "renderMessageAvatar", type: "(msg: ChatMessage) => ReactNode", description: "Render a custom avatar for a message (e.g., ChannelAvatar for Telegram/Slack source)" },
 ];
 
 export const CHAT_INPUT_PROPS: PropDef[] = [
@@ -170,6 +173,7 @@ export const CONVERSATION_PROPS: PropDef[] = [
 
 export const MESSAGE_PROPS: PropDef[] = [
   { name: "from", type: '"user" | "assistant"', description: "Role — controls bubble alignment and styling" },
+  { name: "avatar", type: "ReactNode", description: "Optional avatar rendered to the left of the message (e.g., ChannelAvatar)" },
   { name: "className", type: "string", description: "Additional CSS classes" },
   { name: "children", type: "ReactNode", description: "MessageContent, MessageActions, etc." },
 ];

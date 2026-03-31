@@ -43,6 +43,11 @@ const pages: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
       default: m.ChatPanelPage,
     })),
   ),
+  "channel-avatar": lazy(() =>
+    import("./pages/chat/channel-avatar").then((m) => ({
+      default: m.ChannelAvatarPage,
+    })),
+  ),
   "event-feed": lazy(() =>
     import("./pages/events/event-feed").then((m) => ({
       default: m.EventFeedPage,

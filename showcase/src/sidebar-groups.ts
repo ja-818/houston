@@ -27,7 +27,10 @@ export const GROUPS: Group[] = [
   },
   {
     label: "Chat",
-    items: [{ id: "chat-panel", label: "ChatPanel" }],
+    items: [
+      { id: "chat-panel", label: "ChatPanel" },
+      { id: "channel-avatar", label: "ChannelAvatar + Utilities" },
+    ],
   },
   {
     label: "Events",
