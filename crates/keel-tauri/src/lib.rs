@@ -10,6 +10,7 @@ pub mod paths;
 pub mod session_runner;
 pub mod state;
 pub mod supervisor;
+pub mod tray;
 pub mod workspace;
 
 // Re-export sub-crates for convenience.

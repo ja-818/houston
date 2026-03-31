@@ -161,6 +161,79 @@ These packages must NEVER import Houston-specific types (Issue, Skill, Routine, 
 
 ---
 
+## Rust Crate Patterns
+
+### Session Runner (`keel-tauri/session_runner.rs`)
+Generic lifecycle for spawning a Claude session and monitoring its output. Replaces the duplicated "spawn + tokio::spawn + match update" pattern.
+
+```rust
+let handle = spawn_and_monitor(
+    &app_handle,
+    session_key,
+    prompt,
+    resume_id,          // Option<String> for --resume
+    working_dir,        // Option<PathBuf>
+    system_prompt,      // Option<String>
+    Some(chat_state),   // ChatSessionState for session ID tracking
+    Some(PersistOptions { db, project_id, feed_key, source }),
+);
+// handle.await => SessionResult { response_text, claude_session_id, error }
+```
+
+**What it does automatically:**
+- Emits `KeelEvent::FeedItem` and `KeelEvent::SessionStatus` via Tauri events
+- Tracks `claude_session_id` in `ChatSessionState` (enables `--resume` on next send)
+- Persists non-streaming feed items to `chat_feed` table (skips `*_streaming` variants)
+- Returns `SessionResult` with final response text, session ID, and any error
+
+### Channel Manager (`keel-tauri/channel_manager.rs`)
+Bridges keel-channels adapters with the Tauri event system.
+
+```rust
+let (manager, mut message_rx) = ChannelManager::new();
+// Start a channel
+manager.start_channel("tg-main".into(), config).await?;
+// Consume incoming messages from ALL channels
+while let Some((registry_id, msg)) = message_rx.recv().await {
+    // Route to agent, emit events, etc.
+}
+```
+
+**Key design:** All channels feed into one `mpsc::UnboundedReceiver<RoutedMessage>`. The app decides how to route — e.g., inject into the chat feed as `[Telegram] message text`.
+
+### Workspace Helpers (`keel-tauri/workspace.rs`)
+For apps that use an OpenClaw-style workspace directory with editable personality/context files.
+
+- `seed_file(dir, name, content)` — write once, never overwrite user edits
+- `build_system_prompt(dir, base, bootstrap_name, files)` — assemble prompt from workspace files
+- `list_files(dir, known)` / `read_file(dir, name, allowed)` — UI-safe file enumeration
+
+### Chat Session State (`keel-tauri/chat_session.rs`)
+`Arc<Mutex<Option<String>>>` wrapper for tracking a Claude session ID. Register as Tauri managed state. `session_runner` auto-updates it when `SessionUpdate::SessionId` arrives.
+
+### Feed Persistence (`keel-db/repo_chat_feed.rs`)
+`chat_feed` table with `(project_id, feed_key, feed_type, data_json, source, timestamp)`. Used for:
+- Restoring conversation history on app restart
+- Multi-source attribution (desktop vs telegram vs slack messages)
+- Session runner auto-persists via `PersistOptions`
+
+### Feed Merge (`@deck-ui/chat/feed-merge.ts`)
+Pure function `mergeFeedItem(items, item)` for smart-merging streaming FeedItems:
+- `thinking_streaming` replaces previous `thinking_streaming`
+- `thinking` (final) replaces last `thinking_streaming`
+- `assistant_text_streaming` replaces previous `assistant_text_streaming`
+- `assistant_text` (final) replaces last `assistant_text_streaming`
+- Everything else appended
+
+Use in Zustand/Redux stores to avoid duplicating merge logic across apps.
+
+### Channel Avatars (`@deck-ui/chat/channel-avatar.tsx`)
+`ChannelAvatar` component renders branded circular badges for message sources. Props: `source: "telegram" | "slack" | string`, `size: "sm" | "md"`. Used via `ChatPanel.renderMessageAvatar` callback.
+
+`ChatMessage.source` is auto-extracted by `feedItemsToMessages()` from `[ChannelName]` prefixes in user messages (e.g., `[Telegram] hello` becomes `source: "telegram"`, text: `"hello"`).
+
+---
+
 ## Gotchas
 
 1. **Tailwind v4 has no config file.** Don't create `tailwind.config.ts`. All config is in CSS.
@@ -168,3 +241,5 @@ These packages must NEVER import Houston-specific types (Issue, Skill, Routine, 
 3. **`motion` vs `framer-motion`:** Both packages exist in deps. `motion` is the newer name. Import from `motion` for the `Motion.create()` API, `framer-motion` for `AnimatePresence`, `motion.div`, etc.
 4. **streamdown CSS:** ChatPanel needs `streamdown/styles.css` imported by the consuming app, not by the library.
 5. **Toast container is props-driven.** Unlike Houston where it reads from UIStore, Deck's ToastContainer accepts `toasts` and `onDismiss` as props.
+6. **`expand_tilde()` is required for user-facing paths.** Rust's `PathBuf` does not expand `~`. Use `keel_tauri::paths::expand_tilde()` whenever accepting paths like `~/Documents/MyApp`.
+7. **`send_typing()` is a default no-op on Channel trait.** Only Telegram implements it (sends `sendChatAction` typing). Slack does not. Safe to call on any channel.

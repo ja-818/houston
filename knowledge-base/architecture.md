@@ -17,13 +17,17 @@ Extracted from [Houston](https://github.com/ja-818/houston), a Tauri 2 desktop a
 ```
 keel-and-deck/
 ├── crates/
+│   ├── keel-channels/  keel-channels     — Channel adapters (Telegram, Slack), Channel trait, registry
 │   ├── keel-cli/       keel CLI          — Board management via bash commands
 │   ├── keel-db/        keel-db           — Database models, repos, migrations (libsql)
+│   ├── keel-events/    keel-events       — Event queue for hooks, webhooks, lifecycle events
+│   ├── keel-memory/    keel-memory       — Agent memory store (vector search, persistence)
+│   ├── keel-scheduler/ keel-scheduler    — Cron jobs and heartbeat timer scheduling
 │   ├── keel-sessions/  keel-sessions     — Claude CLI session management, parser, streaming
-│   └── keel-tauri/     keel-tauri        — Tauri command helpers, event types
+│   └── keel-tauri/     keel-tauri        — Tauri integration: state, events, session runner, channel manager, workspace helpers
 ├── packages/
 │   ├── core/           @deck-ui/core     — Design system, shadcn/ui, utilities
-│   ├── chat/           @deck-ui/chat     — Chat panel, AI Elements, streaming
+│   ├── chat/           @deck-ui/chat     — Chat panel, AI Elements, streaming, channel avatars
 │   ├── board/          @deck-ui/board    — Kanban board, cards, animations
 │   └── layout/         @deck-ui/layout   — Sidebar, tab bar, split view
 ├── Cargo.toml          Rust workspace root
@@ -66,7 +70,9 @@ The hero package. Drop-in chat experience for Claude Code / Codex sessions.
 | `ChatPanel` | Full chat: messages, streaming, thinking, tools, input — one component |
 | `ChatInput` | Input with send/stop/mic states, auto-expand textarea |
 | `ToolActivity` | Collapsing tool call list with spinners and elapsed time |
-| `feedItemsToMessages()` | Converts Claude CLI stream-json FeedItems → ChatMessages |
+| `feedItemsToMessages()` | Converts Claude CLI stream-json FeedItems → ChatMessages (auto-extracts `[Channel]` prefix into `ChatMessage.source`) |
+| `mergeFeedItem()` | Pure function for smart-merging a new FeedItem into an existing array (handles streaming replacement logic) |
+| `ChannelAvatar` | Circular branded avatar for channel sources — Telegram (blue, paper plane SVG) and Slack (purple, multi-color SVG) logos |
 | `Conversation` | Auto-scrolling message container (stick-to-bottom) |
 | `Message` | Role-aware message bubble with branching support |
 | `Reasoning` | Collapsible thinking block, auto-open while streaming |
@@ -82,8 +88,13 @@ The hero package. Drop-in chat experience for Claude Code / Codex sessions.
   onSend={(text) => sendToAgent(text)}
   isLoading={isStreaming}
   status="streaming"
+  renderMessageAvatar={(msg) =>
+    msg.source ? <ChannelAvatar source={msg.source} /> : undefined
+  }
 />
 ```
+
+**Channel-aware messaging:** `ChatMessage.source` is auto-extracted from `[ChannelName]` prefixes in user messages (e.g., `[Telegram] hello` → `source: "telegram"`, text: `"hello"`). The `renderMessageAvatar` callback lets apps render channel logos on message bubbles. `ChannelAvatar` supports `"telegram"`, `"slack"`, and any custom string source.
 
 ### @deck-ui/board
 Kanban board with animated cards that glow when AI agents are running.
@@ -146,15 +157,41 @@ Database layer. Models, repositories, and migrations for libsql/SQLite.
 
 **What it provides:** `Database`, `Issue`, `IssueStatus`, `Project`, `Session`, `SessionEvent`, `Routine`, `RoutineRun`, migration runner.
 
+**Chat feed persistence** (`repo_chat_feed.rs`): `chat_feed` table for persistent conversation history. Stores feed items with `(project_id, feed_key, feed_type, data_json, source, timestamp)`. Methods: `add_chat_feed_item()`, `list_chat_feed()`, `clear_chat_feed()`. Used by `session_runner.rs` via `PersistOptions` for auto-persisting, and by apps for loading conversation history on restart.
+
 ### keel-sessions
 Claude CLI session management. Spawns `claude -p --output-format stream-json`, parses NDJSON output, manages concurrency.
 
 **What it provides:** `SessionManager`, `ClaudeEvent`, `FeedItem`, `StreamAccumulator`, `claude_path`, concurrency semaphores.
 
 ### keel-tauri
-Tauri-specific helpers for apps built on Keel & Deck.
+Tauri-specific helpers for apps built on Keel & Deck. The largest crate — provides session lifecycle, channel management, workspace utilities, and app state.
 
-**What it provides:** Tauri command registration helpers, event type definitions, app state management.
+**Modules:**
+
+| Module | What it provides |
+|--------|-----------------|
+| `state.rs` | Generic `AppState` (db, event_queue, scheduler) |
+| `events.rs` | `KeelEvent` enum for Tauri event emission |
+| `supervisor.rs` | Session supervisor for concurrent Claude sessions |
+| `paths.rs` | `expand_tilde()` — resolves `~` in user-facing paths (Rust doesn't do shell expansion) |
+| `chat_session.rs` | `ChatSessionState` — `Arc<Mutex<Option<String>>>` for tracking a single Claude session ID across sends. Enables `--resume` for conversation continuity. For single-conversation apps (DesktopClaw); multi-conversation apps (Houston) use the DB instead. |
+| `workspace.rs` | `seed_file()` — write a template file if it doesn't exist (never overwrites). `build_system_prompt()` — assemble system prompt from workspace directory files with optional bootstrap detection. `list_files()` / `read_file()` — enumerate and read known workspace files for UI display. |
+| `session_runner.rs` | `spawn_and_monitor()` — generic session lifecycle: spawn Claude CLI, emit `KeelEvent::FeedItem` and `KeelEvent::SessionStatus`, track session ID via `ChatSessionState`, optionally persist feed items to DB via `PersistOptions`. Returns `JoinHandle<SessionResult>`. Replaces the duplicated spawn+monitor pattern. |
+| `channel_manager.rs` | `ChannelManager` — starts/stops real keel-channels adapters (Telegram, Slack), routes all incoming messages into a single `mpsc::UnboundedReceiver<RoutedMessage>` where `RoutedMessage = (registry_id, ChannelMessage)`. Methods: `start_channel()`, `stop_channel()`, `send_message()`, `send_typing()`, `list()`. |
+
+**Re-exports:** `keel_db`, `keel_sessions`, `keel_events`, `keel_scheduler`, `keel_channels`, `keel_memory` — apps can import everything through `keel_tauri`.
+
+### keel-channels
+Channel adapters for messaging platforms. Each adapter implements the `Channel` trait.
+
+**Channel trait methods:** `connect()`, `disconnect()`, `send_message(channel_id, text)`, `send_typing(channel_id)` (default no-op), `status()`, `channel_type()`, `message_receiver()` (take-once mpsc receiver for incoming messages).
+
+**Adapters:**
+- `TelegramChannel` — long-polling via `getUpdates`, `sendMessage`, `sendChatAction` (typing indicator)
+- `SlackChannel` — Socket Mode WebSocket connection, `chat.postMessage` API
+
+**Also provides:** `ChannelRegistry` (register/unregister/get/list adapters), `ChannelConfig`, `ChannelMessage`, `ChannelStatus`.
 
 ---
 
