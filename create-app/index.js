@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync } from "fs";
-import { join, resolve, basename } from "path";
+import { existsSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync, copyFileSync } from "fs";
+import { join, resolve, basename, extname } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+
+const BINARY_EXTENSIONS = new Set([
+  ".png", ".jpg", ".jpeg", ".gif", ".ico", ".icns", ".webp", ".svg",
+  ".woff", ".woff2", ".ttf", ".otf", ".eot",
+  ".zip", ".gz", ".tar", ".br",
+]);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -40,6 +46,9 @@ function copyDir(src, dest) {
 
     if (statSync(srcPath).isDirectory()) {
       copyDir(srcPath, destPath);
+    } else if (BINARY_EXTENSIONS.has(extname(entry).toLowerCase())) {
+      // Copy binary files as-is (no template replacement)
+      copyFileSync(srcPath, destPath);
     } else {
       let content = readFileSync(srcPath, "utf-8");
       content = content.replaceAll("{{APP_NAME}}", projectName);

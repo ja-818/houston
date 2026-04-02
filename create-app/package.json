@@ -1,6 +1,6 @@
 {
   "name": "create-keel-and-deck-app",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Scaffold a Tauri 2 + React desktop app with the keel-and-deck framework",
   "type": "module",
   "bin": {
