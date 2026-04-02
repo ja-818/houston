@@ -1,0 +1,174 @@
+/**
+ * Convert FeedItem[] to ChatMessage[] for rendering.
+ *
+ * Groups consecutive feed items into logical messages, same as how
+ * AI Elements structures its message list. Pairs tool_call items with
+ * their corresponding tool_result items.
+ */
+
+import type { FeedItem } from "./types";
+
+export interface ToolEntry {
+  name: string;
+  input?: unknown;
+  result?: { content: string; is_error: boolean };
+}
+
+export interface ChatMessage {
+  key: string;
+  from: "user" | "assistant";
+  content: string;
+  isStreaming: boolean;
+  reasoning?: { content: string; isStreaming: boolean };
+  tools: ToolEntry[];
+  /** Source channel if the message came from an external channel. */
+  source?: string;
+}
+
+export function feedItemsToMessages(items: FeedItem[]): ChatMessage[] {
+  const messages: ChatMessage[] = [];
+  let cur: ChatMessage | null = null;
+
+  function getCur(): ChatMessage | null {
+    return cur;
+  }
+
+  const flush = () => {
+    if (cur) {
+      messages.push(cur);
+      cur = null;
+    }
+  };
+
+  const ensureAssistant = (): ChatMessage => {
+    if (!cur || cur.from !== "assistant") {
+      flush();
+      cur = {
+        key: `assistant-${messages.length}`,
+        from: "assistant",
+        content: "",
+        isStreaming: false,
+        tools: [],
+      };
+    }
+    return cur;
+  };
+
+  for (const item of items) {
+    switch (item.feed_type) {
+      case "user_message": {
+        flush();
+        const { source, text } = extractSource(item.data);
+        messages.push({
+          key: `user-${messages.length}`,
+          from: "user",
+          content: text,
+          isStreaming: false,
+          tools: [],
+          source,
+        });
+        break;
+      }
+
+      case "assistant_text": {
+        const msg = ensureAssistant();
+        msg.content = item.data;
+        msg.isStreaming = false;
+        flush();
+        break;
+      }
+
+      case "assistant_text_streaming": {
+        const msg = ensureAssistant();
+        msg.content = item.data;
+        msg.isStreaming = true;
+        break;
+      }
+
+      case "thinking_streaming":
+      case "thinking": {
+        const isStream = item.feed_type === "thinking_streaming";
+        const prev = getCur();
+        if (
+          prev &&
+          prev.from === "assistant" &&
+          (prev.tools.length > 0 || prev.content)
+        ) {
+          flush();
+        }
+        const msg = ensureAssistant();
+        msg.reasoning = { content: item.data, isStreaming: isStream };
+        if (isStream) msg.isStreaming = true;
+        if (!isStream) flush();
+        break;
+      }
+
+      case "tool_call": {
+        const msg = ensureAssistant();
+        msg.tools.push({ name: item.data.name, input: item.data.input });
+        if (!msg.content) msg.isStreaming = true;
+        break;
+      }
+
+      case "tool_result": {
+        // Find the most recent unmatched tool_call — it might be in the
+        // current message OR in an already-flushed one (thinking blocks
+        // can cause flushes between tool_call and tool_result).
+        let matched = false;
+        const active = getCur();
+        if (active && active.from === "assistant") {
+          for (let j = active.tools.length - 1; j >= 0; j--) {
+            if (!active.tools[j].result) {
+              active.tools[j].result = {
+                content: item.data.content,
+                is_error: item.data.is_error,
+              };
+              matched = true;
+              break;
+            }
+          }
+        }
+        if (!matched) {
+          // Search flushed messages backwards
+          for (let m = messages.length - 1; m >= 0 && !matched; m--) {
+            const msg = messages[m];
+            if (msg.from !== "assistant") continue;
+            for (let j = msg.tools.length - 1; j >= 0; j--) {
+              if (!msg.tools[j].result) {
+                msg.tools[j].result = {
+                  content: item.data.content,
+                  is_error: item.data.is_error,
+                };
+                matched = true;
+                break;
+              }
+            }
+          }
+        }
+        break;
+      }
+
+      case "system_message":
+        break;
+
+      case "final_result":
+        flush();
+        break;
+    }
+  }
+
+  flush();
+  return messages;
+}
+
+/** Extract a `[ChannelName]` prefix from a user message, if present. */
+function extractSource(text: string): { source?: string; text: string } {
+  const match = text.match(/^\[(\w+)\]\s*/);
+  if (match) {
+    return {
+      source: match[1].toLowerCase(),
+      text: text.slice(match[0].length),
+    };
+  }
+  return { text };
+}

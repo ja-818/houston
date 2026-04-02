@@ -1,0 +1,51 @@
+# @deck-ui/board
+
+Kanban board for AI agent task management. Cards glow with a rotating conic-gradient border when agents are running.
+
+## Install
+
+```bash
+pnpm add @deck-ui/board
+```
+
+## Usage
+
+```tsx
+import { KanbanBoard } from "@deck-ui/board"
+import "@deck-ui/board/src/styles.css"
+
+const columns = [
+  { id: "todo",    label: "To Do",   statuses: ["todo"] },
+  { id: "running", label: "Running", statuses: ["running"] },
+  { id: "done",    label: "Done",    statuses: ["completed"] },
+]
+
+<KanbanBoard
+  columns={columns}
+  items={tasks}
+  onSelect={(item) => openDetail(item.id)}
+  onApprove={(item) => approve(item.id)}
+  runningStatuses={["running"]}
+/>
+```
+
+## Exports
+
+- `KanbanBoard` -- renders columns from a `columns` config and `items` array
+- `KanbanColumn` -- single column with header and card list
+- `KanbanCard` -- individual card with glow, delete, approve actions
+- `KanbanDetailPanel` -- slide-in detail view for selected items
+- Types: `KanbanItem`, `KanbanColumn` (config)
+
+## The Glow
+
+Cards matching `runningStatuses` get the `card-running-glow` CSS class: a `conic-gradient` border animated with `@property --glow-angle`, spinning at 2.5s. Blue, indigo, orange, gold. Pure CSS, no JS animation loop.
+
+## Peer Dependencies
+
+- React 19+
+- @deck-ui/core
+
+---
+
+Part of [Keel & Deck](../../README.md).

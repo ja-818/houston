@@ -1,0 +1,4 @@
+packages:
+  - "packages/*"
+  - "create-app"
+  - "showcase"

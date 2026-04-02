@@ -1,0 +1,40 @@
+{
+  "name": "{{APP_NAME}}",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deck-ui/board": "^0.3.0",
+    "@deck-ui/chat": "^0.3.0",
+    "@deck-ui/connections": "^0.3.0",
+    "@deck-ui/core": "^0.1.1",
+    "@deck-ui/events": "^0.3.0",
+    "@deck-ui/layout": "^0.3.0",
+    "@deck-ui/memory": "^0.3.0",
+    "@deck-ui/review": "^0.3.0",
+    "@deck-ui/routines": "^0.3.0",
+    "@deck-ui/skills": "^0.3.0",
+    "@tauri-apps/api": "^2.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.5",
+    "lucide-react": "^0.577.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@tailwindcss/vite": "^4.1.8",
+    "@vitejs/plugin-react": "^4.5.2",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^6.0.2",
+    "vite": "^6.3.5"
+  }
+}

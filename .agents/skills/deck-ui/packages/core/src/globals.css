@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  /* Houston color palette — pixel-matched to Houston's hardcoded values */
+  --color-background: #ffffff;
+  --color-foreground: #0d0d0d;
+  --color-card: #ffffff;
+  --color-card-foreground: #0d0d0d;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0d0d0d;
+  --color-primary: #0d0d0d;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f5f5f5;
+  --color-secondary-foreground: #0d0d0d;
+  --color-muted: #f5f5f5;
+  --color-muted-foreground: #8e8e8e;
+  --color-accent: rgba(0, 0, 0, 0.07);
+  --color-accent-foreground: #424242;
+  --color-destructive: #e02e2a;
+  --color-destructive-foreground: #ffffff;
+  --color-border: rgba(0, 0, 0, 0.06);
+  --color-input: #e3e3e3;
+  --color-ring: #0d0d0d;
+  --radius: 0.5rem;
+
+  /* Sidebar — matches Houston sidebar exactly */
+  --color-sidebar: #f5f5f5;
+  --color-sidebar-foreground: #0d0d0d;
+  --color-sidebar-border: rgba(0, 0, 0, 0.06);
+  --color-sidebar-accent: rgba(0, 0, 0, 0.07);
+  --color-sidebar-accent-foreground: #0d0d0d;
+
+  /* Success */
+  --color-success: #00a240;
+  --color-success-foreground: #ffffff;
+
+  /* Warning */
+  --color-warning: #e0ac00;
+  --color-warning-foreground: #ffffff;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+}
+
+button,
+[role="button"],
+a,
+summary,
+[onclick] {
+  cursor: pointer;
+}
+
+/* Keep textarea caret proportional to text, not line-height */
+textarea {
+  caret-shape: bar;
+  font-variant-ligatures: none;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family:
+    ui-sans-serif, -apple-system, "system-ui", "Segoe UI", Helvetica,
+    "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* Running card glow border — light traces around the edge */
+@property --glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes glow-spin {
+  to {
+    --glow-angle: 360deg;
+  }
+}
+
+.card-running-glow {
+  --glow-angle: 0deg;
+  position: relative;
+  background:
+    linear-gradient(white, white) padding-box,
+    conic-gradient(
+      from var(--glow-angle),
+      transparent 60%,
+      rgba(59, 130, 246, 0.15) 68%,
+      #3b82f6 74%,
+      #818cf8 78%,
+      #f97316 82%,
+      #fbbf24 84%,
+      transparent 88%
+    ) border-box;
+  border: 1.5px solid transparent;
+  animation: glow-spin 2.5s linear infinite;
+}
+
+
+/* Typing dots for running avatar */
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* Pulsing dot for active tool */
+@keyframes tool-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.tool-active-dot {
+  animation: tool-pulse 1s ease-in-out infinite;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}

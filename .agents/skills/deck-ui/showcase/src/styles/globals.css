@@ -1,0 +1,39 @@
+@import "tailwindcss";
+@import "@deck-ui/core/src/globals.css";
+@import "@deck-ui/core/src/styles.css";
+
+@source "../";
+@source "../../node_modules/@deck-ui/board/src";
+@source "../../node_modules/@deck-ui/chat/src";
+@source "../../node_modules/@deck-ui/layout/src";
+@source "../../node_modules/@deck-ui/core/src";
+@source "../../node_modules/@deck-ui/skills/src";
+@source "../../node_modules/@deck-ui/routines/src";
+@source "../../node_modules/@deck-ui/connections/src";
+@source "../../node_modules/@deck-ui/events/src";
+@source "../../node_modules/@deck-ui/memory/src";
+@source "../../node_modules/@deck-ui/review/src";
+
+/* Theme overrides */
+html.theme-red {
+  --color-primary: #c0392b;
+  --color-primary-foreground: #ffffff;
+  --color-ring: #c0392b;
+}
+
+html.theme-blue {
+  --color-primary: #2563eb;
+  --color-primary-foreground: #ffffff;
+  --color-ring: #2563eb;
+}
+
+html.theme-orange {
+  --color-primary: #ff6600;
+  --color-primary-foreground: #ffffff;
+  --color-ring: #ff6600;
+}
+
+/* Showcase overrides: allow scrolling on showcase body */
+body {
+  overflow: auto;
+}

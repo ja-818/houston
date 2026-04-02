@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nickelpack/tauri/v2/crates/tauri-utils/schema.json",
+  "identifier": "default",
+  "description": "Default capability for the main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:event:allow-listen",
+    "core:event:allow-emit"
+  ]
+}

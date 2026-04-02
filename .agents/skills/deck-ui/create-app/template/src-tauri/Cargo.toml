@@ -1,0 +1,28 @@
+[package]
+name = "{{APP_NAME_SNAKE}}"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "{{APP_NAME_SNAKE}}_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4"] }
+keel-tauri = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-db = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-sessions = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-events = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-scheduler = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-channels = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-memory = { git = "https://github.com/ja-818/keel-and-deck.git" }
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+libsql = "0.6"

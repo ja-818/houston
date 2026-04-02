@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "deck-ui": {
+      "source": "/Users/ja/dev/shipyard/keel-and-deck",
+      "sourceType": "local",
+      "computedHash": "da6fca63b798e7f34be54e6e14f3df0ad27dafe58f5a27f3b34a34332a8d0cd1"
+    }
+  }
+}

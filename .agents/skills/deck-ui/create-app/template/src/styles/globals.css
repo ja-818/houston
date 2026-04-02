@@ -1,0 +1,24 @@
+@import "tailwindcss";
+@import "@deck-ui/core/src/globals.css";
+@import "@deck-ui/core/src/styles.css";
+@import "@deck-ui/chat/src/styles.css";
+
+/* Scan local source + deck-ui packages for Tailwind classes */
+@source "../";
+@source "../../node_modules/@deck-ui/board/src";
+@source "../../node_modules/@deck-ui/chat/src";
+@source "../../node_modules/@deck-ui/layout/src";
+@source "../../node_modules/@deck-ui/core/src";
+@source "../../node_modules/@deck-ui/skills/src";
+@source "../../node_modules/@deck-ui/routines/src";
+@source "../../node_modules/@deck-ui/connections/src";
+@source "../../node_modules/@deck-ui/events/src";
+@source "../../node_modules/@deck-ui/memory/src";
+@source "../../node_modules/@deck-ui/review/src";
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    Arial, sans-serif;
+}
