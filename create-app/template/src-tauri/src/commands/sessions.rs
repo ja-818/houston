@@ -1,12 +1,15 @@
-use keel_tauri::events::KeelEvent;
-use keel_tauri::keel_sessions::{SessionManager, SessionUpdate};
+use crate::workspace;
+use keel_tauri::chat_session::ChatSessionState;
+use keel_tauri::paths::expand_tilde;
+use keel_tauri::session_runner::{spawn_and_monitor, PersistOptions};
 use keel_tauri::state::AppState;
-use tauri::{Emitter, State};
+use tauri::State;
 
 #[tauri::command]
 pub async fn start_session(
     app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
+    chat_state: State<'_, ChatSessionState>,
     project_id: String,
     prompt: String,
 ) -> Result<String, String> {
@@ -17,63 +20,61 @@ pub async fn start_session(
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Project not found".to_string())?;
 
-    let session_key = uuid::Uuid::new_v4().to_string();
-    let working_dir = std::path::PathBuf::from(&project.folder_path);
+    let working_dir = expand_tilde(&project.folder_path);
 
-    let (mut rx, _handle) = SessionManager::spawn_session(
-        prompt,
-        None, // resume_session_id
+    // Seed workspace files on first use.
+    workspace::seed_workspace(&project.folder_path);
+
+    // Build system prompt from CLAUDE.md if it exists.
+    let system_prompt = {
+        let claude_md = working_dir.join("CLAUDE.md");
+        if claude_md.exists() {
+            std::fs::read_to_string(&claude_md).ok()
+        } else {
+            None
+        }
+    };
+
+    // Resume previous session if we have one.
+    let resume_id = chat_state.get();
+
+    let session_key = "main".to_string();
+
+    let _handle = spawn_and_monitor(
+        &app_handle,
+        &session_key,
+        &prompt,
+        resume_id.as_deref(),
         Some(working_dir),
-        None, // model
-        None, // effort
-        None, // system_prompt
-        None, // mcp_config
-        false, // disable_builtin_tools
-        false, // disable_all_tools
+        system_prompt.as_deref(),
+        Some(chat_state.inner().clone()),
+        Some(PersistOptions {
+            db: state.db.clone(),
+            project_id: project_id.clone(),
+            feed_key: session_key.clone(),
+            source: "desktop".to_string(),
+        }),
     );
 
-    let key = session_key.clone();
-    let handle = app_handle.clone();
-    tokio::spawn(async move {
-        while let Some(update) = rx.recv().await {
-            match update {
-                SessionUpdate::Feed(item) => {
-                    let _ = handle.emit(
-                        "keel-event",
-                        KeelEvent::FeedItem {
-                            session_key: key.clone(),
-                            item,
-                        },
-                    );
-                }
-                SessionUpdate::Status(status) => {
-                    let (status_str, error) = match &status {
-                        keel_tauri::keel_sessions::SessionStatus::Starting => {
-                            ("starting".to_string(), None)
-                        }
-                        keel_tauri::keel_sessions::SessionStatus::Running => {
-                            ("running".to_string(), None)
-                        }
-                        keel_tauri::keel_sessions::SessionStatus::Completed => {
-                            ("completed".to_string(), None)
-                        }
-                        keel_tauri::keel_sessions::SessionStatus::Error(e) => {
-                            ("error".to_string(), Some(e.clone()))
-                        }
-                    };
-                    let _ = handle.emit(
-                        "keel-event",
-                        KeelEvent::SessionStatus {
-                            session_key: key.clone(),
-                            status: status_str,
-                            error,
-                        },
-                    );
-                }
-                _ => {}
-            }
-        }
-    });
-
     Ok(session_key)
+}
+
+#[tauri::command]
+pub async fn load_chat_feed(
+    state: State<'_, AppState>,
+    project_id: String,
+    feed_key: String,
+) -> Result<Vec<serde_json::Value>, String> {
+    let rows = state
+        .db
+        .list_chat_feed(&project_id, &feed_key)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let items: Vec<serde_json::Value> = rows
+        .into_iter()
+        .filter_map(|row| serde_json::from_str(&row.data_json).ok())
+        .collect();
+
+    Ok(items)
 }

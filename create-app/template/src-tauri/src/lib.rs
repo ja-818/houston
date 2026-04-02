@@ -1,5 +1,7 @@
 mod commands;
+mod workspace;
 
+use keel_tauri::chat_session::ChatSessionState;
 use keel_tauri::keel_db::Database;
 use keel_tauri::keel_events::EventQueue;
 use keel_tauri::keel_memory::MemoryStore;
@@ -41,17 +43,21 @@ pub fn run() {
             // Initialize scheduler with queue handle.
             let scheduler = Scheduler::new(queue_handle.clone());
 
+            // Chat session state for --resume support.
+            let chat_session = ChatSessionState::default();
+
             app.manage(AppState {
                 db,
                 event_queue: Some(queue_handle),
                 scheduler: Some(Arc::new(Mutex::new(scheduler))),
             });
             app.manage(memory_store);
+            app.manage(chat_session);
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // Projects
+            // Projects (agents)
             commands::projects::list_projects,
             commands::projects::create_project,
             // Issues
@@ -59,6 +65,10 @@ pub fn run() {
             commands::issues::create_issue,
             // Sessions
             commands::sessions::start_session,
+            commands::sessions::load_chat_feed,
+            // Workspace
+            commands::workspace::list_workspace_files,
+            commands::workspace::read_workspace_file,
             // Memory
             commands::memory::list_memories,
             commands::memory::create_memory,

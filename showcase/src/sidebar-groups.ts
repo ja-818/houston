@@ -6,6 +6,8 @@ export interface ScreenItem {
 export const SCREENS: ScreenItem[] = [
   { id: "chat", label: "Chat" },
   { id: "kanban", label: "Kanban" },
+  { id: "files", label: "Files" },
+  { id: "instructions", label: "Instructions" },
   { id: "channels", label: "Channels" },
   { id: "connections", label: "Connections" },
   { id: "events", label: "Events" },

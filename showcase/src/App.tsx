@@ -16,6 +16,12 @@ const pages: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   kanban: lazy(() =>
     import("./pages/board/kanban-board").then((m) => ({ default: m.KanbanBoardPage })),
   ),
+  files: lazy(() =>
+    import("./pages/screens/files").then((m) => ({ default: m.FilesScreen })),
+  ),
+  instructions: lazy(() =>
+    import("./pages/screens/instructions").then((m) => ({ default: m.InstructionsScreen })),
+  ),
   channels: lazy(() =>
     import("./pages/screens/channels").then((m) => ({ default: m.ChannelsScreen })),
   ),

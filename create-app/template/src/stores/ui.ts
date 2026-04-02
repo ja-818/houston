@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ViewMode = "activity" | "events" | "memory" | "skills" | "routines" | "connections";
+export type ViewMode = "files" | "instructions";
 
 interface UIState {
   viewMode: ViewMode;
@@ -10,7 +10,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  viewMode: "activity",
+  viewMode: "files",
   chatOpen: false,
   setViewMode: (viewMode) => set({ viewMode }),
   setChatOpen: (chatOpen) => set({ chatOpen }),

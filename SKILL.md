@@ -16,7 +16,7 @@ Deck UI (`@deck-ui/*`) is a React component library for building AI agent deskto
 ```bash
 pnpm add @deck-ui/core @deck-ui/board @deck-ui/chat @deck-ui/layout
 pnpm add @deck-ui/connections @deck-ui/events @deck-ui/memory @deck-ui/routines
-pnpm add @deck-ui/skills @deck-ui/review
+pnpm add @deck-ui/skills @deck-ui/review @deck-ui/workspace
 ```
 
 Apps must import the CSS:
@@ -992,6 +992,78 @@ interface ReviewItemData {
   createdAt: string
   sessionId: string | null
   routineId: string | null
+}
+```
+
+---
+
+## @deck-ui/workspace
+
+Workspace file management — file browser and editable instruction files.
+
+### FilesBrowser
+
+File browser with folder grouping, file type icons, sizes, and actions.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| files | `FileEntry[]` | — | Files to display |
+| loading | `boolean` | `false` | Show loading state |
+| onOpen | `(file: FileEntry) => void` | — | Called when a file row is clicked |
+| onReveal | `(file: FileEntry) => void` | — | Called when "Show in Finder" is selected |
+| onDelete | `(file: FileEntry) => void` | — | Called when delete is selected |
+| emptyTitle | `string` | `"Your work shows up here"` | Title for empty state |
+| emptyDescription | `string` | — | Description for empty state |
+
+```tsx
+import { FilesBrowser } from "@deck-ui/workspace"
+import type { FileEntry } from "@deck-ui/workspace"
+
+<FilesBrowser
+  files={files}
+  onOpen={(f) => openFile(f.path)}
+  onReveal={(f) => showInFinder(f.path)}
+  onDelete={(f) => deleteFile(f.path)}
+/>
+```
+
+### InstructionsPanel
+
+Editable workspace files for configuring an agent. Each file renders as a labeled textarea that auto-saves on blur.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| files | `InstructionFile[]` | — | Instruction files to display |
+| onSave | `(name: string, content: string) => Promise<void>` | — | Called when a field loses focus with changes |
+| emptyTitle | `string` | `"No instructions yet"` | Title for empty state |
+| emptyDescription | `string` | — | Description for empty state |
+
+```tsx
+import { InstructionsPanel } from "@deck-ui/workspace"
+import type { InstructionFile } from "@deck-ui/workspace"
+
+<InstructionsPanel
+  files={[
+    { name: "CLAUDE.md", label: "CLAUDE.md", content: claudeMdContent },
+  ]}
+  onSave={async (name, content) => writeFile(name, content)}
+/>
+```
+
+### Workspace Types
+
+```typescript
+interface FileEntry {
+  path: string        // relative path from workspace root
+  name: string        // file name with extension
+  extension: string   // extension without dot
+  size: number        // size in bytes
+}
+
+interface InstructionFile {
+  name: string        // file name (e.g., "CLAUDE.md")
+  label: string       // label shown above the textarea
+  content: string     // current file content
 }
 ```
 

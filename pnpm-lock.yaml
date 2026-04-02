@@ -254,6 +254,21 @@ importers:
         specifier: ^19.0.0
         version: 19.2.4(react@19.2.4)
 
+  packages/workspace:
+    dependencies:
+      '@deck-ui/core':
+        specifier: ^0.1.0
+        version: 0.1.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwindcss@4.2.2)
+      lucide-react:
+        specifier: ^0.577.0
+        version: 0.577.0(react@19.2.4)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.4(react@19.2.4)
+
   showcase:
     dependencies:
       '@deck-ui/board':
@@ -286,6 +301,9 @@ importers:
       '@deck-ui/skills':
         specifier: link:../packages/skills
         version: link:../packages/skills
+      '@deck-ui/workspace':
+        specifier: link:../packages/workspace
+        version: link:../packages/workspace
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.2.4)

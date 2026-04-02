@@ -1,3 +1,4 @@
+use crate::workspace;
 use keel_tauri::keel_db::Project;
 use keel_tauri::state::AppState;
 use tauri::State;
@@ -13,9 +14,25 @@ pub async fn create_project(
     name: String,
     folder_path: String,
 ) -> Result<Project, String> {
+    // Seed workspace files (CLAUDE.md, etc.)
+    workspace::seed_workspace(&folder_path);
+
     state
         .db
         .create_project(&name, &folder_path)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_project(
+    state: State<'_, AppState>,
+    project_id: String,
+) -> Result<(), String> {
+    // Only removes from DB — does NOT delete the folder on disk.
+    state
+        .db
+        .delete_project(&project_id)
         .await
         .map_err(|e| e.to_string())
 }

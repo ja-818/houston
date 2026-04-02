@@ -8,6 +8,8 @@ export const tauriProjects = {
   list: () => invoke<Project[]>("list_projects"),
   create: (name: string, folderPath: string) =>
     invoke<Project>("create_project", { name, folderPath }),
+  delete: (projectId: string) =>
+    invoke<void>("delete_project", { projectId }),
 };
 
 export const tauriIssues = {
@@ -20,7 +22,22 @@ export const tauriIssues = {
 export const tauriSessions = {
   start: (projectId: string, prompt: string) =>
     invoke<string>("start_session", { projectId, prompt }),
+  loadFeed: (projectId: string, feedKey: string) =>
+    invoke<unknown[]>("load_chat_feed", { projectId, feedKey }),
 };
+
+export const tauriWorkspace = {
+  listFiles: (projectId: string) =>
+    invoke<WorkspaceFileInfo[]>("list_workspace_files", { projectId }),
+  readFile: (projectId: string, fileName: string) =>
+    invoke<string>("read_workspace_file", { projectId, fileName }),
+};
+
+export interface WorkspaceFileInfo {
+  name: string;
+  description: string;
+  exists: boolean;
+}
 
 export const tauriMemory = {
   list: (projectId: string) =>
@@ -36,17 +53,6 @@ export const tauriMemory = {
 export const tauriEvents = {
   list: (projectId: string) =>
     invoke<unknown[]>("list_events", { projectId }),
-};
-
-export const tauriScheduler = {
-  addHeartbeat: (config: Record<string, unknown>) =>
-    invoke<string>("add_heartbeat", { config }),
-  removeHeartbeat: (id: string) =>
-    invoke<void>("remove_heartbeat", { id }),
-  addCron: (config: Record<string, unknown>) =>
-    invoke<string>("add_cron", { config }),
-  removeCron: (id: string) =>
-    invoke<void>("remove_cron", { id }),
 };
 
 export const tauriChannels = {

@@ -19,6 +19,7 @@
     "@deck-ui/review": "link:../packages/review",
     "@deck-ui/routines": "link:../packages/routines",
     "@deck-ui/skills": "link:../packages/skills",
+    "@deck-ui/workspace": "link:../packages/workspace",
     "lucide-react": "^0.577.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
