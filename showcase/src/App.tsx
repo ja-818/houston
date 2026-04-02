@@ -2,14 +2,39 @@ import { useState, useMemo, lazy, Suspense } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@deck-ui/core";
 import { ThemeSwitcher } from "./components/theme-switcher";
-import { SidebarGroup } from "./components/sidebar-group";
-import { GROUPS } from "./sidebar-groups";
+import { SCREENS, PRIMITIVES } from "./sidebar-groups";
 
 /* ------------------------------------------------------------------ */
 /* Lazy page imports                                                   */
 /* ------------------------------------------------------------------ */
 
 const pages: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
+  /* Screens */
+  chat: lazy(() =>
+    import("./pages/chat/chat-panel").then((m) => ({ default: m.ChatPanelPage })),
+  ),
+  kanban: lazy(() =>
+    import("./pages/board/kanban-board").then((m) => ({ default: m.KanbanBoardPage })),
+  ),
+  channels: lazy(() =>
+    import("./pages/screens/channels").then((m) => ({ default: m.ChannelsScreen })),
+  ),
+  connections: lazy(() =>
+    import("./pages/connections/connections-view").then((m) => ({ default: m.ConnectionsViewPage })),
+  ),
+  events: lazy(() =>
+    import("./pages/events/event-feed").then((m) => ({ default: m.EventFeedPage })),
+  ),
+  memory: lazy(() =>
+    import("./pages/memory/memory-browser").then((m) => ({ default: m.MemoryBrowserPage })),
+  ),
+  routines: lazy(() =>
+    import("./pages/screens/routines").then((m) => ({ default: m.RoutinesScreen })),
+  ),
+  layout: lazy(() =>
+    import("./pages/screens/layout").then((m) => ({ default: m.LayoutScreen })),
+  ),
+  /* Primitives */
   button: lazy(() =>
     import("./pages/core/button").then((m) => ({ default: m.ButtonPage })),
   ),
@@ -29,74 +54,10 @@ const pages: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
     import("./pages/core/empty").then((m) => ({ default: m.EmptyPage })),
   ),
   separator: lazy(() =>
-    import("./pages/core/separator").then((m) => ({
-      default: m.SeparatorPage,
-    })),
+    import("./pages/core/separator").then((m) => ({ default: m.SeparatorPage })),
   ),
   stepper: lazy(() =>
-    import("./pages/core/stepper").then((m) => ({
-      default: m.StepperPage,
-    })),
-  ),
-  "kanban-board": lazy(() =>
-    import("./pages/board/kanban-board").then((m) => ({
-      default: m.KanbanBoardPage,
-    })),
-  ),
-  "chat-panel": lazy(() =>
-    import("./pages/chat/chat-panel").then((m) => ({
-      default: m.ChatPanelPage,
-    })),
-  ),
-  "event-feed": lazy(() =>
-    import("./pages/events/event-feed").then((m) => ({
-      default: m.EventFeedPage,
-    })),
-  ),
-  "memory-browser": lazy(() =>
-    import("./pages/memory/memory-browser").then((m) => ({
-      default: m.MemoryBrowserPage,
-    })),
-  ),
-  "routines-grid": lazy(() =>
-    import("./pages/routines/routines-grid").then((m) => ({
-      default: m.RoutinesGridPage,
-    })),
-  ),
-  "heartbeat-config": lazy(() =>
-    import("./pages/routines/heartbeat-config").then((m) => ({
-      default: m.HeartbeatConfigPage,
-    })),
-  ),
-  "schedule-builder": lazy(() =>
-    import("./pages/routines/schedule-builder").then((m) => ({
-      default: m.ScheduleBuilderPage,
-    })),
-  ),
-  "connections-view": lazy(() =>
-    import("./pages/connections/connections-view").then((m) => ({
-      default: m.ConnectionsViewPage,
-    })),
-  ),
-  "channel-setup-form": lazy(() =>
-    import("./pages/connections/channel-setup-form").then((m) => ({
-      default: m.ChannelSetupFormPage,
-    })),
-  ),
-  "tab-bar": lazy(() =>
-    import("./pages/layout/tab-bar").then((m) => ({
-      default: m.TabBarPage,
-    })),
-  ),
-  "split-view": lazy(() =>
-    import("./pages/layout/split-view").then((m) => ({
-      default: m.SplitViewPage,
-    })),
-  ),
-  "app-sidebar": lazy(() =>
-    import("./pages/layout/app-sidebar").then((m) => ({
-      default: m.AppSidebarPage,
-    })),
+    import("./pages/core/stepper").then((m) => ({ default: m.StepperPage })),
   ),
 };
 
@@ -105,32 +66,16 @@ const pages: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
 /* ------------------------------------------------------------------ */
 
 export function App() {
-  const [activePage, setActivePage] = useState("button");
+  const [activePage, setActivePage] = useState("chat");
   const [search, setSearch] = useState("");
-  const [openGroups, setOpenGroups] = useState<Set<string>>(
-    () => new Set(GROUPS.map((g) => g.label)),
-  );
 
-  const toggleGroup = (label: string) => {
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      return next;
-    });
-  };
-
-  const filteredGroups = useMemo(() => {
+  const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return GROUPS;
-    return GROUPS.map((group) => ({
-      ...group,
-      items: group.items.filter(
-        (item) =>
-          item.label.toLowerCase().includes(q) ||
-          group.label.toLowerCase().includes(q),
-      ),
-    })).filter((group) => group.items.length > 0);
+    if (!q) return { screens: SCREENS, primitives: PRIMITIVES };
+    return {
+      screens: SCREENS.filter((s) => s.label.toLowerCase().includes(q)),
+      primitives: PRIMITIVES.filter((s) => s.label.toLowerCase().includes(q)),
+    };
   }, [search]);
 
   const PageComponent = pages[activePage];
@@ -152,16 +97,36 @@ export function App() {
           <ThemeSwitcher />
         </div>
         <nav className="flex-1 overflow-y-auto px-2 pt-1 pb-4">
-          {filteredGroups.map((group) => (
-            <SidebarGroup
-              key={group.label}
-              group={group}
-              isOpen={search.trim() !== "" || openGroups.has(group.label)}
-              onToggle={() => toggleGroup(group.label)}
-              activePage={activePage}
-              onSelect={setActivePage}
-            />
-          ))}
+          {filtered.screens.length > 0 && (
+            <>
+              <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                Screens
+              </p>
+              {filtered.screens.map((item) => (
+                <SidebarItem
+                  key={item.id}
+                  item={item}
+                  active={activePage === item.id}
+                  onSelect={setActivePage}
+                />
+              ))}
+            </>
+          )}
+          {filtered.primitives.length > 0 && (
+            <>
+              <p className="px-2 py-1.5 mt-3 text-xs font-medium text-muted-foreground">
+                Primitives
+              </p>
+              {filtered.primitives.map((item) => (
+                <SidebarItem
+                  key={item.id}
+                  item={item}
+                  active={activePage === item.id}
+                  onSelect={setActivePage}
+                />
+              ))}
+            </>
+          )}
         </nav>
       </aside>
 
@@ -182,5 +147,28 @@ export function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SidebarItem({
+  item,
+  active,
+  onSelect,
+}: {
+  item: { id: string; label: string };
+  active: boolean;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onSelect(item.id)}
+      className={`w-full text-left px-3 py-1.5 rounded-lg text-[13px] transition-colors duration-100 truncate ${
+        active
+          ? "bg-accent text-foreground font-medium"
+          : "text-accent-foreground hover:bg-accent/50"
+      }`}
+    >
+      {item.label}
+    </button>
   );
 }

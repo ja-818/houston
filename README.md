@@ -11,6 +11,7 @@
   <a href="https://crates.io/crates/keel-sessions"><img src="https://img.shields.io/crates/v/keel-sessions?color=0d0d0d" alt="crates.io"></a>
   <a href="https://github.com/ja-818/keel-and-deck/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-0d0d0d" alt="MIT License"></a>
   <a href="https://github.com/ja-818/keel-and-deck/stargazers"><img src="https://img.shields.io/github/stars/ja-818/keel-and-deck?color=0d0d0d" alt="Stars"></a>
+  <a href="https://skills.sh"><img src="https://img.shields.io/badge/skills.sh-deck--ui-0d0d0d" alt="AI Skill"></a>
 </p>
 
 ---
@@ -138,6 +139,20 @@ import "@deck-ui/core/src/globals.css"
 import "@deck-ui/board/src/styles.css"
 import "@deck-ui/chat/src/styles.css"
 ```
+
+---
+
+## AI Skill
+
+Teach your coding agent (Claude Code, Codex, etc.) how to use every Deck UI component with correct props, types, and patterns:
+
+```bash
+npx skills add ja-818/keel-and-deck
+```
+
+This installs the [SKILL.md](./SKILL.md) into your project — a comprehensive reference covering all 10 packages, 70+ components, TypeScript interfaces, and real-world wiring examples. Your agent will know exactly what exists and how to use it.
+
+Browse it on [skills.sh](https://skills.sh).
 
 ---
 
