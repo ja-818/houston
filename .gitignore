@@ -3,3 +3,7 @@ dist/
 .DS_Store
 *.tsbuildinfo
 target/
+.agents/
+.claude/skills/
+.windsurf/
+skills-lock.json
