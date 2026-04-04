@@ -1,325 +1,130 @@
 ---
 name: deck-ui
-description: Deck UI (@deck-ui/*) — React component library for AI agent desktop apps. Teaches your coding agent how to use kanban boards, chat panels, event feeds, memory browsers, channel management, skills, review, and 40+ components with correct props, patterns, and code examples.
+description: "Deck UI (@deck-ui/*) React components for AI agent desktop apps. 10 packages: core (shadcn/ui, KeelEvent, useSessionEvents), chat (ChatPanel, ProgressPanel, streaming), board (KanbanBoard), layout (TabBar, SplitView, AppSidebar), connections, events, routines, skills, review, workspace (FilesBrowser, InstructionsPanel). Props-driven, no store dependencies. Tailwind CSS 4."
 ---
 
-# Deck UI — Component Skill
+# Deck UI — Component Reference
 
-> Install with `npx skills add` or drop this file into your project to teach any coding agent how to use Deck UI.
-
-## What This Is
-
-Deck UI (`@deck-ui/*`) is a React component library for building AI agent desktop apps. It provides chat panels, kanban boards, event feeds, memory browsers, routine management, channel integrations, skills, review workflows, and a full design system — all props-driven, no store dependencies.
+10 React packages for building AI agent desktop apps. All components are props-driven with no store dependencies.
 
 ## Install
 
 ```bash
-pnpm add @deck-ui/core @deck-ui/board @deck-ui/chat @deck-ui/layout
-pnpm add @deck-ui/connections @deck-ui/events @deck-ui/memory @deck-ui/routines
+pnpm add @deck-ui/core @deck-ui/chat @deck-ui/board @deck-ui/layout
+pnpm add @deck-ui/connections @deck-ui/events @deck-ui/routines
 pnpm add @deck-ui/skills @deck-ui/review @deck-ui/workspace
 ```
 
-Apps must import the CSS:
+CSS setup (in your main.tsx or App.tsx):
 ```tsx
 import "@deck-ui/core/src/globals.css"
-// If using ChatPanel with markdown rendering:
-import "streamdown/styles.css"
+import "streamdown/styles.css"  // required if using ChatPanel
 ```
 
-## Key Rules
+## Rules
 
-1. **Props over stores** — Components accept data and callbacks via props. Never import Zustand, Redux, or any state library inside Deck UI components.
-2. **Generic types** — Use `KanbanItem`, `FeedItem`, `ChatMessage`, etc. Map your app's domain types at the app level.
-3. **No `@/` path aliases** — Use relative imports within packages, package imports (`@deck-ui/core`) between packages.
-4. **Tailwind CSS 4** — No config file. All tokens are CSS custom properties in `globals.css`. Uses `@tailwindcss/vite` plugin.
-5. **Monochrome design** — Near-black primary (`#0d0d0d`), white background, color only for status indicators. Apps can override `--color-primary` in their CSS.
+1. **Props over stores** — never import Zustand/Redux inside @deck-ui. Data via props, actions via callbacks.
+2. **Generic types** — `KanbanItem`, `FeedItem`, `ChatMessage`. Apps map domain types at the app level.
+3. **No `@/` path aliases** — relative imports within packages, package imports between packages.
+4. **Tailwind CSS 4** — no config file. Tokens are CSS variables in `globals.css`. Uses `@tailwindcss/vite`.
+5. **Monochrome** — near-black primary (`#0d0d0d`), white bg. Override `--color-primary` for brand color.
 
 ---
 
 ## @deck-ui/core
 
-Design system foundation. shadcn/ui components (New York style, Stone base), utilities, and design tokens.
+Foundation: 38 shadcn/ui components, design tokens, event hooks, utilities.
 
-### Button
+### Key Components
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| variant | `"default" \| "destructive" \| "outline" \| "secondary" \| "ghost" \| "link"` | `"default"` | Visual style |
-| size | `"default" \| "xs" \| "sm" \| "lg" \| "icon" \| "icon-xs" \| "icon-sm" \| "icon-lg"` | `"default"` | Size preset |
-| asChild | `boolean` | `false` | Render as child element via Radix Slot |
+**Button** — `variant`: default | destructive | outline | secondary | ghost | link. `size`: default | xs | sm | lg | icon | icon-xs | icon-sm | icon-lg.
 
-```tsx
-import { Button } from "@deck-ui/core"
+**Card** — Compound: `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`.
 
-<Button variant="secondary" size="sm" onClick={handleClick}>
-  Save Changes
-</Button>
-```
+**Dialog** — Radix-based modal: `Dialog`, `DialogTrigger`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter`. `showCloseButton` on DialogContent.
 
-### Badge
+**Empty** — Empty state: `Empty`, `EmptyHeader`, `EmptyTitle`, `EmptyDescription`, `EmptyContent`.
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| variant | `"default" \| "secondary" \| "destructive" \| "outline"` | `"default"` | Visual style |
+**ConfirmDialog** — One-shot: `open`, `onOpenChange`, `title`, `description`, `onConfirm`.
 
-```tsx
-import { Badge } from "@deck-ui/core"
-
-<Badge variant="secondary">Active</Badge>
-```
-
-### Card
-
-Compound container for grouped content.
-
-```tsx
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@deck-ui/core"
-
-<Card>
-  <CardHeader>
-    <CardTitle>Project Settings</CardTitle>
-    <CardDescription>Configure your project</CardDescription>
-  </CardHeader>
-  <CardContent>{/* form fields */}</CardContent>
-  <CardFooter><Button>Save</Button></CardFooter>
-</Card>
-```
-
-### Dialog
-
-Modal dialog built on Radix UI.
-
-| Prop (Dialog) | Type | Default | Description |
-|------|------|---------|-------------|
-| open | `boolean` | — | Controlled open state |
-| onOpenChange | `(open: boolean) => void` | — | Called when open state changes |
-
-| Prop (DialogContent) | Type | Default | Description |
-|------|------|---------|-------------|
-| showCloseButton | `boolean` | `true` | Show X close button |
-
-```tsx
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@deck-ui/core"
-
-<Dialog>
-  <DialogTrigger asChild>
-    <Button>Open</Button>
-  </DialogTrigger>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Confirm</DialogTitle>
-      <DialogDescription>Are you sure?</DialogDescription>
-    </DialogHeader>
-    <DialogFooter>
-      <Button variant="outline">Cancel</Button>
-      <Button>Confirm</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-```
-
-### Empty
-
-Empty state placeholder. Compound component.
-
-```tsx
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from "@deck-ui/core"
-
-<Empty>
-  <EmptyHeader>
-    <EmptyTitle>No messages</EmptyTitle>
-    <EmptyDescription>Your inbox is empty.</EmptyDescription>
-  </EmptyHeader>
-  <EmptyContent>
-    <Button>Get started</Button>
-  </EmptyContent>
-</Empty>
-```
-
-### Input
-
-```tsx
-import { Input } from "@deck-ui/core"
-
-<Input placeholder="Search..." value={query} onChange={(e) => setQuery(e.target.value)} />
-```
-
-### DropdownMenu
-
-```tsx
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@deck-ui/core"
-
-<DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" size="icon-sm"><MoreIcon /></Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent align="end">
-    <DropdownMenuItem onClick={handleEdit}>Edit</DropdownMenuItem>
-    <DropdownMenuItem variant="destructive" onClick={handleDelete}>Delete</DropdownMenuItem>
-  </DropdownMenuContent>
-</DropdownMenu>
-```
-
-### ConfirmDialog
-
-One-shot confirmation dialog.
-
-```tsx
-import { ConfirmDialog } from "@deck-ui/core"
-
-<ConfirmDialog
-  open={showConfirm}
-  onOpenChange={setShowConfirm}
-  title="Delete item?"
-  description="This action cannot be undone."
-  onConfirm={handleDelete}
-/>
-```
-
-### Other Core Components
-
-All shadcn/ui components are available: `Accordion`, `Alert`, `AlertDialog`, `Avatar`, `Collapsible`, `Command`, `HoverCard`, `Popover`, `Progress`, `ScrollArea`, `Select`, `Separator`, `Sheet`, `Skeleton`, `Spinner`, `Stepper`, `Switch`, `Tabs`, `Textarea`, `Toast`, `ToastContainer`, `Tooltip`.
-
-Import from `@deck-ui/core`. All follow standard shadcn/ui APIs.
+**Other shadcn/ui:** Accordion, Alert, AlertDialog, Avatar, Badge, Collapsible, Command, DropdownMenu, HoverCard, Input, Popover, Progress, ScrollArea, Select, Separator, Sheet, Skeleton, Spinner, Stepper, Switch, Tabs, Textarea, Toast, ToastContainer, Tooltip.
 
 ### Utilities and Hooks
 
 ```tsx
-import { cn } from "@deck-ui/core"           // clsx + tailwind-merge
-import { useIsMobile } from "@deck-ui/core"   // viewport < 768px hook
-import { useKeelEvent } from "@deck-ui/core"  // subscribe to Tauri events (safe in non-Tauri)
+import { cn } from "@deck-ui/core"                    // clsx + tailwind-merge
+import { useIsMobile } from "@deck-ui/core"            // viewport < 768px
+import { useKeelEvent } from "@deck-ui/core"           // single Tauri event subscription
+import { useSessionEvents } from "@deck-ui/core"       // session event subscription (preferred)
+import type { KeelEvent } from "@deck-ui/core"          // TypeScript event union
+import type { TauriListenFn, SessionEventsHandlers } from "@deck-ui/core"
 ```
 
-`useKeelEvent` subscribes to Tauri events with auto-cleanup. Gracefully no-ops in non-Tauri environments:
+### KeelEvent Type
+
+Discriminated union matching the Rust `KeelEvent` enum. Variants:
+
+| Variant | Data |
+|---------|------|
+| `FeedItem` | `{ session_key, item: { feed_type, data } }` |
+| `SessionStatus` | `{ session_key, status, error }` |
+| `Toast` | `{ message, variant }` |
+| `AuthRequired` | `{ message }` |
+| `CompletionToast` | `{ title, issue_id }` |
+| `EventReceived` | `{ event_id, event_type, source_channel, source_identifier, summary }` |
+| `EventProcessed` | `{ event_id, status }` |
+| `HeartbeatFired` | `{ prompt, project_id }` |
+| `CronFired` | `{ job_id, job_name, prompt }` |
+| `ChannelMessageReceived` | `{ channel_type, channel_id, sender_name, text }` |
+| `ChannelStatusChanged` | `{ channel_id, channel_type, status, error }` |
+| `RoutineRunChanged` | `{ routine_id, run_id, status }` |
+| `RoutinesChanged` | `{ project_id }` |
+
+### useSessionEvents
+
+Preferred hook for session events. Dependency-injected `listen` — no build-time Tauri dependency. Ref-based handlers avoid listener teardown race conditions.
+
 ```tsx
-useKeelEvent<FeedItem>("keel-event", (payload) => {
-  store.addFeedItem(payload)
+import { useSessionEvents } from "@deck-ui/core"
+import { listen } from "@tauri-apps/api/event"
+
+useSessionEvents({
+  listen,
+  onFeedItem: (feedKey, item) => store.addFeedItem(item),
+  getActiveSessionId: () => store.activeSessionId,
+  onEvent: (event) => {
+    if (event.type === "ChannelStatusChanged") { /* ... */ }
+  },
 })
 ```
 
----
-
-## @deck-ui/board
-
-Kanban board with animated cards that glow when AI agents are running.
-
-### KanbanBoard
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| columns | `KanbanColumnConfig[]` | — | Column definitions mapping statuses to visual columns |
-| items | `KanbanItem[]` | — | Items to display across columns |
-| selectedId | `string \| null` | `null` | ID of currently selected item |
-| onSelect | `(item: KanbanItem) => void` | — | Called when a card is clicked |
-| onDelete | `(item: KanbanItem) => void` | — | Called when delete is confirmed |
-| onApprove | `(item: KanbanItem) => void` | — | Called when approve button is clicked |
-| emptyState | `ReactNode` | — | Shown when items is empty |
-| renderCard | `(item: KanbanItem) => ReactNode` | — | Custom card renderer |
-| runningStatuses | `string[]` | `["running"]` | Statuses that trigger running glow |
-| approveStatuses | `string[]` | `["needs_you"]` | Statuses that show approve button |
-| actions | `(item: KanbanItem) => ReactNode` | — | Custom action buttons per card |
-| avatar | `ReactNode` | — | Avatar shown on all cards |
-
-```tsx
-import { KanbanBoard } from "@deck-ui/board"
-import type { KanbanItem, KanbanColumnConfig } from "@deck-ui/board"
-
-const columns: KanbanColumnConfig[] = [
-  { id: "active", label: "Active", statuses: ["running"] },
-  { id: "review", label: "Review", statuses: ["needs_you"] },
-  { id: "done", label: "Done", statuses: ["done"] },
-]
-
-<KanbanBoard
-  columns={columns}
-  items={items}
-  selectedId={selectedId}
-  onSelect={(item) => setSelectedId(item.id)}
-  onApprove={(item) => approveItem(item.id)}
-  runningStatuses={["running"]}
-  approveStatuses={["needs_you"]}
-/>
-```
-
-### KanbanDetailPanel
-
-Side panel for displaying selected item details.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| title | `string` | — | Primary text in header |
-| subtitle | `string` | — | Secondary text |
-| status | `string` | — | Looked up in statusLabels |
-| onClose | `() => void` | — | Back button callback |
-| children | `ReactNode` | — | Panel body content |
-| actions | `ReactNode` | — | Header action buttons |
-| runningStatuses | `string[]` | `["running"]` | Statuses that show spinner |
-| statusLabels | `Record<string, string>` | built-in map | Maps status to display text |
-
-```tsx
-import { KanbanDetailPanel } from "@deck-ui/board"
-
-<KanbanDetailPanel
-  title="Deploy v2.0"
-  subtitle="Production deployment"
-  status="running"
-  onClose={() => setSelectedId(null)}
->
-  <ChatPanel sessionKey={selectedId} ... />
-</KanbanDetailPanel>
-```
-
-### Board Types
-
-```typescript
-interface KanbanItem {
-  id: string
-  title: string
-  subtitle?: string
-  status: string
-  updatedAt: string
-  icon?: React.ReactNode
-  metadata?: Record<string, unknown>
-}
-
-interface KanbanColumnConfig {
-  id: string
-  label: string
-  statuses: string[]
-}
-```
+Core handling: FeedItem (with desktop-duplicate filtering), SessionStatus (auto-surfaces errors as system_message), Toast. All other events forwarded to `onEvent`.
 
 ---
 
 ## @deck-ui/chat
 
-Chat experience for AI agent sessions. Renders messages, tool calls, thinking blocks, streaming markdown, and input.
+Drop-in chat experience for Claude sessions.
 
 ### ChatPanel
 
-Top-level entry point. Pass FeedItems and callbacks.
+Full chat: messages + streaming + thinking + tools + input.
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| sessionKey | `string` | — | Unique key for the session |
-| feedItems | `FeedItem[]` | — | Flat array of feed events |
-| onSend | `(text: string) => void` | — | Called when user sends a message |
-| onStop | `() => void` | — | Called when user clicks stop |
-| onBack | `() => void` | — | Shows back button if provided |
-| isLoading | `boolean` | — | Whether the session is loading |
-| placeholder | `string` | `"Type a message..."` | Input placeholder |
-| emptyState | `ReactNode` | — | Shown when no messages |
-| status | `"ready" \| "streaming" \| "submitted"` | auto-derived | Override status |
-| loadingIndicator | `ReactNode` | Shimmer "Thinking..." | Custom loading indicator |
-| renderMessageAvatar | `(msg: ChatMessage) => ReactNode` | — | Custom avatar per message |
-| renderActions | `(item: FeedItem) => ReactNode` | — | Custom action buttons per item |
-| toolLabels | `Record<string, string>` | — | Custom labels for tool names |
-| isSpecialTool | `(name: string) => boolean` | — | Mark tools for special rendering |
-| renderToolResult | `(tool: ToolCall) => ReactNode` | — | Custom tool result renderer |
+| Prop | Type | Description |
+|------|------|-------------|
+| `sessionKey` | `string` | Unique session identifier |
+| `feedItems` | `FeedItem[]` | Feed events from the backend |
+| `onSend` | `(text: string) => void` | Send message callback |
+| `onStop` | `() => void` | Stop generation callback |
+| `isLoading` | `boolean` | Whether session is active |
+| `emptyState` | `ReactNode` | Shown when no messages |
+| `renderMessageAvatar` | `(msg: ChatMessage) => ReactNode` | Custom avatar per message |
+| `renderToolResult` | `(tool: ToolCall) => ReactNode` | Custom tool result renderer |
+| `isSpecialTool` | `(name: string) => boolean` | Mark tools for special rendering |
+| `toolLabels` | `Record<string, string>` | Custom labels for tool names |
 
 ```tsx
-import { ChatPanel } from "@deck-ui/chat"
-import type { FeedItem } from "@deck-ui/chat"
+import { ChatPanel, ChannelAvatar } from "@deck-ui/chat"
 
 <ChatPanel
   sessionKey="session-1"
@@ -332,68 +137,44 @@ import type { FeedItem } from "@deck-ui/chat"
 />
 ```
 
-### ChannelAvatar
+### ProgressPanel + useProgressSteps
 
-Circular branded badge for messaging channel sources. Shows platform logo.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| source | `"telegram" \| "slack" \| "desktop" \| string` | — | Channel source identifier |
-| size | `"sm" \| "md"` | `"sm"` | Badge size (sm=24px, md=32px) |
-| className | `string` | — | Additional CSS classes |
+Multi-step progress display. Agents call `update_progress` tool to communicate steps.
 
 ```tsx
-import { ChannelAvatar } from "@deck-ui/chat"
+import { ProgressPanel } from "@deck-ui/chat"
+import { useProgressSteps } from "@deck-ui/chat"
 
-<ChannelAvatar source="telegram" size="sm" />
-// Blue circle with Telegram paper plane icon
+const steps = useProgressSteps(feedItems)
+// steps: ProgressStep[] — { title, status: "pending" | "active" | "done" }
 
-<ChannelAvatar source="slack" size="md" />
-// Purple circle with Slack multicolor logo
+<ProgressPanel steps={steps} />
 ```
 
-### ChatInput
+### Other Chat Components
 
-Standalone input bar with send/stop states.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| onSend | `(text: string) => void` | — | Called on submit |
-| onStop | `() => void` | — | Called when stop clicked |
-| status | `"ready" \| "streaming" \| "submitted"` | — | Controls send/stop button |
-| placeholder | `string` | — | Input placeholder |
-
-### ToolActivity
-
-Collapsing tool call list with spinners and elapsed time.
-
-```tsx
-import { ToolActivity } from "@deck-ui/chat"
-
-<ToolActivity
-  tools={[
-    { name: "Read", input: { path: "src/index.ts" } },
-    { name: "Bash", input: { command: "npm test" }, result: { content: "OK", is_error: false } },
-  ]}
-  isStreaming={true}
-  toolLabels={{ custom_tool: "Running custom tool" }}
-/>
-```
+| Component | What it does |
+|-----------|-------------|
+| `ChatInput` | Input with send/stop/mic states, auto-expand textarea |
+| `ToolActivity` | Collapsing tool call list with spinners and elapsed time |
+| `ChannelAvatar` | Branded circular avatar: telegram (blue), slack (purple), or custom |
+| `Conversation` | Auto-scrolling message container |
+| `Message` | Role-aware message bubble with branching |
+| `Reasoning` | Collapsible thinking block |
+| `PromptInput` | Complex input with file upload, screenshots, tabs |
+| `Shimmer` | Animated gradient loading text |
+| `Suggestion` | Horizontal scrollable suggestion pills |
 
 ### Feed Utilities
 
 ```tsx
 import { feedItemsToMessages, mergeFeedItem } from "@deck-ui/chat"
 
-// Convert flat FeedItem[] to grouped ChatMessage[]
-// Auto-extracts [ChannelName] prefix into ChatMessage.source
+// Convert FeedItem[] to ChatMessage[] (extracts [ChannelName] prefix into source)
 const messages = feedItemsToMessages(feedItems)
 
-// Smart-merge a streaming FeedItem into an existing array
-// thinking_streaming replaces previous thinking_streaming
-// assistant_text_streaming replaces previous assistant_text_streaming
-// Final variants replace their streaming predecessors
-const updated = mergeFeedItem(existingItems, newItem)
+// Smart-merge streaming feed items in Zustand store
+addFeedItem: (item) => set((s) => ({ items: mergeFeedItem(s.items, item) }))
 ```
 
 ### Chat Types
@@ -416,44 +197,64 @@ interface ChatMessage {
 
 ---
 
-## @deck-ui/layout
+## @deck-ui/board
 
-App shell components: sidebar, tabs, split view.
+Kanban board with animated cards that glow when agents are running.
 
-### AppSidebar
+### KanbanBoard
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| logo | `ReactNode` | — | Logo/header content |
-| items | `{ id: string; name: string }[]` | — | Navigation items |
-| selectedId | `string \| null` | — | Active item ID |
-| onSelect | `(id: string) => void` | — | Called when item clicked |
-| onAdd | `() => void` | — | Shows add button if provided |
-| onDelete | `(id: string) => void` | — | Shows delete on items if provided |
-| sectionLabel | `string` | — | Label above item list |
-| children | `ReactNode` | — | Additional sidebar content |
+| Prop | Type | Description |
+|------|------|-------------|
+| `columns` | `KanbanColumnConfig[]` | Column definitions |
+| `items` | `KanbanItem[]` | Items to display |
+| `selectedId` | `string \| null` | Currently selected item |
+| `onSelect` | `(item: KanbanItem) => void` | Card click callback |
+| `onDelete` | `(item: KanbanItem) => void` | Delete callback |
+| `onApprove` | `(item: KanbanItem) => void` | Approve callback |
+| `runningStatuses` | `string[]` | Statuses that trigger glow (default: `["running"]`) |
+| `approveStatuses` | `string[]` | Statuses that show approve button |
+| `emptyState` | `ReactNode` | Empty state content |
 
 ```tsx
-import { AppSidebar } from "@deck-ui/layout"
+import { KanbanBoard } from "@deck-ui/board"
+import type { KanbanItem, KanbanColumnConfig } from "@deck-ui/board"
 
-<AppSidebar
-  items={projects}
-  selectedId={activeProject}
-  onSelect={(id) => setActiveProject(id)}
-  onAdd={() => createProject()}
-  onDelete={(id) => deleteProject(id)}
-/>
+const columns: KanbanColumnConfig[] = [
+  { id: "active", label: "Active", statuses: ["running"] },
+  { id: "review", label: "Review", statuses: ["needs_you"] },
+  { id: "done", label: "Done", statuses: ["done"] },
+]
+
+<KanbanBoard columns={columns} items={items} onSelect={setSelected} />
 ```
+
+### KanbanDetailPanel
+
+Side panel with header + children slot. Props: `title`, `subtitle`, `status`, `onClose`, `children`, `actions`, `runningStatuses`, `statusLabels`.
+
+### Board Types
+
+```typescript
+interface KanbanItem {
+  id: string; title: string; subtitle?: string;
+  status: string; updatedAt: string; icon?: ReactNode;
+}
+interface KanbanColumnConfig { id: string; label: string; statuses: string[] }
+```
+
+---
+
+## @deck-ui/layout
 
 ### TabBar
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| tabs | `Tab[]` | — | Tab definitions `{ id, label, badge? }` |
-| activeTab | `string` | — | Active tab ID |
-| onTabChange | `(id: string) => void` | — | Called when tab clicked |
-| actions | `ReactNode` | — | Right-side action buttons |
-| menu | `ReactNode` | — | Settings dropdown |
+| Prop | Type | Description |
+|------|------|-------------|
+| `tabs` | `Tab[]` | `{ id, label, badge? }` |
+| `activeTab` | `string` | Active tab ID |
+| `onTabChange` | `(id: string) => void` | Tab click callback |
+| `actions` | `ReactNode` | Right-side action buttons |
+| `menu` | `ReactNode` | Settings dropdown |
 
 ```tsx
 import { TabBar } from "@deck-ui/layout"
@@ -462,7 +263,6 @@ import { TabBar } from "@deck-ui/layout"
   tabs={[
     { id: "board", label: "Board" },
     { id: "chat", label: "Chat", badge: 3 },
-    { id: "events", label: "Events" },
   ]}
   activeTab={activeTab}
   onTabChange={setActiveTab}
@@ -470,774 +270,149 @@ import { TabBar } from "@deck-ui/layout"
 />
 ```
 
+### AppSidebar
+
+Props: `items` (`{ id, name }[]`), `selectedId`, `onSelect`, `onAdd`, `onDelete`, `sectionLabel`, `children`.
+
 ### SplitView
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| left | `ReactNode` | — | Left panel content |
-| right | `ReactNode` | — | Right panel content |
-| defaultLeftSize | `number` | `55` | Left panel default % |
-| defaultRightSize | `number` | `45` | Right panel default % |
-| minLeftSize | `number` | `30` | Minimum left panel % |
-| minRightSize | `number` | `25` | Minimum right panel % |
-
-```tsx
-import { SplitView } from "@deck-ui/layout"
-
-<SplitView
-  left={<KanbanBoard ... />}
-  right={<ChatPanel ... />}
-  defaultLeftSize={55}
-/>
-```
+Resizable two-panel layout. Props: `left`, `right`, `defaultLeftSize` (55), `defaultRightSize` (45), `minLeftSize` (30), `minRightSize` (25).
 
 ---
 
 ## @deck-ui/connections
 
-Integration and channel connection management.
+| Component | What it does |
+|-----------|-------------|
+| `ConnectionsView` | Full view: service connections + channels section |
+| `ChannelConnectionCard` | Channel row with status dot, connect/disconnect/configure/delete |
+| `ChannelSetupForm` | Config form for Slack (bot + app token) or Telegram (bot token) |
+| `ChannelsSection` | Channel list with "Add Channel" dropdown |
 
-### ConnectionsView
-
-Full-page view for connected apps and channels. Handles five states: loading, not_configured, needs_auth, error, and ok.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| result | `ConnectionsResult \| null` | — | Connection status and data |
-| loading | `boolean` | — | Show loading state |
-| onRetry | `() => void` | — | Retry failed connection check |
-| onManage | `() => void` | — | Open connection management (e.g., Composio dashboard) |
-| channels | `ChannelConnection[]` | — | Optional channel connections to show below apps |
-| onChannelConnect | `(channel: ChannelConnection) => void` | — | Connect a channel |
-| onChannelDisconnect | `(channel: ChannelConnection) => void` | — | Disconnect a channel |
-| onChannelConfigure | `(channel: ChannelConnection) => void` | — | Configure a channel |
-| onChannelDelete | `(channel: ChannelConnection) => void` | — | Delete a channel |
-| onAddChannel | `(type: ChannelType) => void` | — | Add a new channel |
-
-```tsx
-import { ConnectionsView } from "@deck-ui/connections"
-import type { ConnectionsResult, ChannelConnection } from "@deck-ui/connections"
-
-<ConnectionsView
-  result={{ status: "ok", connections: myConnections }}
-  loading={false}
-  onRetry={() => refetch()}
-  onManage={() => openComposio()}
-  channels={channels}
-  onChannelConnect={(ch) => connectChannel(ch.id)}
-  onChannelDisconnect={(ch) => disconnectChannel(ch.id)}
-  onAddChannel={(type) => openSetupForm(type)}
-/>
-```
-
-### ChannelConnectionCard
-
-Individual channel card with status dot, message count, last active date, and action buttons.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| connection | `ChannelConnection` | — | Channel data |
-| onConnect | `(connection: ChannelConnection) => void` | — | Connect callback |
-| onDisconnect | `(connection: ChannelConnection) => void` | — | Disconnect callback |
-| onConfigure | `(connection: ChannelConnection) => void` | — | Configure callback |
-| onDelete | `(connection: ChannelConnection) => void` | — | Delete callback |
-
-```tsx
-import { ChannelConnectionCard } from "@deck-ui/connections"
-
-<ChannelConnectionCard
-  connection={channel}
-  onConnect={(ch) => connectChannel(ch.id)}
-  onDisconnect={(ch) => disconnectChannel(ch.id)}
-  onDelete={(ch) => deleteChannel(ch.id)}
-/>
-```
-
-### ChannelsSection
-
-Container listing channels with header, "Add Channel" dropdown, and empty state.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| channels | `ChannelConnection[]` | — | Channel connections to display |
-| onConnect | `(channel: ChannelConnection) => void` | — | Connect callback |
-| onDisconnect | `(channel: ChannelConnection) => void` | — | Disconnect callback |
-| onConfigure | `(channel: ChannelConnection) => void` | — | Configure callback |
-| onDelete | `(channel: ChannelConnection) => void` | — | Delete callback |
-| onAddChannel | `(type: ChannelType) => void` | — | Add channel callback (shows dropdown if provided) |
-
-```tsx
-import { ChannelsSection } from "@deck-ui/connections"
-
-<ChannelsSection
-  channels={channels}
-  onConnect={(ch) => connect(ch.id)}
-  onDisconnect={(ch) => disconnect(ch.id)}
-  onDelete={(ch) => remove(ch.id)}
-  onAddChannel={(type) => openSetup(type)}
-/>
-```
-
-### ChannelSetupForm
-
-Configuration form for Slack or Telegram channel setup.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| type | `"slack" \| "telegram"` | — | Channel type (determines fields) |
-| onSubmit | `(config: Record<string, string>) => void` | — | Called with form config on submit |
-| onCancel | `() => void` | — | Cancel callback (button hidden if omitted) |
-| loading | `boolean` | `false` | Disables submit, shows spinner |
-| error | `string \| null` | `null` | Error message shown above buttons |
-
-```tsx
-import { ChannelSetupForm } from "@deck-ui/connections"
-
-<ChannelSetupForm
-  type="telegram"
-  onSubmit={(config) => saveChannel(config)}
-  onCancel={() => closeForm()}
-  loading={isSaving}
-  error={saveError}
-/>
-```
-
-### ConnectionRow
-
-Single connected app row with logo and connected badge.
-
-```tsx
-import { ConnectionRow } from "@deck-ui/connections"
-
-<ConnectionRow connection={{ toolkit: "gmail", display_name: "Gmail", ... }} />
-```
-
-### Connection Types
-
-```typescript
-type ChannelType = "slack" | "telegram"
-type ChannelStatus = "disconnected" | "connecting" | "connected" | "error"
-
-interface ChannelConnection {
-  id: string
-  type: ChannelType
-  name: string
-  status: ChannelStatus
-  config: Record<string, string>
-  lastActiveAt: string | null
-  messageCount: number
-  error?: string
-}
-
-type ConnectionsResult =
-  | { status: "not_configured" }
-  | { status: "needs_auth" }
-  | { status: "error"; message: string }
-  | { status: "ok"; connections: Connection[] }
-
-interface Connection {
-  toolkit: string
-  display_name: string
-  description: string
-  email: string | null
-  logo_url: string
-  connected_at: string | null
-}
-
-const CHANNEL_LABELS: Record<ChannelType, string>
-```
+Types: `ChannelType` ("slack" | "telegram"), `ChannelStatus` ("disconnected" | "connecting" | "connected" | "error"), `ChannelConnection` (id, type, name, status, config, lastActiveAt, messageCount, error).
 
 ---
 
 ## @deck-ui/events
 
-Event feed and timeline for agent activity.
+| Component | What it does |
+|-----------|-------------|
+| `EventFeed` | Filterable event log with type icons and status |
+| `EventItem` | Individual event row |
+| `EventFilter` | Event type filter |
 
-### EventFeed
-
-Filterable event log with type indicators, status dots, and animated transitions.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| events | `EventEntry[]` | — | Events to display |
-| loading | `boolean` | `false` | Show loading state |
-| filter | `EventType \| null` | `null` | Active type filter (null = all) |
-| onFilterChange | `(type: EventType \| null) => void` | — | Filter change callback |
-| onEventClick | `(event: EventEntry) => void` | — | Event click callback |
-| maxHeight | `string` | — | Max height CSS value |
-| emptyMessage | `string` | — | Custom empty state message |
-
-```tsx
-import { EventFeed } from "@deck-ui/events"
-import type { EventEntry, EventType } from "@deck-ui/events"
-
-<EventFeed
-  events={events}
-  filter={activeFilter}
-  onFilterChange={setActiveFilter}
-  onEventClick={(event) => openDetail(event)}
-  emptyMessage="Events will appear here as they happen."
-/>
-```
-
-### Event Types
-
-```typescript
-type EventType = "message" | "heartbeat" | "cron" | "hook" | "webhook" | "agent_message"
-type EventStatus = "pending" | "processing" | "completed" | "suppressed" | "error"
-
-interface EventSource {
-  channel: string      // "slack", "telegram", "desktop", "system", "webhook", "agent"
-  identifier: string
-}
-
-interface EventEntry {
-  id: string
-  type: EventType
-  source: EventSource
-  summary: string
-  status: EventStatus
-  payload?: Record<string, unknown>
-  sessionKey?: string
-  projectId?: string
-  createdAt: string
-  processedAt?: string
-}
-```
-
----
-
-## @deck-ui/memory
-
-Memory/knowledge base browser for agent memory.
-
-### MemoryBrowser
-
-Full memory browser with search, category filter, and card grid.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| memories | `Memory[]` | — | Memory items |
-| loading | `boolean` | `false` | Show loading state |
-| onSearch | `(query: string) => void` | — | Search callback |
-| onCategoryFilter | `(category: MemoryCategory \| null) => void` | — | Category filter callback |
-| onMemoryClick | `(memory: Memory) => void` | — | Memory click callback |
-| onMemoryDelete | `(memory: Memory) => void` | — | Delete callback |
-| onMemoryCreate | `() => void` | — | Shows create button |
-| selectedCategory | `MemoryCategory \| null` | — | Active category filter |
-| searchQuery | `string` | — | Current search query |
-| emptyMessage | `string` | — | Custom empty state message |
-
-```tsx
-import { MemoryBrowser } from "@deck-ui/memory"
-import type { Memory, MemoryCategory } from "@deck-ui/memory"
-
-<MemoryBrowser
-  memories={memories}
-  loading={isLoading}
-  onSearch={(query) => searchMemories(query)}
-  onCategoryFilter={(cat) => setCategory(cat)}
-  onMemoryClick={(m) => openDetail(m)}
-  onMemoryDelete={(m) => deleteMemory(m.id)}
-  emptyMessage="Memories will appear as your agent learns."
-/>
-```
-
-### Memory Types
-
-```typescript
-type MemoryCategory = "conversation" | "preference" | "context" | "skill" | "fact"
-
-interface Memory {
-  id: string
-  projectId: string
-  content: string
-  category: MemoryCategory
-  source: string
-  tags: string[]
-  createdAt: string
-  updatedAt: string
-}
-```
+Types: `EventType` ("message" | "heartbeat" | "cron" | "hook" | "webhook" | "agent_message"), `EventStatus` ("pending" | "processing" | "completed" | "suppressed" | "error").
 
 ---
 
 ## @deck-ui/routines
 
-Routine management — grids, scheduling, heartbeat configuration, run history, and editing.
-
-### RoutinesGrid
-
-Grid of routine cards sorted by status (active first, then needs_setup, error, paused).
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| routines | `Routine[]` | — | Routines to display |
-| loading | `boolean` | `false` | Show loading state |
-| onSelectRoutine | `(routineId: string) => void` | — | Card click callback |
-
-```tsx
-import { RoutinesGrid } from "@deck-ui/routines"
-
-<RoutinesGrid
-  routines={routines}
-  onSelectRoutine={(id) => openRoutine(id)}
-/>
-```
-
-### RoutineEditForm
-
-Form for creating or editing a routine.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| initial | `RoutineFormState` | — | Initial form values |
-| skills | `Skill[]` | — | Available skills for linking |
-| onSave | `(state: RoutineFormState) => void` | — | Save callback |
-| onCancel | `() => void` | — | Cancel callback |
-
-### RoutineDetailActions
-
-Action buttons for a routine detail page (run, edit, delete, pause/resume).
-
-### RunHistory
-
-List of past routine runs with status, cost, and duration.
-
-### HeartbeatConfigPanel
-
-Configure agent heartbeat check-ins.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| config | `HeartbeatConfig` | — | Current configuration |
-| onChange | `(config: HeartbeatConfig) => void` | — | Config change callback |
-
-```tsx
-import { HeartbeatConfigPanel } from "@deck-ui/routines"
-
-<HeartbeatConfigPanel config={heartbeat} onChange={setHeartbeat} />
-```
-
-### ScheduleBuilder
-
-Visual cron schedule builder with preset buttons.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| value | `string` | — | Cron expression |
-| onChange | `(cron: string) => void` | — | Cron change callback |
-| presets | `SchedulePreset[]` | built-in | Schedule presets to show |
-
-```tsx
-import { ScheduleBuilder } from "@deck-ui/routines"
-
-<ScheduleBuilder value={cron} onChange={setCron} />
-```
-
-### Routine Types
-
-```typescript
-type TriggerType = "on_approval" | "scheduled" | "periodic" | "manual"
-type RoutineStatus = "active" | "paused" | "needs_setup" | "error"
-type ApprovalMode = "manual" | "auto_approve"
-type RunStatus = "running" | "completed" | "failed" | "approved" | "needs_you" | "done" | "error"
-
-interface Routine {
-  id: string
-  project_id: string
-  goal_id: string | null
-  skill_id: string | null
-  name: string
-  description: string
-  trigger_type: TriggerType
-  trigger_config: string
-  status: RoutineStatus
-  approval_mode: ApprovalMode
-  context: string
-  run_count: number
-  last_run_at: string | null
-  created_at: string
-  updated_at: string
-}
-
-interface HeartbeatConfig {
-  enabled: boolean
-  intervalMinutes: number
-  prompt: string
-  activeHoursStart?: string
-  activeHoursEnd?: string
-  suppressionToken: string
-}
-
-type SchedulePreset = "every_30min" | "hourly" | "daily" | "weekdays" | "weekly" | "monthly" | "custom"
-```
+| Component | What it does |
+|-----------|-------------|
+| `RoutinesGrid` | Grid of routine cards sorted by status |
+| `RoutineDetailPage` | Detail view with edit form |
+| `RoutineRunPage` | Execution view with feed |
+| `RunHistory` | Past run list with status, cost, duration |
+| `ScheduleBuilder` | Visual cron schedule builder |
+| `HeartbeatConfig` | Heartbeat interval picker |
 
 ---
 
 ## @deck-ui/skills
 
-Skill management grid with community marketplace.
-
-### SkillsGrid
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| skills | `Skill[]` | — | Skills to display |
-| loading | `boolean` | — | Show loading state |
-| onSkillClick | `(skill: Skill) => void` | — | Skill click callback |
-| community | `{ onSearch, onInstall }` | — | Community marketplace callbacks (omit to hide) |
-
-```tsx
-import { SkillsGrid } from "@deck-ui/skills"
-
-<SkillsGrid
-  skills={skills}
-  loading={isLoading}
-  onSkillClick={(skill) => openSkill(skill)}
-  community={{
-    onSearch: (query) => searchCommunity(query),
-    onInstall: (skill) => installSkill(skill),
-  }}
-/>
-```
-
-### SkillDetailPage
-
-Full detail view for a skill showing instructions and learnings.
-
-### CommunitySkillsSection
-
-Browsable community marketplace section with search.
-
-### Skill Types
-
-```typescript
-interface Skill {
-  id: string
-  name: string
-  description: string
-  instructions: string
-  learnings: string
-  file_path: string
-}
-
-interface CommunitySkill {
-  id: string
-  skillId: string
-  name: string
-  installs: number
-  source: string
-}
-
-type LearningCategory = "pattern" | "pitfall" | "preference" | "procedure"
-
-interface SkillLearning {
-  id: string
-  skill_id: string
-  project_id: string
-  content: string
-  rationale: string
-  category: LearningCategory
-  source_issue_id: string | null
-  source_issue_title: string | null
-  created_at: string
-}
-```
+| Component | What it does |
+|-----------|-------------|
+| `SkillsGrid` | Grid of installed skills |
+| `SkillDetailPage` | Detail view with instructions + learnings |
+| `CommunitySkillsSection` | Browse and install from skills.sh |
 
 ---
 
 ## @deck-ui/review
 
-Review workflow for approving agent work output.
-
-### ReviewSplit
-
-Split-view layout with item sidebar and detail panel.
-
-### ReviewSidebar
-
-Scrollable list of review items with status indicators.
-
-### ReviewDetailPanel
-
-Detail panel showing deliverables and feedback form.
-
-### ReviewItem
-
-Single review item row.
-
-### ReviewEmpty
-
-Empty state for review queue.
-
-### DeliverableCard
-
-Card displaying an agent work output (file, content, etc.).
-
-### UserFeedback
-
-Feedback input form for approving/rejecting work.
-
-### Review Types
-
-```typescript
-type RunStatus = "running" | "completed" | "failed" | "approved" | "needs_you" | "done" | "error"
-
-interface ReviewItemData {
-  id: string
-  title: string
-  subtitle: string
-  status: RunStatus
-  createdAt: string
-  sessionId: string | null
-  routineId: string | null
-}
-```
+| Component | What it does |
+|-----------|-------------|
+| `ReviewSplit` | Split layout: sidebar list + detail panel |
+| `ReviewDetail` | Deliverables, output summary, feedback |
+| `DeliverableCard` | File deliverable with open/reveal actions |
 
 ---
 
 ## @deck-ui/workspace
 
-Workspace file management — file browser and editable instruction files.
-
-### FilesBrowser
-
-File browser with folder grouping, file type icons, sizes, and actions. Supports Finder-style drag-and-drop with folder targeting and inline folder creation.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| files | `FileEntry[]` | — | Files to display |
-| loading | `boolean` | `false` | Show loading state |
-| onOpen | `(file: FileEntry) => void` | — | Called when a file row is clicked |
-| onReveal | `(file: FileEntry) => void` | — | Called when "Show in Finder" is selected |
-| onDelete | `(file: FileEntry) => void` | — | Called when delete is selected |
-| onFilesDropped | `(files: File[], targetFolder?: string) => void` | — | Called when files are dropped from the OS. `targetFolder` is the folder path when dropped on a folder, `undefined` for root. |
-| onCreateFolder | `(name: string) => void` | — | Called when the user creates a folder via the inline input. Shows a FolderPlus button in the header. |
-| emptyTitle | `string` | `"Your work shows up here"` | Title for empty state |
-| emptyDescription | `string` | — | Description for empty state |
-
-**Drag-and-drop behavior:** When dragging files over the component, the root area highlights. Hovering over a folder section (header or expanded children) highlights that folder instead. Dropping on a folder passes its path as `targetFolder`. Dropping elsewhere targets root.
-
-```tsx
-import { FilesBrowser } from "@deck-ui/workspace"
-import type { FileEntry } from "@deck-ui/workspace"
-
-<FilesBrowser
-  files={files}
-  onOpen={(f) => openFile(f.path)}
-  onReveal={(f) => showInFinder(f.path)}
-  onDelete={(f) => deleteFile(f.path)}
-  onFilesDropped={(dropped, folder) => importFiles(dropped, folder)}
-  onCreateFolder={(name) => createFolder(name)}
-/>
-```
-
-**Hooks:** `useDropZone` and `useFolderDropTarget` are exported for custom drop zone implementations.
-
-### Keel backend (Rust) — workspace helpers
-
-`keel_tauri::workspace` provides the Rust helpers that apps wire to the FilesBrowser callbacks via Tauri commands:
-
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `copy_file_to_dir` | `(dir: &Path, source: &Path) -> Result<String, String>` | Copy a file from an absolute source path into the workspace. Returns the final file name (deduplicated if a file with the same name exists). |
-| `import_file` | `(dir: &Path, name: &str, data: &[u8]) -> Result<String, String>` | Write raw bytes as a named file into the workspace. Returns the final name (deduplicated). |
-| `create_folder` | `(dir: &Path, relative: &str) -> Result<String, String>` | Create a folder (with intermediate dirs) inside the workspace. Returns the relative path. |
-
-**Typical Tauri command wiring:**
-
-```rust
-use keel_tauri::workspace;
-
-#[tauri::command]
-pub async fn import_dropped_files(
-    state: State<'_, AppState>,
-    project_id: String,
-    file_paths: Vec<String>,
-    target_folder: Option<String>,
-) -> Result<Vec<String>, String> {
-    let dir = get_workspace_dir(&state, &project_id).await?;
-    let dest = match &target_folder {
-        Some(folder) => {
-            let d = dir.join(folder);
-            std::fs::create_dir_all(&d).map_err(|e| e.to_string())?;
-            d
-        }
-        None => dir,
-    };
-    file_paths
-        .iter()
-        .map(|p| workspace::copy_file_to_dir(&dest, Path::new(p)))
-        .collect()
-}
-```
-
 ### InstructionsPanel
 
-Editable workspace files for configuring an agent. Each file renders as a labeled textarea that auto-saves on blur.
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| files | `InstructionFile[]` | — | Instruction files to display |
-| onSave | `(name: string, content: string) => Promise<void>` | — | Called when a field loses focus with changes |
-| emptyTitle | `string` | `"No instructions yet"` | Title for empty state |
-| emptyDescription | `string` | — | Description for empty state |
+Editable workspace files with auto-save on blur. Props: `files` (`InstructionFile[]`), `onSave` (`(name, content) => Promise<void>`).
 
 ```tsx
 import { InstructionsPanel } from "@deck-ui/workspace"
-import type { InstructionFile } from "@deck-ui/workspace"
 
 <InstructionsPanel
-  files={[
-    { name: "CLAUDE.md", label: "CLAUDE.md", content: claudeMdContent },
-  ]}
-  onSave={async (name, content) => writeFile(name, content)}
+  files={[{ name: "CLAUDE.md", label: "CLAUDE.md", content: claudeMd }]}
+  onSave={async (name, content) => invoke("write_file_bytes", { path: name, content })}
 />
 ```
 
-### Workspace Types
+### FilesBrowser
 
-```typescript
-interface FileEntry {
-  path: string        // relative path from workspace root
-  name: string        // file name with extension
-  extension: string   // extension without dot
-  size: number        // size in bytes
-}
+File browser with folder grouping, type icons, drag-and-drop. Props: `files` (`FileEntry[]`), `onOpen`, `onReveal`, `onDelete`, `onFilesDropped`, `onCreateFolder`.
 
-interface InstructionFile {
-  name: string        // file name (e.g., "CLAUDE.md")
-  label: string       // label shown above the textarea
-  content: string     // current file content
-}
-```
+Types: `FileEntry` (path, name, extension, size), `InstructionFile` (name, label, content).
 
 ---
 
 ## Common Patterns
 
-### App Shell
+### Thin Wrapper (connecting stores to components)
 
 ```tsx
-import { AppSidebar } from "@deck-ui/layout"
-import { TabBar } from "@deck-ui/layout"
-import { SplitView } from "@deck-ui/layout"
 import { KanbanBoard } from "@deck-ui/board"
-import { ChatPanel } from "@deck-ui/chat"
+import { useTaskStore } from "@/stores/tasks"
 
-function App() {
-  return (
-    <div className="flex h-screen">
-      <AppSidebar items={projects} selectedId={activeId} onSelect={setActiveId} />
-      <div className="flex-1 flex flex-col">
-        <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-        <SplitView
-          left={<KanbanBoard columns={columns} items={items} onSelect={setSelected} />}
-          right={<ChatPanel sessionKey={selectedId} feedItems={feed} onSend={send} isLoading={loading} />}
-        />
-      </div>
-    </div>
-  )
-}
-```
+export function TaskBoard() {
+  const tasks = useTaskStore((s) => s.tasks)
 
-### Connecting Stores to Components (Thin Wrapper Pattern)
-
-Components are props-driven. Connect your state at the app level:
-
-```tsx
-// Your app's wrapper reads from Zustand and passes props to @deck-ui
-import { KanbanBoard } from "@deck-ui/board"
-import { useIssueStore } from "@/stores/issues"
-
-export function ActivityBoard() {
-  const issues = useIssueStore((s) => s.issues)
-
-  const kanbanItems = issues.map((issue) => ({
-    id: issue.id,
-    title: issue.title,
-    subtitle: issue.description,
-    status: issue.status,
-    updatedAt: issue.updated_at,
+  const items = tasks.map((t) => ({
+    id: t.id, title: t.title, subtitle: t.description,
+    status: t.status, updatedAt: new Date().toISOString(),
   }))
 
-  return <KanbanBoard columns={columns} items={kanbanItems} ... />
+  return <KanbanBoard columns={columns} items={items} onSelect={setSelected} />
 }
 ```
 
 ### Channel Messages in Chat
 
-Incoming channel messages are prefixed with `[ChannelName]` before sending to the agent. `feedItemsToMessages()` auto-extracts this into `ChatMessage.source` for avatar rendering:
-
 ```tsx
-import { ChatPanel, ChannelAvatar } from "@deck-ui/chat"
-
 <ChatPanel
   sessionKey="main"
   feedItems={feed}
   onSend={send}
   isLoading={loading}
   renderMessageAvatar={(msg) =>
-    msg.source ? <ChannelAvatar source={msg.source} size="sm" /> : undefined
+    msg.source ? <ChannelAvatar source={msg.source} /> : undefined
   }
 />
 ```
 
-### Feed Merging in Stores
-
-Use the pure `mergeFeedItem()` function in your Zustand store to handle streaming replacement:
-
-```tsx
-import { mergeFeedItem } from "@deck-ui/chat"
-
-// In Zustand store:
-addFeedItem: (item) => set((s) => ({
-  items: mergeFeedItem(s.items, item),
-}))
-```
-
-### CSS Setup
-
-```tsx
-// main.tsx or App.tsx
-import "@deck-ui/core/src/globals.css"
-import "streamdown/styles.css"  // if using ChatPanel
-```
-
 ### Brand Override
-
-Override the primary color for your app:
 
 ```css
 @import "@deck-ui/core/src/globals.css";
-
 @theme {
-  --color-primary: #c0392b;           /* your brand color */
+  --color-primary: #c0392b;
   --color-primary-foreground: #ffffff;
   --color-ring: #c0392b;
 }
 ```
 
-### Tailwind 4 Configuration
-
-```ts
-// vite.config.ts
-import tailwindcss from "@tailwindcss/vite"
-
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-})
-```
-
-In your CSS, add `@source` directives for Deck UI packages:
+### Tailwind 4 Source Directives
 
 ```css
 @import "tailwindcss";
 @import "@deck-ui/core/src/globals.css";
-
 @source "../node_modules/@deck-ui/core/src";
-@source "../node_modules/@deck-ui/board/src";
 @source "../node_modules/@deck-ui/chat/src";
+@source "../node_modules/@deck-ui/board/src";
 @source "../node_modules/@deck-ui/layout/src";
 ```
