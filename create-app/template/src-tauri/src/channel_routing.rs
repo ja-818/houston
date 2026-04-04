@@ -114,6 +114,7 @@ pub async fn route_channel_message(
             project_id: project.id.clone(),
             feed_key: "main".into(),
             source: source_label,
+            claude_session_id: None,
         }),
     );
 

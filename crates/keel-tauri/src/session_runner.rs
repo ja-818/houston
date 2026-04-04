@@ -24,6 +24,10 @@ pub struct PersistOptions {
     pub project_id: String,
     pub feed_key: String,
     pub source: String,
+    /// v2: when set, feed items are persisted keyed by claude_session_id
+    /// instead of (project_id, feed_key). Set automatically once the session
+    /// reports its ID via SessionUpdate::SessionId.
+    pub claude_session_id: Option<String>,
 }
 
 /// Spawn a Claude session, emit events, optionally persist feed items, and return
@@ -63,6 +67,7 @@ pub fn spawn_and_monitor(
     let handle = app_handle.clone();
     let key = session_key;
     let working_dir = persist_dir;
+    let mut persist = persist;
     tokio::spawn(async move {
         let mut response_text: Option<String> = None;
         let mut claude_session_id: Option<String> = None;
@@ -85,12 +90,23 @@ pub fn spawn_and_monitor(
                     if let Some(ref opts) = persist {
                         if let Some((ft, dj)) = serialize_for_persist(item) {
                             let db = opts.db.clone();
-                            let pid = opts.project_id.clone();
-                            let fk = opts.feed_key.clone();
                             let src = opts.source.clone();
-                            tokio::spawn(async move {
-                                let _ = db.add_chat_feed_item(&pid, &fk, &ft, &dj, &src).await;
-                            });
+                            // v2: prefer session-keyed persistence when available.
+                            if let Some(ref sid) = opts.claude_session_id {
+                                let sid = sid.clone();
+                                tokio::spawn(async move {
+                                    let _ = db
+                                        .add_chat_feed_item_by_session(&sid, &ft, &dj, &src)
+                                        .await;
+                                });
+                            } else {
+                                let pid = opts.project_id.clone();
+                                let fk = opts.feed_key.clone();
+                                tokio::spawn(async move {
+                                    let _ =
+                                        db.add_chat_feed_item(&pid, &fk, &ft, &dj, &src).await;
+                                });
+                            }
                         }
                     }
                 }
@@ -98,6 +114,10 @@ pub fn spawn_and_monitor(
                     claude_session_id = Some(sid.clone());
                     if let Some(ref state) = chat_state {
                         state.set(sid.clone()).await;
+                    }
+                    // Track the session ID for subsequent persist calls.
+                    if let Some(ref mut opts) = persist {
+                        opts.claude_session_id = Some(sid.clone());
                     }
                     // Persist to disk so --resume survives app restarts.
                     if let Some(ref dir) = working_dir {

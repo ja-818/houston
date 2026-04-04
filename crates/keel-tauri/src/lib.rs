@@ -15,6 +15,7 @@ pub mod supervisor;
 pub mod tray;
 pub mod workspace;
 pub mod workspace_commands;
+pub mod workspace_store;
 
 // Re-export sub-crates for convenience.
 pub use keel_db;

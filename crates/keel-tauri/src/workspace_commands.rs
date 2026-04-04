@@ -225,6 +225,7 @@ pub async fn read_project_file(
 
 /// Load persisted chat feed for hydrating the UI on app restart.
 /// Reads from the `chat_feed` table and returns items as JSON.
+/// Keyed by (project_id, "main") — backward compat for v1 callers.
 #[tauri::command]
 pub async fn load_chat_feed(
     state: State<'_, AppState>,
@@ -236,8 +237,28 @@ pub async fn load_chat_feed(
         .await
         .map_err(|e| e.to_string())?;
 
-    let items: Vec<serde_json::Value> = rows
-        .into_iter()
+    Ok(feed_rows_to_json(rows))
+}
+
+/// v2: Load persisted chat feed by claude_session_id.
+/// This is the new primary way to load conversation history.
+#[tauri::command]
+pub async fn load_session_feed(
+    state: State<'_, AppState>,
+    claude_session_id: String,
+) -> Result<Vec<serde_json::Value>, String> {
+    let rows = state
+        .db
+        .list_chat_feed_by_session(&claude_session_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(feed_rows_to_json(rows))
+}
+
+/// Convert ChatFeedRows to JSON values for the frontend.
+fn feed_rows_to_json(rows: Vec<keel_db::ChatFeedRow>) -> Vec<serde_json::Value> {
+    rows.into_iter()
         .map(|row| {
             serde_json::json!({
                 "feed_type": row.feed_type,
@@ -245,9 +266,7 @@ pub async fn load_chat_feed(
                     .unwrap_or(serde_json::Value::String(row.data_json)),
             })
         })
-        .collect();
-
-    Ok(items)
+        .collect()
 }
 
 // -- Helpers --

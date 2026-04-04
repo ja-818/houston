@@ -79,6 +79,7 @@ pub async fn start_session(
             project_id: project.id.clone(),
             feed_key: "main".into(),
             source: "desktop".into(),
+            claude_session_id: None,
         }),
     );
 

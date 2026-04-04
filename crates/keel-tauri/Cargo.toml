@@ -17,5 +17,6 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 tauri = { version = "2", features = ["tray-icon"] }
+uuid = { workspace = true }
 libsql = "0.6"
 base64 = "0.22"

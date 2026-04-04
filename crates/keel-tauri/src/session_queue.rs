@@ -80,13 +80,26 @@ async fn queue_loop(
             &msg.prompt[..msg.prompt.len().min(60)]
         );
 
+        // v2: get current session ID for session-keyed persistence.
+        // On the first message this may be None (will be set by SessionUpdate::SessionId).
+        // On subsequent messages (--resume), it's already available from the previous session.
+        let mut current_session_id: Option<String> = match &config.chat_state {
+            Some(state) => state.get().await,
+            None => config.persist.as_ref().and_then(|p| p.claude_session_id.clone()),
+        };
+
         // Persist user message to DB.
         if let Some(ref opts) = config.persist {
             let db = opts.db.clone();
-            let pid = opts.project_id.clone();
-            let fk = opts.feed_key.clone();
             let data = serde_json::Value::String(msg.prompt.clone()).to_string();
-            let _ = db.add_chat_feed_item(&pid, &fk, "user_message", &data, "desktop").await;
+            // v2: prefer session-keyed persistence when available.
+            if let Some(ref sid) = current_session_id {
+                let _ = db.add_chat_feed_item_by_session(sid, "user_message", &data, "desktop").await;
+            } else {
+                let pid = opts.project_id.clone();
+                let fk = opts.feed_key.clone();
+                let _ = db.add_chat_feed_item(&pid, &fk, "user_message", &data, "desktop").await;
+            }
         }
 
         // Emit user message as feed item so the frontend sees it.
@@ -126,16 +139,29 @@ async fn queue_loop(
                     if let Some(ref opts) = config.persist {
                         if let Some((ft, dj)) = serialize_for_persist(item) {
                             let db = opts.db.clone();
-                            let pid = opts.project_id.clone();
-                            let fk = opts.feed_key.clone();
                             let src = opts.source.clone();
-                            tokio::spawn(async move {
-                                let _ = db.add_chat_feed_item(&pid, &fk, &ft, &dj, &src).await;
-                            });
+                            // v2: prefer session-keyed persistence when available.
+                            if let Some(ref sid) = current_session_id {
+                                let sid = sid.clone();
+                                tokio::spawn(async move {
+                                    let _ = db
+                                        .add_chat_feed_item_by_session(&sid, &ft, &dj, &src)
+                                        .await;
+                                });
+                            } else {
+                                let pid = opts.project_id.clone();
+                                let fk = opts.feed_key.clone();
+                                tokio::spawn(async move {
+                                    let _ =
+                                        db.add_chat_feed_item(&pid, &fk, &ft, &dj, &src).await;
+                                });
+                            }
                         }
                     }
                 }
                 SessionUpdate::SessionId(sid) => {
+                    // Track session ID for subsequent persist calls in this message.
+                    current_session_id = Some(sid.clone());
                     if let Some(ref state) = config.chat_state {
                         state.set(sid.clone()).await;
                     }

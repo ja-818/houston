@@ -5,7 +5,8 @@ impl Database {
     /// Run base migrations for the generic Keel tables.
     /// Application-specific migrations should be run separately by the consuming app.
     pub(crate) async fn run_migrations(&self) -> Result<()> {
-        // Issues table (kanban cards).
+        // DEPRECATED (v2): Issues table moves to .keel/tasks.json.
+        // Kept for backward compat during migration period.
         self.conn()
             .execute_batch(
                 "CREATE TABLE IF NOT EXISTS issues (
@@ -26,7 +27,8 @@ impl Database {
             .await
             .ok();
 
-        // Issue dependencies (many-to-many blocking relationships).
+        // DEPRECATED (v2): Issue dependencies removed in v2.
+        // Kept for backward compat during migration period.
         self.conn()
             .execute_batch(
                 "CREATE TABLE IF NOT EXISTS issue_dependencies (
@@ -38,7 +40,8 @@ impl Database {
             .await
             .ok();
 
-        // Issue feed persistence (survives app restart).
+        // DEPRECATED (v2): Issue feed merged into chat_feed (keyed by claude_session_id).
+        // Kept for backward compat during migration period.
         self.conn()
             .execute_batch(
                 "CREATE TABLE IF NOT EXISTS issue_feed_items (
@@ -71,7 +74,8 @@ impl Database {
             )
             .await;
 
-        // Routines: recurring autonomous tasks.
+        // DEPRECATED (v2): Routines move to .keel/routines.json.
+        // Kept for backward compat during migration period.
         self.conn()
             .execute_batch(
                 "CREATE TABLE IF NOT EXISTS routines (
@@ -108,7 +112,8 @@ impl Database {
             .await
             .ok();
 
-        // Event log (persisted event history for the event queue).
+        // DEPRECATED (v2): Event log moves to .keel/log.jsonl.
+        // Kept for backward compat during migration period.
         self.conn()
             .execute_batch(
                 "CREATE TABLE IF NOT EXISTS event_log (
@@ -131,7 +136,8 @@ impl Database {
             .await
             .ok();
 
-        // Webhook configurations.
+        // DEPRECATED (v2): Webhooks removed in v2.
+        // Kept for backward compat during migration period.
         self.conn()
             .execute_batch(
                 "CREATE TABLE IF NOT EXISTS webhooks (
@@ -148,7 +154,8 @@ impl Database {
             .await
             .ok();
 
-        // Channel configurations (Slack, Telegram, etc.).
+        // DEPRECATED (v2): Channels move to .keel/channels.json.
+        // Kept for backward compat during migration period.
         self.conn()
             .execute_batch(
                 "CREATE TABLE IF NOT EXISTS channels (
@@ -183,6 +190,24 @@ impl Database {
             );
             CREATE INDEX IF NOT EXISTS idx_chat_feed_project_key
                 ON chat_feed(project_id, feed_key);",
+            )
+            .await
+            .ok();
+
+        // v2 migration: add claude_session_id to chat_feed for session-keyed lookups.
+        // Existing rows will have NULL — backward compatible.
+        let _ = self
+            .conn()
+            .execute(
+                "ALTER TABLE chat_feed ADD COLUMN claude_session_id TEXT",
+                (),
+            )
+            .await;
+
+        self.conn()
+            .execute_batch(
+                "CREATE INDEX IF NOT EXISTS idx_chat_feed_session
+                    ON chat_feed(claude_session_id);",
             )
             .await
             .ok();

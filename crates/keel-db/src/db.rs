@@ -87,13 +87,17 @@ impl Database {
     async fn init_tables(&self) -> Result<()> {
         self.conn
             .execute_batch(
-                "CREATE TABLE IF NOT EXISTS projects (
+                "-- DEPRECATED (v2): projects table moves to file-based workspace discovery.
+            -- Kept for backward compat during migration period.
+            CREATE TABLE IF NOT EXISTS projects (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 folder_path TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
+            -- DEPRECATED (v2): sessions table moves to .keel/log.jsonl.
+            -- Kept for backward compat during migration period.
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY,
                 job_id TEXT,
@@ -103,6 +107,8 @@ impl Database {
                 created_at TEXT NOT NULL,
                 completed_at TEXT
             );
+            -- DEPRECATED (v2): session_events table moves to .keel/log.jsonl.
+            -- Kept for backward compat during migration period.
             CREATE TABLE IF NOT EXISTS session_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 session_id TEXT NOT NULL REFERENCES sessions(id),
@@ -110,6 +116,7 @@ impl Database {
                 content TEXT NOT NULL,
                 timestamp TEXT NOT NULL
             );
+            -- preferences table: KEPT in v2 (app-level settings).
             CREATE TABLE IF NOT EXISTS preferences (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
