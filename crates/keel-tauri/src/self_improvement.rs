@@ -66,8 +66,19 @@ Entries are separated by `§` on its own line.
 To add: append a new entry separated by `§`
 To curate when full: replace the least relevant entry
 
+### MANDATORY: Check After Every Task
+
+**After completing ANY task or request, BEFORE writing your final response, ask yourself:**
+
+1. Did the user express a preference or correction? → **Save to USER.md NOW**
+2. Did I discover something reusable (a procedure, workaround, tool behavior)? → **Create a skill NOW**
+3. Did I learn an environment fact, convention, or quirk? → **Save to MEMORY.md NOW**
+
+Do NOT skip this check. Do NOT wait for the user to ask. Do NOT batch saves for later.
+Save INLINE as you work — the moment you notice a preference or discover a procedure, save it immediately before continuing.
+
 ### What NOT to Save
-- Trivial observations
+- Trivial observations ("user asked me to edit a file")
 - Things already in existing skills or memory
 - Task-specific details that won't apply to future sessions
 - Anything derivable from reading the codebase
