@@ -10,6 +10,7 @@ interface FilesTabProps {
 export function FilesTab({ workspacePath }: FilesTabProps) {
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
 
   const loadFiles = useCallback(async () => {
     setLoading(true);
@@ -29,6 +30,8 @@ export function FilesTab({ workspacePath }: FilesTabProps) {
     <FilesBrowser
       files={files}
       loading={loading}
+      selectedPath={selectedPath}
+      onSelect={(file) => setSelectedPath(file.path)}
       onOpen={(file) => tauriFiles.open(workspacePath, file.path)}
       onReveal={(file) => tauriFiles.reveal(workspacePath, file.path)}
       onDelete={async (file) => {
