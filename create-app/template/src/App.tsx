@@ -46,10 +46,6 @@ export function App() {
     loadAgents();
   }, [loadAgents]);
 
-  // Auto-show create dialog when no agents exist
-  useEffect(() => {
-    if (ready && agents.length === 0) setShowCreate(true);
-  }, [ready, agents.length]);
 
   // Load chat history when switching agents
   useEffect(() => {

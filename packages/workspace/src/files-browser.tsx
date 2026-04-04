@@ -97,7 +97,7 @@ export function FilesBrowser({
       </div>
 
       <div
-        className="flex-1 overflow-y-auto [&>:nth-child(even)]:bg-[#f5f5f5]"
+        className="flex-1 overflow-y-auto [&>:nth-child(even)]:bg-[#f5f5f5] [&>:nth-child(even)]:rounded-md"
         style={{ backgroundColor: isRootTarget ? "rgba(0,122,255,0.06)" : undefined }}
       >
         {loading ? (

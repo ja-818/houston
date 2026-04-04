@@ -129,8 +129,8 @@ export function ArchiveDocIcon() {
   )
 }
 
-/** Finder-style disclosure triangle (filled, rotates 90deg when open) */
-export function DisclosureTriangle({
+/** Chevron disclosure indicator (rotates 90deg when open) */
+export function DisclosureChevron({
   open,
   className,
 }: {
@@ -140,14 +140,18 @@ export function DisclosureTriangle({
   return (
     <svg
       className={cn(
-        "size-2 shrink-0 transition-transform duration-150",
+        "size-[10px] shrink-0 transition-transform duration-150",
         open && "rotate-90",
         className,
       )}
-      viewBox="0 0 8 10"
-      fill="#8e8e8e"
+      viewBox="0 0 10 10"
+      fill="none"
+      stroke="#8e8e8e"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
-      <path d="M1 0.5L7.5 5L1 9.5Z" />
+      <path d="M3.5 1.5L7 5L3.5 8.5" />
     </svg>
   )
 }

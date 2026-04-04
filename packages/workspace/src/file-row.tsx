@@ -8,7 +8,7 @@ import { cn } from "@deck-ui/core"
 import type { FileEntry } from "./types"
 import type { FolderNode } from "./tree"
 import { useFolderDropTarget } from "./drop-zone"
-import { FolderIcon, DisclosureTriangle, getFileIcon } from "./finder-icons"
+import { FolderIcon, DisclosureChevron, getFileIcon } from "./finder-icons"
 import { formatSize, formatFinderDate, getKind } from "./utils"
 import { FileMenu } from "./file-menu"
 
@@ -62,7 +62,7 @@ export function FolderSection({
         {...(onFilesDropped ? folderHandlers : {})}
       >
         <div className="flex items-center gap-1.5 min-w-0" style={{ paddingLeft: padLeft }}>
-          <DisclosureTriangle open={open} />
+          <DisclosureChevron open={open} />
           <FolderIcon />
           <span className="text-[13px] truncate">{node.name}</span>
         </div>
@@ -110,7 +110,7 @@ export function FileRow({
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const padLeft = BASE_INDENT + depth * DEPTH_INDENT + TRIANGLE_AREA
   const hasMenu = onOpen || onReveal || onDelete
-  const sec = selected ? "text-white/80" : "text-[#6d6d6d]"
+  const sec = selected ? "text-[#0a84ff]/60" : "text-[#6d6d6d]"
 
   return (
     <>
@@ -128,7 +128,7 @@ export function FileRow({
         data-selected={selected || undefined}
         className={cn(
           "h-[24px] cursor-default select-none items-center outline-none",
-          selected && "!bg-[#0058D0] text-white",
+          selected && "!bg-[#0a84ff]/15 !text-[#0a84ff] rounded-md",
         )}
         style={{ display: "grid", gridTemplateColumns: COL_GRID }}
       >
@@ -169,11 +169,11 @@ export function NewFolderInput({ onConfirm, onCancel }: {
   const inputRef = useRef<HTMLInputElement>(null)
   return (
     <div
-      className="h-[24px] bg-[#0058D0] items-center"
+      className="h-[24px] bg-[#0a84ff]/15 rounded-md items-center"
       style={{ display: "grid", gridTemplateColumns: COL_GRID }}
     >
       <div className="flex items-center gap-1.5 min-w-0 pl-3">
-        <DisclosureTriangle open={false} className="invisible" />
+        <DisclosureChevron open={false} className="invisible" />
         <FolderIcon />
         <input
           ref={inputRef}
@@ -186,12 +186,12 @@ export function NewFolderInput({ onConfirm, onCancel }: {
           }}
           onBlur={() => (value.trim() ? onConfirm(value.trim()) : onCancel())}
           placeholder="untitled folder"
-          className="flex-1 text-[13px] bg-transparent text-white outline-none placeholder:text-white/50 min-w-0"
+          className="flex-1 text-[13px] bg-transparent text-[#0a84ff] outline-none placeholder:text-[#0a84ff]/50 min-w-0"
         />
       </div>
       <span />
       <span />
-      <span className="text-[11px] text-white/70 px-2">Folder</span>
+      <span className="text-[11px] text-[#0a84ff]/60 px-2">Folder</span>
     </div>
   )
 }
