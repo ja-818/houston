@@ -4,7 +4,7 @@
  */
 import { useCallback, useMemo, useRef, useState } from "react"
 import { cn, Button } from "@deck-ui/core"
-import { FolderPlus, Upload, FolderOpen } from "lucide-react"
+import { FolderPlus, Upload } from "lucide-react"
 import type { FileEntry } from "./types"
 import { useDropZone } from "./drop-zone"
 import { FileRow, FolderSection, COL_GRID } from "./file-row"
@@ -25,14 +25,13 @@ export interface FilesBrowserProps {
   onMove?: (sourcePath: string, targetFolder: string | null) => void
   onCreateFolder?: (name: string) => void
   onBrowse?: () => void
-  onRevealWorkspace?: () => void
   emptyTitle?: string
   emptyDescription?: string
 }
 
 export function FilesBrowser({
   files, loading, selectedPath, onSelect, onOpen, onReveal, onDelete,
-  onFilesDropped, onMove, onCreateFolder, onBrowse, onRevealWorkspace,
+  onFilesDropped, onMove, onCreateFolder, onBrowse,
   emptyTitle = "No files yet",
   emptyDescription = "When agents create files, they\u2019ll appear here.",
 }: FilesBrowserProps) {
@@ -79,19 +78,10 @@ export function FilesBrowser({
           <h1 className="text-2xl font-semibold tracking-tight">{emptyTitle}</h1>
           <p className="text-sm text-muted-foreground">{emptyDescription}</p>
         </div>
-        {(onBrowse || onRevealWorkspace) && (
-          <div className="flex items-center gap-2">
-            {onBrowse && (
-              <Button variant="default" size="sm" onClick={onBrowse}>
-                <Upload className="size-4 mr-1.5" /> Browse files
-              </Button>
-            )}
-            {onRevealWorkspace && (
-              <Button variant="outline" size="sm" onClick={onRevealWorkspace}>
-                <FolderOpen className="size-4 mr-1.5" /> Open folder
-              </Button>
-            )}
-          </div>
+        {onBrowse && (
+          <Button variant="default" size="sm" onClick={onBrowse}>
+            <Upload className="size-4 mr-1.5" /> Browse files
+          </Button>
         )}
       </div>
     )
