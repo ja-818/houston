@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync, copyFileSync } from "fs";
+import { existsSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync, copyFileSync, renameSync } from "fs";
 import { join, resolve, basename, extname } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
@@ -68,8 +68,23 @@ function copyDir(src, dest) {
   }
 }
 
+// Files renamed to avoid Cargo auto-discovery of the template directory.
+// The scaffolder renames them back after copying.
+const RENAME_MAP = {
+  "Cargo.toml.template": "Cargo.toml",
+};
+
 console.log(`\n  Creating ${projectName}...\n`);
 copyDir(templateDir, targetDir);
+
+// Rename special files
+for (const [from, to] of Object.entries(RENAME_MAP)) {
+  const srcPath = join(targetDir, "src-tauri", from);
+  const destPath = join(targetDir, "src-tauri", to);
+  if (existsSync(srcPath)) {
+    renameSync(srcPath, destPath);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Done

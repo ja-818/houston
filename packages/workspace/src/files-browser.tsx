@@ -7,31 +7,21 @@ import { cn, Button } from "@deck-ui/core"
 import { FolderPlus, Upload, FolderOpen } from "lucide-react"
 import type { FileEntry } from "./types"
 import { useDropZone } from "./drop-zone"
-import { FileRow, FolderSection, COL_GRID } from "./file-row"
-import { FolderIcon, DisclosureTriangle } from "./finder-icons"
+import { FileRow, FolderSection, NewFolderInput, COL_GRID } from "./file-row"
 import { buildTree } from "./tree"
 import { sortTree, type SortKey, type SortDirection } from "./utils"
 
 export interface FilesBrowserProps {
   files: FileEntry[]
   loading?: boolean
-  /** Currently selected file path */
   selectedPath?: string | null
-  /** Called on single click (select) */
   onSelect?: (file: FileEntry) => void
-  /** Called on double click (open) */
   onOpen?: (file: FileEntry) => void
-  /** "Show in Finder" context menu action */
   onReveal?: (file: FileEntry) => void
-  /** "Move to Trash" context menu action */
   onDelete?: (file: FileEntry) => void
-  /** Drag-and-drop import */
   onFilesDropped?: (files: File[], targetFolder?: string) => void
-  /** Inline new-folder creation */
   onCreateFolder?: (name: string) => void
-  /** Browse files button in empty state */
   onBrowse?: () => void
-  /** Open workspace folder button in empty state */
   onRevealWorkspace?: () => void
   emptyTitle?: string
   emptyDescription?: string
@@ -96,7 +86,6 @@ export function FilesBrowser({
       className="relative flex-1 flex flex-col h-full min-h-0 overflow-hidden bg-white"
       {...(onFilesDropped ? dragHandlers : {})}
     >
-      {/* Column header */}
       <div
         className="h-[22px] shrink-0 border-b border-[#ddd] bg-[#f6f6f6] select-none items-center"
         style={{ display: "grid", gridTemplateColumns: COL_GRID }}
@@ -107,7 +96,6 @@ export function FilesBrowser({
         <HeaderCell label="Kind" col="kind" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} last />
       </div>
 
-      {/* File list */}
       <div
         className="flex-1 overflow-y-auto"
         style={{ backgroundColor: isRootTarget ? "rgba(0,122,255,0.06)" : undefined }}
@@ -145,7 +133,6 @@ export function FilesBrowser({
         )}
       </div>
 
-      {/* Status bar */}
       <div className="h-[22px] shrink-0 border-t border-[#ddd] bg-[#f6f6f6] flex items-center justify-center">
         <span className="text-[11px] text-[#808080]">
           {files.length} item{files.length !== 1 ? "s" : ""}
@@ -162,10 +149,6 @@ export function FilesBrowser({
     </div>
   )
 }
-
-// ---------------------------------------------------------------------------
-// HeaderCell
-// ---------------------------------------------------------------------------
 
 function HeaderCell({ label, col, sortKey, sortDir, onSort, className, last }: {
   label: string
@@ -195,42 +178,5 @@ function HeaderCell({ label, col, sortKey, sortDir, onSort, className, last }: {
         </svg>
       )}
     </button>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// NewFolderInput (inline, styled as a selected folder row)
-// ---------------------------------------------------------------------------
-
-function NewFolderInput({ onConfirm, onCancel }: {
-  onConfirm: (name: string) => void
-  onCancel: () => void
-}) {
-  const [value, setValue] = useState("")
-  return (
-    <div
-      className="h-[22px] bg-[#0058D0] items-center"
-      style={{ display: "grid", gridTemplateColumns: COL_GRID }}
-    >
-      <div className="flex items-center gap-1.5 min-w-0 pl-2">
-        <DisclosureTriangle open={false} className="invisible" />
-        <FolderIcon />
-        <input
-          autoFocus
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && value.trim()) onConfirm(value.trim())
-            if (e.key === "Escape") onCancel()
-          }}
-          onBlur={() => (value.trim() ? onConfirm(value.trim()) : onCancel())}
-          placeholder="untitled folder"
-          className="flex-1 text-[13px] bg-transparent text-white outline-none placeholder:text-white/50 min-w-0"
-        />
-      </div>
-      <span />
-      <span />
-      <span className="text-[11px] text-white/70 px-2">Folder</span>
-    </div>
   )
 }
