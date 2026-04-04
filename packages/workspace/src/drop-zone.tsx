@@ -1,12 +1,20 @@
 /**
- * Drop zone hooks for drag-and-drop file imports.
- * Container-level highlight + folder-level targeting (Finder-style).
+ * Drop zone hooks for drag-and-drop.
+ * Container handles ALL drops. Folders only provide visual highlight state.
  */
 import { useCallback, useRef, useState } from "react"
 
-/** Tracks whether files are being dragged over the container. */
+/** MIME type used for internal file moves. */
+export const INTERNAL_DRAG_TYPE = "application/x-deck-file"
+
+function hasDragData(e: React.DragEvent) {
+  return e.dataTransfer.types.includes("Files") || e.dataTransfer.types.includes(INTERNAL_DRAG_TYPE)
+}
+
+/** Container-level drop zone. Handles ALL drop events (both external and internal). */
 export function useDropZone(
   onFilesDropped?: (files: File[], targetFolder?: string) => void,
+  onMove?: (sourcePath: string, targetFolder: string | null) => void,
 ) {
   const [isDragging, setIsDragging] = useState(false)
   const counter = useRef(0)
@@ -14,7 +22,7 @@ export function useDropZone(
   const onDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     counter.current++
-    if (e.dataTransfer.types.includes("Files")) setIsDragging(true)
+    if (hasDragData(e)) setIsDragging(true)
   }, [])
 
   const onDragLeave = useCallback((e: React.DragEvent) => {
@@ -32,11 +40,13 @@ export function useDropZone(
       e.preventDefault()
       counter.current = 0
       setIsDragging(false)
+      const internal = e.dataTransfer.getData(INTERNAL_DRAG_TYPE)
+      if (internal && onMove) { onMove(internal, null); return }
       if (!onFilesDropped) return
       const files = Array.from(e.dataTransfer.files)
       if (files.length > 0) onFilesDropped(files)
     },
-    [onFilesDropped],
+    [onFilesDropped, onMove],
   )
 
   return {
@@ -45,21 +55,15 @@ export function useDropZone(
   }
 }
 
-/**
- * Tracks drag-over state for an entire folder section (header + children).
- * Stops propagation on drop so the container handler doesn't also fire.
- */
-export function useFolderDropTarget(
-  folder: string,
-  onFilesDropped?: (files: File[], targetFolder?: string) => void,
-) {
+/** Folder-level highlight only — does NOT handle the drop (container does). */
+export function useFolderDropTarget() {
   const [isOver, setIsOver] = useState(false)
   const counter = useRef(0)
 
   const onDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     counter.current++
-    if (e.dataTransfer.types.includes("Files")) setIsOver(true)
+    if (hasDragData(e)) setIsOver(true)
   }, [])
 
   const onDragLeave = useCallback((e: React.DragEvent) => {
@@ -72,18 +76,12 @@ export function useFolderDropTarget(
     e.preventDefault()
   }, [])
 
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation() // only stop propagation on drop to prevent container double-handling
-      counter.current = 0
-      setIsOver(false)
-      if (!onFilesDropped) return
-      const files = Array.from(e.dataTransfer.files)
-      if (files.length > 0) onFilesDropped(files, folder)
-    },
-    [onFilesDropped, folder],
-  )
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    // Do NOT stopPropagation — let container handle the actual drop
+    counter.current = 0
+    setIsOver(false)
+  }, [])
 
   return {
     isOver,

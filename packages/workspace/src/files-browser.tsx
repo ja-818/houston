@@ -2,12 +2,13 @@
  * FilesBrowser — macOS Finder list-view clone.
  * Column headers with sort, file/folder tree, status bar, drag-and-drop.
  */
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { cn, Button } from "@deck-ui/core"
 import { FolderPlus, Upload, FolderOpen } from "lucide-react"
 import type { FileEntry } from "./types"
 import { useDropZone } from "./drop-zone"
-import { FileRow, FolderSection, NewFolderInput, COL_GRID } from "./file-row"
+import { FileRow, FolderSection, COL_GRID } from "./file-row"
+import { NewFolderInput } from "./new-folder-input"
 import { buildTree } from "./tree"
 import { sortTree, type SortKey, type SortDirection } from "./utils"
 
@@ -20,6 +21,8 @@ export interface FilesBrowserProps {
   onReveal?: (file: FileEntry) => void
   onDelete?: (file: FileEntry) => void
   onFilesDropped?: (files: File[], targetFolder?: string) => void
+  /** Move a file/folder to a new location (null = root) */
+  onMove?: (sourcePath: string, targetFolder: string | null) => void
   onCreateFolder?: (name: string) => void
   onBrowse?: () => void
   onRevealWorkspace?: () => void
@@ -29,19 +32,32 @@ export interface FilesBrowserProps {
 
 export function FilesBrowser({
   files, loading, selectedPath, onSelect, onOpen, onReveal, onDelete,
-  onFilesDropped, onCreateFolder, onBrowse, onRevealWorkspace,
+  onFilesDropped, onMove, onCreateFolder, onBrowse, onRevealWorkspace,
   emptyTitle = "No files yet",
   emptyDescription = "When agents create files, they\u2019ll appear here.",
 }: FilesBrowserProps) {
-  const { isDragging, dragHandlers } = useDropZone(onFilesDropped)
   const [creatingFolder, setCreatingFolder] = useState(false)
   const [folderDropTarget, setFolderDropTarget] = useState<string | null>(null)
+  const folderTargetRef = useRef<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>("name")
   const [sortDir, setSortDir] = useState<SortDirection>("asc")
+
+  const onDragActive = useCallback((f: string | null) => {
+    setFolderDropTarget(f)
+    folderTargetRef.current = f
+  }, [])
+
+  // Wrap callbacks so container drops target the hovered folder (or root)
+  const handleDrop = useCallback((files: File[]) => {
+    onFilesDropped?.(files, folderTargetRef.current ?? undefined)
+  }, [onFilesDropped])
+  const handleMove = useCallback((src: string) => {
+    onMove?.(src, folderTargetRef.current)
+  }, [onMove])
+  const { isDragging, dragHandlers } = useDropZone(handleDrop, handleMove)
+
   const isEmpty = !loading && files.length === 0
   const isRootTarget = isDragging && folderDropTarget === null
-
-  const onDragActive = useCallback((f: string | null) => setFolderDropTarget(f), [])
 
   const handleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
@@ -84,7 +100,7 @@ export function FilesBrowser({
   return (
     <div
       className="relative flex-1 flex flex-col h-full min-h-0 overflow-hidden bg-white"
-      {...(onFilesDropped ? dragHandlers : {})}
+      {...(onFilesDropped || onMove ? dragHandlers : {})}
     >
       <div
         className="h-[24px] shrink-0 border-b border-[#e5e5e5] bg-[#fafafa] select-none items-center"
@@ -97,7 +113,7 @@ export function FilesBrowser({
       </div>
 
       <div
-        className="flex-1 overflow-y-auto [&>:nth-child(even)]:bg-[#f5f5f5] [&>:nth-child(even)]:rounded-md"
+        className="flex-1 overflow-y-auto [&>:nth-child(even)]:bg-[#f5f5f5] [&>:nth-child(even)]:rounded-lg"
         style={{ backgroundColor: isRootTarget ? "rgba(0,122,255,0.06)" : undefined }}
       >
         {loading ? (
@@ -118,14 +134,14 @@ export function FilesBrowser({
                   key={child.path} node={child} depth={0}
                   selectedPath={selectedPath} onSelect={onSelect}
                   onOpen={onOpen} onReveal={onReveal} onDelete={onDelete}
-                  onFilesDropped={onFilesDropped} onDragActive={onDragActive}
+                  onFilesDropped={onFilesDropped} onDragActive={onDragActive} onMove={onMove}
                 />
               ) : (
                 <FileRow
                   key={child.entry.path} file={child.entry}
                   selected={selectedPath === child.entry.path}
                   onSelect={onSelect} onOpen={onOpen}
-                  onReveal={onReveal} onDelete={onDelete}
+                  onReveal={onReveal} onDelete={onDelete} onMove={onMove}
                 />
               ),
             )}

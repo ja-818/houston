@@ -1,4 +1,5 @@
 mod commands;
+mod skill_commands;
 mod workspace;
 
 use keel_tauri::agent_sessions::AgentSessionMap;
@@ -44,6 +45,17 @@ pub fn run() {
             commands::load_chat_history,
             commands::read_workspace_file,
             commands::write_workspace_file,
+            skill_commands::list_skills,
+            skill_commands::load_skill,
+            skill_commands::create_skill,
+            skill_commands::delete_skill,
+            skill_commands::save_skill,
+            keel_tauri::workspace_commands::list_project_files,
+            keel_tauri::workspace_commands::open_file,
+            keel_tauri::workspace_commands::reveal_file,
+            keel_tauri::workspace_commands::delete_file,
+            keel_tauri::workspace_commands::reveal_workspace,
+            keel_tauri::workspace_commands::import_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

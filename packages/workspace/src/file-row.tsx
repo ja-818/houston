@@ -1,18 +1,17 @@
 /**
  * Finder-style file and folder rows.
- * Files: click to select, double-click to open, right-click context menu.
- * Folders: click to expand/collapse with disclosure triangle.
+ * Files: click to select, double-click to open, right-click context menu, draggable.
+ * Folders: click to expand/collapse, drop target for moves.
  */
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@deck-ui/core"
 import type { FileEntry } from "./types"
 import type { FolderNode } from "./tree"
-import { useFolderDropTarget } from "./drop-zone"
+import { INTERNAL_DRAG_TYPE, useFolderDropTarget } from "./drop-zone"
 import { FolderIcon, DisclosureChevron, getFileIcon } from "./finder-icons"
 import { formatSize, formatFinderDate, getKind } from "./utils"
 import { FileMenu } from "./file-menu"
 
-// Indentation constants (px)
 const DEPTH_INDENT = 20
 const BASE_INDENT = 12
 const TRIANGLE_AREA = 16
@@ -20,13 +19,9 @@ const TRIANGLE_AREA = 16
 /** Column grid shared between header and rows. */
 export const COL_GRID = "1fr 190px 80px 130px"
 
-// ---------------------------------------------------------------------------
-// FolderSection
-// ---------------------------------------------------------------------------
-
 export function FolderSection({
   node, depth, selectedPath, onSelect, onOpen, onReveal, onDelete,
-  onFilesDropped, onDragActive,
+  onFilesDropped, onDragActive, onMove,
 }: {
   node: FolderNode
   depth: number
@@ -37,9 +32,11 @@ export function FolderSection({
   onDelete?: (file: FileEntry) => void
   onFilesDropped?: (files: File[], targetFolder?: string) => void
   onDragActive?: (folder: string | null) => void
+  onMove?: (sourcePath: string, targetFolder: string | null) => void
 }) {
   const [open, setOpen] = useState(true)
-  const { isOver, folderHandlers } = useFolderDropTarget(node.path, onFilesDropped)
+  const [dragging, setDragging] = useState(false)
+  const { isOver, folderHandlers } = useFolderDropTarget()
 
   useEffect(() => {
     onDragActive?.(isOver ? node.path : null)
@@ -52,14 +49,18 @@ export function FolderSection({
       <div
         role="button"
         tabIndex={0}
+        draggable={!!onMove}
+        onDragStart={(e) => { e.dataTransfer.setData(INTERNAL_DRAG_TYPE, node.path); e.dataTransfer.effectAllowed = "move"; setDragging(true) }}
+        onDragEnd={() => setDragging(false)}
         onClick={() => setOpen(!open)}
         onKeyDown={(e) => e.key === "Enter" && setOpen(!open)}
         className={cn(
           "h-[24px] select-none cursor-default items-center",
-          isOver ? "bg-[rgba(0,122,255,0.08)]" : "",
+          isOver ? "!bg-[rgba(0,122,255,0.12)] !rounded-lg" : "",
+          dragging && "opacity-40",
         )}
         style={{ display: "grid", gridTemplateColumns: COL_GRID }}
-        {...(onFilesDropped ? folderHandlers : {})}
+        {...folderHandlers}
       >
         <div className="flex items-center gap-1.5 min-w-0" style={{ paddingLeft: padLeft }}>
           <DisclosureChevron open={open} />
@@ -77,14 +78,14 @@ export function FolderSection({
               key={child.path} node={child} depth={depth + 1}
               selectedPath={selectedPath} onSelect={onSelect}
               onOpen={onOpen} onReveal={onReveal} onDelete={onDelete}
-              onFilesDropped={onFilesDropped} onDragActive={onDragActive}
+              onFilesDropped={onFilesDropped} onDragActive={onDragActive} onMove={onMove}
             />
           ) : (
             <FileRow
               key={child.entry.path} file={child.entry} depth={depth + 1}
               selected={selectedPath === child.entry.path}
               onSelect={onSelect} onOpen={onOpen}
-              onReveal={onReveal} onDelete={onDelete}
+              onReveal={onReveal} onDelete={onDelete} onMove={onMove}
             />
           ),
         )}
@@ -92,12 +93,8 @@ export function FolderSection({
   )
 }
 
-// ---------------------------------------------------------------------------
-// FileRow
-// ---------------------------------------------------------------------------
-
 export function FileRow({
-  file, depth = 0, selected, onSelect, onOpen, onReveal, onDelete,
+  file, depth = 0, selected, onSelect, onOpen, onReveal, onDelete, onMove,
 }: {
   file: FileEntry
   depth?: number
@@ -106,17 +103,22 @@ export function FileRow({
   onOpen?: (file: FileEntry) => void
   onReveal?: (file: FileEntry) => void
   onDelete?: (file: FileEntry) => void
+  onMove?: (sourcePath: string, targetFolder: string | null) => void
 }) {
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
   const padLeft = BASE_INDENT + depth * DEPTH_INDENT + TRIANGLE_AREA
   const hasMenu = onOpen || onReveal || onDelete
-  const sec = selected ? "text-[#0a84ff]/60" : "text-[#6d6d6d]"
+  const sec = selected ? "text-white/80" : "text-[#6d6d6d]"
 
   return (
     <>
       <div
         role="row"
         tabIndex={0}
+        draggable={!!onMove}
+        onDragStart={(e) => { e.dataTransfer.setData(INTERNAL_DRAG_TYPE, file.path); e.dataTransfer.effectAllowed = "move"; setDragging(true) }}
+        onDragEnd={() => setDragging(false)}
         onClick={() => onSelect?.(file)}
         onDoubleClick={() => onOpen?.(file)}
         onContextMenu={(e) => {
@@ -128,7 +130,8 @@ export function FileRow({
         data-selected={selected || undefined}
         className={cn(
           "h-[24px] cursor-default select-none items-center outline-none",
-          selected && "!bg-[#0a84ff]/15 !text-[#0a84ff] rounded-md",
+          selected && "!bg-[#2068d0] text-white rounded-lg",
+          dragging && "opacity-40",
         )}
         style={{ display: "grid", gridTemplateColumns: COL_GRID }}
       >
@@ -154,44 +157,5 @@ export function FileRow({
         />
       )}
     </>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// NewFolderInput (inline, styled as a selected folder row)
-// ---------------------------------------------------------------------------
-
-export function NewFolderInput({ onConfirm, onCancel }: {
-  onConfirm: (name: string) => void
-  onCancel: () => void
-}) {
-  const [value, setValue] = useState("")
-  const inputRef = useRef<HTMLInputElement>(null)
-  return (
-    <div
-      className="h-[24px] bg-[#0a84ff]/15 rounded-md items-center"
-      style={{ display: "grid", gridTemplateColumns: COL_GRID }}
-    >
-      <div className="flex items-center gap-1.5 min-w-0 pl-3">
-        <DisclosureChevron open={false} className="invisible" />
-        <FolderIcon />
-        <input
-          ref={inputRef}
-          autoFocus
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && value.trim()) onConfirm(value.trim())
-            if (e.key === "Escape") onCancel()
-          }}
-          onBlur={() => (value.trim() ? onConfirm(value.trim()) : onCancel())}
-          placeholder="untitled folder"
-          className="flex-1 text-[13px] bg-transparent text-[#0a84ff] outline-none placeholder:text-[#0a84ff]/50 min-w-0"
-        />
-      </div>
-      <span />
-      <span />
-      <span className="text-[11px] text-[#0a84ff]/60 px-2">Folder</span>
-    </div>
   )
 }

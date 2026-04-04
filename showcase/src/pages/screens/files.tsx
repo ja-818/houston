@@ -70,6 +70,14 @@ export function FilesScreen() {
             onReveal={(f) => console.log("Reveal:", f.path)}
             onDelete={(f) => setFiles((prev) => prev.filter((p) => p.path !== f.path))}
             onFilesDropped={handleDrop}
+            onMove={(src, target) => {
+              setFiles((prev) => {
+                const file = prev.find((f) => f.path === src)
+                if (!file) return prev
+                const newPath = target ? `${target}/${file.name}` : file.name
+                return prev.map((f) => f.path === src ? { ...f, path: newPath } : f)
+              })
+            }}
             onCreateFolder={(name) => console.log("Create folder:", name)}
           />
         </div>

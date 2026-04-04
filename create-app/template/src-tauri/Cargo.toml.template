@@ -19,3 +19,4 @@ dirs = "5"
 keel-tauri = { git = "https://github.com/ja-818/keel-and-deck.git" }
 keel-db = { git = "https://github.com/ja-818/keel-and-deck.git" }
 keel-sessions = { git = "https://github.com/ja-818/keel-and-deck.git" }
+keel-skills = { git = "https://github.com/ja-818/keel-and-deck.git" }
