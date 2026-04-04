@@ -91,7 +91,7 @@ export function AppSidebar({
                       if (e.key === "Enter") commitRename(item.id);
                       if (e.key === "Escape") setEditingId(null);
                     }}
-                    className="flex-1 px-3 py-1.5 text-[13px] bg-transparent outline-none ring-1 ring-ring rounded-lg"
+                    className="flex-1 px-3 py-1.5 text-[13px] bg-background outline-none border border-border rounded-lg focus:border-foreground/30"
                   />
                 ) : (
                   <button

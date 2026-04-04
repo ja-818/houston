@@ -87,7 +87,7 @@ export function FilesBrowser({
       {...(onFilesDropped ? dragHandlers : {})}
     >
       <div
-        className="h-[22px] shrink-0 border-b border-[#ddd] bg-[#f6f6f6] select-none items-center"
+        className="h-[24px] shrink-0 border-b border-[#e5e5e5] bg-[#fafafa] select-none items-center"
         style={{ display: "grid", gridTemplateColumns: COL_GRID }}
       >
         <HeaderCell label="Name" col="name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="pl-7" />
@@ -97,7 +97,7 @@ export function FilesBrowser({
       </div>
 
       <div
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto [&>:nth-child(even)]:bg-[#f5f5f5]"
         style={{ backgroundColor: isRootTarget ? "rgba(0,122,255,0.06)" : undefined }}
       >
         {loading ? (
@@ -105,7 +105,7 @@ export function FilesBrowser({
             <p className="text-sm text-muted-foreground/50">Loading\u2026</p>
           </div>
         ) : (
-          <div>
+          <>
             {creatingFolder && (
               <NewFolderInput
                 onConfirm={(n) => { onCreateFolder?.(n); setCreatingFolder(false) }}
@@ -129,12 +129,12 @@ export function FilesBrowser({
                 />
               ),
             )}
-          </div>
+          </>
         )}
       </div>
 
-      <div className="h-[22px] shrink-0 border-t border-[#ddd] bg-[#f6f6f6] flex items-center justify-center">
-        <span className="text-[11px] text-[#808080]">
+      <div className="h-[24px] shrink-0 border-t border-[#e5e5e5] bg-[#fafafa] flex items-center justify-center">
+        <span className="text-[11px] text-[#6d6d6d]">
           {files.length} item{files.length !== 1 ? "s" : ""}
           {onCreateFolder && (
             <button
@@ -164,14 +164,14 @@ function HeaderCell({ label, col, sortKey, sortDir, onSort, className, last }: {
     <button
       onClick={() => onSort(col)}
       className={cn(
-        "flex items-center h-full px-2 text-[11px] font-medium text-[#808080] hover:bg-[#eaeaea] transition-colors",
-        !last && "border-r border-[#ddd]",
+        "flex items-center h-full px-2 text-[11px] font-medium text-[#6d6d6d] hover:bg-[#eaeaea] transition-colors",
+        !last && "border-r border-[#e5e5e5]",
         className,
       )}
     >
       <span className="truncate">{label}</span>
       {active && (
-        <svg className="size-[6px] ml-1 shrink-0" viewBox="0 0 8 5" fill="#808080">
+        <svg className="size-[6px] ml-1 shrink-0" viewBox="0 0 8 5" fill="#6d6d6d">
           {sortDir === "asc"
             ? <path d="M0 5L4 0L8 5Z" />
             : <path d="M0 0L4 5L8 0Z" />}

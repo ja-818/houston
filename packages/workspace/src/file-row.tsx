@@ -14,11 +14,11 @@ import { FileMenu } from "./file-menu"
 
 // Indentation constants (px)
 const DEPTH_INDENT = 20
-const BASE_INDENT = 8
+const BASE_INDENT = 12
 const TRIANGLE_AREA = 16
 
 /** Column grid shared between header and rows. */
-export const COL_GRID = "1fr 150px 70px 120px"
+export const COL_GRID = "1fr 190px 80px 130px"
 
 // ---------------------------------------------------------------------------
 // FolderSection
@@ -48,26 +48,27 @@ export function FolderSection({
   const padLeft = BASE_INDENT + depth * DEPTH_INDENT
 
   return (
-    <div {...(onFilesDropped ? folderHandlers : {})}>
+    <>
       <div
         role="button"
         tabIndex={0}
         onClick={() => setOpen(!open)}
         onKeyDown={(e) => e.key === "Enter" && setOpen(!open)}
         className={cn(
-          "h-[22px] select-none cursor-default items-center",
-          isOver ? "bg-[rgba(0,122,255,0.08)]" : "hover:bg-[#f0f0f0]",
+          "h-[24px] select-none cursor-default items-center",
+          isOver ? "bg-[rgba(0,122,255,0.08)]" : "",
         )}
         style={{ display: "grid", gridTemplateColumns: COL_GRID }}
+        {...(onFilesDropped ? folderHandlers : {})}
       >
         <div className="flex items-center gap-1.5 min-w-0" style={{ paddingLeft: padLeft }}>
           <DisclosureTriangle open={open} />
           <FolderIcon />
           <span className="text-[13px] truncate">{node.name}</span>
         </div>
-        <span className="text-[11px] text-[#999] truncate px-2">{"\u2014"}</span>
-        <span className="text-[11px] text-[#999] text-right px-2">{"\u2014"}</span>
-        <span className="text-[11px] text-[#999] truncate px-2">Folder</span>
+        <span className="text-[11px] text-[#6d6d6d] truncate px-2">{"\u2014"}</span>
+        <span className="text-[11px] text-[#6d6d6d] text-right px-2">--</span>
+        <span className="text-[11px] text-[#6d6d6d] truncate px-2">Folder</span>
       </div>
       {open &&
         node.children.map((child) =>
@@ -87,7 +88,7 @@ export function FolderSection({
             />
           ),
         )}
-    </div>
+    </>
   )
 }
 
@@ -109,7 +110,7 @@ export function FileRow({
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const padLeft = BASE_INDENT + depth * DEPTH_INDENT + TRIANGLE_AREA
   const hasMenu = onOpen || onReveal || onDelete
-  const sec = selected ? "text-white/70" : "text-[#999]"
+  const sec = selected ? "text-white/80" : "text-[#6d6d6d]"
 
   return (
     <>
@@ -124,9 +125,10 @@ export function FileRow({
           onSelect?.(file)
           setMenu({ x: e.clientX, y: e.clientY })
         }}
+        data-selected={selected || undefined}
         className={cn(
-          "h-[22px] cursor-default select-none items-center outline-none transition-colors duration-75",
-          selected ? "bg-[#0058D0] text-white" : "hover:bg-[#f0f0f0]",
+          "h-[24px] cursor-default select-none items-center outline-none",
+          selected && "!bg-[#0058D0] text-white",
         )}
         style={{ display: "grid", gridTemplateColumns: COL_GRID }}
       >
@@ -167,10 +169,10 @@ export function NewFolderInput({ onConfirm, onCancel }: {
   const inputRef = useRef<HTMLInputElement>(null)
   return (
     <div
-      className="h-[22px] bg-[#0058D0] items-center"
+      className="h-[24px] bg-[#0058D0] items-center"
       style={{ display: "grid", gridTemplateColumns: COL_GRID }}
     >
-      <div className="flex items-center gap-1.5 min-w-0 pl-2">
+      <div className="flex items-center gap-1.5 min-w-0 pl-3">
         <DisclosureTriangle open={false} className="invisible" />
         <FolderIcon />
         <input

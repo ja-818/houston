@@ -35,11 +35,11 @@ export function FolderIcon() {
     <svg className={IC} viewBox="0 0 16 16" fill="none">
       <path
         d="M1.5 3C1.5 2.45 1.95 2 2.5 2H6.29L7.79 3.5H13.5C14.05 3.5 14.5 3.95 14.5 4.5V13C14.5 13.55 14.05 14 13.5 14H2.5C1.95 14 1.5 13.55 1.5 13V3Z"
-        fill="#8FC8F8"
+        fill="#A0D0F8"
       />
       <path
         d="M1.5 5.5C1.5 4.95 1.95 4.5 2.5 4.5H13.5C14.05 4.5 14.5 4.95 14.5 5.5V13C14.5 13.55 14.05 14 13.5 14H2.5C1.95 14 1.5 13.55 1.5 13V5.5Z"
-        fill="#55AAF0"
+        fill="#5DB5F5"
       />
     </svg>
   )
@@ -140,12 +140,12 @@ export function DisclosureTriangle({
   return (
     <svg
       className={cn(
-        "size-[7px] shrink-0 transition-transform duration-150",
+        "size-2 shrink-0 transition-transform duration-150",
         open && "rotate-90",
         className,
       )}
       viewBox="0 0 8 10"
-      fill="#808080"
+      fill="#8e8e8e"
     >
       <path d="M1 0.5L7.5 5L1 9.5Z" />
     </svg>
