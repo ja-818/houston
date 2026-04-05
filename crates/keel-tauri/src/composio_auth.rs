@@ -15,10 +15,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 /// exchanges the code, and stores the token in the keychain.
 pub async fn run_oauth_flow() -> Result<(), String> {
     let config = read_oauth_config()?;
-    let metadata = fetch_metadata(&config.auth_server_url).await?;
-
-    let verifier = generate_verifier();
-    let challenge = compute_challenge(&verifier);
+    let metadata = fetch_metadata(&config.auth_server_url, &config.resource_metadata_url).await?;
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
@@ -29,9 +26,20 @@ pub async fn run_oauth_flow() -> Result<(), String> {
         .port();
     let redirect_uri = format!("http://127.0.0.1:{port}/callback");
 
+    // Dynamic client registration with our redirect_uri
+    let reg_endpoint = metadata
+        .registration_endpoint
+        .as_deref()
+        .ok_or("Server does not support dynamic client registration")?;
+    let registration = register_client(reg_endpoint, &redirect_uri).await?;
+    eprintln!("[composio:auth] Registered client: {}", registration.client_id);
+
+    let verifier = generate_verifier();
+    let challenge = compute_challenge(&verifier);
+
     let auth_url = build_auth_url(
         &metadata.authorization_endpoint,
-        &config.client_id,
+        &registration.client_id,
         &redirect_uri,
         &config.scope,
         &challenge,
@@ -47,7 +55,7 @@ pub async fn run_oauth_flow() -> Result<(), String> {
     let token = exchange_code(
         &metadata.token_endpoint,
         &code,
-        &config.client_id,
+        &registration.client_id,
         &redirect_uri,
         &verifier,
     )
@@ -64,6 +72,7 @@ pub async fn run_oauth_flow() -> Result<(), String> {
 struct OAuthConfig {
     client_id: String,
     auth_server_url: String,
+    resource_metadata_url: String,
     scope: String,
 }
 
@@ -71,6 +80,13 @@ struct OAuthConfig {
 struct OAuthMetadata {
     authorization_endpoint: String,
     token_endpoint: String,
+    registration_endpoint: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ClientRegistration {
+    client_id: String,
+    client_secret: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -96,11 +112,16 @@ fn read_oauth_config() -> Result<OAuthConfig, String> {
                 .and_then(|v| v.as_str())
                 .ok_or("Missing clientId")?
                 .to_string();
-            let auth_server_url = info
-                .get("discoveryState")
-                .and_then(|d| d.get("authorizationServerUrl"))
+            let discovery = info.get("discoveryState").ok_or("Missing discoveryState")?;
+            let auth_server_url = discovery
+                .get("authorizationServerUrl")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing authorizationServerUrl")?
+                .to_string();
+            let resource_metadata_url = discovery
+                .get("resourceMetadataUrl")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
                 .to_string();
             let scope = info
                 .get("scope")
@@ -110,6 +131,7 @@ fn read_oauth_config() -> Result<OAuthConfig, String> {
             return Ok(OAuthConfig {
                 client_id,
                 auth_server_url,
+                resource_metadata_url,
                 scope,
             });
         }
@@ -119,39 +141,111 @@ fn read_oauth_config() -> Result<OAuthConfig, String> {
 
 // -- Fetch OAuth metadata --
 
-async fn fetch_metadata(auth_server_url: &str) -> Result<OAuthMetadata, String> {
+async fn fetch_metadata(auth_server_url: &str, resource_metadata_url: &str) -> Result<OAuthMetadata, String> {
     let client = reqwest::Client::new();
 
-    // Try standard OAuth AS metadata first
-    let url = format!(
-        "{}/.well-known/oauth-authorization-server",
-        auth_server_url
-    );
-    eprintln!("[composio:auth] Fetching metadata from: {url}");
-    if let Ok(resp) = client.get(&url).send().await {
-        let status = resp.status();
+    // Try well-known paths in order of likelihood
+    let candidates = [
+        // 1. MCP resource metadata → extract AS URL
+        resource_metadata_url.to_string(),
+        // 2. Root-level OAuth AS metadata
+        format!("{}/.well-known/oauth-authorization-server", root_url(auth_server_url)),
+        // 3. Path-based OAuth AS metadata
+        format!("{}/.well-known/oauth-authorization-server", auth_server_url),
+        // 4. Root-level OIDC
+        format!("{}/.well-known/openid-configuration", root_url(auth_server_url)),
+    ];
+
+    for url in &candidates {
+        eprintln!("[composio:auth] Trying: {url}");
+        let resp = match client.get(url).send().await {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+        if !resp.status().is_success() {
+            eprintln!("[composio:auth]   → {}", resp.status());
+            continue;
+        }
         let body = resp.text().await.unwrap_or_default();
-        eprintln!("[composio:auth] AS metadata: HTTP {status}, body: {}", &body[..body.len().min(500)]);
-        if status.is_success() {
-            if let Ok(meta) = serde_json::from_str::<OAuthMetadata>(&body) {
-                return Ok(meta);
+        eprintln!("[composio:auth]   → 200, body: {}", &body[..body.len().min(300)]);
+
+        // Try parsing as OAuth metadata directly
+        if let Ok(meta) = serde_json::from_str::<OAuthMetadata>(&body) {
+            return Ok(meta);
+        }
+        // Try parsing as resource metadata (contains authorization_servers array)
+        if let Ok(res) = serde_json::from_str::<serde_json::Value>(&body) {
+            if let Some(servers) = res.get("authorization_servers").and_then(|s| s.as_array()) {
+                for server_url in servers.iter().filter_map(|s| s.as_str()) {
+                    eprintln!("[composio:auth] Found AS: {server_url}");
+                    // Recursively fetch the AS metadata
+                    let as_url = format!("{}/.well-known/oauth-authorization-server", server_url);
+                    if let Ok(as_resp) = client.get(&as_url).send().await {
+                        if as_resp.status().is_success() {
+                            if let Ok(meta) = as_resp.json::<OAuthMetadata>().await {
+                                return Ok(meta);
+                            }
+                        }
+                    }
+                    // Also try OIDC at the AS URL
+                    let oidc_url = format!("{}/.well-known/openid-configuration", server_url);
+                    if let Ok(oidc_resp) = client.get(&oidc_url).send().await {
+                        if oidc_resp.status().is_success() {
+                            if let Ok(meta) = oidc_resp.json::<OAuthMetadata>().await {
+                                return Ok(meta);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
-    // Fall back to OpenID Connect discovery
-    let url2 = format!("{}/.well-known/openid-configuration", auth_server_url);
-    eprintln!("[composio:auth] Trying OIDC discovery: {url2}");
+    Err("Could not find OAuth metadata at any known endpoint".to_string())
+}
+
+fn root_url(url: &str) -> String {
+    // Extract scheme + host from a URL like https://connect.composio.dev/api/v3/auth/dash
+    if let Some(idx) = url.find("://") {
+        let after_scheme = &url[idx + 3..];
+        if let Some(slash) = after_scheme.find('/') {
+            return url[..idx + 3 + slash].to_string();
+        }
+    }
+    url.to_string()
+}
+
+// -- Dynamic client registration (RFC 7591) --
+
+async fn register_client(
+    registration_endpoint: &str,
+    redirect_uri: &str,
+) -> Result<ClientRegistration, String> {
+    let client = reqwest::Client::new();
+    let body = serde_json::json!({
+        "client_name": "Keel Desktop App",
+        "redirect_uris": [redirect_uri],
+        "grant_types": ["authorization_code"],
+        "response_types": ["code"],
+        "token_endpoint_auth_method": "none",
+    });
+
     let resp = client
-        .get(&url2)
+        .post(registration_endpoint)
+        .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Failed to fetch OAuth metadata: {e}"))?;
+        .map_err(|e| format!("Client registration failed: {e}"))?;
+
     let status = resp.status();
-    let body = resp.text().await.unwrap_or_default();
-    eprintln!("[composio:auth] OIDC metadata: HTTP {status}, body: {}", &body[..body.len().min(500)]);
-    serde_json::from_str::<OAuthMetadata>(&body)
-        .map_err(|e| format!("Invalid OAuth metadata: {e}"))
+    let text = resp.text().await.unwrap_or_default();
+
+    if !status.is_success() {
+        return Err(format!("Client registration returned {status}: {text}"));
+    }
+
+    serde_json::from_str(&text)
+        .map_err(|e| format!("Invalid registration response: {e}"))
 }
 
 // -- PKCE --

@@ -48,6 +48,7 @@ pub struct ProjectFile {
     pub name: String,
     pub extension: String,
     pub size: u64,
+    pub is_directory: bool,
 }
 
 /// List all user-facing files in a workspace folder.
@@ -161,6 +162,7 @@ pub async fn import_files(
                     name: final_name,
                     extension: ext,
                     size,
+                    is_directory: false,
                 });
             }
             Err(e) => eprintln!("[workspace] import failed for {src_str}: {e}"),
@@ -227,6 +229,7 @@ pub async fn write_file_bytes(
         name: final_name,
         extension: ext,
         size,
+        is_directory: false,
     })
 }
 
@@ -324,7 +327,6 @@ fn collect_files(root: &Path, dir: &Path, out: &mut Vec<ProjectFile>) {
             if should_skip_dir(&name) {
                 continue;
             }
-            // Add the folder itself as an entry
             let relative = path
                 .strip_prefix(root)
                 .unwrap_or(&path)
@@ -335,6 +337,7 @@ fn collect_files(root: &Path, dir: &Path, out: &mut Vec<ProjectFile>) {
                 name,
                 extension: String::new(),
                 size: 0,
+                is_directory: true,
             });
             collect_files(root, &path, out);
             continue;
@@ -357,6 +360,7 @@ fn collect_files(root: &Path, dir: &Path, out: &mut Vec<ProjectFile>) {
             name,
             extension: ext,
             size,
+            is_directory: false,
         });
     }
 }

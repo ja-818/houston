@@ -9,6 +9,8 @@ export interface FileEntry {
   extension: string
   /** File size in bytes */
   size: number
+  /** Whether this entry is a directory */
+  is_directory?: boolean
   /** Last modified timestamp in milliseconds (Date.now() format) */
   dateModified?: number
 }
