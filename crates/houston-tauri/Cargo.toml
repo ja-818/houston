@@ -1,6 +1,6 @@
 [package]
 name = "houston-tauri"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Tauri plugin wrapping houston-sessions and houston-db for AI agent desktop apps"
 license = "MIT"

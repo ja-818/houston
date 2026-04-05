@@ -1,6 +1,6 @@
 {
   "name": "create-houston-experience",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Scaffold a Tauri 2 + React desktop app with the Houston framework",
   "type": "module",
   "bin": {

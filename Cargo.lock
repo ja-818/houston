@@ -1622,7 +1622,7 @@ dependencies = [
 
 [[package]]
 name = "houston-app"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "dirs 5.0.1",
@@ -1639,7 +1639,7 @@ dependencies = [
 
 [[package]]
 name = "houston-channels"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1657,7 +1657,7 @@ dependencies = [
 
 [[package]]
 name = "houston-db"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1668,7 +1668,7 @@ dependencies = [
 
 [[package]]
 name = "houston-events"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1682,7 +1682,7 @@ dependencies = [
 
 [[package]]
 name = "houston-memory"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "tempfile",
  "thiserror 2.0.18",
@@ -1690,7 +1690,7 @@ dependencies = [
 
 [[package]]
 name = "houston-scheduler"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1704,7 +1704,7 @@ dependencies = [
 
 [[package]]
 name = "houston-sessions"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1713,7 +1713,7 @@ dependencies = [
 
 [[package]]
 name = "houston-skills"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "reqwest 0.12.28",
@@ -1726,7 +1726,7 @@ dependencies = [
 
 [[package]]
 name = "houston-tauri"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
  "houston-channels",

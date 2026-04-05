@@ -24,11 +24,11 @@ chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1"
 async-trait = "0.1"
 tracing = "0.1"
-houston-sessions = { version = "0.1.0", path = "crates/houston-sessions" }
-houston-db = { version = "0.1.0", path = "crates/houston-db" }
-houston-tauri = { version = "0.1.0", path = "crates/houston-tauri" }
-houston-events = { version = "0.1.0", path = "crates/houston-events" }
-houston-scheduler = { version = "0.1.0", path = "crates/houston-scheduler" }
-houston-channels = { version = "0.1.0", path = "crates/houston-channels" }
-houston-memory = { version = "0.1.0", path = "crates/houston-memory" }
-houston-skills = { version = "0.1.0", path = "crates/houston-skills" }
+houston-sessions = { version = "0.2.0", path = "crates/houston-sessions" }
+houston-db = { version = "0.2.0", path = "crates/houston-db" }
+houston-tauri = { version = "0.2.0", path = "crates/houston-tauri" }
+houston-events = { version = "0.2.0", path = "crates/houston-events" }
+houston-scheduler = { version = "0.2.0", path = "crates/houston-scheduler" }
+houston-channels = { version = "0.2.0", path = "crates/houston-channels" }
+houston-memory = { version = "0.2.0", path = "crates/houston-memory" }
+houston-skills = { version = "0.2.0", path = "crates/houston-skills" }
