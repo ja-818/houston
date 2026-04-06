@@ -2,6 +2,7 @@
 
 use super::helpers::{read_json, write_json};
 use super::types::{Task, TaskUpdate};
+use chrono::Utc;
 use std::path::Path;
 use uuid::Uuid;
 
@@ -13,12 +14,14 @@ pub fn list(root: &Path) -> Result<Vec<Task>, String> {
 
 pub fn create(root: &Path, title: &str, description: &str) -> Result<Task, String> {
     let mut tasks = list(root)?;
+    let now = Utc::now().to_rfc3339();
     let task = Task {
         id: Uuid::new_v4().to_string(),
         title: title.to_string(),
         description: description.to_string(),
         status: "queue".to_string(),
         claude_session_id: None,
+        updated_at: Some(now),
     };
     tasks.push(task.clone());
     write_json(root, FILE, &tasks)?;
@@ -44,6 +47,8 @@ pub fn update(root: &Path, id: &str, updates: TaskUpdate) -> Result<Task, String
     if let Some(session_id) = updates.claude_session_id {
         task.claude_session_id = session_id;
     }
+
+    task.updated_at = Some(Utc::now().to_rfc3339());
 
     let result = task.clone();
     write_json(root, FILE, &tasks)?;

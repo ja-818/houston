@@ -6,7 +6,7 @@ use crate::workspace_store::WorkspaceStore;
 
 // -- Skills --
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn list_skills(
     workspace_path: String,
 ) -> Result<Vec<Skill>, String> {
@@ -14,7 +14,7 @@ pub async fn list_skills(
     WorkspaceStore::new(&root).list_skills()
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn read_skill(
     workspace_path: String,
     name: String,
@@ -23,7 +23,7 @@ pub async fn read_skill(
     WorkspaceStore::new(&root).read_skill(&name)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn write_skill(
     workspace_path: String,
     name: String,
@@ -34,7 +34,7 @@ pub async fn write_skill(
     WorkspaceStore::new(&root).write_skill(&name, &instructions, &learnings)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn delete_skill(
     workspace_path: String,
     name: String,
@@ -45,7 +45,7 @@ pub async fn delete_skill(
 
 // -- Log --
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn append_log(
     workspace_path: String,
     entry: LogEntry,
@@ -54,7 +54,7 @@ pub async fn append_log(
     WorkspaceStore::new(&root).append_log(&entry)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn read_log(
     workspace_path: String,
 ) -> Result<Vec<LogEntry>, String> {
@@ -64,7 +64,7 @@ pub async fn read_log(
 
 // -- Config --
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn read_config(
     workspace_path: String,
 ) -> Result<ProjectConfig, String> {
@@ -72,7 +72,7 @@ pub async fn read_config(
     WorkspaceStore::new(&root).read_config()
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn write_config(
     workspace_path: String,
     config: ProjectConfig,

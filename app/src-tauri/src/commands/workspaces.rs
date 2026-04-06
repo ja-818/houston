@@ -112,7 +112,7 @@ fn resolve_space_folder(root: &Path, space_id: &str) -> Result<PathBuf, String> 
 
 // --- Commands ---
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn list_workspaces(
     root: tauri::State<'_, WorkspaceRoot>,
     space_id: String,
@@ -150,12 +150,13 @@ pub fn list_workspaces(
     Ok(workspaces)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn create_workspace(
     root: tauri::State<'_, WorkspaceRoot>,
     space_id: String,
     name: String,
     experience_id: String,
+    claude_md: Option<String>,
 ) -> Result<Workspace, String> {
     let space_dir = resolve_space_folder(&root.0, &space_id)?;
     let folder = space_dir.join(&name);
@@ -180,10 +181,12 @@ pub fn create_workspace(
     };
     write_meta(&folder, &meta)?;
 
-    // Seed CLAUDE.md
-    let claude_md = folder.join("CLAUDE.md");
-    if !claude_md.exists() {
-        fs::write(&claude_md, "## Instructions\n\n## Learnings\n")
+    // Seed CLAUDE.md from experience manifest or use generic template
+    let claude_md_path = folder.join("CLAUDE.md");
+    if !claude_md_path.exists() {
+        let content = claude_md
+            .unwrap_or_else(|| "## Instructions\n\n## Learnings\n".to_string());
+        fs::write(&claude_md_path, content)
             .map_err(|e| format!("Failed to write CLAUDE.md: {e}"))?;
     }
 
@@ -194,7 +197,7 @@ pub fn create_workspace(
     Ok(meta_to_workspace(&folder, &meta))
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn delete_workspace(
     root: tauri::State<'_, WorkspaceRoot>,
     space_id: String,
@@ -207,7 +210,7 @@ pub fn delete_workspace(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn rename_workspace(
     root: tauri::State<'_, WorkspaceRoot>,
     space_id: String,
@@ -231,7 +234,7 @@ pub fn rename_workspace(
     Ok(meta_to_workspace(&new_folder, &meta))
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn update_workspace_opened(
     root: tauri::State<'_, WorkspaceRoot>,
     space_id: String,

@@ -13,7 +13,7 @@ fn experiences_dir() -> PathBuf {
     home.join(".houston").join("experiences")
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn list_installed_experiences() -> Result<Vec<InstalledExperience>, String> {
     let dir = experiences_dir();
     fs::create_dir_all(&dir)

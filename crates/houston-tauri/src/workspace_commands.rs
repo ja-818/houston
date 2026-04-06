@@ -52,7 +52,7 @@ pub struct ProjectFile {
 }
 
 /// List all user-facing files in a workspace folder.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn list_project_files(
     workspace_path: String,
 ) -> Result<Vec<ProjectFile>, String> {
@@ -67,7 +67,7 @@ pub async fn list_project_files(
 }
 
 /// Open a file with the system default application.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn open_file(
     workspace_path: String,
     relative_path: String,
@@ -81,7 +81,7 @@ pub async fn open_file(
 }
 
 /// Show a file in the OS file manager (Finder on macOS).
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn reveal_file(
     workspace_path: String,
     relative_path: String,
@@ -96,7 +96,7 @@ pub async fn reveal_file(
 }
 
 /// Rename a file or folder in the workspace.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn rename_file(
     workspace_path: String,
     relative_path: String,
@@ -111,7 +111,7 @@ pub async fn rename_file(
 }
 
 /// Delete a file from the workspace.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn delete_file(
     workspace_path: String,
     relative_path: String,
@@ -124,7 +124,7 @@ pub async fn delete_file(
 /// Import files from absolute paths into the workspace.
 /// Uses `workspace::copy_file_to_dir` which auto-deduplicates names.
 /// Returns the list of imported files for immediate UI refresh.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn import_files(
     workspace_path: String,
     file_paths: Vec<String>,
@@ -172,7 +172,7 @@ pub async fn import_files(
 }
 
 /// Create a folder inside the workspace.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn create_workspace_folder(
     workspace_path: String,
     folder_name: String,
@@ -182,7 +182,7 @@ pub async fn create_workspace_folder(
 }
 
 /// Open the workspace folder in the OS file manager.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn reveal_workspace(
     workspace_path: String,
 ) -> Result<(), String> {
@@ -195,7 +195,7 @@ pub async fn reveal_workspace(
 }
 
 /// Open a URL in the system default browser.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn open_url(url: String) -> Result<(), String> {
     std::process::Command::new("open")
         .arg(&url)
@@ -206,7 +206,7 @@ pub async fn open_url(url: String) -> Result<(), String> {
 
 /// Write a file from raw bytes (base64-encoded) into the workspace.
 /// Used when files come from a web file picker (no filesystem path available).
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn write_file_bytes(
     workspace_path: String,
     file_name: String,
@@ -234,7 +234,7 @@ pub async fn write_file_bytes(
 }
 
 /// Read a text file from the workspace by relative path.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn read_project_file(
     workspace_path: String,
     relative_path: String,
@@ -246,7 +246,7 @@ pub async fn read_project_file(
 
 /// Full-text search across chat sessions.
 /// Returns sessions grouped by claude_session_id with highlighted snippets.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn search_sessions(
     state: State<'_, AppState>,
     query: String,
@@ -260,7 +260,7 @@ pub async fn search_sessions(
 }
 
 /// List recent chat sessions (no search). Returns metadata only.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn list_recent_sessions(
     state: State<'_, AppState>,
     limit: Option<usize>,
@@ -274,7 +274,7 @@ pub async fn list_recent_sessions(
 
 /// v2: Load persisted chat feed by claude_session_id.
 /// This is the primary way to load conversation history.
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn load_session_feed(
     state: State<'_, AppState>,
     claude_session_id: String,

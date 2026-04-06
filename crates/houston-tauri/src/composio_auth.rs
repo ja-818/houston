@@ -112,8 +112,6 @@ pub async fn refresh_access_token() -> Result<String, String> {
 // -- Internal types --
 
 struct OAuthConfig {
-    /// Kept for future use — original client_id from keychain discovery state.
-    #[allow(dead_code)]
     client_id: String,
     auth_server_url: String,
     resource_metadata_url: String,

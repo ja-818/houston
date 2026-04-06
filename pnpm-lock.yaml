@@ -98,9 +98,15 @@ importers:
 
   packages/board:
     dependencies:
+      '@houston-ai/chat':
+        specifier: workspace:*
+        version: link:../chat
       '@houston-ai/core':
         specifier: workspace:*
         version: link:../core
+      '@houston-ai/layout':
+        specifier: workspace:*
+        version: link:../layout
       framer-motion:
         specifier: ^12.38.0
         version: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

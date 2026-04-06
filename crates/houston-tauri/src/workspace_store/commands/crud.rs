@@ -6,7 +6,7 @@ use crate::workspace_store::WorkspaceStore;
 
 // -- Tasks --
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn list_tasks(
     workspace_path: String,
 ) -> Result<Vec<Task>, String> {
@@ -14,7 +14,7 @@ pub async fn list_tasks(
     WorkspaceStore::new(&root).list_tasks()
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn create_task(
     workspace_path: String,
     title: String,
@@ -24,7 +24,7 @@ pub async fn create_task(
     WorkspaceStore::new(&root).create_task(&title, &description)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn update_task(
     workspace_path: String,
     task_id: String,
@@ -34,7 +34,7 @@ pub async fn update_task(
     WorkspaceStore::new(&root).update_task(&task_id, updates)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn delete_task(
     workspace_path: String,
     task_id: String,
@@ -45,7 +45,7 @@ pub async fn delete_task(
 
 // -- Routines --
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn list_routines(
     workspace_path: String,
 ) -> Result<Vec<Routine>, String> {
@@ -53,7 +53,7 @@ pub async fn list_routines(
     WorkspaceStore::new(&root).list_routines()
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn create_routine(
     workspace_path: String,
     input: NewRoutine,
@@ -62,7 +62,7 @@ pub async fn create_routine(
     WorkspaceStore::new(&root).create_routine(input)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn update_routine(
     workspace_path: String,
     routine_id: String,
@@ -72,7 +72,7 @@ pub async fn update_routine(
     WorkspaceStore::new(&root).update_routine(&routine_id, updates)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn delete_routine(
     workspace_path: String,
     routine_id: String,
@@ -83,7 +83,7 @@ pub async fn delete_routine(
 
 // -- Goals --
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn list_goals(
     workspace_path: String,
 ) -> Result<Vec<Goal>, String> {
@@ -91,7 +91,7 @@ pub async fn list_goals(
     WorkspaceStore::new(&root).list_goals()
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn create_goal(
     workspace_path: String,
     title: String,
@@ -100,7 +100,7 @@ pub async fn create_goal(
     WorkspaceStore::new(&root).create_goal(&title)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn update_goal(
     workspace_path: String,
     goal_id: String,
@@ -110,7 +110,7 @@ pub async fn update_goal(
     WorkspaceStore::new(&root).update_goal(&goal_id, updates)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn delete_goal(
     workspace_path: String,
     goal_id: String,
@@ -121,7 +121,7 @@ pub async fn delete_goal(
 
 // -- Channels --
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn list_channels_config(
     workspace_path: String,
 ) -> Result<Vec<ChannelEntry>, String> {
@@ -129,7 +129,7 @@ pub async fn list_channels_config(
     WorkspaceStore::new(&root).list_channels()
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn add_channel_config(
     workspace_path: String,
     input: NewChannel,
@@ -138,7 +138,7 @@ pub async fn add_channel_config(
     WorkspaceStore::new(&root).add_channel(input)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn remove_channel_config(
     workspace_path: String,
     channel_id: String,

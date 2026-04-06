@@ -10,7 +10,9 @@
   "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@houston-ai/core": "workspace:*"
+    "@houston-ai/core": "workspace:*",
+    "@houston-ai/chat": "workspace:*",
+    "@houston-ai/layout": "workspace:*"
   },
   "dependencies": {
     "framer-motion": "^12.38.0",

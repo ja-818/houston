@@ -4,6 +4,7 @@ export interface ToastItem {
   id: string;
   title: string;
   description?: string;
+  action?: { label: string; onClick: () => void };
 }
 
 interface UIState {
@@ -14,7 +15,6 @@ interface UIState {
   authRequired: boolean;
   toasts: ToastItem[];
   createWorkspaceDialogOpen: boolean;
-  newConversationDialogOpen: boolean;
   chatDraft: string;
   setViewMode: (mode: string) => void;
   setAssistantPanelOpen: (open: boolean) => void;
@@ -24,7 +24,6 @@ interface UIState {
   addToast: (toast: Omit<ToastItem, "id">) => void;
   dismissToast: (id: string) => void;
   setCreateWorkspaceDialogOpen: (open: boolean) => void;
-  setNewConversationDialogOpen: (open: boolean) => void;
   setChatDraft: (draft: string) => void;
 }
 
@@ -38,7 +37,6 @@ export const useUIStore = create<UIState>((set) => ({
   authRequired: false,
   toasts: [],
   createWorkspaceDialogOpen: false,
-  newConversationDialogOpen: false,
   chatDraft: "",
 
   setViewMode: (viewMode) => set({ viewMode }),
@@ -50,9 +48,10 @@ export const useUIStore = create<UIState>((set) => ({
   addToast: (toast) => {
     const id = `toast-${++toastCounter}`;
     set((s) => ({ toasts: [...s.toasts, { ...toast, id }] }));
+    const timeout = toast.action ? 10000 : 5000;
     setTimeout(() => {
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
-    }, 5000);
+    }, timeout);
   },
 
   dismissToast: (id) =>
@@ -60,9 +59,6 @@ export const useUIStore = create<UIState>((set) => ({
 
   setCreateWorkspaceDialogOpen: (createWorkspaceDialogOpen) =>
     set({ createWorkspaceDialogOpen }),
-
-  setNewConversationDialogOpen: (newConversationDialogOpen) =>
-    set({ newConversationDialogOpen }),
 
   setChatDraft: (chatDraft) => set({ chatDraft }),
 }));

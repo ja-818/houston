@@ -2,11 +2,12 @@
 
 ## What This Is
 
-A framework for building AI agent desktop apps. Two halves of one ship:
-- **Houston** (Rust crates) — session management, database, workspace persistence, Tauri integration
-- **Houston UI** (React packages) — UI components for chat, kanban boards, layouts, and design system
+A framework for building AI agent desktop apps. Three layers:
+- **Houston App** (`app/`) — the flagship AI work delegation desktop app (Tauri 2). Consumes the library and serves as living documentation.
+- **Houston** (Rust crates in `crates/`) — session management, database, workspace persistence, Tauri integration
+- **Houston UI** (React packages in `packages/`) — UI components for chat, kanban boards, layouts, and design system
 
-**Architecture:** Components are genericized and props-driven. No Zustand store dependencies, no app-specific logic in the library. All visual styling follows the Houston design system.
+**Architecture:** Library components are genericized and props-driven. No Zustand store dependencies, no app-specific logic in the library. All visual styling follows the Houston design system. The app wires stores to library component props.
 
 ---
 
@@ -16,7 +17,17 @@ A framework for building AI agent desktop apps. Two halves of one ship:
 houston/
 +-- app/                Houston app (Tauri 2) -- AI work delegation desktop app
 |   +-- src/            React frontend
+|   |   +-- components/
+|   |   |   +-- shell/      App shell: sidebar.tsx, space-switcher.tsx
+|   |   |   +-- tabs/       Built-in tab components (chat, board, context, etc.)
+|   |   +-- experiences/
+|   |   |   +-- builtin/    Built-in experience manifests (9 experiences)
+|   |   |   +-- loader.ts   Experience resolution (built-in + installed)
+|   |   +-- stores/         Zustand stores (spaces, workspaces, feeds, ui, experiences)
+|   |   +-- hooks/          App-level hooks (useSessionEvents, etc.)
+|   |   +-- lib/            Types, utilities, constants
 |   +-- src-tauri/      Rust backend
+|   |   +-- src/commands/   Tauri commands (spaces, workspaces, sessions, preferences)
 +-- crates/
 |   +-- houston-channels/  houston-channels     -- Channel adapters (Telegram, Slack), Channel trait, registry
 |   +-- houston-db/        houston-db           -- Database: chat_feed persistence + v1 compat models (libsql)
@@ -47,6 +58,129 @@ houston/
 
 ---
 
+## Houston App Concepts
+
+### Spaces
+
+Spaces are the top-level organizational container (replaced "Organization" in v0.2.0). Each space is an isolated group of workspaces with its own connections.
+
+```typescript
+interface Space {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  createdAt: string;
+}
+```
+
+- **Storage:** `~/Documents/Houston/spaces.json` (index) + one directory per space (`~/Documents/Houston/{SpaceName}/`)
+- **Default space:** "Personal" is auto-created on first launch
+- **Hierarchy:** Space > Workspace (many workspaces per space)
+- **Rust commands:** `list_spaces`, `create_space`, `rename_space`, `delete_space` (in `app/src-tauri/src/commands/spaces.rs`)
+- **Store:** `useSpaceStore` — `loadSpaces()`, `setCurrent()`, `create()`, `rename()`, `delete()`
+
+### Sidebar Structure
+
+The app sidebar (`app/src/components/shell/sidebar.tsx`) has two tiers:
+
+```
++---------------------------+
+| [SpaceSwitcher] [Settings]|  -- select/create Spaces
+|---------------------------|
+| > Dashboard               |  -- all workspaces overview
+| > Connections             |  -- space-wide integrations
+|---------------------------|
+| Your AI Workspaces        |
+|   > Research Agent        |  -- workspace items (sorted by lastOpenedAt)
+|   > Project Manager       |
+|   > Code Reviewer         |
+|   + New Workspace         |  -- create workspace (pick experience)
++---------------------------+
+```
+
+- **SpaceSwitcher:** dropdown to select/create spaces
+- **Dashboard:** shows all workspaces in current space as a grid
+- **Connections:** space-scoped channel/service management
+- **Workspace items:** sorted by `lastOpenedAt`, support rename/delete via context menu
+
+### Experience System
+
+Experiences define what an AI workspace looks like — which tabs are available, what system prompt the agent uses, and what files are seeded on creation.
+
+**Three tiers:**
+
+1. **JSON-only:** `manifest.json` defines tabs, prompt, colors, icon. Uses built-in @houston-ai tab components.
+2. **Custom React:** `manifest.json` + `bundle.js` with custom React components. Components import @houston-ai as peer deps.
+3. **Custom Rust:** PR a new crate to this repo. Experience declares `features: ["capability"]` in manifest.
+
+**Manifest structure:**
+```typescript
+interface ExperienceManifest {
+  id: string;
+  name: string;
+  description: string;
+  version?: string;
+  icon?: string;           // Lucide icon name
+  color?: string;          // Brand color override
+  category?: ExperienceCategory;
+  author?: string;
+  tags?: string[];
+  tabs: ExperienceTab[];
+  defaultTab?: string;
+  claudeMd?: string;       // CLAUDE.md template content
+  systemPrompt?: string;
+  workspaceSeeds?: Record<string, string>;
+  features?: string[];     // Rust feature flags needed
+}
+
+interface ExperienceTab {
+  id: string;
+  label: string;
+  builtIn?: string;        // "chat" | "board" | "skills" | "files" | "connections" | "context" | "routines" | "channels" | "events" | "learnings"
+  customComponent?: string;
+  badge?: "tasks" | "none";
+}
+```
+
+**Built-in experiences** (9): Default, Project Manager, Meeting Assistant, Research Agent, Data Analyst, Code Reviewer, DevOps, Content Writer, Customer Support. Located in `app/src/experiences/builtin/`.
+
+**Installed experiences:** loaded from `~/.houston/experiences/{id}/manifest.json`.
+
+### Tasks / Board Tab
+
+The "Tasks" tab uses `@houston-ai/board`'s `KanbanBoard`. Each card represents a task backed by `.houston/tasks.json`. When a card has a `claude_session_id`, clicking it opens a chat panel with that conversation's history — each kanban card is effectively a Claude conversation.
+
+Columns can include an `onAdd` callback, rendering a "+" button in the column header to create tasks directly from the board.
+
+### ChatSidebar (Progress Tracking)
+
+`ChatSidebar` from `@houston-ai/chat` is a props-driven panel that displays:
+- **Progress steps** — extracted from `update_progress` tool calls in the feed, or explicitly passed via `progressSteps` prop
+- **Channels list** — connected messaging channels with status dots
+
+Used alongside `ChatPanel` in the app's chat tab layout.
+
+### `.houston/prompts/` Convention
+
+Workspace prompts are stored in `.houston/prompts/` and assembled at runtime into the system prompt:
+
+```
+.houston/prompts/
+  system.md              -- Base system prompt (editable in Context tab)
+  self-improvement.md    -- Self-improvement guidance (editable)
+```
+
+**System prompt assembly order** (in `workspace.rs`):
+1. `.houston/prompts/system.md` — base prompt
+2. `.houston/prompts/self-improvement.md` — learning directives
+3. `.houston/memory/` — learnings snapshot
+4. `.houston/skills/` — skills index
+5. `CLAUDE.md` — workspace instructions
+
+Both prompt files are seeded on workspace creation via `seed_file()` (write-once, never overwrite).
+
+---
+
 ## Workspace Convention (`.houston/` folder)
 
 Every Houston app project stores agent-visible data in a `.houston/` folder alongside the project root. Agent-visible data lives in files, not SQLite.
@@ -57,8 +191,9 @@ Every Houston app project stores agent-visible data in a `.houston/` folder alon
 ### File structure
 
 ```
-~/Documents/{AppName}/{ProjectName}/
+~/Documents/Houston/{SpaceName}/{WorkspaceName}/
   .houston/
+    workspace.json      -- WorkspaceMeta (id, experience_id, created_at, last_opened_at)
     tasks.json          -- Task[] (id, title, description, status, claude_session_id)
     routines.json       -- Routine[] (id, name, description, trigger_type, trigger_config, status, approval_mode, claude_session_id)
     channels.json       -- ChannelEntry[] (id, channel_type, name, token)
@@ -66,8 +201,12 @@ Every Houston app project stores agent-visible data in a `.houston/` folder alon
     skills/             -- One .md file per skill (instructions + learnings sections)
       research.md
       writing.md
+    prompts/            -- Editable system prompt components
+      system.md         -- Base system prompt
+      self-improvement.md -- Self-improvement guidance
     log.jsonl           -- Append-only session audit trail (session_id, task_id, status, duration_ms, cost_usd, timestamp)
     config.json         -- ProjectConfig (name, claude_model, claude_effort)
+  CLAUDE.md             -- Agent instructions (workspace root)
   .claude_session_id    -- Persisted session ID for --resume across app restarts
 ```
 

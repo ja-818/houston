@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Card,
   CardHeader,
@@ -14,20 +15,28 @@ import {
 import { useWorkspaceStore } from "../stores/workspaces";
 import { useExperienceStore } from "../stores/experiences";
 import { useUIStore } from "../stores/ui";
+import { DashboardConversations } from "./dashboard-conversations";
+import type { Workspace } from "../lib/types";
 
 export function Dashboard() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const setCurrent = useWorkspaceStore((s) => s.setCurrent);
   const getById = useExperienceStore((s) => s.getById);
   const setViewMode = useUIStore((s) => s.setViewMode);
+  const setTaskPanelId = useUIStore((s) => s.setTaskPanelId);
   const setDialogOpen = useUIStore((s) => s.setCreateWorkspaceDialogOpen);
 
-  const handleSelect = (wsId: string) => {
-    const ws = workspaces.find((w) => w.id === wsId);
-    if (!ws) return;
+  const [drilldown, setDrilldown] = useState<Workspace | null>(null);
+
+  const handleConversationSelect = (ws: Workspace, taskId: string) => {
     setCurrent(ws);
-    const exp = getById(ws.experienceId);
-    setViewMode(exp?.manifest.defaultTab ?? "chat");
+    if (taskId) {
+      setTaskPanelId(taskId);
+      setViewMode("board");
+    } else {
+      const exp = getById(ws.experienceId);
+      setViewMode(exp?.manifest.defaultTab ?? "chat");
+    }
   };
 
   if (workspaces.length === 0) {
@@ -51,6 +60,18 @@ export function Dashboard() {
     );
   }
 
+  if (drilldown) {
+    return (
+      <div className="h-full overflow-auto">
+        <DashboardConversations
+          workspace={drilldown}
+          onBack={() => setDrilldown(null)}
+          onSelect={(taskId) => handleConversationSelect(drilldown, taskId)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="h-full overflow-auto">
       <div className="max-w-5xl mx-auto w-full px-6 py-8">
@@ -65,7 +86,7 @@ export function Dashboard() {
               <Card
                 key={ws.id}
                 className="cursor-pointer hover:shadow-md transition-shadow border-black/5"
-                onClick={() => handleSelect(ws.id)}
+                onClick={() => setDrilldown(ws)}
               >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">

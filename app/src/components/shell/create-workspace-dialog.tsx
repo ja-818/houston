@@ -41,7 +41,7 @@ export function CreateWorkspaceDialog() {
     const trimmed = name.trim();
     if (!trimmed || !selectedExpId || !currentSpace) return;
     try {
-      await createWorkspace(currentSpace.id, trimmed, selectedExpId);
+      await createWorkspace(currentSpace.id, trimmed, selectedExpId, selectedExp?.manifest.claudeMd);
       handleClose();
     } catch (err) {
       setError(String(err));

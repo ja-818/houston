@@ -20,7 +20,7 @@ fn memory_dir(workspace_path: &str) -> PathBuf {
     expand_tilde(&PathBuf::from(workspace_path)).join(".houston/memory")
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn load_learnings(
     workspace_path: String,
 ) -> Result<LearningsResponse, String> {
@@ -43,7 +43,7 @@ pub async fn load_learnings(
     })
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn add_learning(
     workspace_path: String,
     text: String,
@@ -54,7 +54,7 @@ pub async fn add_learning(
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn replace_learning(
     workspace_path: String,
     index: usize,
@@ -66,7 +66,7 @@ pub async fn replace_learning(
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn remove_learning(
     workspace_path: String,
     index: usize,

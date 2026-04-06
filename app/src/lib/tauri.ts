@@ -24,9 +24,23 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
 
     // Show toast — import dynamically to avoid circular deps
     const { useUIStore } = await import("../stores/ui");
+    const { reportBug } = await import("./bug-report");
+    const timestamp = new Date().toISOString();
+
     useUIStore.getState().addToast({
       title: `Error: ${cmd.replace(/_/g, " ")}`,
       description: message,
+      action: {
+        label: "Report bug",
+        onClick: () => {
+          reportBug({
+            command: cmd,
+            error: message,
+            timestamp,
+            appVersion: __APP_VERSION__,
+          }).catch((e) => console.error("Failed to report bug:", e));
+        },
+      },
     });
 
     throw err;
@@ -46,8 +60,8 @@ export const tauriSpaces = {
 export const tauriWorkspaces = {
   list: (spaceId: string) =>
     invoke<Workspace[]>("list_workspaces", { space_id: spaceId }),
-  create: (spaceId: string, name: string, experienceId: string) =>
-    invoke<Workspace>("create_workspace", { space_id: spaceId, name, experience_id: experienceId }),
+  create: (spaceId: string, name: string, experienceId: string, claudeMd?: string) =>
+    invoke<Workspace>("create_workspace", { space_id: spaceId, name, experience_id: experienceId, claude_md: claudeMd }),
   delete: (spaceId: string, id: string) =>
     invoke<void>("delete_workspace", { space_id: spaceId, id }),
   rename: (spaceId: string, id: string, newName: string) =>
@@ -146,7 +160,7 @@ export const tauriExperiences = {
 
 export const tauriTasks = {
   list: (workspacePath: string) =>
-    invoke<Array<{ id: string; title: string; description?: string; status: string }>>(
+    invoke<Array<{ id: string; title: string; description?: string; status: string; updated_at?: string }>>(
       "list_tasks",
       { workspace_path: workspacePath },
     ),

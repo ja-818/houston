@@ -84,7 +84,7 @@ fn ensure_default_space(root: &Path) -> Result<Vec<Space>, String> {
 
 // --- Commands ---
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn list_spaces(
     root: tauri::State<'_, WorkspaceRoot>,
 ) -> Result<Vec<Space>, String> {
@@ -93,7 +93,7 @@ pub fn list_spaces(
     ensure_default_space(&root.0)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn create_space(
     root: tauri::State<'_, WorkspaceRoot>,
     name: String,
@@ -127,7 +127,7 @@ pub fn create_space(
     Ok(space)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn rename_space(
     root: tauri::State<'_, WorkspaceRoot>,
     id: String,
@@ -169,7 +169,7 @@ pub fn rename_space(
     Ok(updated)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn delete_space(
     root: tauri::State<'_, WorkspaceRoot>,
     id: String,

@@ -1,7 +1,7 @@
 use houston_tauri::state::AppState;
 use tauri::State;
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn get_preference(
     state: State<'_, AppState>,
     key: String,
@@ -13,7 +13,7 @@ pub async fn get_preference(
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn set_preference(
     state: State<'_, AppState>,
     key: String,

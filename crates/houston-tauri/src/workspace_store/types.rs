@@ -11,6 +11,9 @@ pub struct Task {
     pub description: String,
     pub status: String,
     pub claude_session_id: Option<String>,
+    /// ISO-8601 timestamp — set on create and every update.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

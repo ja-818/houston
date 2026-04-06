@@ -5,7 +5,7 @@ use houston_tauri::state::AppState;
 use std::path::PathBuf;
 use tauri::State;
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn start_session(
     app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
@@ -65,14 +65,14 @@ pub async fn start_session(
     Ok(session_key)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn stop_session() -> Result<(), String> {
     // Currently a no-op — the session runner manages its own lifecycle.
     // Placeholder for future cancellation support.
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn load_chat_history(
     state: State<'_, AppState>,
     workspace_path: String,

@@ -9,7 +9,7 @@ interface WorkspaceState {
   loading: boolean;
   loadWorkspaces: (spaceId: string) => Promise<void>;
   setCurrent: (ws: Workspace) => void;
-  create: (spaceId: string, name: string, experienceId: string) => Promise<Workspace>;
+  create: (spaceId: string, name: string, experienceId: string, claudeMd?: string) => Promise<Workspace>;
   delete: (spaceId: string, id: string) => Promise<void>;
   rename: (spaceId: string, id: string, newName: string) => Promise<void>;
 }
@@ -43,8 +43,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     );
   },
 
-  create: async (spaceId, name, experienceId) => {
-    const ws = await tauriWorkspaces.create(spaceId, name, experienceId);
+  create: async (spaceId, name, experienceId, claudeMd?) => {
+    const ws = await tauriWorkspaces.create(spaceId, name, experienceId, claudeMd);
     set((s) => ({
       workspaces: [...s.workspaces, ws],
       current: ws,

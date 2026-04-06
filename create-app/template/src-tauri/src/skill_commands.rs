@@ -24,7 +24,7 @@ fn skills_dir(workspace_path: &str) -> PathBuf {
     expand_tilde(&PathBuf::from(workspace_path)).join(".houston/skills")
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn list_skills(workspace_path: String) -> Result<Vec<SkillSummaryResponse>, String> {
     let dir = skills_dir(&workspace_path);
     let summaries = houston_skills::list_skills(&dir).map_err(|e| e.to_string())?;
@@ -41,7 +41,7 @@ pub async fn list_skills(workspace_path: String) -> Result<Vec<SkillSummaryRespo
         .collect())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn load_skill(
     workspace_path: String,
     name: String,
@@ -56,7 +56,7 @@ pub async fn load_skill(
     })
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn create_skill(
     workspace_path: String,
     name: String,
@@ -77,13 +77,13 @@ pub async fn create_skill(
     .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn delete_skill(workspace_path: String, name: String) -> Result<(), String> {
     let dir = skills_dir(&workspace_path);
     houston_skills::delete_skill(&dir, &name).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn save_skill(
     workspace_path: String,
     name: String,
@@ -93,7 +93,7 @@ pub async fn save_skill(
     houston_skills::edit_skill(&dir, &name, &content).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn install_skills_from_repo(
     workspace_path: String,
     source: String,
@@ -104,7 +104,7 @@ pub async fn install_skills_from_repo(
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn search_community_skills(
     query: String,
 ) -> Result<Vec<houston_skills::remote::CommunitySkill>, String> {
@@ -113,7 +113,7 @@ pub async fn search_community_skills(
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn install_community_skill(
     workspace_path: String,
     source: String,

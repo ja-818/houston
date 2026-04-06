@@ -1729,6 +1729,7 @@ name = "houston-tauri"
 version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
+ "chrono",
  "houston-channels",
  "houston-db",
  "houston-events",

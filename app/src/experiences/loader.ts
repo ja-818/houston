@@ -2,11 +2,12 @@ import { builtinExperiences } from "./builtin";
 import type { Experience, ExperienceManifest } from "../lib/types";
 
 export async function loadAllExperiences(): Promise<Experience[]> {
-  const all: Experience[] = [];
+  // Map by ID so installed experiences override builtins with the same ID
+  const byId = new Map<string, Experience>();
 
-  // Built-in experiences
+  // Built-in experiences (inserted first, can be overridden)
   for (const manifest of builtinExperiences) {
-    all.push({ manifest, source: "builtin" });
+    byId.set(manifest.id, { manifest, source: "builtin" });
   }
 
   // Installed experiences (from ~/.houston/experiences/)
@@ -16,7 +17,7 @@ export async function loadAllExperiences(): Promise<Experience[]> {
       "list_installed_experiences"
     );
     for (const inst of installed) {
-      all.push({
+      byId.set(inst.manifest.id, {
         manifest: inst.manifest,
         source: "installed",
         path: inst.path,
@@ -30,5 +31,5 @@ export async function loadAllExperiences(): Promise<Experience[]> {
     console.warn("Could not load installed experiences");
   }
 
-  return all;
+  return Array.from(byId.values());
 }

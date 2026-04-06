@@ -44,7 +44,8 @@ export default function App() {
   const mappedToasts: Toast[] = toasts.map((t) => ({
     id: t.id,
     message: t.description ? `${t.title}: ${t.description}` : t.title,
-    variant: "info" as const,
+    variant: (t.title.startsWith("Error") ? "error" : "info") as Toast["variant"],
+    action: t.action,
   }));
 
   if (loading || spaceLoading) {

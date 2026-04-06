@@ -54,8 +54,6 @@ export function useSessionEvents() {
       const h = handlersRef.current;
       const payload = event.payload;
 
-      console.log("[houston-event]", payload.type, payload);
-
       switch (payload.type) {
         case "FeedItem":
           h.pushFeedItem(

@@ -14,7 +14,7 @@ pub struct Agent {
     pub path: String,
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn list_agents(root: State<'_, WorkspaceRoot>) -> Result<Vec<Agent>, String> {
     let dir = expand_tilde(&PathBuf::from(&root.0));
     std::fs::create_dir_all(&dir)
@@ -36,7 +36,7 @@ pub async fn list_agents(root: State<'_, WorkspaceRoot>) -> Result<Vec<Agent>, S
     Ok(agents)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn create_agent(
     root: State<'_, WorkspaceRoot>,
     name: String,
@@ -52,7 +52,7 @@ pub async fn create_agent(
     })
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn rename_agent(
     agent_path: String,
     new_name: String,
@@ -68,7 +68,7 @@ pub async fn rename_agent(
     })
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn delete_agent(agent_path: String) -> Result<(), String> {
     let dir = expand_tilde(&PathBuf::from(&agent_path));
     if dir.exists() {
@@ -78,7 +78,7 @@ pub async fn delete_agent(agent_path: String) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn send_message(
     app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
@@ -137,7 +137,7 @@ pub async fn send_message(
     Ok(session_key)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn load_chat_history(
     state: State<'_, AppState>,
     workspace_path: String,
@@ -182,7 +182,7 @@ pub async fn load_chat_history(
         .collect())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn read_workspace_file(
     workspace_path: String,
     name: String,
@@ -192,7 +192,7 @@ pub async fn read_workspace_file(
     std::fs::read_to_string(&path).map_err(|e| format!("Failed to read {name}: {e}"))
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn write_workspace_file(
     workspace_path: String,
     name: String,

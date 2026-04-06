@@ -1,36 +1,29 @@
 import { useState, useEffect, useCallback } from "react";
-import { KanbanBoard } from "@houston-ai/board";
+import { AIBoard } from "@houston-ai/board";
 import type { KanbanItem } from "@houston-ai/board";
-import {
-  Empty,
-  EmptyHeader,
-  EmptyTitle,
-  EmptyDescription,
-  Button,
-  useHoustonEvent,
-} from "@houston-ai/core";
+import { useHoustonEvent } from "@houston-ai/core";
 import type { HoustonEvent } from "@houston-ai/core";
-import { SplitView } from "@houston-ai/layout";
-import { Plus } from "lucide-react";
-import { tauriTasks } from "../../lib/tauri";
+import { useFeedStore } from "../../stores/feeds";
+import { useUIStore } from "../../stores/ui";
+import { tauriTasks, tauriChat } from "../../lib/tauri";
 import type { TabProps } from "../../lib/types";
-import { BoardDetail } from "./board-detail";
-import { NewConversationPanel } from "./new-conversation-panel";
-
-function useColumns(onAdd: () => void) {
-  return [
-    { id: "running", label: "Running", statuses: ["running"], onAdd },
-    { id: "needs_you", label: "Needs you", statuses: ["needs_you"] },
-    { id: "done", label: "Done", statuses: ["done"] },
-  ];
-}
 
 export default function BoardTab({ workspace }: TabProps) {
   const [items, setItems] = useState<KanbanItem[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
   const path = workspace.folderPath;
-  const columns = useColumns(() => setPanelOpen(true));
+
+  // Read and consume pending selection from dashboard drill-down
+  const pendingId = useUIStore((s) => s.taskPanelId);
+  const clearPending = useUIStore((s) => s.setTaskPanelId);
+  const [selectedId, setSelectedId] = useState<string | null>(pendingId);
+  useEffect(() => {
+    if (pendingId) {
+      setSelectedId(pendingId);
+      clearPending(null);
+    }
+  }, [pendingId, clearPending]);
+  const feedItems = useFeedStore((s) => s.items);
+  const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
 
   const loadTasks = useCallback(async () => {
     try {
@@ -53,7 +46,6 @@ export default function BoardTab({ workspace }: TabProps) {
     loadTasks();
   }, [loadTasks]);
 
-  // Auto-refresh when session status changes (task might move columns)
   const handleEvent = useCallback(
     (payload: HoustonEvent) => {
       if (
@@ -85,71 +77,37 @@ export default function BoardTab({ workspace }: TabProps) {
     [path, loadTasks],
   );
 
-  const selectedItem = items.find((i) => i.id === selectedId) ?? null;
-
-  const emptyState = (
-    <Empty className="border-0">
-      <EmptyHeader>
-        <EmptyTitle>No conversations yet</EmptyTitle>
-        <EmptyDescription>
-          Start one to delegate work to your AI agent.
-        </EmptyDescription>
-      </EmptyHeader>
-      <Button
-        onClick={() => setPanelOpen(true)}
-        className="mt-4 rounded-full gap-1.5"
-        size="sm"
-      >
-        <Plus className="size-4" />
-        New conversation
-      </Button>
-    </Empty>
+  const handleCreateConversation = useCallback(
+    async (text: string) => {
+      pushFeedItem("new-conversation", { feed_type: "user_message", data: text });
+      const title = text.length > 80 ? text.slice(0, 77) + "..." : text;
+      const task = await tauriTasks.create(path, title, text);
+      await tauriTasks.update(path, task.id, { status: "running" });
+      await tauriChat.send(path, text, `task-${task.id}`);
+      await loadTasks();
+      return task.id;
+    },
+    [path, pushFeedItem, loadTasks],
   );
 
-  const board = (
-    <div className="flex flex-col h-full">
-      <KanbanBoard
-        columns={columns}
-        items={items}
-        selectedId={selectedId}
-        runningStatuses={["running"]}
-        approveStatuses={["needs_you"]}
-        onSelect={(item) => setSelectedId(item.id)}
-        onDelete={handleDelete}
-        onApprove={handleApprove}
-        emptyState={emptyState}
-      />
-    </div>
+  const handleSendMessage = useCallback(
+    async (sessionKey: string, text: string) => {
+      pushFeedItem(sessionKey, { feed_type: "user_message", data: text });
+      await tauriChat.send(path, text, sessionKey);
+    },
+    [path, pushFeedItem],
   );
-
-  const showNewPanel = panelOpen && !selectedItem;
-
-  const rightPanel = selectedItem ? (
-    <BoardDetail
-      key={selectedItem.id}
-      item={selectedItem}
-      workspacePath={path}
-      onClose={() => setSelectedId(null)}
-    />
-  ) : showNewPanel ? (
-    <NewConversationPanel
-      workspacePath={path}
-      onClose={() => setPanelOpen(false)}
-      onCreated={(taskId) => {
-        setPanelOpen(false);
-        loadTasks();
-        setSelectedId(taskId);
-      }}
-    />
-  ) : null;
 
   return (
-    <div className="h-full overflow-hidden">
-      {rightPanel ? (
-        <SplitView left={board} right={rightPanel} />
-      ) : (
-        board
-      )}
-    </div>
+    <AIBoard
+      items={items}
+      selectedId={selectedId}
+      onSelect={setSelectedId}
+      feedItems={feedItems}
+      onDelete={handleDelete}
+      onApprove={handleApprove}
+      onCreateConversation={handleCreateConversation}
+      onSendMessage={handleSendMessage}
+    />
   );
 }

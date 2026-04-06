@@ -6,6 +6,7 @@ export interface Toast {
   id: string;
   message: string;
   variant: "success" | "error" | "info";
+  action?: { label: string; onClick: () => void };
 }
 
 export function ToastContainer({
@@ -60,7 +61,17 @@ function ToastItem({
           toast.variant === "info" && "text-primary",
         )}
       />
-      <p className="text-sm text-foreground flex-1">{toast.message}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-foreground">{toast.message}</p>
+        {toast.action && (
+          <button
+            onClick={toast.action.onClick}
+            className="mt-1.5 rounded-full bg-foreground/10 px-3 py-1 text-xs font-medium text-foreground hover:bg-foreground/20 transition-colors"
+          >
+            {toast.action.label}
+          </button>
+        )}
+      </div>
       <button
         onClick={() => onDismiss(toast.id)}
         className="text-muted-foreground hover:text-foreground shrink-0"
