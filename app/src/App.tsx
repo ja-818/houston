@@ -6,11 +6,12 @@ import {
   EmptyHeader,
   EmptyTitle,
   EmptyDescription,
+  Button,
 } from "@houston-ai/core";
 import { TabBar } from "@houston-ai/layout";
 import { useHoustonInit } from "./hooks/use-houston-init";
 import { useSessionEvents } from "./hooks/use-session-events";
-import { useOrganizationStore } from "./stores/organizations";
+import { useSpaceStore } from "./stores/spaces";
 import { useWorkspaceStore } from "./stores/workspaces";
 import { useExperienceStore } from "./stores/experiences";
 import { useUIStore } from "./stores/ui";
@@ -18,13 +19,14 @@ import { Sidebar } from "./components/shell/sidebar";
 import { CreateWorkspaceDialog } from "./components/shell/create-workspace-dialog";
 import { ExperienceRenderer } from "./components/shell/experience-renderer";
 import { Dashboard } from "./components/dashboard";
-import { OrgConnections } from "./components/org-connections";
+import { SpaceConnections } from "./components/space-connections";
 
 export default function App() {
   useHoustonInit();
   useSessionEvents();
 
-  const orgLoading = useOrganizationStore((s) => s.loading);
+  const spaceLoading = useSpaceStore((s) => s.loading);
+  const spaces = useSpaceStore((s) => s.spaces);
   const current = useWorkspaceStore((s) => s.current);
   const loading = useWorkspaceStore((s) => s.loading);
   const getById = useExperienceStore((s) => s.getById);
@@ -42,10 +44,28 @@ export default function App() {
     variant: "info" as const,
   }));
 
-  if (loading || orgLoading) {
+  if (loading || spaceLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background text-foreground">
         <p className="text-muted-foreground text-sm">Starting...</p>
+      </div>
+    );
+  }
+
+  // No spaces yet — full screen welcome
+  if (spaces.length === 0) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-background text-foreground">
+        <Empty className="border-0">
+          <EmptyHeader>
+            <EmptyTitle>Welcome to Houston</EmptyTitle>
+            <EmptyDescription>
+              Create your first space to get started.
+            </EmptyDescription>
+          </EmptyHeader>
+          <Button className="mt-4 rounded-full">Create your first space</Button>
+        </Empty>
+        <ToastContainer toasts={mappedToasts} onDismiss={dismissToast} />
       </div>
     );
   }
@@ -57,7 +77,7 @@ export default function App() {
           {viewMode === "dashboard" ? (
             <Dashboard />
           ) : viewMode === "connections" ? (
-            <OrgConnections />
+            <SpaceConnections />
           ) : current && experience && tabs.length > 0 ? (
             <>
               <TabBar
@@ -79,9 +99,9 @@ export default function App() {
             <div className="flex-1 flex flex-col items-center justify-center">
               <Empty className="border-0">
                 <EmptyHeader>
-                  <EmptyTitle>Select a workspace</EmptyTitle>
+                  <EmptyTitle>No AI Workspaces yet</EmptyTitle>
                   <EmptyDescription>
-                    Pick an AI Workspace from the sidebar or create a new one.
+                    Create your first AI Workspace to get started.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>

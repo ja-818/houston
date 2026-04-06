@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { ConnectionsResult } from "@houston-ai/connections";
 import type {
-  Organization,
+  Space,
   Workspace,
   SkillSummary,
   SkillDetail,
@@ -11,25 +11,25 @@ import type {
   ChannelEntry,
 } from "./types";
 
-export const tauriOrgs = {
-  list: () => invoke<Organization[]>("list_organizations"),
+export const tauriSpaces = {
+  list: () => invoke<Space[]>("list_spaces"),
   create: (name: string) =>
-    invoke<Organization>("create_organization", { name }),
+    invoke<Space>("create_space", { name }),
   delete: (id: string) =>
-    invoke<void>("delete_organization", { id }),
+    invoke<void>("delete_space", { id }),
   rename: (id: string, newName: string) =>
-    invoke<void>("rename_organization", { id, newName }),
+    invoke<void>("rename_space", { id, newName }),
 };
 
 export const tauriWorkspaces = {
-  list: (orgId: string) =>
-    invoke<Workspace[]>("list_workspaces", { orgId }),
-  create: (orgId: string, name: string, experienceId: string) =>
-    invoke<Workspace>("create_workspace", { orgId, name, experienceId }),
-  delete: (orgId: string, id: string) =>
-    invoke<void>("delete_workspace", { orgId, id }),
-  rename: (orgId: string, id: string, newName: string) =>
-    invoke<void>("rename_workspace", { orgId, id, newName }),
+  list: (spaceId: string) =>
+    invoke<Workspace[]>("list_workspaces", { spaceId }),
+  create: (spaceId: string, name: string, experienceId: string) =>
+    invoke<Workspace>("create_workspace", { spaceId, name, experienceId }),
+  delete: (spaceId: string, id: string) =>
+    invoke<void>("delete_workspace", { spaceId, id }),
+  rename: (spaceId: string, id: string, newName: string) =>
+    invoke<void>("rename_workspace", { spaceId, id, newName }),
 };
 
 export const tauriChat = {

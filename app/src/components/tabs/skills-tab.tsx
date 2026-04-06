@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { SkillsGrid, SkillDetailPage } from "@houston-ai/skills";
 import type { Skill, CommunitySkill } from "@houston-ai/skills";
+import { ContentArea } from "../shell/content-area";
 import { tauriSkills } from "../../lib/tauri";
 import type { TabProps } from "../../lib/types";
 
@@ -87,22 +88,26 @@ export default function SkillsTab({ workspace }: TabProps) {
 
   if (selectedSkill) {
     return (
-      <SkillDetailPage
-        skill={selectedSkill}
-        onBack={handleBack}
-        onSave={handleSave}
-      />
+      <ContentArea centered>
+        <SkillDetailPage
+          skill={selectedSkill}
+          onBack={handleBack}
+          onSave={handleSave}
+        />
+      </ContentArea>
     );
   }
 
   return (
-    <SkillsGrid
-      skills={skills}
-      loading={loading}
-      onSkillClick={handleSkillClick}
-      onSearch={handleSearch}
-      onInstallCommunity={handleInstallCommunity}
-      onInstallFromRepo={handleInstallFromRepo}
-    />
+    <ContentArea centered>
+      <SkillsGrid
+        skills={skills}
+        loading={loading}
+        onSkillClick={handleSkillClick}
+        onSearch={handleSearch}
+        onInstallCommunity={handleInstallCommunity}
+        onInstallFromRepo={handleInstallFromRepo}
+      />
+    </ContentArea>
   );
 }

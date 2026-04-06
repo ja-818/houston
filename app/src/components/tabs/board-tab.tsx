@@ -13,6 +13,7 @@ import type { HoustonEvent } from "@houston-ai/core";
 import { SplitView } from "@houston-ai/layout";
 import { Plus } from "lucide-react";
 import { tauriTasks } from "../../lib/tauri";
+import { ContentArea } from "../shell/content-area";
 import type { TabProps } from "../../lib/types";
 import { NewConversationDialog } from "./new-conversation-dialog";
 import { BoardDetail } from "./board-detail";
@@ -155,13 +156,13 @@ export default function BoardTab({ workspace }: TabProps) {
   );
 
   return (
-    <div className="h-full flex flex-col">
+    <ContentArea>
       {content}
       <NewConversationDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onCreate={handleCreate}
       />
-    </div>
+    </ContentArea>
   );
 }

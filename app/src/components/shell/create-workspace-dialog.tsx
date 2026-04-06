@@ -9,7 +9,7 @@ import {
 } from "@houston-ai/core";
 import { useExperienceStore } from "../../stores/experiences";
 import { useWorkspaceStore } from "../../stores/workspaces";
-import { useOrganizationStore } from "../../stores/organizations";
+import { useSpaceStore } from "../../stores/spaces";
 import { useUIStore } from "../../stores/ui";
 
 export function CreateWorkspaceDialog() {
@@ -17,7 +17,7 @@ export function CreateWorkspaceDialog() {
   const setOpen = useUIStore((s) => s.setCreateWorkspaceDialogOpen);
   const experiences = useExperienceStore((s) => s.experiences);
   const createWorkspace = useWorkspaceStore((s) => s.create);
-  const currentOrg = useOrganizationStore((s) => s.current);
+  const currentSpace = useSpaceStore((s) => s.current);
 
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedExpId, setSelectedExpId] = useState<string | null>(null);
@@ -44,9 +44,9 @@ export function CreateWorkspaceDialog() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
-    if (!trimmed || !selectedExpId || !currentOrg) return;
+    if (!trimmed || !selectedExpId || !currentSpace) return;
     try {
-      await createWorkspace(currentOrg.id, trimmed, selectedExpId);
+      await createWorkspace(currentSpace.id, trimmed, selectedExpId);
       handleClose();
     } catch (err) {
       setError(String(err));

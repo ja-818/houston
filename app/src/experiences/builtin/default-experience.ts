@@ -7,11 +7,12 @@ export const defaultExperience: ExperienceManifest = {
   icon: "Bot",
   tabs: [
     { id: "chat", label: "Chat", builtIn: "chat" },
+    { id: "tasks", label: "Tasks", builtIn: "board" },
     { id: "context", label: "Context", builtIn: "context" },
     { id: "skills", label: "Skills", builtIn: "skills" },
     { id: "learnings", label: "Learnings", builtIn: "learnings" },
     { id: "files", label: "Files", builtIn: "files" },
-    { id: "connections", label: "Connections", builtIn: "connections" },
+    { id: "channels", label: "Channels", builtIn: "channels" },
   ],
   defaultTab: "chat",
   claudeMd: "## Instructions\n\nYou are a helpful AI assistant.\n\n## Learnings\n",

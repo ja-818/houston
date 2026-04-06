@@ -1,17 +1,17 @@
 import type { ReactNode } from "react";
 import { LayoutDashboard, Link2, Plus } from "lucide-react";
 import { Button, ScrollArea } from "@houston-ai/core";
-import { useOrganizationStore } from "../../stores/organizations";
+import { useSpaceStore } from "../../stores/spaces";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useExperienceStore } from "../../stores/experiences";
 import { useUIStore } from "../../stores/ui";
-import { OrgSwitcher, SidebarNavItem } from "./sidebar-parts";
+import { SpaceSwitcher, SidebarNavItem } from "./sidebar-parts";
 
 export function Sidebar({ children }: { children: ReactNode }) {
-  const orgs = useOrganizationStore((s) => s.organizations);
-  const currentOrg = useOrganizationStore((s) => s.current);
-  const setCurrentOrg = useOrganizationStore((s) => s.setCurrent);
-  const createOrg = useOrganizationStore((s) => s.create);
+  const spaces = useSpaceStore((s) => s.spaces);
+  const currentSpace = useSpaceStore((s) => s.current);
+  const setCurrentSpace = useSpaceStore((s) => s.setCurrent);
+  const createSpace = useSpaceStore((s) => s.create);
 
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const current = useWorkspaceStore((s) => s.current);
@@ -29,20 +29,20 @@ export function Sidebar({ children }: { children: ReactNode }) {
     return bTime.localeCompare(aTime);
   });
 
-  const handleOrgSwitch = async (orgId: string) => {
-    if (orgId === currentOrg?.id) return;
-    const org = orgs.find((o) => o.id === orgId);
-    if (!org) return;
-    setCurrentOrg(org);
-    await loadWorkspaces(org.id);
+  const handleSpaceSwitch = async (spaceId: string) => {
+    if (spaceId === currentSpace?.id) return;
+    const space = spaces.find((s) => s.id === spaceId);
+    if (!space) return;
+    setCurrentSpace(space);
+    await loadWorkspaces(space.id);
   };
 
-  const handleCreateOrg = async () => {
-    const name = window.prompt("Organization name");
+  const handleCreateSpace = async () => {
+    const name = window.prompt("Space name");
     if (!name?.trim()) return;
-    const org = await createOrg(name.trim());
-    setCurrentOrg(org);
-    await loadWorkspaces(org.id);
+    const space = await createSpace(name.trim());
+    setCurrentSpace(space);
+    await loadWorkspaces(space.id);
   };
 
   const handleSelectWorkspace = (wsId: string) => {
@@ -58,12 +58,12 @@ export function Sidebar({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-full">
       <aside className="w-[200px] flex-shrink-0 bg-secondary border-r border-border flex flex-col">
-        <OrgSwitcher
-          orgs={orgs}
-          currentId={currentOrg?.id ?? null}
-          currentName={currentOrg?.name ?? "Select org"}
-          onSwitch={handleOrgSwitch}
-          onCreate={handleCreateOrg}
+        <SpaceSwitcher
+          spaces={spaces}
+          currentId={currentSpace?.id ?? null}
+          currentName={currentSpace?.name ?? "Select space"}
+          onSwitch={handleSpaceSwitch}
+          onCreate={handleCreateSpace}
         />
 
         <nav className="px-2 py-1 space-y-0.5">

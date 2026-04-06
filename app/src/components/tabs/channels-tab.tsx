@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChannelsView } from "@houston-ai/connections";
 import type { ChannelConnection, ChannelType } from "@houston-ai/connections";
+import { ContentArea } from "../shell/content-area";
 import { tauriChannels } from "../../lib/tauri";
 import type { TabProps, ChannelEntry } from "../../lib/types";
 
@@ -68,11 +69,13 @@ export default function ChannelsTab({ workspace }: TabProps) {
   );
 
   return (
-    <ChannelsView
-      channels={channels.map(toChannelConnection)}
-      loading={loading}
-      onAddChannel={handleAdd}
-      onDelete={handleDelete}
-    />
+    <ContentArea centered>
+      <ChannelsView
+        channels={channels.map(toChannelConnection)}
+        loading={loading}
+        onAddChannel={handleAdd}
+        onDelete={handleDelete}
+      />
+    </ContentArea>
   );
 }

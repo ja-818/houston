@@ -1,5 +1,5 @@
-/** An organization that contains workspaces */
-export interface Organization {
+/** A space that contains workspaces */
+export interface Space {
   id: string;
   name: string;
   isDefault: boolean;

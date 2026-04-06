@@ -5,7 +5,13 @@ import {
   CardDescription,
   CardContent,
   Badge,
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  Button,
 } from "@houston-ai/core";
+import { ContentArea } from "./shell/content-area";
 import { useWorkspaceStore } from "../stores/workspaces";
 import { useExperienceStore } from "../stores/experiences";
 import { useUIStore } from "../stores/ui";
@@ -27,23 +33,30 @@ export function Dashboard() {
 
   if (workspaces.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8">
-        <p className="text-muted-foreground text-sm mb-4">
-          No AI Workspaces yet.
-        </p>
-        <button
-          onClick={() => setDialogOpen(true)}
-          className="text-sm font-medium text-foreground bg-foreground text-background rounded-full h-9 px-4 hover:opacity-90 transition-opacity"
-        >
-          Create your first AI Workspace
-        </button>
-      </div>
+      <ContentArea centered>
+        <div className="flex-1 flex items-center justify-center">
+          <Empty className="border-0">
+            <EmptyHeader>
+              <EmptyTitle>No AI Workspaces yet</EmptyTitle>
+              <EmptyDescription>
+                Create your first AI Workspace to get started.
+              </EmptyDescription>
+            </EmptyHeader>
+            <Button
+              className="mt-4 rounded-full"
+              onClick={() => setDialogOpen(true)}
+            >
+              Create your first AI Workspace
+            </Button>
+          </Empty>
+        </div>
+      </ContentArea>
     );
   }
 
   return (
-    <div className="flex-1 overflow-auto">
-      <div className="max-w-4xl mx-auto p-8">
+    <ContentArea centered maxWidth="max-w-5xl">
+      <div className="flex-1 overflow-auto p-8">
         <h1 className="text-[28px] font-normal text-foreground mb-6">
           Dashboard
         </h1>
@@ -77,6 +90,6 @@ export function Dashboard() {
           })}
         </div>
       </div>
-    </div>
+    </ContentArea>
   );
 }

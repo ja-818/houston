@@ -7,6 +7,7 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from "@houston-ai/core";
+import { ContentArea } from "../shell/content-area";
 import { useFeedStore } from "../../stores/feeds";
 import { tauriChat } from "../../lib/tauri";
 import type { TabProps } from "../../lib/types";
@@ -54,7 +55,7 @@ export default function ChatTab({ workspace }: TabProps) {
   );
 
   return (
-    <div className="h-full flex flex-col max-w-3xl mx-auto">
+    <ContentArea centered>
       <ChatPanel
         sessionKey={SESSION_KEY}
         feedItems={feedItems ?? []}
@@ -72,6 +73,6 @@ export default function ChatTab({ workspace }: TabProps) {
           </Empty>
         }
       />
-    </div>
+    </ContentArea>
   );
 }

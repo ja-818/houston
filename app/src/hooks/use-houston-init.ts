@@ -1,19 +1,19 @@
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useExperienceStore } from "../stores/experiences";
-import { useOrganizationStore } from "../stores/organizations";
+import { useSpaceStore } from "../stores/spaces";
 import { useWorkspaceStore } from "../stores/workspaces";
 import { useUIStore } from "../stores/ui";
 
 /**
  * App initialization hook. Called once in App.tsx.
- * Loads organizations, experiences, workspaces, restores last state,
+ * Loads spaces, experiences, workspaces, restores last state,
  * checks Claude CLI availability, and sets initial viewMode.
  */
 export function useHoustonInit() {
   const initRef = useRef(false);
   const loadExperiences = useExperienceStore((s) => s.loadExperiences);
-  const loadOrganizations = useOrganizationStore((s) => s.loadOrganizations);
+  const loadSpaces = useSpaceStore((s) => s.loadSpaces);
   const loadWorkspaces = useWorkspaceStore((s) => s.loadWorkspaces);
   const setCurrent = useWorkspaceStore((s) => s.setCurrent);
   const setClaudeAvailable = useUIStore((s) => s.setClaudeAvailable);
@@ -27,30 +27,30 @@ export function useHoustonInit() {
       // 1. Load experiences
       await loadExperiences();
 
-      // 2. Load organizations (Rust side creates "Personal" default if empty)
-      await loadOrganizations();
+      // 2. Load spaces (Rust side creates "Personal" default if empty)
+      await loadSpaces();
 
-      // 3. Restore last org from preferences, or use default
-      const orgState = useOrganizationStore.getState();
-      let currentOrg = orgState.current;
+      // 3. Restore last space from preferences, or use default
+      const spaceState = useSpaceStore.getState();
+      let currentSpace = spaceState.current;
       try {
-        const lastOrgId = await invoke<string | null>("get_preference", {
-          key: "last_org_id",
+        const lastSpaceId = await invoke<string | null>("get_preference", {
+          key: "last_space_id",
         });
-        if (lastOrgId) {
-          const saved = orgState.organizations.find((o) => o.id === lastOrgId);
+        if (lastSpaceId) {
+          const saved = spaceState.spaces.find((s) => s.id === lastSpaceId);
           if (saved) {
-            useOrganizationStore.getState().setCurrent(saved);
-            currentOrg = saved;
+            useSpaceStore.getState().setCurrent(saved);
+            currentSpace = saved;
           }
         }
       } catch (e) {
-        console.error("[init] Failed to restore last org:", e);
+        console.error("[init] Failed to restore last space:", e);
       }
 
-      // 4. Load workspaces for current org
-      if (currentOrg) {
-        await loadWorkspaces(currentOrg.id);
+      // 4. Load workspaces for current space
+      if (currentSpace) {
+        await loadWorkspaces(currentSpace.id);
       }
 
       // 5. Restore last workspace from preferences
@@ -87,7 +87,7 @@ export function useHoustonInit() {
     init();
   }, [
     loadExperiences,
-    loadOrganizations,
+    loadSpaces,
     loadWorkspaces,
     setCurrent,
     setClaudeAvailable,

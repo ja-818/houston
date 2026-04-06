@@ -9,17 +9,17 @@ import {
   DropdownMenuSeparator,
 } from "@houston-ai/core";
 
-export function OrgSwitcher({
-  orgs,
+export function SpaceSwitcher({
+  spaces,
   currentId,
   currentName,
   onSwitch,
   onCreate,
 }: {
-  orgs: { id: string; name: string }[];
+  spaces: { id: string; name: string }[];
   currentId: string | null;
   currentName: string;
-  onSwitch: (orgId: string) => void;
+  onSwitch: (spaceId: string) => void;
   onCreate: () => void;
 }) {
   return (
@@ -32,19 +32,19 @@ export function OrgSwitcher({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48">
-          {orgs.map((org) => (
+          {spaces.map((space) => (
             <DropdownMenuItem
-              key={org.id}
-              onClick={() => onSwitch(org.id)}
-              className={org.id === currentId ? "font-medium" : ""}
+              key={space.id}
+              onClick={() => onSwitch(space.id)}
+              className={space.id === currentId ? "font-medium" : ""}
             >
-              {org.name}
+              {space.name}
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onCreate}>
             <Plus className="h-4 w-4 mr-2" />
-            Create organization
+            Create space
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

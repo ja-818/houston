@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { ConnectionsView } from "@houston-ai/connections";
 import type { ConnectionsResult } from "@houston-ai/connections";
 import { invoke } from "@tauri-apps/api/core";
+import { ContentArea } from "./shell/content-area";
 import { tauriConnections } from "../lib/tauri";
 
 const COMPOSIO_DASHBOARD_URL = "https://dashboard.composio.dev";
 
-export function OrgConnections() {
+export function SpaceConnections() {
   const [result, setResult] = useState<ConnectionsResult | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -44,8 +45,8 @@ export function OrgConnections() {
   }, [fetchConnections]);
 
   return (
-    <div className="flex-1 overflow-auto">
-      <div className="max-w-4xl mx-auto p-8">
+    <ContentArea centered>
+      <div className="flex-1 overflow-auto p-8">
         <h1 className="text-[28px] font-normal text-foreground mb-6">
           Connections
         </h1>
@@ -57,6 +58,6 @@ export function OrgConnections() {
           onAuth={handleAuth}
         />
       </div>
-    </div>
+    </ContentArea>
   );
 }

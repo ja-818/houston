@@ -7,11 +7,11 @@ interface WorkspaceState {
   workspaces: Workspace[];
   current: Workspace | null;
   loading: boolean;
-  loadWorkspaces: (orgId: string) => Promise<void>;
+  loadWorkspaces: (spaceId: string) => Promise<void>;
   setCurrent: (ws: Workspace) => void;
-  create: (orgId: string, name: string, experienceId: string) => Promise<Workspace>;
-  delete: (orgId: string, id: string) => Promise<void>;
-  rename: (orgId: string, id: string, newName: string) => Promise<void>;
+  create: (spaceId: string, name: string, experienceId: string) => Promise<Workspace>;
+  delete: (spaceId: string, id: string) => Promise<void>;
+  rename: (spaceId: string, id: string, newName: string) => Promise<void>;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
@@ -19,10 +19,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   current: null,
   loading: false,
 
-  loadWorkspaces: async (orgId) => {
+  loadWorkspaces: async (spaceId) => {
     set({ loading: true });
     try {
-      const workspaces = await tauriWorkspaces.list(orgId);
+      const workspaces = await tauriWorkspaces.list(spaceId);
       const current = get().current;
       const selected =
         workspaces.find((w) => w.id === current?.id) ?? null;
@@ -43,8 +43,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     );
   },
 
-  create: async (orgId, name, experienceId) => {
-    const ws = await tauriWorkspaces.create(orgId, name, experienceId);
+  create: async (spaceId, name, experienceId) => {
+    const ws = await tauriWorkspaces.create(spaceId, name, experienceId);
     set((s) => ({
       workspaces: [...s.workspaces, ws],
       current: ws,
@@ -58,8 +58,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     return ws;
   },
 
-  delete: async (orgId, id) => {
-    await tauriWorkspaces.delete(orgId, id);
+  delete: async (spaceId, id) => {
+    await tauriWorkspaces.delete(spaceId, id);
     set((s) => {
       const workspaces = s.workspaces.filter((w) => w.id !== id);
       const current =
@@ -68,8 +68,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     });
   },
 
-  rename: async (orgId, id, newName) => {
-    await tauriWorkspaces.rename(orgId, id, newName);
+  rename: async (spaceId, id, newName) => {
+    await tauriWorkspaces.rename(spaceId, id, newName);
     set((s) => ({
       workspaces: s.workspaces.map((w) =>
         w.id === id ? { ...w, name: newName } : w,
