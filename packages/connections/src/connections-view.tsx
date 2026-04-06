@@ -135,11 +135,10 @@ export function ConnectionsView({
                 Retry
               </button>
               <button
-                onClick={onManage}
+                onClick={onAuth ?? onManage}
                 className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-border bg-background text-foreground text-sm font-medium hover:bg-secondary transition-colors duration-200"
               >
                 Reconnect
-                <ExternalLink className="size-3.5" />
               </button>
             </div>
           </div>

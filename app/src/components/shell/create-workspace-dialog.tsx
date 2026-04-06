@@ -73,7 +73,7 @@ export function CreateWorkspaceDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="sm:max-w-[900px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[900px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
         {step === 1 ? (
           <MarketplaceStep
             search={search}

@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import type { ConnectionsResult } from "@houston-ai/connections";
 import type {
   Space,
@@ -10,6 +10,28 @@ import type {
   LearningsData,
   ChannelEntry,
 } from "./types";
+
+/**
+ * Wrapper around Tauri invoke that surfaces errors as toasts.
+ * NEVER fails silently — users always see what went wrong.
+ */
+async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  try {
+    return await tauriInvoke<T>(cmd, args);
+  } catch (err) {
+    const message = typeof err === "string" ? err : String(err);
+    console.error(`[tauri:${cmd}] ${message}`, args);
+
+    // Show toast — import dynamically to avoid circular deps
+    const { useUIStore } = await import("../stores/ui");
+    useUIStore.getState().addToast({
+      title: `Error: ${cmd.replace(/_/g, " ")}`,
+      description: message,
+    });
+
+    throw err;
+  }
+}
 
 export const tauriSpaces = {
   list: () => invoke<Space[]>("list_spaces"),

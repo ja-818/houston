@@ -43,7 +43,7 @@ export default function App() {
 
   const mappedToasts: Toast[] = toasts.map((t) => ({
     id: t.id,
-    message: t.title,
+    message: t.description ? `${t.title}: ${t.description}` : t.title,
     variant: "info" as const,
   }));
 

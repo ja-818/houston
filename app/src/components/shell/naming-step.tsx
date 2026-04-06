@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import { DialogTitle, Button, Input } from "@houston-ai/core";
 import { ArrowLeft } from "lucide-react";
 import type { Experience } from "../../lib/types";
-import { getExperienceIcon } from "./experience-card";
+import { getExperienceIcon, getExperienceIconStyle } from "./experience-card";
 
 interface NamingStepProps {
   selectedExp: Experience | undefined;
@@ -22,6 +22,7 @@ export function NamingStep({
   onSubmit,
 }: NamingStepProps) {
   const Icon = getExperienceIcon(selectedExp?.manifest.icon);
+  const style = getExperienceIconStyle(selectedExp?.manifest.icon);
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 px-6 py-16">
@@ -36,8 +37,8 @@ export function NamingStep({
 
       {selectedExp && (
         <div className="flex flex-col items-center gap-4 mb-8">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100">
-            <Icon className="h-6 w-6 text-gray-600" />
+          <div className={`flex h-16 w-16 items-center justify-center rounded-full ${style.bg}`}>
+            <Icon className={`h-7 w-7 ${style.fg}`} />
           </div>
           <div className="text-center">
             <p className="text-lg font-semibold">{selectedExp.manifest.name}</p>

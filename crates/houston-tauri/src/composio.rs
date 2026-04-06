@@ -42,12 +42,42 @@ pub async fn list_active_connections() -> ComposioResult {
         None => return ComposioResult::NotConfigured,
     };
 
-    let token = match read_oauth_token() {
+    // Get a valid token — refresh silently if expired
+    let token = match get_valid_token().await {
         Some(t) => t,
         None => return ComposioResult::NeedsAuth,
     };
 
-    fetch_connections(&url, &token).await
+    let result = fetch_connections(&url, &token).await;
+
+    // If fetch failed, try one refresh + retry before giving up
+    if matches!(result, ComposioResult::Error { .. }) {
+        eprintln!("[composio] Fetch failed, attempting token refresh and retry");
+        if let Ok(new_token) = crate::composio_auth::refresh_access_token().await {
+            return fetch_connections(&url, &new_token).await;
+        }
+    }
+
+    result
+}
+
+async fn get_valid_token() -> Option<String> {
+    let (token, expired) = read_oauth_token_with_expiry();
+    let token = token?;
+
+    if !expired {
+        return Some(token);
+    }
+
+    // Token expired — try silent refresh
+    eprintln!("[composio] Token expired, attempting silent refresh");
+    match crate::composio_auth::refresh_access_token().await {
+        Ok(new_token) => Some(new_token),
+        Err(e) => {
+            eprintln!("[composio] Silent refresh failed: {e}");
+            None
+        }
+    }
 }
 
 // -- Config: read Composio URL from ~/.claude.json --
@@ -66,13 +96,17 @@ fn read_composio_url() -> Option<String> {
 
 // -- Auth: read OAuth token from macOS keychain --
 
-fn read_oauth_token() -> Option<String> {
-    let whoami = std::process::Command::new("whoami").output().ok()?;
+/// Returns (token, is_expired). Token is None if no credentials exist.
+fn read_oauth_token_with_expiry() -> (Option<String>, bool) {
+    let whoami = match std::process::Command::new("whoami").output() {
+        Ok(o) => o,
+        Err(_) => return (None, false),
+    };
     let username = String::from_utf8_lossy(&whoami.stdout)
         .trim()
         .to_string();
 
-    let output = std::process::Command::new("security")
+    let output = match std::process::Command::new("security")
         .args([
             "find-generic-password",
             "-s",
@@ -82,26 +116,43 @@ fn read_oauth_token() -> Option<String> {
             "-w",
         ])
         .output()
-        .ok()?;
-
-    if !output.status.success() {
-        return None;
-    }
+    {
+        Ok(o) if o.status.success() => o,
+        _ => return (None, false),
+    };
 
     let json_str = String::from_utf8_lossy(&output.stdout);
-    let data: serde_json::Value = serde_json::from_str(json_str.trim()).ok()?;
-    let mcp_oauth = data.get("mcpOAuth")?.as_object()?;
+    let data: serde_json::Value = match serde_json::from_str(json_str.trim()) {
+        Ok(d) => d,
+        Err(_) => return (None, false),
+    };
+    let mcp_oauth = match data.get("mcpOAuth").and_then(|v| v.as_object()) {
+        Some(o) => o,
+        None => return (None, false),
+    };
 
     for (key, info) in mcp_oauth {
         if key.starts_with("composio") {
-            return info
+            let token = info
                 .get("accessToken")
                 .and_then(|t| t.as_str())
                 .filter(|s| !s.is_empty())
                 .map(String::from);
+
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            let expires_at = info
+                .get("expiresAt")
+                .and_then(|e| e.as_u64())
+                .unwrap_or(u64::MAX);
+            let expired = now >= expires_at;
+
+            return (token, expired);
         }
     }
-    None
+    (None, false)
 }
 
 // -- Fetch connections via MCP JSON-RPC --

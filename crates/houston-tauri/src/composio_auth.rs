@@ -61,10 +61,52 @@ pub async fn run_oauth_flow() -> Result<(), String> {
     )
     .await?;
 
-    update_keychain_token(&token.access_token, token.expires_in)?;
+    update_keychain_token(&token.access_token, token.expires_in, token.refresh_token.as_deref())?;
 
     eprintln!("[composio] OAuth flow completed successfully");
     Ok(())
+}
+
+/// Silently refresh the access token using a stored refresh token.
+/// Returns the new access token on success, or an error if no refresh token
+/// is available or the refresh fails.
+pub async fn refresh_access_token() -> Result<String, String> {
+    let config = read_oauth_config()?;
+    let refresh_token = read_refresh_token()
+        .ok_or("No refresh token stored — full re-auth required")?;
+
+    let metadata = fetch_metadata(&config.auth_server_url, &config.resource_metadata_url).await?;
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(&metadata.token_endpoint)
+        .form(&[
+            ("grant_type", "refresh_token"),
+            ("refresh_token", &refresh_token),
+            ("client_id", &config.client_id),
+        ])
+        .send()
+        .await
+        .map_err(|e| format!("Refresh request failed: {e}"))?;
+
+    let status = resp.status();
+    let body = resp.text().await.map_err(|e| e.to_string())?;
+
+    if !status.is_success() {
+        return Err(format!("Refresh returned {status}: {body}"));
+    }
+
+    let token: TokenResponse =
+        serde_json::from_str(&body).map_err(|e| format!("Invalid refresh response: {e}"))?;
+
+    update_keychain_token(
+        &token.access_token,
+        token.expires_in,
+        token.refresh_token.as_deref(),
+    )?;
+
+    eprintln!("[composio] Token refreshed silently");
+    Ok(token.access_token)
 }
 
 // -- Internal types --
@@ -97,6 +139,7 @@ struct ClientRegistration {
 struct TokenResponse {
     access_token: String,
     expires_in: Option<u64>,
+    refresh_token: Option<String>,
 }
 
 // -- Read config from keychain --
@@ -141,6 +184,22 @@ fn read_oauth_config() -> Result<OAuthConfig, String> {
         }
     }
     Err("No composio entry in keychain".to_string())
+}
+
+fn read_refresh_token() -> Option<String> {
+    let username = get_username().ok()?;
+    let data = read_keychain(&username).ok()?;
+    let mcp_oauth = data.get("mcpOAuth")?.as_object()?;
+    for (key, info) in mcp_oauth {
+        if key.starts_with("composio") {
+            return info
+                .get("refreshToken")
+                .and_then(|t| t.as_str())
+                .filter(|s| !s.is_empty())
+                .map(String::from);
+        }
+    }
+    None
 }
 
 // -- Fetch OAuth metadata --
@@ -430,6 +489,7 @@ async fn exchange_code(
 fn update_keychain_token(
     access_token: &str,
     expires_in: Option<u64>,
+    refresh_token: Option<&str>,
 ) -> Result<(), String> {
     let username = get_username()?;
     let mut data = read_keychain(&username)?;
@@ -451,6 +511,12 @@ fn update_keychain_token(
                         obj.insert(
                             "expiresAt".to_string(),
                             serde_json::Value::Number(expires_at.into()),
+                        );
+                    }
+                    if let Some(rt) = refresh_token {
+                        obj.insert(
+                            "refreshToken".to_string(),
+                            serde_json::Value::String(rt.to_string()),
                         );
                     }
                 }
