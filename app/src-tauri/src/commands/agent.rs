@@ -85,6 +85,7 @@ pub async fn send_message(
     agent_sessions: State<'_, AgentSessionMap>,
     workspace_path: String,
     prompt: String,
+    session_key: Option<String>,
 ) -> Result<String, String> {
     let working_dir = expand_tilde(&PathBuf::from(&workspace_path));
     if !working_dir.exists() {
@@ -94,23 +95,22 @@ pub async fn send_message(
     workspace::seed_workspace(&working_dir)?;
     let system_prompt = workspace::build_system_prompt(&working_dir);
 
-    let agent_key = working_dir.to_string_lossy().to_string();
+    let session_key = session_key.unwrap_or_else(|| "main".to_string());
+    let agent_key = format!("{}:{}", working_dir.to_string_lossy(), session_key);
     let chat_state = agent_sessions
         .get_for_agent(&agent_key, &workspace_path)
         .await;
     let resume_id = chat_state.get().await;
     eprintln!(
-        "[houston:session] resume_id={:?} for agent={}",
+        "[houston:session] resume_id={:?} for key={}",
         resume_id, agent_key
     );
-
-    let session_key = "main".to_string();
 
     let _ = state
         .db
         .add_chat_feed_item(
             &agent_key,
-            "main",
+            &session_key,
             "user_message",
             &serde_json::Value::String(prompt.clone()).to_string(),
             "desktop",
@@ -128,7 +128,7 @@ pub async fn send_message(
         Some(PersistOptions {
             db: state.db.clone(),
             project_id: agent_key,
-            feed_key: "main".into(),
+            feed_key: session_key.clone(),
             source: "desktop".into(),
             claude_session_id: None,
         }),

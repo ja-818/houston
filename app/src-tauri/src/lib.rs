@@ -34,7 +34,12 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // Workspace CRUD
+            // Organization CRUD
+            commands::organizations::list_organizations,
+            commands::organizations::create_organization,
+            commands::organizations::rename_organization,
+            commands::organizations::delete_organization,
+            // Workspace CRUD (scoped to org)
             commands::workspaces::list_workspaces,
             commands::workspaces::create_workspace,
             commands::workspaces::delete_workspace,

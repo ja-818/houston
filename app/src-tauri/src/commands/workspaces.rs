@@ -3,6 +3,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
+use super::organizations::org_folder;
+
 /// Persisted workspace metadata stored in .houston/workspace.json.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct WorkspaceMeta {
@@ -75,9 +77,9 @@ fn meta_to_workspace(folder: &Path, meta: &WorkspaceMeta) -> Workspace {
     }
 }
 
-/// Find a workspace folder by its ID (scan all subdirs).
-fn find_workspace_by_id(root: &Path, id: &str) -> Result<PathBuf, String> {
-    let entries = fs::read_dir(root).map_err(|e| e.to_string())?;
+/// Find a workspace folder by its ID (scan subdirs within an org folder).
+fn find_workspace_by_id(org_dir: &Path, id: &str) -> Result<PathBuf, String> {
+    let entries = fs::read_dir(org_dir).map_err(|e| e.to_string())?;
     for entry in entries.flatten() {
         let path = entry.path();
         if !path.is_dir() {
@@ -100,17 +102,24 @@ fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339()
 }
 
+/// Resolve the org folder from root + org_id.
+fn resolve_org_folder(root: &Path, org_id: &str) -> Result<PathBuf, String> {
+    let folder = org_folder(root, org_id)?;
+    fs::create_dir_all(&folder)
+        .map_err(|e| format!("Failed to create org directory: {e}"))?;
+    Ok(folder)
+}
+
 // --- Commands ---
 
 #[tauri::command]
 pub fn list_workspaces(
     root: tauri::State<'_, WorkspaceRoot>,
+    org_id: String,
 ) -> Result<Vec<Workspace>, String> {
-    let root_path = &root.0;
-    fs::create_dir_all(root_path)
-        .map_err(|e| format!("Failed to create workspace root: {e}"))?;
+    let org_dir = resolve_org_folder(&root.0, &org_id)?;
 
-    let entries = fs::read_dir(root_path).map_err(|e| e.to_string())?;
+    let entries = fs::read_dir(&org_dir).map_err(|e| e.to_string())?;
     let mut workspaces = Vec::new();
 
     for entry in entries.flatten() {
@@ -144,10 +153,13 @@ pub fn list_workspaces(
 #[tauri::command]
 pub fn create_workspace(
     root: tauri::State<'_, WorkspaceRoot>,
+    org_id: String,
     name: String,
     experience_id: String,
 ) -> Result<Workspace, String> {
-    let folder = root.0.join(&name);
+    let org_dir = resolve_org_folder(&root.0, &org_id)?;
+    let folder = org_dir.join(&name);
+
     if folder.exists() {
         return Err(format!("A workspace named \"{name}\" already exists"));
     }
@@ -185,9 +197,11 @@ pub fn create_workspace(
 #[tauri::command]
 pub fn delete_workspace(
     root: tauri::State<'_, WorkspaceRoot>,
+    org_id: String,
     id: String,
 ) -> Result<(), String> {
-    let folder = find_workspace_by_id(&root.0, &id)?;
+    let org_dir = resolve_org_folder(&root.0, &org_id)?;
+    let folder = find_workspace_by_id(&org_dir, &id)?;
     fs::remove_dir_all(&folder)
         .map_err(|e| format!("Failed to delete workspace: {e}"))?;
     Ok(())
@@ -196,11 +210,13 @@ pub fn delete_workspace(
 #[tauri::command]
 pub fn rename_workspace(
     root: tauri::State<'_, WorkspaceRoot>,
+    org_id: String,
     id: String,
     new_name: String,
 ) -> Result<Workspace, String> {
-    let old_folder = find_workspace_by_id(&root.0, &id)?;
-    let new_folder = root.0.join(&new_name);
+    let org_dir = resolve_org_folder(&root.0, &org_id)?;
+    let old_folder = find_workspace_by_id(&org_dir, &id)?;
+    let new_folder = org_dir.join(&new_name);
 
     if new_folder.exists() {
         return Err(format!(
@@ -218,9 +234,11 @@ pub fn rename_workspace(
 #[tauri::command]
 pub fn update_workspace_opened(
     root: tauri::State<'_, WorkspaceRoot>,
+    org_id: String,
     id: String,
 ) -> Result<(), String> {
-    let folder = find_workspace_by_id(&root.0, &id)?;
+    let org_dir = resolve_org_folder(&root.0, &org_id)?;
+    let folder = find_workspace_by_id(&org_dir, &id)?;
     let mut meta = read_meta(&folder)?;
     meta.last_opened_at = Some(now_iso());
     write_meta(&folder, &meta)?;

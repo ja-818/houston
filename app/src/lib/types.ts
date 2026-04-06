@@ -1,3 +1,11 @@
+/** An organization that contains workspaces */
+export interface Organization {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  createdAt: string;
+}
+
 /** Tab definition in an experience manifest */
 export interface ExperienceTab {
   /** Tab identifier. Built-in: "chat", "board", "skills", "files", "connections", "context", "routines", "channels", "events", "learnings". Custom: any string. */

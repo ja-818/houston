@@ -9,6 +9,7 @@ import {
 } from "@houston-ai/core";
 import { useExperienceStore } from "../../stores/experiences";
 import { useWorkspaceStore } from "../../stores/workspaces";
+import { useOrganizationStore } from "../../stores/organizations";
 import { useUIStore } from "../../stores/ui";
 
 export function CreateWorkspaceDialog() {
@@ -16,6 +17,7 @@ export function CreateWorkspaceDialog() {
   const setOpen = useUIStore((s) => s.setCreateWorkspaceDialogOpen);
   const experiences = useExperienceStore((s) => s.experiences);
   const createWorkspace = useWorkspaceStore((s) => s.create);
+  const currentOrg = useOrganizationStore((s) => s.current);
 
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedExpId, setSelectedExpId] = useState<string | null>(null);
@@ -42,9 +44,9 @@ export function CreateWorkspaceDialog() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
-    if (!trimmed || !selectedExpId) return;
+    if (!trimmed || !selectedExpId || !currentOrg) return;
     try {
-      await createWorkspace(trimmed, selectedExpId);
+      await createWorkspace(currentOrg.id, trimmed, selectedExpId);
       handleClose();
     } catch (err) {
       setError(String(err));
@@ -56,7 +58,7 @@ export function CreateWorkspaceDialog() {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {step === 1 ? "Choose an experience" : "Name your workspace"}
+            {step === 1 ? "Choose a template" : "Name your AI Workspace"}
           </DialogTitle>
         </DialogHeader>
 
@@ -83,7 +85,7 @@ export function CreateWorkspaceDialog() {
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Workspace name"
+              placeholder="AI Workspace name"
             />
             {error && <p className="text-xs text-destructive">{error}</p>}
             <div className="flex justify-end gap-2">

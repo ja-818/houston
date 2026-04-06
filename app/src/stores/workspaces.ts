@@ -1,16 +1,17 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { tauriWorkspaces } from "../lib/tauri";
 import type { Workspace } from "../lib/types";
 
 interface WorkspaceState {
   workspaces: Workspace[];
   current: Workspace | null;
   loading: boolean;
-  loadWorkspaces: () => Promise<void>;
+  loadWorkspaces: (orgId: string) => Promise<void>;
   setCurrent: (ws: Workspace) => void;
-  create: (name: string, experienceId: string) => Promise<Workspace>;
-  delete: (id: string) => Promise<void>;
-  rename: (id: string, newName: string) => Promise<void>;
+  create: (orgId: string, name: string, experienceId: string) => Promise<Workspace>;
+  delete: (orgId: string, id: string) => Promise<void>;
+  rename: (orgId: string, id: string, newName: string) => Promise<void>;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
@@ -18,10 +19,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   current: null,
   loading: false,
 
-  loadWorkspaces: async () => {
+  loadWorkspaces: async (orgId) => {
     set({ loading: true });
     try {
-      const workspaces = await invoke<Workspace[]>("list_workspaces");
+      const workspaces = await tauriWorkspaces.list(orgId);
       const current = get().current;
       const selected =
         workspaces.find((w) => w.id === current?.id) ?? null;
@@ -37,14 +38,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     invoke("set_preference", {
       key: "last_workspace_id",
       value: ws.id,
-    }).catch((e) => console.error("[workspaces] Failed to save preference:", e));
+    }).catch((e) =>
+      console.error("[workspaces] Failed to save preference:", e),
+    );
   },
 
-  create: async (name, experienceId) => {
-    const ws = await invoke<Workspace>("create_workspace", {
-      name,
-      experienceId,
-    });
+  create: async (orgId, name, experienceId) => {
+    const ws = await tauriWorkspaces.create(orgId, name, experienceId);
     set((s) => ({
       workspaces: [...s.workspaces, ws],
       current: ws,
@@ -52,12 +52,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     invoke("set_preference", {
       key: "last_workspace_id",
       value: ws.id,
-    }).catch((e) => console.error("[workspaces] Failed to save preference:", e));
+    }).catch((e) =>
+      console.error("[workspaces] Failed to save preference:", e),
+    );
     return ws;
   },
 
-  delete: async (id) => {
-    await invoke<void>("delete_workspace", { id });
+  delete: async (orgId, id) => {
+    await tauriWorkspaces.delete(orgId, id);
     set((s) => {
       const workspaces = s.workspaces.filter((w) => w.id !== id);
       const current =
@@ -66,13 +68,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     });
   },
 
-  rename: async (id, newName) => {
-    await invoke<void>("rename_workspace", { id, newName });
+  rename: async (orgId, id, newName) => {
+    await tauriWorkspaces.rename(orgId, id, newName);
     set((s) => ({
       workspaces: s.workspaces.map((w) =>
         w.id === id ? { ...w, name: newName } : w,
       ),
-      current: s.current?.id === id ? { ...s.current, name: newName } : s.current,
+      current:
+        s.current?.id === id ? { ...s.current, name: newName } : s.current,
     }));
   },
 }));
