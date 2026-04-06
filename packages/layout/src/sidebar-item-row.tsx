@@ -55,7 +55,7 @@ export function SidebarItemRow({
             if (e.key === "Enter") onCommitRename(item.id);
             if (e.key === "Escape") onCancelEdit();
           }}
-          className="flex-1 px-3 py-1.5 text-[13px] bg-background outline-none border border-border rounded-lg focus:border-foreground/30"
+          className="flex-1 min-w-0 px-3 py-1.5 text-[13px] bg-background outline-none border border-border rounded-lg focus:border-foreground/30"
         />
       ) : (
         <button

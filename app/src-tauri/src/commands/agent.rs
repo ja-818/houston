@@ -146,14 +146,22 @@ pub async fn load_chat_history(
     let session_file = working_dir.join(".claude_session_id");
 
     // Load from both v1 (agent_key + feed_key) and v2 (claude_session_id) sources.
-    // User messages are persisted via v1 path (before session ID is known).
-    // Agent messages are persisted via v2 path (after session ID arrives).
-    let agent_key = working_dir.to_string_lossy().to_string();
+    // The agent_key format must match what send_message uses: "path:session_key"
+    let base_key = working_dir.to_string_lossy().to_string();
+    let agent_key = format!("{base_key}:main");
     let mut v1_rows = state
         .db
         .list_chat_feed(&agent_key, "main")
         .await
         .map_err(|e| e.to_string())?;
+
+    // Also try the old format (just path, no :main) for backward compat
+    let old_rows = state
+        .db
+        .list_chat_feed(&base_key, "main")
+        .await
+        .unwrap_or_default();
+    v1_rows.extend(old_rows);
 
     if let Ok(id) = std::fs::read_to_string(&session_file) {
         let id = id.trim().to_string();

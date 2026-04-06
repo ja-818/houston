@@ -20,6 +20,14 @@ export interface ExperienceTab {
   badge?: "tasks" | "none";
 }
 
+/** Experience category for marketplace filtering */
+export type ExperienceCategory =
+  | "productivity"
+  | "development"
+  | "research"
+  | "creative"
+  | "business";
+
 /** The experience manifest (manifest.json schema) */
 export interface ExperienceManifest {
   id: string;
@@ -28,6 +36,9 @@ export interface ExperienceManifest {
   version?: string;
   icon?: string;           // Lucide icon name
   color?: string;          // Brand color override
+  category?: ExperienceCategory;
+  author?: string;         // e.g. "Houston" for official, user name for community
+  tags?: string[];         // Searchable tags
   tabs: ExperienceTab[];
   defaultTab?: string;     // Tab ID to show by default, defaults to first tab
   claudeMd?: string;       // CLAUDE.md content template

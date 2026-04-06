@@ -5,6 +5,9 @@ export const defaultExperience: ExperienceManifest = {
   name: "AI Assistant",
   description: "Chat with an AI assistant that can manage tasks, skills, and files",
   icon: "Bot",
+  category: "productivity",
+  author: "Houston",
+  tags: ["general", "chat", "tasks"],
   tabs: [
     { id: "chat", label: "Chat", builtIn: "chat" },
     { id: "tasks", label: "Tasks", builtIn: "board" },

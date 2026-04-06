@@ -75,7 +75,7 @@ export function AppSidebar({
 
   return (
     <>
-      <aside className="w-[200px] bg-secondary flex flex-col h-full shrink-0 border-r border-border">
+      <aside className="w-[220px] bg-secondary flex flex-col h-full shrink-0 border-r border-border">
         {/* Header slot (e.g., SpaceSwitcher) */}
         {header}
 

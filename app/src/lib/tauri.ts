@@ -23,13 +23,13 @@ export const tauriSpaces = {
 
 export const tauriWorkspaces = {
   list: (spaceId: string) =>
-    invoke<Workspace[]>("list_workspaces", { spaceId }),
+    invoke<Workspace[]>("list_workspaces", { space_id: spaceId }),
   create: (spaceId: string, name: string, experienceId: string) =>
-    invoke<Workspace>("create_workspace", { spaceId, name, experienceId }),
+    invoke<Workspace>("create_workspace", { space_id: spaceId, name, experience_id: experienceId }),
   delete: (spaceId: string, id: string) =>
-    invoke<void>("delete_workspace", { spaceId, id }),
+    invoke<void>("delete_workspace", { space_id: spaceId, id }),
   rename: (spaceId: string, id: string, newName: string) =>
-    invoke<void>("rename_workspace", { spaceId, id, newName }),
+    invoke<void>("rename_workspace", { space_id: spaceId, id, new_name: newName }),
 };
 
 export const tauriChat = {

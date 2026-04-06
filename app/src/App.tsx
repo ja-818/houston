@@ -27,6 +27,9 @@ export default function App() {
 
   const spaceLoading = useSpaceStore((s) => s.loading);
   const spaces = useSpaceStore((s) => s.spaces);
+  const createSpace = useSpaceStore((s) => s.create);
+  const setCurrentSpace = useSpaceStore((s) => s.setCurrent);
+  const loadWorkspaces = useWorkspaceStore((s) => s.loadWorkspaces);
   const current = useWorkspaceStore((s) => s.current);
   const loading = useWorkspaceStore((s) => s.loading);
   const getById = useExperienceStore((s) => s.getById);
@@ -63,7 +66,16 @@ export default function App() {
               Create your first space to get started.
             </EmptyDescription>
           </EmptyHeader>
-          <Button className="mt-4 rounded-full">Create your first space</Button>
+          <Button
+            className="mt-4 rounded-full"
+            onClick={async () => {
+              const space = await createSpace("Personal");
+              setCurrentSpace(space);
+              await loadWorkspaces(space.id);
+            }}
+          >
+            Create your first space
+          </Button>
         </Empty>
         <ToastContainer toasts={mappedToasts} onDismiss={dismissToast} />
       </div>
