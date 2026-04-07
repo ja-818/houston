@@ -32,6 +32,7 @@ import { CreateAgentDialog } from "./components/shell/create-workspace-dialog";
 import { AgentRenderer } from "./components/shell/experience-renderer";
 import { Dashboard } from "./components/dashboard";
 import { WorkspaceConnections } from "./components/space-connections";
+import { DetailPanelProvider } from "./components/shell/detail-panel-context";
 
 export default function App() {
   useHoustonInit();
@@ -51,9 +52,19 @@ export default function App() {
   const toasts = useUIStore((s) => s.toasts);
   const dismissToast = useUIStore((s) => s.dismissToast);
   const onStartMission = useUIStore((s) => s.onStartMission);
+  const missionPanelOpen = useUIStore((s) => s.missionPanelOpen);
+  const [panelContainer, setPanelContainer] = useState<HTMLDivElement | null>(null);
 
   const agentDef = currentAgent ? getById(currentAgent.configId) : undefined;
   const tabs = agentDef?.config.tabs ?? [];
+
+  // Auto-correct viewMode if it doesn't match any tab on the current agent
+  const isAgentView = viewMode !== "dashboard" && viewMode !== "connections";
+  useEffect(() => {
+    if (isAgentView && tabs.length > 0 && !tabs.some((t) => t.id === viewMode)) {
+      setViewMode(agentDef?.config.defaultTab ?? tabs[0].id);
+    }
+  }, [isAgentView, tabs, viewMode, setViewMode, agentDef]);
 
   const mappedToasts: Toast[] = toasts.map((t) => ({
     id: t.id,
@@ -94,71 +105,82 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      <Sidebar>
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {viewMode === "dashboard" ? (
-            <Dashboard />
-          ) : viewMode === "connections" ? (
-            <WorkspaceConnections />
-          ) : currentAgent && agentDef && tabs.length > 0 ? (
-            <>
-              <TabBar
-                title={currentAgent.name}
-                tabs={tabs.map((t) => ({ id: t.id, label: t.label }))}
-                activeTab={viewMode}
-                onTabChange={setViewMode}
-                actions={
-                  <div className="flex items-center gap-2">
-                    {currentAgent && (
-                      <SlackButton
-                        agentPath={currentAgent.folderPath}
-                        agentName={currentAgent.name}
-                      />
-                    )}
-                    {onStartMission && (
-                      <Button
-                        onClick={() => {
-                          setViewMode("activity");
-                          setTimeout(() => {
-                            useUIStore.getState().onStartMission?.();
-                          }, 50);
-                        }}
-                      >
-                        <img src={houstonIconWhite} alt="" className="size-4" />
-                        Start a Mission
-                      </Button>
-                    )}
-                  </div>
-                }
+    <DetailPanelProvider value={panelContainer}>
+      <div className="flex h-screen bg-background text-foreground">
+        <Sidebar>
+          <div className="flex-1 flex min-w-0 overflow-hidden">
+            <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+              {viewMode === "dashboard" ? (
+                <Dashboard />
+              ) : viewMode === "connections" ? (
+                <WorkspaceConnections />
+              ) : currentAgent && agentDef && tabs.length > 0 ? (
+                <>
+                  <TabBar
+                    title={currentAgent.name}
+                    tabs={tabs.map((t) => ({ id: t.id, label: t.label }))}
+                    activeTab={viewMode}
+                    onTabChange={setViewMode}
+                    actions={
+                      <div className="flex items-center gap-2">
+                        {currentAgent && (
+                          <SlackButton
+                            agentPath={currentAgent.folderPath}
+                            agentName={currentAgent.name}
+                          />
+                        )}
+                        {onStartMission && (
+                          <Button
+                            onClick={() => {
+                              setViewMode("activity");
+                              setTimeout(() => {
+                                useUIStore.getState().onStartMission?.();
+                              }, 50);
+                            }}
+                          >
+                            <img src={houstonIconWhite} alt="" className="size-4" />
+                            Start a Mission
+                          </Button>
+                        )}
+                      </div>
+                    }
+                  />
+                  <main className="flex-1 min-h-0 overflow-hidden">
+                    <AgentRenderer
+                      agentDef={agentDef}
+                      agent={currentAgent}
+                      tabs={tabs}
+                      activeTabId={viewMode}
+                    />
+                  </main>
+                </>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <Empty className="border-0">
+                    <EmptyHeader>
+                      <EmptyTitle>No Agents yet</EmptyTitle>
+                      <EmptyDescription>
+                        Create your first Agent to get started.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                </div>
+              )}
+            </main>
+            {missionPanelOpen && (
+              <div
+                ref={setPanelContainer}
+                className="h-full border-l border-border overflow-hidden"
+                style={{ width: "45%", minWidth: 380 }}
               />
-              <main className="flex-1 min-h-0 overflow-hidden">
-                <AgentRenderer
-                  agentDef={agentDef}
-                  agent={currentAgent}
-                  tabs={tabs}
-                  activeTabId={viewMode}
-                />
-              </main>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <Empty className="border-0">
-                <EmptyHeader>
-                  <EmptyTitle>No Agents yet</EmptyTitle>
-                  <EmptyDescription>
-                    Create your first Agent to get started.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            </div>
-          )}
-        </main>
-      </Sidebar>
+            )}
+          </div>
+        </Sidebar>
 
-      <CreateAgentDialog />
-      <ToastContainer toasts={mappedToasts} onDismiss={dismissToast} />
-    </div>
+        <CreateAgentDialog />
+        <ToastContainer toasts={mappedToasts} onDismiss={dismissToast} />
+      </div>
+    </DetailPanelProvider>
   );
 }
 

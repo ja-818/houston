@@ -4,7 +4,7 @@ import { useAgentCatalogStore } from "../../stores/agent-catalog";
 import { useAgentStore } from "../../stores/agents";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useUIStore } from "../../stores/ui";
-import type { AgentCategory } from "../../lib/types";
+import type { AgentCategory, StoreListing } from "../../lib/types";
 import { StoreStep } from "./store-step";
 import { NamingStep } from "./naming-step";
 
@@ -12,6 +12,9 @@ export function CreateAgentDialog() {
   const open = useUIStore((s) => s.createAgentDialogOpen);
   const setOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
   const agentDefs = useAgentCatalogStore((s) => s.agents);
+  const storeCatalog = useAgentCatalogStore((s) => s.storeCatalog);
+  const installedIds = useAgentCatalogStore((s) => s.installedIds);
+  const installAgent = useAgentCatalogStore((s) => s.installAgent);
   const createAgent = useAgentStore((s) => s.create);
   const currentWorkspace = useWorkspaceStore((s) => s.current);
 
@@ -42,10 +45,17 @@ export function CreateAgentDialog() {
     if (!trimmed || !selectedConfigId || !currentWorkspace) return;
     try {
       await createAgent(currentWorkspace.id, trimmed, selectedConfigId, selectedDef?.config.claudeMd);
+      // Select the new agent's default tab so there's always an active tab
+      const firstTab = selectedDef?.config.defaultTab ?? selectedDef?.config.tabs[0]?.id ?? "chat";
+      useUIStore.getState().setViewMode(firstTab);
       handleClose();
     } catch (err) {
       setError(String(err));
     }
+  };
+
+  const handleInstall = async (listing: StoreListing) => {
+    await installAgent(listing);
   };
 
   const filtered = useMemo(() => {
@@ -82,11 +92,14 @@ export function CreateAgentDialog() {
             onCategoryChange={setCategory}
             houstonAgents={houstonAgents}
             communityAgents={communityAgents}
+            storeCatalog={storeCatalog}
+            installedIds={installedIds}
             hasResults={filtered.length > 0}
             onSelect={(id) => {
               setSelectedConfigId(id);
               setStep(2);
             }}
+            onInstall={handleInstall}
           />
         ) : (
           <NamingStep
