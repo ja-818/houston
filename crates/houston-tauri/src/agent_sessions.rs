@@ -40,14 +40,20 @@ impl AgentSessionMap {
         }
 
         // Slow path: create and try to load from disk.
+        // Only load the shared .claude_session_id for the "main" session.
+        // Activity sessions (activity-{id}) must start fresh — they each get
+        // their own Claude session, not the agent's primary one.
         let state = ChatSessionState::default();
 
-        let workspace_dir = expand_tilde(&PathBuf::from(workspace_path));
-        let session_file = workspace_dir.join(SESSION_FILE);
-        if let Ok(id) = std::fs::read_to_string(&session_file) {
-            let id = id.trim().to_string();
-            if !id.is_empty() {
-                state.set(id).await;
+        let is_activity = agent_key.contains(":activity-");
+        if !is_activity {
+            let workspace_dir = expand_tilde(&PathBuf::from(workspace_path));
+            let session_file = workspace_dir.join(SESSION_FILE);
+            if let Ok(id) = std::fs::read_to_string(&session_file) {
+                let id = id.trim().to_string();
+                if !id.is_empty() {
+                    state.set(id).await;
+                }
             }
         }
 

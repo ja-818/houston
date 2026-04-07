@@ -13,6 +13,7 @@ pub mod events;
 pub mod paths;
 pub mod self_improvement;
 pub mod session_queue;
+pub mod session_pids;
 pub mod session_runner;
 pub mod state;
 pub mod supervisor;

@@ -53,6 +53,7 @@ pub fn authorization_url(config: &SlackOAuthConfig) -> String {
 }
 
 /// Start a local HTTP server, wait for the OAuth callback, exchange for tokens.
+/// Times out after 2 minutes if the user doesn't complete the flow.
 pub async fn run_oauth_flow(config: &SlackOAuthConfig) -> anyhow::Result<SlackOAuthTokens> {
     let listener = TcpListener::bind(format!("127.0.0.1:{DEFAULT_PORT}"))
         .await
@@ -60,7 +61,13 @@ pub async fn run_oauth_flow(config: &SlackOAuthConfig) -> anyhow::Result<SlackOA
 
     tracing::info!(port = DEFAULT_PORT, "OAuth callback server listening");
 
-    let (mut stream, _) = listener.accept().await.context("accept failed")?;
+    let accept = listener.accept();
+    let timeout = tokio::time::sleep(std::time::Duration::from_secs(120));
+
+    let (mut stream, _) = tokio::select! {
+        result = accept => result.context("accept failed")?,
+        _ = timeout => anyhow::bail!("OAuth timed out — you can try again"),
+    };
     let mut buf = vec![0u8; 4096];
     let n = stream.read(&mut buf).await.context("read failed")?;
     let request = String::from_utf8_lossy(&buf[..n]);

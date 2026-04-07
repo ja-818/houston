@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Check, X, Plus } from "lucide-react";
 import houstonIconWhite from "./assets/houston-icon-white.svg";
 
-import { tauriSlack } from "./lib/tauri";
+import { tauriSlack, tauriSystem } from "./lib/tauri";
 import {
   Empty,
   EmptyHeader,
@@ -38,6 +38,20 @@ export default function App() {
   useHoustonInit();
   useSessionEvents();
   useAgentInvalidation();
+
+  // Intercept all link clicks and open in system browser
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest("a[href]");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
+      e.preventDefault();
+      tauriSystem.openUrl(href);
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, []);
 
   const wsLoading = useWorkspaceStore((s) => s.loading);
   const workspaces = useWorkspaceStore((s) => s.workspaces);

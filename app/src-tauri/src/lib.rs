@@ -35,6 +35,7 @@ pub fn run() {
                 scheduler: None,
             });
             app.manage(AgentSessionMap::default());
+            app.manage(houston_tauri::session_pids::SessionPidMap::default());
             app.manage(WorkspaceRoot(root.clone()));
             app.manage(houston_tauri::agent_watcher::WatcherState::default());
             app.manage(routine_runner::RoutineSchedulerState::default());
@@ -87,8 +88,9 @@ pub fn run() {
                     tokio::spawn(async move {
                         let state: tauri::State<'_, AppState> = h.state();
                         let sessions: tauri::State<'_, AgentSessionMap> = h.state();
+                        let pids: tauri::State<'_, houston_tauri::session_pids::SessionPidMap> = h.state();
                         if let Err(e) = commands::chat::send_message(
-                            h.clone(), state, sessions,
+                            h.clone(), state, sessions, pids,
                             agent_path, text, Some(session_key),
                             Some("slack".to_string()),
                         ).await {
@@ -129,8 +131,14 @@ pub fn run() {
             commands::preferences::set_preference,
             // Houston Store — installed agent configs
             commands::agent_configs::list_installed_configs,
+            // Houston Store — remote registry
+            commands::store::fetch_store_catalog,
+            commands::store::search_store,
+            commands::store::install_store_agent,
+            commands::store::uninstall_store_agent,
             // Chat commands (send_message, load_chat_history, file read/write)
             commands::chat::send_message,
+            commands::chat::stop_session,
             commands::chat::load_chat_history,
             commands::chat::read_agent_file,
             commands::chat::write_agent_file,
@@ -164,6 +172,9 @@ pub fn run() {
             houston_tauri::agent_store::commands::create_goal,
             houston_tauri::agent_store::commands::update_goal,
             houston_tauri::agent_store::commands::delete_goal,
+            houston_tauri::agent_store::commands::list_integrations,
+            houston_tauri::agent_store::commands::track_integration,
+            houston_tauri::agent_store::commands::remove_integration,
             houston_tauri::agent_store::commands::list_channels_config,
             houston_tauri::agent_store::commands::add_channel_config,
             houston_tauri::agent_store::commands::remove_channel_config,

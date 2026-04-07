@@ -43,12 +43,14 @@ pub async fn connect_slack(
 
     // Step 2: Fetch the installing user's Slack identity
     let (user_name, user_avatar) = if !tokens.user_id.is_empty() {
-        houston_channels::slack::api::get_user_info(&bot_token, &tokens.user_id)
-            .await
-            .unwrap_or_else(|_| ("You".to_string(), None))
+        let result = houston_channels::slack::api::get_user_info(&bot_token, &tokens.user_id).await;
+        eprintln!("[slack] user info for {}: {:?}", tokens.user_id, result);
+        result.unwrap_or_else(|_| ("You".to_string(), None))
     } else {
+        eprintln!("[slack] no user_id in OAuth response");
         ("You".to_string(), None)
     };
+    eprintln!("[slack] user_name={user_name}, user_avatar={user_avatar:?}");
 
     // Step 3: Create a Slack channel for this agent
     let safe_name = format!("houston-{}", slug(&agent_name));

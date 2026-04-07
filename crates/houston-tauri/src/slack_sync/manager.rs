@@ -74,75 +74,26 @@ impl SlackSyncManager {
     }
 
     /// Post an assistant message to the correct Slack thread, using agent name.
+    /// If no thread exists yet, silently skips (thread is created by user's first message).
     pub async fn post_to_slack(
-        &mut self,
+        &self,
         session_key: &str,
         text: &str,
     ) -> Result<(), String> {
-        // First check if we have an existing thread mapping
-        if let Some(session) = self.find_session_for_key(session_key) {
-            let thread = thread_map::find_thread(&session.config, session_key);
-            if let Some(t) = thread {
-                let bot_token = session.config.bot_token.clone();
-                let channel_id = session.config.slack_channel_id.clone();
-                let agent_name = session.agent_name.clone();
-                let thread_ts = t.thread_ts.clone();
-
-                houston_channels::slack::api::post_message_as(
-                    &bot_token,
-                    &channel_id,
-                    text,
-                    Some(&thread_ts),
-                    Some(&agent_name),
-                    None,
-                )
-                .await
-                .map_err(|e| e.to_string())?;
-
-                return Ok(());
-            }
-        }
-
-        // No thread yet — create one for this new conversation
-        self.create_thread_for_new_conversation(session_key, text)
-            .await
-    }
-
-    async fn create_thread_for_new_conversation(
-        &mut self,
-        session_key: &str,
-        text: &str,
-    ) -> Result<(), String> {
-        let agent_path = self.find_agent_for_session_key(session_key)?;
-        let session = self.sessions.get(&agent_path).ok_or("session disappeared")?;
+        let session = match self.find_session_for_key(session_key) {
+            Some(s) => s,
+            None => return Ok(()), // No sync session for this conversation
+        };
+        let thread = match thread_map::find_thread(&session.config, session_key) {
+            Some(t) => t,
+            None => return Ok(()), // No thread yet — will be created on next user message
+        };
 
         let bot_token = session.config.bot_token.clone();
         let channel_id = session.config.slack_channel_id.clone();
         let agent_name = session.agent_name.clone();
-        let title = truncate(text, 80);
+        let thread_ts = thread.thread_ts.clone();
 
-        // Post top-level message to create the thread
-        let result = houston_channels::slack::api::post_message_as(
-            &bot_token,
-            &channel_id,
-            &format!("New conversation: {title}"),
-            None,
-            Some(&agent_name),
-            None,
-        )
-        .await
-        .map_err(|e| e.to_string())?;
-
-        let thread_ts = result.message_ts.ok_or("no ts in post_message response")?;
-
-        self.add_thread_mapping(
-            &agent_path,
-            session_key.to_string(),
-            thread_ts.clone(),
-            title,
-        )?;
-
-        // Post the actual response as a thread reply
         houston_channels::slack::api::post_message_as(
             &bot_token,
             &channel_id,
@@ -157,23 +108,51 @@ impl SlackSyncManager {
         Ok(())
     }
 
-    fn find_agent_for_session_key(&self, session_key: &str) -> Result<String, String> {
-        for (agent_path, _) in &self.sessions {
-            let root = expand_tilde(&PathBuf::from(agent_path));
-            let activities = crate::agent_store::activity::list(&root).unwrap_or_default();
-            for act in activities {
-                let act_key = act
-                    .session_key
-                    .unwrap_or_else(|| format!("activity-{}", act.id));
-                if act_key == session_key {
-                    return Ok(agent_path.clone());
-                }
-            }
-            if session_key == "main" {
-                return Ok(agent_path.clone());
-            }
+    /// Create a Slack thread for a conversation by posting the user's message as the
+    /// top-level post (under the user's identity). Returns the thread_ts.
+    pub async fn create_thread_for_user_message(
+        &mut self,
+        agent_path: &str,
+        session_key: &str,
+        user_text: &str,
+    ) -> Result<Option<String>, String> {
+        let session = match self.sessions.get(agent_path) {
+            Some(s) => s,
+            None => return Ok(None), // No Slack sync for this agent
+        };
+        // If thread already exists, return its ts
+        if let Some(thread) = thread_map::find_thread(&session.config, session_key) {
+            return Ok(Some(thread.thread_ts.clone()));
         }
-        Err(format!("no agent found for session_key {session_key}"))
+
+        let bot_token = session.config.bot_token.clone();
+        let channel_id = session.config.slack_channel_id.clone();
+        let user_name = session.config.user_name.clone();
+        let user_avatar = session.config.user_avatar.clone();
+
+        // Post the user's message as the top-level post (creates the thread)
+        let result = houston_channels::slack::api::post_message_as(
+            &bot_token,
+            &channel_id,
+            user_text,
+            None,
+            Some(&user_name),
+            user_avatar.as_deref(),
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
+        let thread_ts = result.message_ts.ok_or("no ts in post_message response")?;
+        let title = truncate(user_text, 80);
+
+        self.add_thread_mapping(
+            agent_path,
+            session_key.to_string(),
+            thread_ts.clone(),
+            title,
+        )?;
+
+        Ok(Some(thread_ts))
     }
 
     pub fn add_thread_mapping(

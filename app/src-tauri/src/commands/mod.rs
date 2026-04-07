@@ -5,5 +5,6 @@ pub mod memory;
 pub mod preferences;
 pub mod skills;
 pub mod slack;
+pub mod store;
 pub mod system;
 pub mod workspaces;

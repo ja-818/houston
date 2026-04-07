@@ -135,17 +135,6 @@ async fn handle_new_message(
         },
     );
 
-    // Post a reply to create the Slack thread
-    let session = mgr.session_for_agent(agent_path)
-        .ok_or("no sync session")?;
-    let bot_token = session.config.bot_token.clone();
-    let channel_id = session.config.slack_channel_id.clone();
-    houston_channels::slack::api::post_message(
-        &bot_token, &channel_id,
-        &format!("Working on: {title}"),
-        Some(message_ts),
-    ).await.map_err(|e| e.to_string())?;
-
     // Route message to agent
     let _ = app_handle.emit(
         "slack-inbound-message",

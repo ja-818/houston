@@ -9,6 +9,8 @@ import type {
   FileEntry,
   LearningsData,
   ChannelEntry,
+  StoreListing,
+  TrackedIntegration,
 } from "./types";
 
 /**
@@ -71,6 +73,8 @@ export const tauriAgents = {
 export const tauriChat = {
   send: (agentPath: string, prompt: string, sessionKey?: string) =>
     invoke<string>("send_message", { agent_path: agentPath, prompt, session_key: sessionKey }),
+  stop: (sessionKey: string) =>
+    invoke<void>("stop_session", { session_key: sessionKey }),
   loadHistory: (agentPath: string, sessionKey?: string) =>
     invoke<Array<{ feed_type: string; data: unknown }>>(
       "load_chat_history",
@@ -127,6 +131,15 @@ export const tauriConnections = {
     invoke<void>("submit_composio_callback", { callback_url: callbackUrl }),
 };
 
+export const tauriIntegrations = {
+  list: (agentPath: string) =>
+    invoke<TrackedIntegration[]>("list_integrations", { agent_path: agentPath }),
+  track: (agentPath: string, toolkit: string) =>
+    invoke<TrackedIntegration>("track_integration", { agent_path: agentPath, toolkit }),
+  remove: (agentPath: string, toolkit: string) =>
+    invoke<void>("remove_integration", { agent_path: agentPath, toolkit }),
+};
+
 export const tauriChannels = {
   list: (agentPath: string) =>
     invoke<ChannelEntry[]>("list_channels_config", { agent_path: agentPath }),
@@ -160,6 +173,14 @@ export const tauriStore = {
     invoke<Array<{ config: unknown; path: string }>>(
       "list_installed_configs",
     ),
+  fetchCatalog: () =>
+    invoke<StoreListing[]>("fetch_store_catalog"),
+  search: (query: string) =>
+    invoke<StoreListing[]>("search_store", { query }),
+  install: (repo: string, agentId: string) =>
+    invoke<void>("install_store_agent", { repo, agent_id: agentId }),
+  uninstall: (agentId: string) =>
+    invoke<void>("uninstall_store_agent", { agent_id: agentId }),
 };
 
 interface RawConversation {

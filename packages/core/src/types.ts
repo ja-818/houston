@@ -98,6 +98,10 @@ export type HoustonEvent =
       data: { agent_path: string };
     }
   | {
+      type: "IntegrationsChanged";
+      data: { agent_path: string };
+    }
+  | {
       type: "SkillsChanged";
       data: { agent_path: string };
     }

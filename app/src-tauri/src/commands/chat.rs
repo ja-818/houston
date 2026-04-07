@@ -1,7 +1,9 @@
 use crate::agent;
 use houston_tauri::agent_sessions::AgentSessionMap;
+use houston_tauri::events::HoustonEvent;
 use houston_tauri::houston_sessions;
 use houston_tauri::paths::expand_tilde;
+use houston_tauri::session_pids::SessionPidMap;
 use houston_tauri::session_runner::PersistOptions;
 use houston_tauri::slack_sync::SlackSyncManager;
 use houston_tauri::state::AppState;
@@ -15,6 +17,7 @@ pub async fn send_message(
     app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
     agent_sessions: State<'_, AgentSessionMap>,
+    pid_map: State<'_, SessionPidMap>,
     agent_path: String,
     prompt: String,
     session_key: Option<String>,
@@ -26,7 +29,27 @@ pub async fn send_message(
             .map_err(|e| format!("Failed to create agent directory: {e}"))?;
     }
     agent::seed_agent(&working_dir)?;
-    let system_prompt = agent::build_system_prompt(&working_dir);
+    let mut system_prompt = agent::build_system_prompt(&working_dir);
+
+    // Append available Composio integrations to the system prompt
+    if let houston_tauri::composio::ComposioResult::Ok { connections } =
+        houston_tauri::composio::list_active_connections().await
+    {
+        if !connections.is_empty() {
+            let names: Vec<&str> = connections.iter().map(|c| c.toolkit.as_str()).collect();
+            system_prompt.push_str(&format!(
+                "\n\n---\n\n# Integrations — Available via Composio\n\n\
+                 The user has these Composio integrations connected: {}.\n\
+                 You can use any of them via the Composio MCP tools.\n\n\
+                 When you use a Composio integration, record it by writing to \
+                 `.houston/integrations.json`. Read the current file first, then \
+                 append your toolkit name with `first_used_at`, `last_used_at` \
+                 (ISO-8601), and `use_count` fields. If the toolkit already \
+                 exists, increment `use_count` and update `last_used_at`.",
+                names.join(", ")
+            ));
+        }
+    }
 
     let source = source.unwrap_or_else(|| "desktop".to_string());
     let session_key = session_key.unwrap_or_else(|| "main".to_string());
@@ -62,7 +85,9 @@ pub async fn send_message(
         );
     }
 
-    // If message came from Houston desktop, mirror it to Slack
+    // If message came from Houston desktop, mirror it to Slack.
+    // First message creates the thread (user's text as top-level post).
+    // Subsequent messages post as thread replies under the user's identity.
     if source == "desktop" {
         let sync_mgr: State<'_, Arc<RwLock<SlackSyncManager>>> = app_handle.state();
         let agent_path_clone = agent_path.clone();
@@ -70,22 +95,33 @@ pub async fn send_message(
         let prompt_clone = prompt.clone();
         let mgr = sync_mgr.inner().clone();
         tokio::spawn(async move {
-            let mgr: tokio::sync::RwLockReadGuard<'_, SlackSyncManager> = mgr.read().await;
-            if let Some(session) = mgr.session_for_agent(&agent_path_clone) {
-                if let Some(thread) = houston_tauri::slack_sync::thread_map::find_thread(
-                    &session.config,
-                    &session_key_clone,
-                ) {
-                    // Post as the user (their name + avatar) so Slack shows a real conversation
+            let mut mgr = mgr.write().await;
+
+            // Check if thread already exists
+            let existing_ts = mgr.session_for_agent(&agent_path_clone)
+                .and_then(|s| houston_tauri::slack_sync::thread_map::find_thread(
+                    &s.config, &session_key_clone,
+                ))
+                .map(|t| t.thread_ts.clone());
+
+            if let Some(thread_ts) = existing_ts {
+                // Thread exists — post user message as a reply
+                if let Some(session) = mgr.session_for_agent(&agent_path_clone) {
                     let _ = houston_channels::slack::api::post_message_as(
                         &session.config.bot_token,
                         &session.config.slack_channel_id,
                         &prompt_clone,
-                        Some(&thread.thread_ts),
+                        Some(&thread_ts),
                         Some(&session.config.user_name),
                         session.config.user_avatar.as_deref(),
-                    )
-                    .await;
+                    ).await;
+                }
+            } else {
+                // No thread yet — create one with user's message as top-level post
+                if let Err(e) = mgr.create_thread_for_user_message(
+                    &agent_path_clone, &session_key_clone, &prompt_clone,
+                ).await {
+                    eprintln!("[slack] failed to create thread: {e}");
                 }
             }
         });
@@ -106,6 +142,7 @@ pub async fn send_message(
             source: "desktop".into(),
             claude_session_id: None,
         }),
+        Some(pid_map.inner().clone()),
     );
 
     Ok(session_key)
@@ -197,6 +234,43 @@ pub async fn write_agent_file(
         let _ = app_handle.emit("houston-event", houston_tauri::events::HoustonEvent::ContextChanged {
             agent_path: agent_path.clone(),
         });
+    }
+    Ok(())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub async fn stop_session(
+    app_handle: tauri::AppHandle,
+    pid_map: State<'_, SessionPidMap>,
+    session_key: String,
+) -> Result<(), String> {
+    if let Some(pid) = pid_map.remove(&session_key).await {
+        eprintln!("[houston:session] stopping session {session_key} (pid {pid})");
+        // Kill the Claude CLI process
+        std::process::Command::new("kill")
+            .arg("-TERM")
+            .arg(pid.to_string())
+            .output()
+            .ok();
+
+        // Emit "Stopped by user" so the UI shows a message
+        let _ = app_handle.emit(
+            "houston-event",
+            HoustonEvent::FeedItem {
+                session_key: session_key.clone(),
+                item: houston_sessions::FeedItem::SystemMessage(
+                    "Stopped by user".into(),
+                ),
+            },
+        );
+        let _ = app_handle.emit(
+            "houston-event",
+            HoustonEvent::SessionStatus {
+                session_key,
+                status: "completed".into(),
+                error: None,
+            },
+        );
     }
     Ok(())
 }

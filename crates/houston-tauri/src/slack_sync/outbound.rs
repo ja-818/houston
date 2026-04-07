@@ -57,7 +57,7 @@ pub fn start_outbound_listener(
 
         let mgr = mgr.clone();
         tauri::async_runtime::spawn(async move {
-            let mut mgr = mgr.write().await;
+            let mgr = mgr.read().await;
             if let Err(e) = mgr.post_to_slack(&session_key, &text).await {
                 eprintln!(
                     "[slack-outbound] failed to post to Slack for {}: {}",

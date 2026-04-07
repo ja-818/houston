@@ -100,6 +100,10 @@ pub enum HoustonEvent {
     ActivityChanged {
         agent_path: String,
     },
+    /// Integrations changed (.houston/integrations.json).
+    IntegrationsChanged {
+        agent_path: String,
+    },
     /// Skills changed (.houston/skills/).
     SkillsChanged {
         agent_path: String,

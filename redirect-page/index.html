@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Houston — AI Agents for Everything</title>
+<meta name="description" content="One app, dozens of AI agents. Research, write, code, manage projects, handle support — all from your desktop. Free and open source.">
+<style>
+  /* ═══════════════════════════════════════════
+     DESIGN SYSTEM
+     ═══════════════════════════════════════════ */
+
+  :root {
+    --background: #ffffff;
+    --foreground: #0d0d0d;
+    --secondary: #f9f9f9;
+    --muted-foreground: #5d5d5d;
+    --border: #e5e5e5;
+    --gray-50: #f9f9f9;
+    --gray-100: #ececec;
+    --gray-200: #e3e3e3;
+    --gray-300: #cdcdcd;
+    --gray-400: #b4b4b4;
+    --gray-500: #9b9b9b;
+    --gray-600: #676767;
+    --gray-700: #424242;
+    --gray-950: #0d0d0d;
+    --success: #00a240;
+    --info: #2964aa;
+    --warning: #e0ac00;
+    --danger: #e02e2a;
+    --border-light: rgba(13,13,13,0.05);
+    --border-medium: rgba(0,0,0,0.15);
+    --composer-shadow: 0 4px 4px rgba(0,0,0,0.04), 0 4px 80px 8px rgba(0,0,0,0.04), 0 0 1px rgba(0,0,0,0.62);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--foreground);
+    background: var(--background);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  code, .mono {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  /* ═══════════════════════════════════════════
+     ANIMATIONS
+     ═══════════════════════════════════════════ */
+
+  @keyframes float-up {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+
+  /* ═══════════════════════════════════════════
+     REVEAL ON SCROLL
+     ═══════════════════════════════════════════ */
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* ═══════════════════════════════════════════
+     NAV
+     ═══════════════════════════════════════════ */
+
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 16px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(13,13,13,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: none;
+  }
+
+  .nav-logo {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+
+  .nav-logo svg { width: 28px; height: 28px; }
+
+  .nav-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+
+  .nav-center a {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-center a:hover { color: white; }
+
+  .nav-right {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .nav-right a {
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-right a:hover { color: white; }
+
+  /* ═══════════════════════════════════════════
+     BUTTONS
+     ═══════════════════════════════════════════ */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--gray-950);
+    color: white;
+  }
+
+  .btn-primary:hover { background: var(--gray-700); }
+
+  .btn-secondary {
+    background: white;
+    color: var(--gray-950);
+    border: 1px solid var(--border-medium);
+  }
+
+  .btn-secondary:hover { background: var(--gray-50); }
+
+  .btn-lg {
+    height: 44px;
+    padding: 0 24px;
+    font-size: 16px;
+  }
+
+  /* ═══════════════════════════════════════════
+     SECTIONS
+     ═══════════════════════════════════════════ */
+
+  section {
+    padding: 120px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--gray-950);
+    margin-bottom: 20px;
+  }
+
+  .section-subtitle {
+    font-size: 20px;
+    color: var(--muted-foreground);
+    line-height: 1.5;
+    max-width: 640px;
+  }
+
+  /* ═══════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════ */
+
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 140px 40px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 85%;
+    background:
+      linear-gradient(to bottom, #0d0d0d 40%, transparent 100%),
+      radial-gradient(ellipse 120% 60% at 20% 50%, rgba(30,30,60,0.8), transparent 70%),
+      radial-gradient(ellipse 80% 50% at 80% 40%, rgba(40,20,40,0.6), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% 70%, rgba(20,20,50,0.4), transparent 60%);
+    pointer-events: none;
+  }
+
+  @keyframes star-drift {
+    0% { transform: translate(0, 0); }
+    50% { transform: translate(-30px, 12px); }
+    100% { transform: translate(0, 0); }
+  }
+
+  .hero-stars {
+    position: absolute;
+    top: -20px;
+    left: -30px;
+    right: -30px;
+    height: 75%;
+    animation: star-drift 60s ease-in-out infinite;
+    pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1px 1px at 25% 8%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1.5px 1.5px at 40% 22%, rgba(255,255,255,0.8), transparent),
+      radial-gradient(1px 1px at 55% 5%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 70% 18%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1.5px 1.5px at 85% 12%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 92% 25%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1px 1px at 5% 30%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1px 1px at 18% 35%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1.5px 1.5px at 33% 10%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1px 1px at 48% 28%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 62% 32%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 78% 7%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1px 1px at 88% 30%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1.5px 1.5px at 15% 20%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 35% 38%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1px 1px at 50% 15%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1px 1px at 65% 40%, rgba(255,255,255,0.2), transparent),
+      radial-gradient(1.5px 1.5px at 80% 35%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 95% 10%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 8% 42%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1px 1px at 22% 45%, rgba(255,255,255,0.2), transparent),
+      radial-gradient(1px 1px at 42% 42%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 58% 45%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1px 1px at 73% 43%, rgba(255,255,255,0.2), transparent),
+      radial-gradient(1.5px 1.5px at 3% 8%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1px 1px at 97% 20%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 30% 3%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 45% 48%, rgba(255,255,255,0.2), transparent),
+      radial-gradient(1px 1px at 82% 45%, rgba(255,255,255,0.3), transparent);
+  }
+
+  .hero .terminal-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #1a1a1a;
+    color: #4afa4a;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-weight: 700;
+    padding: 2px 16px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    vertical-align: baseline;
+  }
+
+  .hero .terminal-chip .prompt {
+    opacity: 0.5;
+  }
+
+  .hero h1 {
+    font-size: clamp(32px, 4.5vw, 52px);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    color: white;
+    margin-bottom: 24px;
+    animation: float-up 0.8s ease 0.1s both;
+    max-width: 900px;
+  }
+
+  .hero p {
+    font-size: 20px;
+    color: rgba(255,255,255,0.7);
+    max-width: 560px;
+    line-height: 1.6;
+    margin-bottom: 48px;
+    animation: float-up 0.8s ease 0.2s both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    animation: float-up 0.8s ease 0.3s both;
+  }
+
+  /* ═══════════════════════════════════════════
+     APP MOCKUP
+     ═══════════════════════════════════════════ */
+
+  .app-mockup {
+    border-radius: 16px;
+    border: 1px solid var(--border-medium);
+    overflow: hidden;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.06), 0 0 1px rgba(0,0,0,0.3);
+    background: white;
+  }
+
+  .mockup-titlebar {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--gray-50);
+  }
+
+  .traffic-lights {
+    display: flex;
+    gap: 8px;
+    margin-right: 12px;
+  }
+
+  .traffic-lights span {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .tl-red { background: #ff5f57; }
+  .tl-yellow { background: #febc2e; }
+  .tl-green { background: #28c840; }
+
+  .mockup-titlebar .title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+  }
+
+  .mockup-body {
+    display: flex;
+    min-height: 420px;
+  }
+
+  .mockup-sidebar {
+    width: 220px;
+    background: var(--secondary);
+    border-right: 1px solid var(--border);
+    padding: 16px 12px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-section-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-400);
+    padding: 8px 10px 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .sidebar-item {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    color: var(--gray-600);
+    margin-bottom: 2px;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-item.active {
+    background: var(--gray-200);
+    color: var(--gray-950);
+    font-weight: 500;
+  }
+
+  .sidebar-item svg { width: 14px; height: 14px; opacity: 0.6; flex-shrink: 0; }
+  .sidebar-item.active svg { opacity: 1; }
+
+  .mockup-main {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .mockup-tab-bar {
+    display: flex;
+    gap: 24px;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .mockup-tab {
+    font-size: 13px;
+    color: var(--gray-500);
+    padding-bottom: 8px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -9px;
+    cursor: default;
+  }
+
+  .mockup-tab.active {
+    color: var(--gray-950);
+    font-weight: 500;
+    border-bottom-color: var(--gray-950);
+  }
+
+  /* Kanban mockup */
+  .kanban-mockup {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    flex: 1;
+  }
+
+  .kanban-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .kanban-col-header {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-500);
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .kanban-col-header .count {
+    font-size: 11px;
+    background: var(--gray-100);
+    padding: 1px 6px;
+    border-radius: 9999px;
+    color: var(--gray-500);
+  }
+
+  .kanban-card-mock {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    background: white;
+    font-size: 13px;
+    color: var(--gray-700);
+    line-height: 1.4;
+  }
+
+  .kanban-card-mock.running {
+    border-color: var(--border-medium);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .kanban-card-title {
+    font-weight: 500;
+    color: var(--gray-950);
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+
+  .kanban-card-desc {
+    font-size: 12px;
+    color: var(--gray-500);
+  }
+
+  .kanban-card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    margin-top: 8px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+  }
+
+  .status-running {
+    background: rgba(59,130,246,0.1);
+    color: #3b82f6;
+  }
+
+  .status-running .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #3b82f6;
+  }
+
+  .status-done {
+    background: rgba(0,162,64,0.1);
+    color: var(--success);
+  }
+
+  .status-needsyou {
+    background: rgba(224,172,0,0.1);
+    color: var(--warning);
+  }
+
+  /* ═══════════════════════════════════════════
+     AGENT STORE GRID
+     ═══════════════════════════════════════════ */
+
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 64px;
+  }
+
+  .agent-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 16px;
+    background: #f5f5f5;
+    border: none;
+    transition: background 0.2s;
+    cursor: default;
+    text-align: left;
+  }
+
+  .agent-card:hover {
+    background: #ebebeb;
+  }
+
+  .agent-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: white;
+  }
+
+  .agent-avatar svg { width: 24px; height: 24px; }
+
+  .agent-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding-top: 2px;
+  }
+
+  .agent-card-content h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  .agent-card-content p {
+    font-size: 12px;
+    color: var(--muted-foreground);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .agent-card-content .agent-meta {
+    font-size: 11px;
+    color: rgba(93,93,93,0.5);
+    margin-top: 4px;
+  }
+
+  /* ═══════════════════════════════════════════
+     FEATURE ROWS
+     ═══════════════════════════════════════════ */
+
+  .feature-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .feature-row.reverse { direction: rtl; }
+  .feature-row.reverse > * { direction: ltr; }
+
+  .feature-info { max-width: 480px; }
+
+  .feature-info h3 {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  .feature-info p {
+    font-size: 16px;
+    color: var(--muted-foreground);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .feature-list {
+    list-style: none;
+    margin-bottom: 32px;
+  }
+
+  .feature-list li {
+    font-size: 14px;
+    color: var(--gray-700);
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .feature-list .check {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(13,13,13,0.06);
+  }
+
+  .feature-list .check svg { width: 12px; height: 12px; }
+
+  /* ═══════════════════════════════════════════
+     CHAT MOCKUP
+     ═══════════════════════════════════════════ */
+
+  .chat-mockup {
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    min-height: 300px;
+    justify-content: flex-end;
+    gap: 16px;
+    max-width: 540px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .chat-msg {
+    max-width: 80%;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .chat-msg.user {
+    align-self: flex-end;
+    background: #f4f4f4;
+    padding: 10px 18px;
+    border-radius: 24px;
+    color: var(--gray-950);
+  }
+
+  .chat-msg.assistant {
+    align-self: flex-start;
+    color: var(--gray-700);
+    padding: 4px 0;
+  }
+
+  .chat-msg .channel-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    margin-bottom: 4px;
+  }
+
+  .badge-slack {
+    background: rgba(74,21,75,0.1);
+    color: #4A154B;
+  }
+
+  .typing-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 12px 0 4px;
+  }
+
+  .typing-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gray-400);
+    animation: typing-bounce 1.4s ease infinite;
+  }
+
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  .chat-composer-mock {
+    border-radius: 24px;
+    padding: 12px 16px;
+    box-shadow: var(--composer-shadow);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .chat-composer-mock .placeholder {
+    flex: 1;
+    font-size: 14px;
+    color: rgba(0,0,0,0.35);
+  }
+
+  .chat-composer-mock .send-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--gray-950);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .chat-composer-mock .send-btn svg {
+    width: 16px;
+    height: 16px;
+    color: white;
+  }
+
+  /* ═══════════════════════════════════════════
+     HOW IT WORKS
+     ═══════════════════════════════════════════ */
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 64px;
+  }
+
+  .step-card {
+    padding: 40px 32px;
+    border-radius: 16px;
+    border: 1px solid var(--border-light);
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .step-card:hover {
+    border-color: var(--border-medium);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.04);
+  }
+
+  .step-number {
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--gray-200);
+    margin-bottom: 16px;
+  }
+
+  .step-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+
+  .step-card p {
+    font-size: 14px;
+    color: var(--muted-foreground);
+    line-height: 1.6;
+  }
+
+  /* ═══════════════════════════════════════════
+     CAPABILITIES GRID
+     ═══════════════════════════════════════════ */
+
+  .capabilities-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 64px;
+  }
+
+  .capability-card {
+    padding: 32px;
+    border-radius: 16px;
+    border: 1px solid var(--border-light);
+    background: var(--background);
+    transition: all 0.3s ease;
+  }
+
+  .capability-card:hover {
+    border-color: var(--border-medium);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.04);
+  }
+
+  .capability-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    background: var(--gray-50);
+  }
+
+  .capability-icon svg { width: 24px; height: 24px; color: var(--gray-700); }
+
+  .capability-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+
+  .capability-card p {
+    font-size: 14px;
+    color: var(--muted-foreground);
+    line-height: 1.6;
+  }
+
+  /* ═══════════════════════════════════════════
+     ARCHITECTURE
+     ═══════════════════════════════════════════ */
+
+  .arch-diagram {
+    margin-top: 64px;
+    padding: 48px;
+    border-radius: 16px;
+    background: var(--gray-50);
+    border: 1px solid var(--border-light);
+  }
+
+  .arch-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .arch-layer {
+    padding: 20px 24px;
+    border: 1px solid var(--border-light);
+    text-align: center;
+    position: relative;
+  }
+
+  .arch-layer:first-child { border-radius: 16px 16px 0 0; }
+  .arch-layer:last-child { border-radius: 0 0 16px 16px; }
+  .arch-layer + .arch-layer { border-top: none; }
+
+  .arch-layer-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  .arch-items {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .arch-item {
+    font-size: 12px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-light);
+  }
+
+  .layer-agents { background: white; }
+  .layer-agents .arch-layer-label { color: var(--gray-700); }
+  .layer-agents .arch-item { background: white; color: var(--gray-700); }
+
+  .layer-ui { background: rgba(59,130,246,0.03); }
+  .layer-ui .arch-layer-label { color: #3b82f6; }
+  .layer-ui .arch-item { background: rgba(59,130,246,0.06); color: #3b82f6; border-color: rgba(59,130,246,0.15); }
+
+  .layer-engine { background: rgba(249,115,22,0.03); }
+  .layer-engine .arch-layer-label { color: #f97316; }
+  .layer-engine .arch-item { background: rgba(249,115,22,0.06); color: #c2410c; border-color: rgba(249,115,22,0.15); }
+
+  .layer-platform { background: var(--gray-950); }
+  .layer-platform .arch-layer-label { color: var(--gray-400); }
+  .layer-platform .arch-item { background: rgba(255,255,255,0.1); color: var(--gray-300); border-color: rgba(255,255,255,0.15); }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-top: 48px;
+    text-align: center;
+  }
+
+  .stat-item .number {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--gray-950);
+  }
+
+  .stat-item .label {
+    font-size: 14px;
+    color: var(--muted-foreground);
+    margin-top: 4px;
+  }
+
+  /* ═══════════════════════════════════════════
+     HOSTING CTA
+     ═══════════════════════════════════════════ */
+
+  .hosting-section {
+    margin-top: 0;
+    padding: 80px 48px;
+    border-radius: 20px;
+    background: var(--gray-950);
+    color: white;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .hosting-section h3 {
+    font-size: 36px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  .hosting-section p {
+    font-size: 16px;
+    color: var(--gray-400);
+    line-height: 1.6;
+    margin-bottom: 32px;
+  }
+
+  .hosting-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hosting-features li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--gray-300);
+  }
+
+  .hosting-features .check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .hosting-features .check svg { width: 12px; height: 12px; color: #3b82f6; }
+
+  .btn-blue {
+    background: #3b82f6;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    padding: 0 24px;
+    border-radius: 9999px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-blue:hover { background: #2563eb; }
+
+  .hosting-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hosting-card {
+    padding: 20px 24px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .hosting-card-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
+
+  .hosting-card-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--gray-200);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hosting-card-value .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+  }
+
+  /* ═══════════════════════════════════════════
+     CTA SECTION
+     ═══════════════════════════════════════════ */
+
+  .cta-section {
+    text-align: center;
+    padding: 120px 40px 160px;
+    position: relative;
+  }
+
+  .cta-section .cta-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(0,0,0,0.02), transparent);
+    pointer-events: none;
+  }
+
+  .cta-section h2 {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .cta-section p {
+    font-size: 18px;
+    color: var(--muted-foreground);
+    max-width: 480px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+    position: relative;
+  }
+
+  .cta-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* ═══════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════ */
+
+  footer {
+    padding: 40px;
+    border-top: 1px solid var(--border-light);
+    text-align: center;
+    font-size: 13px;
+    color: var(--gray-500);
+  }
+
+  footer a {
+    color: var(--gray-500);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  footer a:hover { color: var(--gray-950); }
+
+  /* ═══════════════════════════════════════════
+     STATS STRIP
+     ═══════════════════════════════════════════ */
+
+  .stats-strip {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 64px 40px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .stats-strip .stat-item .number {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--gray-950);
+  }
+
+  .stats-strip .stat-item .label {
+    font-size: 14px;
+    color: var(--muted-foreground);
+    margin-top: 4px;
+  }
+
+  .board-card {
+    padding: 20px 24px;
+    border-radius: 16px;
+    border: 1px solid var(--border-light);
+    background: white;
+  }
+
+  .board-card.active {
+    border-color: var(--border-medium);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  /* ═══════════════════════════════════════════
+     RESPONSIVE
+     ═══════════════════════════════════════════ */
+
+  @media (max-width: 900px) {
+    .agent-grid { grid-template-columns: 1fr; }
+    .feature-row { grid-template-columns: 1fr; gap: 40px; }
+    .feature-row.reverse { direction: ltr; }
+    .steps-grid { grid-template-columns: 1fr; }
+    .capabilities-grid { grid-template-columns: 1fr; }
+    .hosting-section { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .stats-strip { grid-template-columns: 1fr 1fr; }
+    .mockup-sidebar { display: none; }
+    section { padding: 80px 24px; }
+    .section-title { font-size: 36px; }
+    nav { padding: 16px 20px; }
+    .nav-center { display: none; }
+  }
+
+  @media (max-width: 600px) {
+    .agent-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; gap: 16px; }
+    .hero h1 { font-size: 40px; }
+    .cta-section h2 { font-size: 32px; }
+    .hosting-section { padding: 40px 24px; }
+    .hosting-section h3 { font-size: 28px; }
+    .hero-actions { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     NAV
+     ═══════════════════════════════════════════ -->
+
+<nav>
+  <a href="/" class="nav-logo">
+    <svg viewBox="0 0 412 449" fill="currentColor"><path d="M54.4 370a373 373 0 0036.6 16.5c42.9 16.5 81 27 127 32.7 39 4.9 98 6.1 134-9.7l.2-28.7 10.9-4.2.1 7.6c.1 9.5 10.2 10 10.1 16.6l-.2 19.5a10.9 10.9 0 01-5.3 8.8 126 126 0 01-34.7 13.1c-27.4 5.9-54.8 7.6-83 6.1a502 502 0 01-114.8-19.3C98.3 418.3 63.3 404.2 30.4 384.4c-1.8-1.1-4.6-4.1-4.6-5.8l.5-25.2 11-8.4c1.5-34.5-.5-23-14.7-49.9C-4.9 243.1-6.6 188.6 13.7 132.1c9.6 20.2 21.2 38.3 37.4 52.9C37.7 162.7 27.2 140 22.1 114.6 58.6 40.2 137.3-5.7 220.2.6c51 3.8 94.2 25.6 130.4 62-12-3.2-22.2-5.6-33.7-6.8-41.1-31.1-89.5-44.9-140.7-36.2-20.9 3.5-34 7-50.7 16.9l14.1-2.5 15.9-2.8c8.5-1.5 24.6-1 33.8-.2 22.7 2.1 53.6 13.7 71.7 29-12.6 3.8-24.8 7-37.2 12.5-54.8 24.4-99.9 64.9-131 115.9-7.9-2.9-15.5-4.4-23.5-2.5 29.8 6 39 41.1 31.8 68-2.4 9-7.4 16.2-14.7 22.4a346.5 346.5 0 00147.3 97.2l12 21.2c1.8 3.3.4 10.1.3 14.5-54.7-3.5-108.5-14.2-157.9-37.6l-33.3-15.8a55.5 55.5 0 00-.3 14.3m15.8-103.6c8.8-2.1 12.7-9.2 15.7-16.5 4-13 2.4-27.4-5.3-38.7-5.4-7.8-14.8-12.2-23.8-9.3a20.8 20.8 0 00-13.4 12.7c8.4-7.9 19.2-8.3 27.1-.2 12.6 13.1 13.3 38-.3 52M56.2 335.7c19.3 9.7 37.1 17.6 57.6 25.6l.5-41c0-5.6-7.1-8.2-10.9-7.4-13.3 2.7-5.9 17.1-8 29.2l-39.8-19.4c-1 4.6-1.3 9.4.6 13m139.6 48.3c1.1-4.4 1.2-8.7-.8-11.5a513 513 0 01-66-18 16.3 16.3 0 00-.1 12.2c8.3 2.7 16.2 5.3 24.7 7.3z"/><path d="M326 373.5c-78.7 7.3-171.3-41.7-224.8-98.7 21-21.4 19.6-56.4 1.4-79.5 14.1-22 29.7-42 48.5-59.7C194 95.2 252.8 65.2 312.9 67.5c31.5 1.8 71.1 11.3 70.5 49.8a215.2 215.2 0 017.4 201.1c3.6 38.3-33.5 51.8-64.9 55.1m-156.6-69.6c44.6 29.3 106.3 54.1 159.9 46.5 8.5-1.2 16.5-3.9 24.6-6.3 5-1.5 7.1-5.2 9.6-9 48.2-74.2 42.9-170.7-13.8-238.4C301.1 78.6 245.2 94.2 203 121.5c-17 11-32.9 23.2-46.2 38.5-14.8 17-20.8 39.2-21.9 61.4-1.2 23.5 5.3 45.1 17.5 64.8a53.6 53.6 0 0017 17.8"/><path d="M298.5 409.1c-4.5.4-7.9-1.7-9.4-5.2a12.3 12.3 0 011.1-11c1.5-2.5 5.4-4.9 8.9-5.2l31.9-2.5a8.6 8.6 0 019.3 6.1c.9 3.4.5 9.3-3.5 10.6-12.4 4.1-24.7 6-38.3 7.2"/><rect width="15.3" height="16.2" x="258.6" y="409.9" rx="0" transform="rotate(-89.7 266.3 418)"/><path d="M370.4 283.3c-6.1 17.6-13.5 33.4-26.4 47.2 26-57.7 30.3-124.2 4.1-182.3-6.7-14.8-15-27.3-24.8-41 5.1.8 13 .9 17 4.2 7.8 6.5 12.5 15.5 17.4 24.5 24.5 45.2 29.8 98.2 12.7 147.5"/></svg>
+    Houston
+  </a>
+  <div class="nav-center">
+    <a href="#agents">Agents</a>
+    <a href="#features">Features</a>
+    <a href="#developers">Developers</a>
+  </div>
+  <div class="nav-right">
+    <a href="https://github.com/ja-818/houston" style="display:inline-flex;align-items:center;">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+    </a>
+    <a href="https://github.com/ja-818/houston/releases" class="btn" style="height:36px;padding:0 16px;font-size:13px;background:white;color:var(--gray-950);">Download</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════ -->
+
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-stars"></div>
+  <!-- Subtle planet — top right -->
+  <div style="position: absolute; top: 12%; right: 8%; width: 6px; height: 6px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.12), rgba(255,255,255,0.03)); pointer-events: none;"></div>
+  <!-- Subtle planet — left -->
+  <div style="position: absolute; top: 32%; left: 5%; width: 4px; height: 4px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(200,180,255,0.15), rgba(200,180,255,0.03)); pointer-events: none;"></div>
+  <!-- Distant planet — center-ish -->
+  <div style="position: absolute; top: 8%; left: 45%; width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); box-shadow: 0 0 12px rgba(255,255,255,0.04); pointer-events: none;"></div>
+
+  <h1>OpenClaw's power.<br>Built for your use case.<br>No <span class="terminal-chip"><span class="prompt">$</span> terminal</span> required.</h1>
+
+  <p>One Mac app. A workspace of pre-built agents that generate value from day one. Free forever.</p>
+
+  <div class="hero-actions">
+    <a href="https://github.com/ja-818/houston/releases" class="btn btn-lg" style="background: white; color: var(--gray-950);"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> Download for Mac</a>
+    <a href="#agents" class="btn btn-lg" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.25);">Browse agents</a>
+  </div>
+
+  <div class="app-mockup" style="max-width: 960px; width: 100%; margin-top: 64px; animation: float-up 0.8s ease 0.4s both;">
+    <div class="mockup-titlebar">
+      <div class="traffic-lights">
+        <span class="tl-red"></span>
+        <span class="tl-yellow"></span>
+        <span class="tl-green"></span>
+      </div>
+      <span class="title">Houston</span>
+    </div>
+    <div class="mockup-body">
+      <!-- Sidebar — matches real AppSidebar: 220px, bg-secondary, border-r -->
+      <div class="mockup-sidebar" style="width: 220px; padding: 0; display: flex; flex-direction: column;">
+        <!-- WorkspaceSwitcher -->
+        <div style="padding: 12px 12px 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-light);">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--gray-950);">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M4 6l4 4 4-4"/></svg>
+            My Startup
+          </div>
+          <div style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2" width="14" height="14"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+        </div>
+        <!-- Nav items -->
+        <div style="padding: 8px 8px 0;">
+          <div class="sidebar-item" style="gap: 8px;">
+            <!-- LayoutDashboard icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            Mission Control
+          </div>
+          <div class="sidebar-item" style="gap: 8px;">
+            <!-- Blend icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="9" cy="9" r="7"/><circle cx="15" cy="15" r="7"/></svg>
+            Integrations
+          </div>
+        </div>
+        <!-- Section label -->
+        <div style="padding: 16px 12px 4px; display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 12px; font-weight: 500; color: var(--gray-500);">Your Agents</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2" width="12" height="12"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <!-- Agent list -->
+        <div style="padding: 0 8px; flex: 1;">
+          <div class="sidebar-item active" style="font-size: 13px;">Growth Agent</div>
+          <div class="sidebar-item" style="font-size: 13px;">Investor Relations</div>
+          <div class="sidebar-item" style="font-size: 13px;">Sales Outreach</div>
+          <div class="sidebar-item" style="font-size: 13px;">Market Research</div>
+          <div class="sidebar-item" style="font-size: 13px;">Recruiting</div>
+        </div>
+      </div>
+      <!-- Main content — tab bar with title + tabs, then kanban -->
+      <div class="mockup-main" style="padding: 0; display: flex; flex-direction: column;">
+        <!-- Tab bar header (matches real TabBar: title row + tab strip) -->
+        <div style="padding: 16px 20px 0;">
+          <!-- Title row -->
+          <div style="font-size: 18px; font-weight: 600; color: var(--gray-950); margin-bottom: 12px; letter-spacing: -0.02em;">Growth Agent</div>
+          <!-- Tab strip -->
+          <div style="display: flex; gap: 20px; border-bottom: 1px solid var(--border-light);">
+            <div style="font-size: 13px; font-weight: 500; color: var(--gray-950); padding-bottom: 10px; border-bottom: 2px solid var(--gray-950); margin-bottom: -1px;">Activity</div>
+            <div style="font-size: 13px; color: var(--gray-500); padding-bottom: 10px;">Chat</div>
+            <div style="font-size: 13px; color: var(--gray-500); padding-bottom: 10px;">Skills</div>
+            <div style="font-size: 13px; color: var(--gray-500); padding-bottom: 10px;">Routines</div>
+            <div style="font-size: 13px; color: var(--gray-500); padding-bottom: 10px;">Files</div>
+          </div>
+        </div>
+        <!-- Kanban board -->
+        <div style="padding: 16px 20px; flex: 1;">
+          <div class="kanban-mockup">
+            <div class="kanban-col">
+              <div class="kanban-col-header">Running <span class="count">2</span></div>
+              <div class="kanban-card-mock running">
+                <div class="kanban-card-title">Build competitor teardown</div>
+                <div class="kanban-card-desc">Pricing, features, positioning</div>
+                <div class="kanban-card-status status-running"><span class="dot"></span> Working...</div>
+              </div>
+              <div class="kanban-card-mock running">
+                <div class="kanban-card-title">Draft Series A memo</div>
+                <div class="kanban-card-desc">Traction, TAM, go-to-market</div>
+                <div class="kanban-card-status status-running"><span class="dot"></span> Working...</div>
+              </div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-header">Needs you <span class="count">1</span></div>
+              <div class="kanban-card-mock">
+                <div class="kanban-card-title">Outbound sequence for PLG</div>
+                <div class="kanban-card-desc">50 leads, 3-email cadence</div>
+                <div class="kanban-card-status status-needsyou">Needs you</div>
+              </div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-header">Done <span class="count">3</span></div>
+              <div class="kanban-card-mock">
+                <div class="kanban-card-title">ICP analysis from CRM</div>
+                <div class="kanban-card-status status-done">&#10003; Done</div>
+              </div>
+              <div class="kanban-card-mock">
+                <div class="kanban-card-title">Weekly KPI dashboard</div>
+                <div class="kanban-card-status status-done">&#10003; Done</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     STATS STRIP
+     ═══════════════════════════════════════════ -->
+
+<div class="stats-strip reveal">
+  <div class="stat-item">
+    <div class="number">9+</div>
+    <div class="label">Pre-built agents</div>
+  </div>
+  <div class="stat-item">
+    <div class="number">Free</div>
+    <div class="label">No credit card needed</div>
+  </div>
+  <div class="stat-item">
+    <div class="number">0</div>
+    <div class="label">Setup required</div>
+  </div>
+  <div class="stat-item">
+    <div class="number">100%</div>
+    <div class="label">Open source</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     AGENT STORE
+     ═══════════════════════════════════════════ -->
+
+<section id="agents">
+  <div class="reveal">
+    <div class="section-label">Agent Store</div>
+    <h2 class="section-title">Pre-built agents that work<br>from the moment you add them.</h2>
+    <p class="section-subtitle">No setup. No configuration. No prompt engineering. Every agent comes ready to deliver real value on day one. Add in one click.</p>
+  </div>
+
+  <div class="agent-grid" style="margin-top: 64px;">
+
+    <div class="agent-card reveal reveal-delay-1">
+      <div class="agent-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-700)" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <div class="agent-card-content">
+        <h4>Growth Agent</h4>
+        <p>Competitor teardowns, outbound sequences, ICP analysis. Runs your growth playbook on autopilot.</p>
+        <span class="agent-meta">By Houston</span>
+      </div>
+    </div>
+
+    <div class="agent-card reveal reveal-delay-2">
+      <div class="agent-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-700)" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      </div>
+      <div class="agent-card-content">
+        <h4>Investor Relations</h4>
+        <p>Drafts fundraising memos, builds data rooms, preps investor updates. Your Series A co-pilot.</p>
+        <span class="agent-meta">By Houston</span>
+      </div>
+    </div>
+
+    <div class="agent-card reveal reveal-delay-1">
+      <div class="agent-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-700)" stroke-width="1.5"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <div class="agent-card-content">
+        <h4>Sales Outreach</h4>
+        <p>Researches leads, writes personalized emails, tracks replies. Pipeline generation on autopilot.</p>
+        <span class="agent-meta">By Houston</span>
+      </div>
+    </div>
+
+    <div class="agent-card reveal reveal-delay-2">
+      <div class="agent-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-700)" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </div>
+      <div class="agent-card-content">
+        <h4>Market Research</h4>
+        <p>TAM sizing, market maps, trend analysis. Deep research delivered as structured reports.</p>
+        <span class="agent-meta">By Houston</span>
+      </div>
+    </div>
+
+    <div class="agent-card reveal reveal-delay-1">
+      <div class="agent-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-700)" stroke-width="1.5"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+      </div>
+      <div class="agent-card-content">
+        <h4>Data Analyst</h4>
+        <p>Pulls metrics, builds dashboards, writes weekly reports. Your KPIs tracked and explained.</p>
+        <span class="agent-meta">By Houston</span>
+      </div>
+    </div>
+
+    <div class="agent-card reveal reveal-delay-2">
+      <div class="agent-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-700)" stroke-width="1.5"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></svg>
+      </div>
+      <div class="agent-card-content">
+        <h4>Customer Support</h4>
+        <p>Triages tickets, drafts responses, escalates issues. Handles your support queue via Slack.</p>
+        <span class="agent-meta">By Houston</span>
+      </div>
+    </div>
+
+    <div class="agent-card reveal reveal-delay-1">
+      <div class="agent-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-700)" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+      </div>
+      <div class="agent-card-content">
+        <h4>Recruiting Agent</h4>
+        <p>Writes job posts, screens resumes, drafts outreach to candidates. Hiring pipeline managed.</p>
+        <span class="agent-meta">By Houston</span>
+      </div>
+    </div>
+
+    <div class="agent-card reveal reveal-delay-2" style="background: transparent; border: 1.5px dashed var(--gray-300); justify-content: center; align-items: center; text-align: center; min-height: 88px;">
+      <div class="agent-card-content" style="align-items: center; padding: 0;">
+        <h4>Build your own</h4>
+        <p style="-webkit-line-clamp: unset;">Submit agents to the Houston Store</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     FEATURES — CHAT
+     ═══════════════════════════════════════════ -->
+
+<section id="features" style="padding-bottom: 60px;">
+  <div class="feature-row reveal">
+    <div class="feature-info">
+      <h3>Talk to your agents like you'd text a colleague</h3>
+      <p>The primary interface is a chat. Agents understand context, ask clarifying questions, and show their progress as they work. Connect Slack and reply from your phone — the agent responds there too.</p>
+      <ul class="feature-list">
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Chat-first interface — no forms, no config screens
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Slack sync — each conversation becomes a thread
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Real-time streaming — see the agent think and work
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Progress tracking alongside every conversation
+        </li>
+      </ul>
+    </div>
+
+    <div class="app-mockup">
+      <div class="mockup-titlebar">
+        <div class="traffic-lights">
+          <span class="tl-red"></span>
+          <span class="tl-yellow"></span>
+          <span class="tl-green"></span>
+        </div>
+        <span class="title">Houston — Content Writer</span>
+      </div>
+      <div class="chat-mockup">
+        <div class="chat-msg user">
+          Write a blog post about our product launch. Focus on the problem we solve and why now.
+        </div>
+        <div class="chat-msg assistant">
+          Got it. I'll research your competitors, draft an outline, and write the full post. I'll check in when the outline is ready for your review.
+          <br><br>
+          Starting with competitor research...
+        </div>
+        <div class="chat-msg user" style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+          <div class="channel-badge badge-slack">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="10" height="10"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.271 0a2.528 2.528 0 0 1-2.521 2.521 2.528 2.528 0 0 1-2.521-2.521V2.522A2.528 2.528 0 0 1 15.164 0a2.528 2.528 0 0 1 2.521 2.522v6.312zM15.164 18.956a2.528 2.528 0 0 1 2.521 2.522A2.528 2.528 0 0 1 15.164 24a2.528 2.528 0 0 1-2.521-2.522v-2.522h2.521zm0-1.271a2.528 2.528 0 0 1-2.521-2.521 2.528 2.528 0 0 1 2.521-2.521h6.314A2.528 2.528 0 0 1 24 15.164a2.528 2.528 0 0 1-2.522 2.521h-6.314z"/></svg>
+            via Slack
+          </div>
+          Also make sure to mention the open source angle
+        </div>
+        <div class="chat-msg assistant">
+          Noted — I'll weave in the open-source story throughout. The outline is almost ready, give me a few minutes.
+        </div>
+        <div class="typing-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="chat-composer-mock">
+          <span class="placeholder">Ask anything...</span>
+          <span class="send-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2L2 8.5l4.5 1.5L14 2zM6.5 10L14 2M6.5 10v4l2.5-2.5"/></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FEATURES — BOARD
+     ═══════════════════════════════════════════ -->
+
+<section style="padding-top: 60px; padding-bottom: 60px;">
+  <div class="feature-row reverse reveal">
+    <div class="feature-info">
+      <h3>Every mission on one board</h3>
+      <p>Each conversation becomes a tracked activity on a visual kanban board. See what's running, what needs your attention, and what's shipped — all at a glance.</p>
+      <ul class="feature-list">
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Visual kanban — Running, Needs You, Done
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Click any card to see the full conversation
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Real-time updates — no refresh needed
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Multiple agents run in parallel
+        </li>
+      </ul>
+    </div>
+
+    <!-- Clean board demo cards -->
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 20px;">
+      <div class="board-card active">
+        <div style="font-size: 14px; font-weight: 500; margin-bottom: 6px;">Write launch blog post</div>
+        <div style="font-size: 12px; color: var(--gray-500); margin-bottom: 10px;">Research competitors, draft outline, write full post</div>
+        <div style="font-size: 11px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; background: rgba(59,130,246,0.08); color: #3b82f6;">
+          <span style="width: 5px; height: 5px; border-radius: 50%; background: currentColor;"></span>
+          Running
+        </div>
+      </div>
+      <div class="board-card active">
+        <div style="font-size: 14px; font-weight: 500; margin-bottom: 6px;">Analyze Q1 metrics</div>
+        <div style="font-size: 12px; color: var(--gray-500); margin-bottom: 10px;">Pull data, create charts, write executive summary</div>
+        <div style="font-size: 11px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; background: rgba(59,130,246,0.08); color: #3b82f6;">
+          <span style="width: 5px; height: 5px; border-radius: 50%; background: currentColor;"></span>
+          Running
+        </div>
+      </div>
+      <div class="board-card">
+        <div style="font-size: 14px; font-weight: 500; margin-bottom: 6px;">Competitor analysis</div>
+        <div style="font-size: 12px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; background: rgba(0,162,64,0.08); color: var(--success);">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M2 6l3 3 5-5"/></svg>
+          Done
+        </div>
+      </div>
+      <div class="board-card" style="border-color: rgba(224,172,0,0.15);">
+        <div style="font-size: 14px; font-weight: 500; margin-bottom: 6px;">Social media calendar</div>
+        <div style="font-size: 12px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; background: rgba(224,172,0,0.08); color: var(--warning);">
+          Needs you
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     CAPABILITIES
+     ═══════════════════════════════════════════ -->
+
+<section style="padding-top: 60px;">
+  <div class="reveal">
+    <div class="section-label">Capabilities</div>
+    <h2 class="section-title">Everything agents need to be great</h2>
+    <p class="section-subtitle">Not just a chat window. Each agent has its own workspace, memory, skills, and connections.</p>
+  </div>
+
+  <div class="capabilities-grid">
+    <div class="capability-card reveal reveal-delay-1">
+      <div class="capability-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><circle cx="12" cy="12" r="10"/></svg>
+      </div>
+      <h3>Skills &amp; memory</h3>
+      <p>Agents learn from every interaction. Teach them once, they remember forever. Install community skills for new capabilities.</p>
+    </div>
+    <div class="capability-card reveal reveal-delay-2">
+      <div class="capability-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <h3>Routines</h3>
+      <p>Schedule recurring tasks. Your agent checks in every morning, monitors metrics, or summarizes overnight activity. On autopilot.</p>
+    </div>
+    <div class="capability-card reveal reveal-delay-3">
+      <div class="capability-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <h3>Workspace files</h3>
+      <p>Each agent has its own workspace with files, instructions, and context. Everything it needs, organized in one place.</p>
+    </div>
+    <div class="capability-card reveal reveal-delay-1">
+      <div class="capability-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/></svg>
+      </div>
+      <h3>Slack sync</h3>
+      <p>Connect Slack with one click. Each conversation becomes a thread. Reply from your phone, your agent responds.</p>
+    </div>
+    <div class="capability-card reveal reveal-delay-2">
+      <div class="capability-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <h3>Runs locally</h3>
+      <p>Desktop app on your Mac. Your data stays on your machine. No cloud required for the base experience.</p>
+    </div>
+    <div class="capability-card reveal reveal-delay-3">
+      <div class="capability-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 22h2a2 2 0 002-2V7.5L14.5 2H6a2 2 0 00-2 2v3"/><polyline points="14 2 14 8 20 8"/><path d="M4.04 11.71a5.17 5.17 0 013.46-1.6 5.17 5.17 0 013.28 1.34"/><path d="M1 18h.01"/><path d="M4 15h.01"/><path d="M7 18h.01"/></svg>
+      </div>
+      <h3>Open source</h3>
+      <p>MIT licensed. The full codebase, the framework, and the agent store. Fork it, extend it, build on it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     HOSTING
+     ═══════════════════════════════════════════ -->
+
+<section>
+  <div class="hosting-section reveal">
+    <div>
+      <h3>Run your agents in the cloud</h3>
+      <p>Love the desktop app? Run the same agents 24/7 in the cloud. One click to deploy. No infra to manage. Your agents work while you sleep.</p>
+      <ul class="hosting-features">
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          One-click deploy from the desktop app
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Same agent, same skills, same memory
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Always-on Slack &amp; messaging integration
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Routines run even when your laptop is closed
+        </li>
+      </ul>
+      <a href="#" class="btn-blue" style="margin-top: 8px;">Get started with hosting</a>
+    </div>
+    <div class="hosting-visual">
+      <div class="hosting-card">
+        <div class="hosting-card-label">Status</div>
+        <div class="hosting-card-value">
+          <span class="live-dot"></span>
+          3 agents running
+        </div>
+      </div>
+      <div class="hosting-card">
+        <div class="hosting-card-label">Uptime</div>
+        <div class="hosting-card-value">99.9% &mdash; 14 days</div>
+      </div>
+      <div class="hosting-card">
+        <div class="hosting-card-label">Tasks completed</div>
+        <div class="hosting-card-value">247 this week</div>
+      </div>
+      <div class="hosting-card">
+        <div class="hosting-card-label">Slack messages handled</div>
+        <div class="hosting-card-value">1,283 this month</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     DEVELOPERS
+     ═══════════════════════════════════════════ -->
+
+<section id="developers">
+  <div class="reveal">
+    <div class="section-label">Developers</div>
+    <h2 class="section-title">Build agents. Publish to the store.</h2>
+    <p class="section-subtitle">Houston is also an open-source framework. React packages for the UI, Rust crates for the engine. Build agents that thousands of people can use.</p>
+  </div>
+
+  <div class="steps-grid">
+    <div class="step-card reveal reveal-delay-1">
+      <div class="step-number">01</div>
+      <h3>Scaffold</h3>
+      <p><code style="font-size: 13px; background: var(--gray-50); padding: 4px 10px; border-radius: 8px;">npx create-houston-agent</code><br><br>Pre-configured with @houston-ai components and the full design system.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-2">
+      <div class="step-number">02</div>
+      <h3>Build</h3>
+      <p>Define your agent's tabs, prompt, skills, and workflow in a manifest. Use built-in components or bring custom React.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-3">
+      <div class="step-number">03</div>
+      <h3>Publish</h3>
+      <p>Submit to the Houston agent store. People add your agent in one click from inside the app.</p>
+    </div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="arch-diagram reveal" style="margin-top: 64px;">
+    <div class="arch-layers">
+      <div class="arch-layer layer-agents">
+        <div class="arch-layer-label">Agent Store</div>
+        <div class="arch-items">
+          <span class="arch-item">Content Writer</span>
+          <span class="arch-item">Research</span>
+          <span class="arch-item">Code Review</span>
+          <span class="arch-item" style="border-style: dashed; opacity: 0.5;">Your Agent</span>
+        </div>
+      </div>
+      <div class="arch-layer layer-ui">
+        <div class="arch-layer-label">@houston-ai &mdash; React UI</div>
+        <div class="arch-items">
+          <span class="arch-item">chat</span>
+          <span class="arch-item">board</span>
+          <span class="arch-item">layout</span>
+          <span class="arch-item">core</span>
+          <span class="arch-item">skills</span>
+          <span class="arch-item">routines</span>
+          <span class="arch-item">+5 more</span>
+        </div>
+      </div>
+      <div class="arch-layer layer-engine">
+        <div class="arch-layer-label">houston-* &mdash; Rust Engine</div>
+        <div class="arch-items">
+          <span class="arch-item">sessions</span>
+          <span class="arch-item">db</span>
+          <span class="arch-item">channels</span>
+          <span class="arch-item">scheduler</span>
+          <span class="arch-item">tauri</span>
+          <span class="arch-item">+3 more</span>
+        </div>
+      </div>
+      <div class="arch-layer layer-platform">
+        <div class="arch-layer-label">Platform</div>
+        <div class="arch-items">
+          <span class="arch-item">Tauri 2</span>
+          <span class="arch-item">Claude CLI</span>
+          <span class="arch-item">SQLite</span>
+          <span class="arch-item">macOS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-row reveal">
+    <div class="stat-item">
+      <div class="number">11</div>
+      <div class="label">React packages</div>
+    </div>
+    <div class="stat-item">
+      <div class="number">8</div>
+      <div class="label">Rust crates</div>
+    </div>
+    <div class="stat-item">
+      <div class="number">38</div>
+      <div class="label">UI components</div>
+    </div>
+    <div class="stat-item">
+      <div class="number">9</div>
+      <div class="label">Built-in agents</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     CTA
+     ═══════════════════════════════════════════ -->
+
+<div class="cta-section">
+  <div class="cta-bg"></div>
+  <div class="reveal">
+    <h2>Stop configuring. Start delegating.</h2>
+    <p>Free. Runs on your Mac. Every agent works out of the box. No terminal, no setup, no 40-hour learning curve.</p>
+    <div class="cta-actions">
+      <a href="https://github.com/ja-818/houston/releases" class="btn btn-primary btn-lg">Download Houston</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════ -->
+
+<footer>
+  <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
+    <svg viewBox="0 0 412 449" fill="currentColor" width="18" height="18" style="color: var(--gray-700);"><path d="M54.4 370a373 373 0 0036.6 16.5c42.9 16.5 81 27 127 32.7 39 4.9 98 6.1 134-9.7l.2-28.7 10.9-4.2.1 7.6c.1 9.5 10.2 10 10.1 16.6l-.2 19.5a10.9 10.9 0 01-5.3 8.8 126 126 0 01-34.7 13.1c-27.4 5.9-54.8 7.6-83 6.1a502 502 0 01-114.8-19.3C98.3 418.3 63.3 404.2 30.4 384.4c-1.8-1.1-4.6-4.1-4.6-5.8l.5-25.2 11-8.4c1.5-34.5-.5-23-14.7-49.9C-4.9 243.1-6.6 188.6 13.7 132.1c9.6 20.2 21.2 38.3 37.4 52.9C37.7 162.7 27.2 140 22.1 114.6 58.6 40.2 137.3-5.7 220.2.6c51 3.8 94.2 25.6 130.4 62-12-3.2-22.2-5.6-33.7-6.8-41.1-31.1-89.5-44.9-140.7-36.2-20.9 3.5-34 7-50.7 16.9l14.1-2.5 15.9-2.8c8.5-1.5 24.6-1 33.8-.2 22.7 2.1 53.6 13.7 71.7 29-12.6 3.8-24.8 7-37.2 12.5-54.8 24.4-99.9 64.9-131 115.9-7.9-2.9-15.5-4.4-23.5-2.5 29.8 6 39 41.1 31.8 68-2.4 9-7.4 16.2-14.7 22.4a346.5 346.5 0 00147.3 97.2l12 21.2c1.8 3.3.4 10.1.3 14.5-54.7-3.5-108.5-14.2-157.9-37.6l-33.3-15.8a55.5 55.5 0 00-.3 14.3m15.8-103.6c8.8-2.1 12.7-9.2 15.7-16.5 4-13 2.4-27.4-5.3-38.7-5.4-7.8-14.8-12.2-23.8-9.3a20.8 20.8 0 00-13.4 12.7c8.4-7.9 19.2-8.3 27.1-.2 12.6 13.1 13.3 38-.3 52M56.2 335.7c19.3 9.7 37.1 17.6 57.6 25.6l.5-41c0-5.6-7.1-8.2-10.9-7.4-13.3 2.7-5.9 17.1-8 29.2l-39.8-19.4c-1 4.6-1.3 9.4.6 13m139.6 48.3c1.1-4.4 1.2-8.7-.8-11.5a513 513 0 01-66-18 16.3 16.3 0 00-.1 12.2c8.3 2.7 16.2 5.3 24.7 7.3z"/><path d="M326 373.5c-78.7 7.3-171.3-41.7-224.8-98.7 21-21.4 19.6-56.4 1.4-79.5 14.1-22 29.7-42 48.5-59.7C194 95.2 252.8 65.2 312.9 67.5c31.5 1.8 71.1 11.3 70.5 49.8a215.2 215.2 0 017.4 201.1c3.6 38.3-33.5 51.8-64.9 55.1m-156.6-69.6c44.6 29.3 106.3 54.1 159.9 46.5 8.5-1.2 16.5-3.9 24.6-6.3 5-1.5 7.1-5.2 9.6-9 48.2-74.2 42.9-170.7-13.8-238.4C301.1 78.6 245.2 94.2 203 121.5c-17 11-32.9 23.2-46.2 38.5-14.8 17-20.8 39.2-21.9 61.4-1.2 23.5 5.3 45.1 17.5 64.8a53.6 53.6 0 0017 17.8"/><path d="M298.5 409.1c-4.5.4-7.9-1.7-9.4-5.2a12.3 12.3 0 011.1-11c1.5-2.5 5.4-4.9 8.9-5.2l31.9-2.5a8.6 8.6 0 019.3 6.1c.9 3.4.5 9.3-3.5 10.6-12.4 4.1-24.7 6-38.3 7.2"/><rect width="15.3" height="16.2" x="258.6" y="409.9" rx="0" transform="rotate(-89.7 266.3 418)"/><path d="M370.4 283.3c-6.1 17.6-13.5 33.4-26.4 47.2 26-57.7 30.3-124.2 4.1-182.3-6.7-14.8-15-27.3-24.8-41 5.1.8 13 .9 17 4.2 7.8 6.5 12.5 15.5 17.4 24.5 24.5 45.2 29.8 98.2 12.7 147.5"/></svg>
+    <a href="/" style="font-weight: 500; color: var(--gray-700); text-decoration: none;">Houston</a>
+  </div>
+  <div style="font-size: 14px; color: var(--gray-700); font-weight: 500; margin-bottom: 12px; letter-spacing: -0.01em;">Ship the impossible.</div>
+  <span>Free and open source.</span>
+  <span style="margin: 0 8px;">&middot;</span>
+  <a href="https://github.com/ja-818/houston">GitHub</a>
+  <span style="margin: 0 8px;">&middot;</span>
+  <a href="https://github.com/ja-818/houston/releases">Download</a>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════ -->
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
