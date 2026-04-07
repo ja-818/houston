@@ -1,7 +1,7 @@
 mod commands;
-mod workspace;
+mod agent;
 
-use commands::workspaces::WorkspaceRoot;
+use commands::agents::WorkspaceRoot;
 use houston_tauri::agent_sessions::AgentSessionMap;
 use houston_tauri::houston_db::Database;
 use houston_tauri::state::AppState;
@@ -31,36 +31,44 @@ pub fn run() {
             });
             app.manage(AgentSessionMap::default());
             app.manage(WorkspaceRoot(root));
-            app.manage(houston_tauri::workspace_watcher::WatcherState::default());
+            app.manage(houston_tauri::agent_watcher::WatcherState::default());
+
+            // Size window to 80% of the screen so it looks good on any display
+            if let Some(window) = app.get_webview_window("main") {
+                if let Some(monitor) = window.current_monitor().ok().flatten() {
+                    let screen = monitor.size();
+                    let scale = monitor.scale_factor();
+                    let w = (screen.width as f64 / scale * 0.80) as f64;
+                    let h = (screen.height as f64 / scale * 0.80) as f64;
+                    let _ = window.set_size(tauri::LogicalSize::new(w, h));
+                    window.center().ok();
+                }
+            }
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // Space CRUD
-            commands::spaces::list_spaces,
-            commands::spaces::create_space,
-            commands::spaces::rename_space,
-            commands::spaces::delete_space,
-            // Workspace CRUD (scoped to space)
+            // Workspace CRUD (top-level container, formerly "Space")
             commands::workspaces::list_workspaces,
             commands::workspaces::create_workspace,
-            commands::workspaces::delete_workspace,
             commands::workspaces::rename_workspace,
-            commands::workspaces::update_workspace_opened,
+            commands::workspaces::delete_workspace,
+            // Agent CRUD (scoped to workspace, formerly "Workspace")
+            commands::agents::list_agents,
+            commands::agents::create_agent,
+            commands::agents::delete_agent,
+            commands::agents::rename_agent,
+            commands::agents::update_agent_opened,
             // Preferences
             commands::preferences::get_preference,
             commands::preferences::set_preference,
-            // Experiences
-            commands::experiences::list_installed_experiences,
-            // Agent commands (send_message, list_agents, etc.)
-            commands::agent::list_agents,
-            commands::agent::create_agent,
-            commands::agent::rename_agent,
-            commands::agent::delete_agent,
-            commands::agent::send_message,
-            commands::agent::load_chat_history,
-            commands::agent::read_workspace_file,
-            commands::agent::write_workspace_file,
+            // Agent manifests (formerly "Experiences")
+            commands::agent_manifests::list_installed_manifests,
+            // Chat commands (send_message, load_chat_history, file read/write)
+            commands::chat::send_message,
+            commands::chat::load_chat_history,
+            commands::chat::read_agent_file,
+            commands::chat::write_agent_file,
             // Learnings
             commands::memory::load_learnings,
             commands::memory::add_learning,
@@ -75,47 +83,46 @@ pub fn run() {
             commands::skills::install_skills_from_repo,
             commands::skills::search_community_skills,
             commands::skills::install_community_skill,
-            // Workspace store — conversations, activity, routines, goals, channels, skills, log, config
-            houston_tauri::workspace_store::commands::list_conversations,
-            houston_tauri::workspace_store::commands::list_all_conversations,
-            houston_tauri::workspace_store::commands::list_activity,
-            houston_tauri::workspace_store::commands::create_activity,
-            houston_tauri::workspace_store::commands::update_activity,
-            houston_tauri::workspace_store::commands::delete_activity,
-            houston_tauri::workspace_store::commands::list_routines,
-            houston_tauri::workspace_store::commands::create_routine,
-            houston_tauri::workspace_store::commands::update_routine,
-            houston_tauri::workspace_store::commands::delete_routine,
-            houston_tauri::workspace_store::commands::list_goals,
-            houston_tauri::workspace_store::commands::create_goal,
-            houston_tauri::workspace_store::commands::update_goal,
-            houston_tauri::workspace_store::commands::delete_goal,
-            houston_tauri::workspace_store::commands::list_channels_config,
-            houston_tauri::workspace_store::commands::add_channel_config,
-            houston_tauri::workspace_store::commands::remove_channel_config,
-            // Note: skills handled by commands::skills (uses houston-skills crate directly)
-            houston_tauri::workspace_store::commands::append_log,
-            houston_tauri::workspace_store::commands::read_log,
-            houston_tauri::workspace_store::commands::read_config,
-            houston_tauri::workspace_store::commands::write_config,
-            // Workspace file operations
-            houston_tauri::workspace_commands::list_project_files,
-            houston_tauri::workspace_commands::open_file,
-            houston_tauri::workspace_commands::reveal_file,
-            houston_tauri::workspace_commands::delete_file,
-            houston_tauri::workspace_commands::rename_file,
-            houston_tauri::workspace_commands::create_workspace_folder,
-            houston_tauri::workspace_commands::reveal_workspace,
-            houston_tauri::workspace_commands::import_files,
-            houston_tauri::workspace_commands::open_url,
-            houston_tauri::workspace_commands::write_file_bytes,
-            houston_tauri::workspace_commands::read_project_file,
-            houston_tauri::workspace_commands::search_sessions,
-            houston_tauri::workspace_commands::list_recent_sessions,
-            houston_tauri::workspace_commands::load_session_feed,
-            // Workspace file watcher (AI-native reactivity)
-            houston_tauri::workspace_watcher::start_workspace_watcher,
-            houston_tauri::workspace_watcher::stop_workspace_watcher,
+            // Agent store — conversations, activity, routines, goals, channels, log, config
+            houston_tauri::agent_store::commands::list_conversations,
+            houston_tauri::agent_store::commands::list_all_conversations,
+            houston_tauri::agent_store::commands::list_activity,
+            houston_tauri::agent_store::commands::create_activity,
+            houston_tauri::agent_store::commands::update_activity,
+            houston_tauri::agent_store::commands::delete_activity,
+            houston_tauri::agent_store::commands::list_routines,
+            houston_tauri::agent_store::commands::create_routine,
+            houston_tauri::agent_store::commands::update_routine,
+            houston_tauri::agent_store::commands::delete_routine,
+            houston_tauri::agent_store::commands::list_goals,
+            houston_tauri::agent_store::commands::create_goal,
+            houston_tauri::agent_store::commands::update_goal,
+            houston_tauri::agent_store::commands::delete_goal,
+            houston_tauri::agent_store::commands::list_channels_config,
+            houston_tauri::agent_store::commands::add_channel_config,
+            houston_tauri::agent_store::commands::remove_channel_config,
+            houston_tauri::agent_store::commands::append_log,
+            houston_tauri::agent_store::commands::read_log,
+            houston_tauri::agent_store::commands::read_config,
+            houston_tauri::agent_store::commands::write_config,
+            // Agent file operations
+            houston_tauri::agent_commands::list_project_files,
+            houston_tauri::agent_commands::open_file,
+            houston_tauri::agent_commands::reveal_file,
+            houston_tauri::agent_commands::delete_file,
+            houston_tauri::agent_commands::rename_file,
+            houston_tauri::agent_commands::create_agent_folder,
+            houston_tauri::agent_commands::reveal_agent,
+            houston_tauri::agent_commands::import_files,
+            houston_tauri::agent_commands::open_url,
+            houston_tauri::agent_commands::write_file_bytes,
+            houston_tauri::agent_commands::read_project_file,
+            houston_tauri::agent_commands::search_sessions,
+            houston_tauri::agent_commands::list_recent_sessions,
+            houston_tauri::agent_commands::load_session_feed,
+            // Agent file watcher (AI-native reactivity)
+            houston_tauri::agent_watcher::start_agent_watcher,
+            houston_tauri::agent_watcher::stop_agent_watcher,
             // System
             commands::system::check_claude_cli,
             // Composio integrations
