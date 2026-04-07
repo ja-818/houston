@@ -53,12 +53,13 @@ export function useSessionEvents(handlers: SessionEventsHandlers): void {
 
       switch (payload.type) {
         case "FeedItem": {
+          const feedKey = payload.data.session_key ?? "main";
           const activeId = h.getActiveSessionId?.() ?? null;
           const isDesktopDupe =
-            payload.data.session_key === activeId &&
+            feedKey === activeId &&
             (payload.data.item as { feed_type: string }).feed_type === "user_message";
           if (!isDesktopDupe) {
-            h.onFeedItem("main", payload.data.item as { feed_type: string; data: unknown });
+            h.onFeedItem(feedKey, payload.data.item as { feed_type: string; data: unknown });
           }
           break;
         }

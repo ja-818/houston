@@ -16,6 +16,8 @@ interface UIState {
   toasts: ToastItem[];
   createWorkspaceDialogOpen: boolean;
   chatDraft: string;
+  /** Increments on every SessionStatus event — subscribers can reload data. */
+  sessionStatusVersion: number;
   setViewMode: (mode: string) => void;
   setAssistantPanelOpen: (open: boolean) => void;
   setTaskPanelId: (id: string | null) => void;
@@ -25,6 +27,7 @@ interface UIState {
   dismissToast: (id: string) => void;
   setCreateWorkspaceDialogOpen: (open: boolean) => void;
   setChatDraft: (draft: string) => void;
+  bumpSessionStatus: () => void;
 }
 
 let toastCounter = 0;
@@ -38,6 +41,7 @@ export const useUIStore = create<UIState>((set) => ({
   toasts: [],
   createWorkspaceDialogOpen: false,
   chatDraft: "",
+  sessionStatusVersion: 0,
 
   setViewMode: (viewMode) => set({ viewMode }),
   setAssistantPanelOpen: (assistantPanelOpen) => set({ assistantPanelOpen }),
@@ -67,4 +71,5 @@ export const useUIStore = create<UIState>((set) => ({
     set({ createWorkspaceDialogOpen }),
 
   setChatDraft: (chatDraft) => set({ chatDraft }),
+  bumpSessionStatus: () => set((s) => ({ sessionStatusVersion: s.sessionStatusVersion + 1 })),
 }));

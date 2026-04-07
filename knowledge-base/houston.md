@@ -150,7 +150,11 @@ interface ExperienceTab {
 
 ### Tasks / Board Tab
 
-The "Tasks" tab uses `@houston-ai/board`'s `KanbanBoard`. Each card represents a task backed by `.houston/tasks.json`. When a card has a `claude_session_id`, clicking it opens a chat panel with that conversation's history — each kanban card is effectively a Claude conversation.
+The "Tasks" tab uses `@houston-ai/board`'s `AIBoard` — a higher-level component that combines `KanbanBoard` + `KanbanDetailPanel` + `ChatPanel`. Each card represents a task backed by `.houston/tasks.json`, and clicking a card opens a chat panel with that conversation's history. The app's `board-tab.tsx` is a thin store wrapper (~140 lines) connecting Zustand stores and Tauri commands to `AIBoard` props.
+
+**`AIBoard` props:** `items`, `feedItems` (keyed by session key), `isLoading`, `onCreateConversation` (returns task ID), `onSendMessage`, `onLoadHistory`, `onDelete`, `onApprove`, `onSelect`, `selectedId`.
+
+**Status transitions:** When a session completes, the global `useSessionEvents` hook updates the task to `"needs_you"` and bumps `sessionStatusVersion` in the UI store. The board-tab subscribes to `sessionStatusVersion` via Zustand to reload tasks. This avoids the unreliable `useHoustonEvent` hook (which tears down/re-registers on callback changes, causing missed events).
 
 Columns can include an `onAdd` callback, rendering a "+" button in the column header to create tasks directly from the board.
 
@@ -196,7 +200,7 @@ Every Houston app project stores agent-visible data in a `.houston/` folder alon
 ~/Documents/Houston/{SpaceName}/{WorkspaceName}/
   .houston/
     workspace.json      -- WorkspaceMeta (id, experience_id, created_at, last_opened_at)
-    tasks.json          -- Task[] (id, title, description, status, claude_session_id)
+    tasks.json          -- Task[] (id, title, description, status, claude_session_id, updated_at?)
     routines.json       -- Routine[] (id, name, description, trigger_type, trigger_config, status, approval_mode, claude_session_id)
     channels.json       -- ChannelEntry[] (id, channel_type, name, token)
     goals.json          -- Goal[] (id, title, status)
@@ -302,8 +306,12 @@ Kanban board with animated cards that glow when AI agents are running.
 |-----------|-------------|
 | `KanbanBoard` | Configurable kanban — accepts columns + items, filters by status |
 | `KanbanColumn` | Animated card list with Framer Motion enter/exit transitions |
-| `KanbanCard` | Status-aware card with running glow animation (conic gradient) |
+| `KanbanCard` | Status-aware card with running glow, optional `group` label above title |
 | `KanbanDetailPanel` | Right panel with header + children slot for chat |
+| `AIBoard` | Opinionated board: kanban + split-view chat. Supports `onLoadHistory` for persisted chat hydration |
+| `ConversationList` | Props-driven list of `ConversationEntry` items with status badges and relative timestamps |
+
+Types: `KanbanItem` (id, title, subtitle, group, status, updatedAt, icon, metadata), `ConversationEntry` (id, title, status, type, sessionKey, updatedAt, workspacePath, workspaceName), `KanbanColumn`.
 
 ### @houston-ai/layout
 App shell components.
@@ -393,7 +401,8 @@ Tauri-specific helpers. The largest crate — provides session lifecycle, worksp
 | `channel_manager.rs` | `ChannelManager` — starts/stops channel adapters, routes all incoming messages into one `mpsc::UnboundedReceiver<RoutedMessage>`. |
 | `tray.rs` | System tray integration utilities |
 
-**workspace_store Tauri commands (23 total):**
+**workspace_store Tauri commands (25 total):**
+Conversations: `list_conversations`, `list_all_conversations` (cross-workspace aggregation)
 Tasks: `list_tasks`, `create_task`, `update_task`, `delete_task`
 Routines: `list_routines`, `create_routine`, `update_routine`, `delete_routine`
 Goals: `list_goals`, `create_goal`, `update_goal`, `delete_goal`
@@ -435,7 +444,7 @@ Agent memory store with vector search and persistence. Still in the workspace (`
 ### Dependency Rules
 - `@houston-ai/core` has NO internal package dependencies
 - All other packages peer-depend on `@houston-ai/core`
-- No package depends on another non-core package
+- No package depends on another non-core package (exception: `@houston-ai/board` peer-depends on `@houston-ai/chat` and `@houston-ai/layout` for the `AIBoard` composition)
 - React is always a peer dependency, never a direct dependency
 
 ### Key Dependencies

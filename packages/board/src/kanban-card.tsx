@@ -60,6 +60,11 @@ export function KanbanCard({
           </button>
         )}
 
+        {item.group && (
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            {item.group}
+          </span>
+        )}
         <p className="text-sm text-foreground line-clamp-2 pr-5">
           {item.title}
         </p>

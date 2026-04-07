@@ -40,6 +40,10 @@ pub struct ConversationEntry {
     pub session_key: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub updated_at: Option<String>,
+    /// Absolute path to the workspace folder this conversation belongs to.
+    pub workspace_path: String,
+    /// Human-readable workspace name.
+    pub workspace_name: String,
 }
 
 // -- Routines --

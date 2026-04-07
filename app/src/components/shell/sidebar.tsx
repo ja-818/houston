@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { LayoutDashboard, Link2, Settings } from "lucide-react";
+import { LayoutDashboard, Blend, Settings } from "lucide-react";
 import { Button } from "@houston-ai/core";
 import { AppSidebar, SpaceSwitcher } from "@houston-ai/layout";
 import { useSpaceStore } from "../../stores/spaces";
@@ -93,14 +93,14 @@ export function Sidebar({ children }: { children: ReactNode }) {
         navItems={[
           {
             id: "dashboard",
-            label: "Dashboard",
+            label: "Mission Control",
             icon: <LayoutDashboard className="h-4 w-4" />,
             onClick: () => setViewMode("dashboard"),
           },
           {
             id: "connections",
-            label: "Connections",
-            icon: <Link2 className="h-4 w-4" />,
+            label: "Apps",
+            icon: <Blend className="h-4 w-4" />,
             onClick: () => setViewMode("connections"),
           },
         ]}

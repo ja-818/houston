@@ -6,17 +6,25 @@ import { useFeedStore } from "../stores/feeds";
 import { useUIStore } from "../stores/ui";
 import { useSpaceStore } from "../stores/spaces";
 import { useWorkspaceStore } from "../stores/workspaces";
+import { tauriTasks } from "../lib/tauri";
 
 function sendNotification(title: string, body: string) {
-  if (!("Notification" in window)) return;
-  if (document.hasFocus()) return;
+  if (!("Notification" in window)) {
+    console.log("[notification:debug] Notification API not available");
+    return;
+  }
+
+  console.log("[notification:debug] Sending notification:", title, body, "permission:", Notification.permission);
 
   if (Notification.permission === "granted") {
     new Notification(title, { body });
   } else if (Notification.permission !== "denied") {
     Notification.requestPermission().then((perm) => {
+      console.log("[notification:debug] Permission result:", perm);
       if (perm === "granted") new Notification(title, { body });
     });
+  } else {
+    console.log("[notification:debug] Permission denied");
   }
 }
 
@@ -28,11 +36,13 @@ export function useSessionEvents() {
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
   const addToast = useUIStore((s) => s.addToast);
   const setAuthRequired = useUIStore((s) => s.setAuthRequired);
+  const bumpSessionStatus = useUIStore((s) => s.bumpSessionStatus);
 
   const handlersRef = useRef({
     pushFeedItem,
     addToast,
     setAuthRequired,
+    bumpSessionStatus,
     getSpace: () => useSpaceStore.getState().current,
     getWorkspace: () => useWorkspaceStore.getState().current,
   });
@@ -40,6 +50,7 @@ export function useSessionEvents() {
     pushFeedItem,
     addToast,
     setAuthRequired,
+    bumpSessionStatus,
     getSpace: () => useSpaceStore.getState().current,
     getWorkspace: () => useWorkspaceStore.getState().current,
   };
@@ -69,7 +80,19 @@ export function useSessionEvents() {
               data: `Session error: ${error}`,
             } as FeedItem);
           }
+          // Notify subscribers (e.g. board-tab) that a session status changed
+          h.bumpSessionStatus();
           if (status === "completed") {
+            // Move task conversations to "needs_you"
+            if (session_key.startsWith("task-")) {
+              const taskId = session_key.replace("task-", "");
+              const workspace = h.getWorkspace();
+              if (workspace?.folderPath) {
+                tauriTasks.update(workspace.folderPath, taskId, { status: "needs_you" }).catch((e) =>
+                  console.error("[session] Failed to update task status:", e),
+                );
+              }
+            }
             const space = h.getSpace();
             const workspace = h.getWorkspace();
             const spaceName = space?.name ?? "Houston";

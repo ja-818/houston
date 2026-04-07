@@ -49,9 +49,16 @@ export function ConversationList({ entries, onSelect }: ConversationListProps) {
               {entry.type === "primary" && (
                 <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
               )}
-              <span className="text-sm font-medium truncate">
-                {entry.title}
-              </span>
+              <div className="min-w-0">
+                <span className="text-sm font-medium truncate block">
+                  {entry.title}
+                </span>
+                {entry.workspaceName && (
+                  <span className="text-xs text-muted-foreground truncate block">
+                    {entry.workspaceName}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {entry.updatedAt && (

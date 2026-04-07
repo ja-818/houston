@@ -4,6 +4,8 @@ export interface KanbanItem {
   id: string
   title: string
   subtitle?: string
+  /** Grouping label displayed above the title (e.g. workspace name). */
+  group?: string
   status: string
   updatedAt: string
   icon?: React.ReactNode
@@ -20,6 +22,10 @@ export interface ConversationEntry {
   /** Session key used to address this conversation (e.g. `"main"`, `"task-{id}`). */
   sessionKey: string
   updatedAt?: string
+  /** Absolute path to the workspace this conversation belongs to. */
+  workspacePath: string
+  /** Human-readable workspace name. */
+  workspaceName: string
 }
 
 export interface KanbanColumn {

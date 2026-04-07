@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import type { ReactNode } from "react"
 import { SplitView } from "@houston-ai/layout"
 import { ChatPanel } from "@houston-ai/chat"
@@ -14,22 +14,22 @@ export interface AIBoardProps {
   onSelect?: (id: string | null) => void
   onDelete?: (item: KanbanItem) => void
   onApprove?: (item: KanbanItem) => void
-  /** Called when user sends a message in the new-conversation panel. Should return the created task ID. */
+  /** Called when user sends the first message in a new conversation. Should return the created task ID. */
   onCreateConversation?: (text: string) => Promise<string>
-  /** Called when user sends a follow-up message in an existing conversation's detail panel. */
+  /** Called when user sends a follow-up message in an existing conversation. */
   onSendMessage?: (sessionKey: string, text: string) => Promise<void>
-  /** Called when the new-conversation panel opens, so the app can clear stale feed data. */
-  onNewConversationOpen?: () => void
   /** Feed items keyed by session key (e.g. "task-{id}"). */
   feedItems?: Record<string, FeedItem[]>
-  /** Whether a message is currently being processed. */
+  /** Whether a message is currently being processed, keyed by session key. */
   isLoading?: Record<string, boolean>
-  /** Custom empty state when no items exist. */
+  /** Custom empty state when the board has no items. */
   emptyState?: ReactNode
   /** Maps a task ID to its session key. Defaults to `task-${id}`. */
   sessionKeyFor?: (taskId: string) => string
   runningStatuses?: string[]
   approveStatuses?: string[]
+  /** Load persisted chat history for a session. Called once per session key when selected. */
+  onLoadHistory?: (sessionKey: string) => Promise<FeedItem[]>
 }
 
 const DEFAULT_COLUMNS: KanbanColumn[] = [
@@ -49,29 +49,52 @@ export function AIBoard({
   onApprove,
   onCreateConversation,
   onSendMessage,
-  onNewConversationOpen,
   feedItems = {},
   isLoading = {},
   emptyState,
   sessionKeyFor = defaultSessionKey,
   runningStatuses = ["running"],
   approveStatuses = ["needs_you"],
+  onLoadHistory,
 }: AIBoardProps) {
-  // Internal state when uncontrolled
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [newPanelOpen, setNewPanelOpen] = useState(false)
 
   const selectedId = controlledSelectedId !== undefined ? controlledSelectedId : internalSelectedId
-  const setSelectedId = onSelectProp ?? setInternalSelectedId
+  const rawSetSelectedId = onSelectProp ?? setInternalSelectedId
+
+  // -- History hydration: load persisted chat when a conversation is selected --
+  const [historyCache, setHistoryCache] = useState<Record<string, FeedItem[]>>({})
+  const hydratedKeys = useRef<Set<string>>(new Set())
+
+  const hydrateSession = useCallback(
+    (id: string) => {
+      if (!onLoadHistory) return
+      const sk = sessionKeyFor(id)
+      if (hydratedKeys.current.has(sk)) return
+      hydratedKeys.current.add(sk)
+      onLoadHistory(sk).then((h) => {
+        if (h.length > 0) setHistoryCache((prev) => ({ ...prev, [sk]: h }))
+      }).catch(console.error)
+    },
+    [onLoadHistory, sessionKeyFor],
+  )
+
+  const setSelectedId = useCallback(
+    (id: string | null) => { rawSetSelectedId(id); if (id) hydrateSession(id) },
+    [rawSetSelectedId, hydrateSession],
+  )
+
+  // Hydrate on mount if there's an initial controlled selection
+  useEffect(() => { if (selectedId) hydrateSession(selectedId) }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedItem = items.find((i) => i.id === selectedId) ?? null
 
   const openNewPanel = useCallback(() => {
-    onNewConversationOpen?.()
+    setSelectedId(null)
     setNewPanelOpen(true)
-  }, [onNewConversationOpen])
+  }, [setSelectedId])
 
-  // Inject onAdd into the first column for the "+" button
   const resolvedColumns = (columns ?? DEFAULT_COLUMNS).map((col, idx) =>
     idx === 0 && onCreateConversation
       ? { ...col, onAdd: openNewPanel }
@@ -86,6 +109,38 @@ export function AIBoard({
     [onDelete, selectedId, setSelectedId],
   )
 
+  const handleCardSelect = useCallback(
+    (item: KanbanItem) => {
+      setNewPanelOpen(false)
+      setSelectedId(item.id)
+    },
+    [setSelectedId],
+  )
+
+  // Unified send handler: creates conversation on first message, sends follow-ups after
+  const handleSend = useCallback(
+    async (text: string) => {
+      if (selectedItem && onSendMessage) {
+        await onSendMessage(sessionKeyFor(selectedItem.id), text)
+      } else if (newPanelOpen && onCreateConversation) {
+        const taskId = await onCreateConversation(text)
+        setNewPanelOpen(false)
+        setSelectedId(taskId)
+      }
+    },
+    [selectedItem, onSendMessage, sessionKeyFor, newPanelOpen, onCreateConversation, setSelectedId],
+  )
+
+  // Resolve which session key and feed to show (merge persisted history + live items)
+  const activeSessionKey = selectedItem ? sessionKeyFor(selectedItem.id) : null
+  const liveFeed = activeSessionKey ? (feedItems[activeSessionKey] ?? []) : []
+  const cachedFeed = activeSessionKey ? (historyCache[activeSessionKey] ?? []) : []
+  const activeFeed = liveFeed.length > 0 ? liveFeed : cachedFeed
+  const activeLoading = activeSessionKey ? (isLoading[activeSessionKey] ?? false) : false
+
+  const showPanel = selectedItem || newPanelOpen
+  const panelTitle = selectedItem?.title ?? "New conversation"
+
   const board = (
     <div className="flex flex-col h-full">
       <KanbanBoard
@@ -94,7 +149,7 @@ export function AIBoard({
         selectedId={selectedId}
         runningStatuses={runningStatuses}
         approveStatuses={approveStatuses}
-        onSelect={(item) => setSelectedId(item.id)}
+        onSelect={handleCardSelect}
         onDelete={onDelete ? handleDelete : undefined}
         onApprove={onApprove}
         emptyState={emptyState}
@@ -102,29 +157,28 @@ export function AIBoard({
     </div>
   )
 
-  const showNewPanel = newPanelOpen && !selectedItem
+  const closePanel = useCallback(() => {
+    setNewPanelOpen(false)
+    setSelectedId(null)
+  }, [setSelectedId])
 
-  const rightPanel = selectedItem ? (
-    <DetailPanel
-      item={selectedItem}
-      sessionKey={sessionKeyFor(selectedItem.id)}
-      feedItems={feedItems[sessionKeyFor(selectedItem.id)] ?? []}
-      isLoading={isLoading[sessionKeyFor(selectedItem.id)] ?? false}
-      onSendMessage={onSendMessage}
-      onClose={() => setSelectedId(null)}
-    />
-  ) : showNewPanel && onCreateConversation ? (
-    <NewConversationPanel
-      feedItems={feedItems["new-conversation"] ?? []}
-      isLoading={isLoading["new-conversation"] ?? false}
-      onSendMessage={onSendMessage}
-      onCreateConversation={onCreateConversation}
-      onClose={() => setNewPanelOpen(false)}
-      onCreated={(taskId) => {
-        setNewPanelOpen(false)
-        setSelectedId(taskId)
-      }}
-    />
+  const rightPanel = showPanel ? (
+    <div className="h-full overflow-hidden flex flex-col">
+      <KanbanDetailPanel
+        title={panelTitle}
+        onClose={closePanel}
+      >
+        <div className="flex-1 min-h-0 flex flex-col">
+          <ChatPanel
+            sessionKey={activeSessionKey ?? "new-conversation"}
+            feedItems={activeFeed}
+            isLoading={activeLoading}
+            onSend={handleSend}
+            placeholder={selectedItem ? "Send a follow-up..." : "What should the agent work on?"}
+          />
+        </div>
+      </KanbanDetailPanel>
+    </div>
   ) : null
 
   return (
@@ -135,99 +189,5 @@ export function AIBoard({
         board
       )}
     </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Internal: Detail panel for an existing conversation
-// ---------------------------------------------------------------------------
-
-interface DetailPanelProps {
-  item: KanbanItem
-  sessionKey: string
-  feedItems: FeedItem[]
-  isLoading: boolean
-  onSendMessage?: (sessionKey: string, text: string) => Promise<void>
-  onClose: () => void
-}
-
-function DetailPanel({
-  item,
-  sessionKey,
-  feedItems,
-  isLoading,
-  onSendMessage,
-  onClose,
-}: DetailPanelProps) {
-  const handleSend = useCallback(
-    async (text: string) => {
-      await onSendMessage?.(sessionKey, text)
-    },
-    [onSendMessage, sessionKey],
-  )
-
-  return (
-    <KanbanDetailPanel
-      title={item.title}
-      subtitle={item.subtitle}
-      onClose={onClose}
-    >
-      <div className="flex-1 min-h-0 flex flex-col">
-        <ChatPanel
-          sessionKey={sessionKey}
-          feedItems={feedItems}
-          isLoading={isLoading}
-          onSend={handleSend}
-          placeholder="Send a follow-up..."
-        />
-      </div>
-    </KanbanDetailPanel>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Internal: New conversation panel
-// ---------------------------------------------------------------------------
-
-interface NewConversationPanelProps {
-  feedItems: FeedItem[]
-  isLoading: boolean
-  onSendMessage?: (sessionKey: string, text: string) => Promise<void>
-  onCreateConversation: (text: string) => Promise<string>
-  onClose: () => void
-  onCreated: (taskId: string) => void
-}
-
-function NewConversationPanel({
-  feedItems,
-  isLoading,
-  onCreateConversation,
-  onClose,
-  onCreated,
-}: NewConversationPanelProps) {
-  const handleSend = useCallback(
-    async (text: string) => {
-      const taskId = await onCreateConversation(text)
-      onCreated(taskId)
-    },
-    [onCreateConversation, onCreated],
-  )
-
-  return (
-    <KanbanDetailPanel
-      title="New conversation"
-      subtitle="Describe what you want the agent to do"
-      onClose={onClose}
-    >
-      <div className="flex-1 min-h-0 flex flex-col">
-        <ChatPanel
-          sessionKey="new-conversation"
-          feedItems={feedItems}
-          isLoading={isLoading}
-          onSend={handleSend}
-          placeholder="What should the agent work on?"
-        />
-      </div>
-    </KanbanDetailPanel>
   )
 }
