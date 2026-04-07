@@ -11,10 +11,10 @@ import { useFeedStore } from "../../stores/feeds";
 import { tauriChat } from "../../lib/tauri";
 import type { TabProps } from "../../lib/types";
 
-const SESSION_KEY = "main";
-
 export default function ChatTab({ workspace }: TabProps) {
-  const feedItems = useFeedStore((s) => s.items[SESSION_KEY]);
+  // Session key is workspace-scoped to prevent cross-workspace event bleeding
+  const sessionKey = workspace.id;
+  const feedItems = useFeedStore((s) => s.items[sessionKey]);
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
   const setFeed = useFeedStore((s) => s.setFeed);
   const clearFeed = useFeedStore((s) => s.clearFeed);
@@ -25,22 +25,22 @@ export default function ChatTab({ workspace }: TabProps) {
   useEffect(() => {
     if (loadedRef.current === workspace.id) return;
     loadedRef.current = workspace.id;
-    clearFeed(SESSION_KEY);
-    tauriChat.loadHistory(workspace.folderPath).then((rows) => {
-      if (rows.length > 0) setFeed(SESSION_KEY, rows as FeedItem[]);
+    clearFeed(sessionKey);
+    tauriChat.loadHistory(workspace.folderPath, sessionKey).then((rows) => {
+      if (rows.length > 0) setFeed(sessionKey, rows as FeedItem[]);
     });
-  }, [workspace.id, setFeed, clearFeed, workspace.folderPath]);
+  }, [workspace.id, sessionKey, setFeed, clearFeed, workspace.folderPath]);
 
   const handleSend = useCallback(
     async (text: string) => {
       if (sendingRef.current) return;
       sendingRef.current = true;
       setIsLoading(true);
-      pushFeedItem(SESSION_KEY, { feed_type: "user_message", data: text });
+      pushFeedItem(sessionKey, { feed_type: "user_message", data: text });
       try {
-        await tauriChat.send(workspace.folderPath, text);
+        await tauriChat.send(workspace.folderPath, text, sessionKey);
       } catch (err) {
-        pushFeedItem(SESSION_KEY, {
+        pushFeedItem(sessionKey, {
           feed_type: "system_message",
           data: `Failed to start session: ${err}`,
         });
@@ -49,13 +49,13 @@ export default function ChatTab({ workspace }: TabProps) {
         sendingRef.current = false;
       }
     },
-    [workspace.folderPath, pushFeedItem],
+    [workspace.folderPath, sessionKey, pushFeedItem],
   );
 
   return (
     <div className="h-full w-full flex flex-col">
       <ChatPanel
-        sessionKey={SESSION_KEY}
+        sessionKey={sessionKey}
         feedItems={feedItems ?? []}
         isLoading={isLoading}
         onSend={handleSend}

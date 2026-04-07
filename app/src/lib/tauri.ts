@@ -71,10 +71,10 @@ export const tauriWorkspaces = {
 export const tauriChat = {
   send: (workspacePath: string, prompt: string, sessionKey?: string) =>
     invoke<string>("send_message", { workspace_path: workspacePath, prompt, session_key: sessionKey }),
-  loadHistory: (workspacePath: string) =>
+  loadHistory: (workspacePath: string, sessionKey?: string) =>
     invoke<Array<{ feed_type: string; data: unknown }>>(
       "load_chat_history",
-      { workspace_path: workspacePath },
+      { workspace_path: workspacePath, session_key: sessionKey },
     ),
 };
 

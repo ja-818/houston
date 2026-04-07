@@ -141,6 +141,7 @@ pub async fn send_message(
 pub async fn load_chat_history(
     state: State<'_, AppState>,
     workspace_path: String,
+    session_key: Option<String>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let working_dir = expand_tilde(&PathBuf::from(&workspace_path));
     let session_file = working_dir.join(".claude_session_id");
@@ -148,14 +149,27 @@ pub async fn load_chat_history(
     // Load from both v1 (agent_key + feed_key) and v2 (claude_session_id) sources.
     // The agent_key format must match what send_message uses: "path:session_key"
     let base_key = working_dir.to_string_lossy().to_string();
-    let agent_key = format!("{base_key}:main");
+    let sk = session_key.as_deref().unwrap_or("main");
+
+    let agent_key = format!("{base_key}:{sk}");
     let mut v1_rows = state
         .db
-        .list_chat_feed(&agent_key, "main")
+        .list_chat_feed(&agent_key, sk)
         .await
         .map_err(|e| e.to_string())?;
 
-    // Also try the old format (just path, no :main) for backward compat
+    // Also try the legacy "main" key for backward compat when using a workspace-scoped key
+    if sk != "main" {
+        let legacy_key = format!("{base_key}:main");
+        let legacy_rows = state
+            .db
+            .list_chat_feed(&legacy_key, "main")
+            .await
+            .unwrap_or_default();
+        v1_rows.extend(legacy_rows);
+    }
+
+    // Also try the old format (just path, no :key) for backward compat
     let old_rows = state
         .db
         .list_chat_feed(&base_key, "main")
