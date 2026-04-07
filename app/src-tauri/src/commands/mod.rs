@@ -4,4 +4,5 @@ pub mod memory;
 pub mod spaces;
 pub mod preferences;
 pub mod skills;
+pub mod system;
 pub mod workspaces;

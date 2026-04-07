@@ -75,6 +75,7 @@ pub fn run() {
             commands::skills::install_community_skill,
             // Workspace store — conversations, tasks, routines, goals, channels, skills, log, config
             houston_tauri::workspace_store::commands::list_conversations,
+            houston_tauri::workspace_store::commands::list_all_conversations,
             houston_tauri::workspace_store::commands::list_tasks,
             houston_tauri::workspace_store::commands::create_task,
             houston_tauri::workspace_store::commands::update_task,
@@ -110,6 +111,8 @@ pub fn run() {
             houston_tauri::workspace_commands::search_sessions,
             houston_tauri::workspace_commands::list_recent_sessions,
             houston_tauri::workspace_commands::load_session_feed,
+            // System
+            commands::system::check_claude_cli,
             // Composio integrations
             houston_tauri::composio_commands::list_composio_connections,
             houston_tauri::composio_commands::start_composio_oauth,
