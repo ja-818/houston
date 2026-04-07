@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useState } from "react";
-import { ChatPanel, ChatSidebar } from "@houston-ai/chat";
+import { ChatPanel } from "@houston-ai/chat";
 import type { FeedItem } from "@houston-ai/chat";
 import {
   Empty,
@@ -53,29 +53,24 @@ export default function ChatTab({ workspace }: TabProps) {
   );
 
   return (
-    <div className="h-full w-full relative overflow-hidden">
-      <div className="h-full flex flex-col">
-        <ChatPanel
-          sessionKey={SESSION_KEY}
-          feedItems={feedItems ?? []}
-          isLoading={isLoading}
-          onSend={handleSend}
-          placeholder="Ask anything..."
-          emptyState={
-            <Empty className="border-0">
-              <EmptyHeader>
-                <EmptyTitle>Start a conversation</EmptyTitle>
-                <EmptyDescription>
-                  Type a message to talk to your assistant.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          }
-        />
-      </div>
-      <div className="absolute top-3 right-3 z-10">
-        <ChatSidebar feedItems={feedItems ?? []} />
-      </div>
+    <div className="h-full w-full flex flex-col">
+      <ChatPanel
+        sessionKey={SESSION_KEY}
+        feedItems={feedItems ?? []}
+        isLoading={isLoading}
+        onSend={handleSend}
+        placeholder="Ask anything..."
+        emptyState={
+          <Empty className="border-0">
+            <EmptyHeader>
+              <EmptyTitle>Start a conversation</EmptyTitle>
+              <EmptyDescription>
+                Type a message to talk to your assistant.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        }
+      />
     </div>
   );
 }

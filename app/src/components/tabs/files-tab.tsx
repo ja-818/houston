@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { FilesBrowser } from "@houston-ai/workspace";
 import type { FileEntry } from "@houston-ai/workspace";
+import { Button } from "@houston-ai/core";
+import { FolderOpen } from "lucide-react";
 import { tauriFiles } from "../../lib/tauri";
 import type { TabProps } from "../../lib/types";
 
@@ -27,6 +29,17 @@ export default function FilesTab({ workspace }: TabProps) {
 
   return (
     <div className="h-full overflow-auto">
+      <div className="flex items-center justify-end px-4 pt-3 pb-1">
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full gap-1.5"
+          onClick={() => tauriFiles.revealWorkspace(path)}
+        >
+          <FolderOpen className="h-3.5 w-3.5" />
+          Open in Finder
+        </Button>
+      </div>
       <FilesBrowser
         files={files}
         loading={loading}

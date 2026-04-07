@@ -190,6 +190,9 @@ pub fn create_workspace(
             .map_err(|e| format!("Failed to write CLAUDE.md: {e}"))?;
     }
 
+    // Seed prompt files
+    crate::workspace::seed_workspace(&folder)?;
+
     // Seed empty defaults
     seed_json_if_missing(&houston, "tasks.json", "[]")?;
     seed_json_if_missing(&houston, "config.json", "{}")?;

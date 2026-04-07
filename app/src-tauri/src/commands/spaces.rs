@@ -55,33 +55,6 @@ pub fn space_folder(root: &Path, space_id: &str) -> Result<PathBuf, String> {
     Ok(root.join(&space.name))
 }
 
-/// Ensure the default "Personal" space exists. Called on startup.
-fn ensure_default_space(root: &Path) -> Result<Vec<Space>, String> {
-    let mut spaces = read_spaces(root)?;
-    if spaces.is_empty() {
-        let personal = Space {
-            id: Uuid::new_v4().to_string(),
-            name: "Personal".to_string(),
-            is_default: true,
-            created_at: now_iso(),
-        };
-
-        // Create the space directory with .houston/connections.json
-        let space_dir = root.join("Personal");
-        fs::create_dir_all(space_dir.join(".houston"))
-            .map_err(|e| format!("Failed to create Personal/.houston: {e}"))?;
-        let connections_path = space_dir.join(".houston").join("connections.json");
-        if !connections_path.exists() {
-            fs::write(&connections_path, "[]")
-                .map_err(|e| format!("Failed to write connections.json: {e}"))?;
-        }
-
-        spaces.push(personal);
-        write_spaces(root, &spaces)?;
-    }
-    Ok(spaces)
-}
-
 // --- Commands ---
 
 #[tauri::command(rename_all = "snake_case")]
@@ -90,7 +63,7 @@ pub fn list_spaces(
 ) -> Result<Vec<Space>, String> {
     fs::create_dir_all(&root.0)
         .map_err(|e| format!("Failed to create workspace root: {e}"))?;
-    ensure_default_space(&root.0)
+    read_spaces(&root.0)
 }
 
 #[tauri::command(rename_all = "snake_case")]

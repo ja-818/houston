@@ -26,6 +26,12 @@ impl Database {
             .await
             .ok();
 
+        // Add claude_session_id column to existing databases (no-op if already present).
+        self.conn()
+            .execute("ALTER TABLE chat_feed ADD COLUMN claude_session_id TEXT", ())
+            .await
+            .ok();
+
         // FTS5 full-text search index over chat messages.
         // Standalone table (no content=) so snippet() works and we control sync via triggers.
         self.conn()

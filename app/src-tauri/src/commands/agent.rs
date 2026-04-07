@@ -197,7 +197,11 @@ pub async fn read_workspace_file(
 ) -> Result<String, String> {
     let dir = expand_tilde(&PathBuf::from(&workspace_path));
     let path = dir.join(&name);
-    std::fs::read_to_string(&path).map_err(|e| format!("Failed to read {name}: {e}"))
+    match std::fs::read_to_string(&path) {
+        Ok(content) => Ok(content),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
+        Err(e) => Err(format!("Failed to read {name}: {e}")),
+    }
 }
 
 #[tauri::command(rename_all = "snake_case")]
