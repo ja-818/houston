@@ -31,6 +31,8 @@ pub struct SlackMessageEvent {
     pub subtype: Option<String>,
     pub channel: Option<String>,
     pub user: Option<String>,
+    /// Present when the message was sent by a bot.
+    pub bot_id: Option<String>,
     pub text: Option<String>,
     pub ts: Option<String>,
     pub thread_ts: Option<String>,
@@ -97,6 +99,7 @@ pub struct OAuthAccessResponse {
     pub ok: bool,
     pub access_token: Option<String>,
     pub team: Option<OAuthTeam>,
+    pub authed_user: Option<OAuthAuthedUser>,
     pub error: Option<String>,
 }
 
@@ -105,6 +108,12 @@ pub struct OAuthAccessResponse {
 pub struct OAuthTeam {
     pub id: String,
     pub name: String,
+}
+
+/// Authed user info in OAuth response.
+#[derive(Debug, Deserialize)]
+pub struct OAuthAuthedUser {
+    pub id: String,
 }
 
 /// Response from Slack's `users.info` API.
@@ -121,4 +130,14 @@ pub struct SlackUser {
     pub id: Option<String>,
     pub name: Option<String>,
     pub real_name: Option<String>,
+    pub profile: Option<SlackUserProfile>,
+}
+
+/// Slack user profile with avatar.
+#[derive(Debug, Deserialize)]
+pub struct SlackUserProfile {
+    pub display_name: Option<String>,
+    pub real_name: Option<String>,
+    pub image_48: Option<String>,
+    pub image_72: Option<String>,
 }

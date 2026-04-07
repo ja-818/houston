@@ -35,7 +35,7 @@ pub fn run() {
                 scheduler: None,
             });
             app.manage(AgentSessionMap::default());
-            app.manage(WorkspaceRoot(root));
+            app.manage(WorkspaceRoot(root.clone()));
             app.manage(houston_tauri::agent_watcher::WatcherState::default());
             app.manage(routine_runner::RoutineSchedulerState::default());
 
@@ -57,6 +57,16 @@ pub fn run() {
                 app_handle.clone(),
                 sync_mgr.clone(),
             );
+
+            // Auto-reconnect Slack sync for agents that were connected before
+            {
+                let root = root.clone();
+                let cmgr = channel_mgr.clone();
+                let smgr = sync_mgr.clone();
+                tauri::async_runtime::spawn(async move {
+                    auto_reconnect_slack(&root, &cmgr, &smgr).await;
+                });
+            }
 
             // Listen for inbound Slack messages → route to Claude sessions
             {
@@ -80,6 +90,7 @@ pub fn run() {
                         if let Err(e) = commands::chat::send_message(
                             h.clone(), state, sessions,
                             agent_path, text, Some(session_key),
+                            Some("slack".to_string()),
                         ).await {
                             eprintln!("[slack-inbound] send_message failed: {e}");
                         }
@@ -197,4 +208,54 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// Scan all workspaces/agents for `.houston/slack_sync.json` and reconnect.
+async fn auto_reconnect_slack(
+    root: &std::path::Path,
+    channel_mgr: &Arc<ChannelManager>,
+    sync_mgr: &Arc<RwLock<SlackSyncManager>>,
+) {
+    let Ok(workspaces) = std::fs::read_dir(root) else { return };
+    for ws_entry in workspaces.flatten() {
+        if !ws_entry.path().is_dir() { continue; }
+        let Ok(agents) = std::fs::read_dir(ws_entry.path()) else { continue };
+        for agent_entry in agents.flatten() {
+            let agent_path = agent_entry.path();
+            if !agent_path.is_dir() { continue; }
+            let sync_file = agent_path.join(".houston").join("slack_sync.json");
+            if !sync_file.exists() { continue; }
+
+            let Ok(contents) = std::fs::read_to_string(&sync_file) else { continue };
+            let Ok(config) = serde_json::from_str::<houston_tauri::agent_store::types::SlackSyncConfig>(&contents) else { continue };
+            if config.bot_token.is_empty() || config.app_token.is_empty() { continue; }
+
+            let agent_path_str = agent_path.to_string_lossy().to_string();
+            let agent_name = agent_path.file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+            let registry_id = format!("slack-{}", agent_path_str);
+
+            let ch_config = houston_channels::ChannelConfig {
+                channel_type: "slack".into(),
+                token: config.bot_token.clone(),
+                extra: serde_json::json!({ "app_token": config.app_token }),
+            };
+
+            match channel_mgr.start_channel(registry_id.clone(), ch_config).await {
+                Ok(()) => {
+                    sync_mgr.write().await.register(
+                        agent_path_str.clone(),
+                        agent_name.clone(),
+                        registry_id,
+                        config,
+                    );
+                    eprintln!("[slack] auto-reconnected: {agent_name}");
+                }
+                Err(e) => {
+                    eprintln!("[slack] auto-reconnect failed for {agent_name}: {e}");
+                }
+            }
+        }
+    }
 }

@@ -13,7 +13,6 @@ export const projectManager: AgentConfig = {
     { id: "activity", label: "Tasks", builtIn: "board" },
     { id: "instructions", label: "Instructions", builtIn: "instructions" },
     { id: "files", label: "Docs", builtIn: "files" },
-    { id: "channels", label: "Channels", builtIn: "channels" },
     { id: "skills", label: "Skills", builtIn: "skills" },
     { id: "learnings", label: "Learnings", builtIn: "learnings" },
   ],

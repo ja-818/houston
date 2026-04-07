@@ -4,7 +4,7 @@ import type { Toast } from "@houston-ai/core";
 import { useState, useEffect, useCallback } from "react";
 import { Check } from "lucide-react";
 import houstonIconBlack from "./assets/houston-icon.svg";
-import houstonIconWhite from "./assets/houston-icon-white.svg";
+
 import { tauriSlack } from "./lib/tauri";
 import {
   Empty,
@@ -203,7 +203,7 @@ function SlackButton({ agentPath, agentName }: { agentPath: string; agentName: s
         onClick={handleDisconnect}
         title={`Connected to #${channelName}. Click to disconnect.`}
       >
-        <Check className="size-4 text-green-600" />
+        <Check className="size-4" />
         Slack connected
       </Button>
     );

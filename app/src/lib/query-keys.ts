@@ -14,8 +14,6 @@ export const queryKeys = {
   learnings: (agentPath: string) => ["learnings", agentPath] as const,
   channels: (agentPath: string) => ["channels", agentPath] as const,
   files: (agentPath: string) => ["files", agentPath] as const,
-  contextFiles: (agentPath: string) =>
-    ["context-files", agentPath] as const,
   instructions: (agentPath: string) =>
     ["instructions", agentPath] as const,
   config: (agentPath: string) => ["config", agentPath] as const,

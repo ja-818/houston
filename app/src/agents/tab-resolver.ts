@@ -8,7 +8,6 @@ import FilesTab from "../components/tabs/files-tab";
 import ConnectionsTab from "../components/tabs/connections-tab";
 import InstructionsTab from "../components/tabs/instructions-tab";
 import RoutinesTab from "../components/tabs/routines-tab";
-import ChannelsTab from "../components/tabs/channels-tab";
 import EventsTab from "../components/tabs/events-tab";
 
 const BUILTIN_TABS: Record<string, ComponentType<TabProps>> = {
@@ -20,7 +19,6 @@ const BUILTIN_TABS: Record<string, ComponentType<TabProps>> = {
   connections: ConnectionsTab,
   instructions: InstructionsTab,
   routines: RoutinesTab,
-  channels: ChannelsTab,
   events: EventsTab,
 };
 

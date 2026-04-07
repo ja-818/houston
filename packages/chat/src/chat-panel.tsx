@@ -122,7 +122,7 @@ export function ChatPanel({
       )}
       {hasMessages || status !== "ready" ? (
         <Conversation className="flex-1 min-h-0">
-          <ConversationContent className="max-w-3xl mx-auto">
+          <ConversationContent className={`max-w-3xl mx-auto${status === "submitted" ? " min-h-full" : ""}`}>
             {messages.map((msg, idx) => {
               const isLastMsg = idx === messages.length - 1;
               const streaming = msg.isStreaming && isLastMsg;
@@ -168,11 +168,14 @@ export function ChatPanel({
               );
             })}
             {status === "submitted" && (
-              <Message from="assistant">
-                <MessageContent>
-                  {thinkingIndicator ?? <DefaultThinkingIndicator />}
-                </MessageContent>
-              </Message>
+              <>
+                <div className="flex-1" />
+                <Message from="assistant">
+                  <MessageContent>
+                    {thinkingIndicator ?? <DefaultThinkingIndicator />}
+                  </MessageContent>
+                </Message>
+              </>
             )}
           </ConversationContent>
           <ConversationScrollButton />

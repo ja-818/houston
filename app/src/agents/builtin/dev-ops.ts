@@ -12,7 +12,6 @@ export const devOps: AgentConfig = {
     { id: "chat", label: "Chat", builtIn: "chat" },
     { id: "activity", label: "Incidents", builtIn: "board" },
     { id: "files", label: "Runbooks", builtIn: "files" },
-    { id: "channels", label: "Alerts", builtIn: "channels" },
     { id: "skills", label: "Skills", builtIn: "skills" },
     { id: "learnings", label: "Learnings", builtIn: "learnings" },
   ],

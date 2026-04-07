@@ -180,6 +180,12 @@ pub struct SlackSyncConfig {
     pub app_token: String,
     pub slack_channel_id: String,
     pub slack_channel_name: String,
+    /// The installing user's display name (for mirroring desktop messages).
+    #[serde(default)]
+    pub user_name: String,
+    /// The installing user's Slack avatar URL.
+    #[serde(default)]
+    pub user_avatar: Option<String>,
     pub threads: Vec<SlackThread>,
 }
 

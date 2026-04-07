@@ -38,7 +38,7 @@ export function useAgentInvalidation() {
           qc.invalidateQueries({ queryKey: queryKeys.config(p.data.agent_path) });
           break;
         case "ContextChanged":
-          qc.invalidateQueries({ queryKey: queryKeys.contextFiles(p.data.agent_path) });
+          qc.invalidateQueries({ queryKey: queryKeys.instructions(p.data.agent_path) });
           break;
         case "ConversationsChanged":
           qc.invalidateQueries({ queryKey: queryKeys.conversations(p.data.agent_path) });

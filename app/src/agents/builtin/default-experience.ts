@@ -14,7 +14,6 @@ export const defaultExperience: AgentConfig = {
     { id: "learnings", label: "Learnings", builtIn: "learnings" },
     { id: "connections", label: "Connections", builtIn: "connections" },
     { id: "skills", label: "Skills", builtIn: "skills" },
-    { id: "channels", label: "Channels", builtIn: "channels" },
     { id: "instructions", label: "Instructions", builtIn: "instructions" },
   ],
   defaultTab: "activity",

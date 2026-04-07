@@ -41,18 +41,29 @@ pub async fn connect_slack(
     let bot_token = tokens.bot_token;
     let root = expand_tilde(&PathBuf::from(&agent_path));
 
-    // Step 2: Create a Slack channel for this agent
+    // Step 2: Fetch the installing user's Slack identity
+    let (user_name, user_avatar) = if !tokens.user_id.is_empty() {
+        houston_channels::slack::api::get_user_info(&bot_token, &tokens.user_id)
+            .await
+            .unwrap_or_else(|_| ("You".to_string(), None))
+    } else {
+        ("You".to_string(), None)
+    };
+
+    // Step 3: Create a Slack channel for this agent
     let safe_name = format!("houston-{}", slug(&agent_name));
     let channel_id = houston_channels::slack::api::create_channel(&bot_token, &safe_name)
         .await
         .map_err(|e| format!("failed to create Slack channel: {e}"))?;
 
-    // Step 3: Persist sync config
+    // Step 4: Persist sync config
     let config = SlackSyncConfig {
         bot_token: bot_token.clone(),
         app_token: SLACK_APP_TOKEN.to_string(),
         slack_channel_id: channel_id.clone(),
         slack_channel_name: safe_name.clone(),
+        user_name: user_name.clone(),
+        user_avatar: user_avatar.clone(),
         threads: vec![],
     };
     let store = AgentStore::new(&root);

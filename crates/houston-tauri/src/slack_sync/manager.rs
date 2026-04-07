@@ -18,9 +18,7 @@ pub struct SlackSyncSession {
 
 /// Manages Slack sync sessions across all agents.
 pub struct SlackSyncManager {
-    /// Active sync sessions, keyed by agent_path.
     sessions: HashMap<String, SlackSyncSession>,
-    /// Maps ChannelManager registry_id → agent_path.
     registry_to_agent: HashMap<String, String>,
 }
 
@@ -32,7 +30,6 @@ impl SlackSyncManager {
         }
     }
 
-    /// Register a new sync session for an agent.
     pub fn register(
         &mut self,
         agent_path: String,
@@ -43,9 +40,9 @@ impl SlackSyncManager {
         self.registry_to_agent
             .insert(registry_id.clone(), agent_path.clone());
         self.sessions.insert(
-            agent_path,
+            agent_path.clone(),
             SlackSyncSession {
-                agent_path: registry_id.clone(),
+                agent_path,
                 agent_name,
                 registry_id,
                 config,
@@ -53,7 +50,6 @@ impl SlackSyncManager {
         );
     }
 
-    /// Unregister a sync session.
     pub fn unregister(&mut self, agent_path: &str) -> Option<SlackSyncSession> {
         if let Some(session) = self.sessions.remove(agent_path) {
             self.registry_to_agent.remove(&session.registry_id);
@@ -63,91 +59,97 @@ impl SlackSyncManager {
         }
     }
 
-    /// Look up which agent a registry_id belongs to.
     pub fn agent_for_registry(&self, registry_id: &str) -> Option<&str> {
         self.registry_to_agent.get(registry_id).map(|s| s.as_str())
     }
 
-    /// Get a session by agent_path.
     pub fn session_for_agent(&self, agent_path: &str) -> Option<&SlackSyncSession> {
         self.sessions.get(agent_path)
     }
 
-    /// Check if any session has a thread mapping for this session_key.
     fn find_session_for_key(&self, session_key: &str) -> Option<&SlackSyncSession> {
-        self.sessions.values().find(|s| {
-            thread_map::find_thread(&s.config, session_key).is_some()
-        })
+        self.sessions
+            .values()
+            .find(|s| thread_map::find_thread(&s.config, session_key).is_some())
     }
 
-    /// Post an assistant message to the correct Slack thread.
+    /// Post an assistant message to the correct Slack thread, using agent name.
     pub async fn post_to_slack(
         &mut self,
         session_key: &str,
         text: &str,
     ) -> Result<(), String> {
-        // Find which session owns this session_key
-        let (_agent_path, bot_token, channel_id, thread_ts) = {
-            if let Some(session) = self.find_session_for_key(session_key) {
-                let thread = thread_map::find_thread(&session.config, session_key);
-                if let Some(t) = thread {
-                    (
-                        session.agent_path.clone(),
-                        session.config.bot_token.clone(),
-                        session.config.slack_channel_id.clone(),
-                        Some(t.thread_ts.clone()),
-                    )
-                } else {
-                    return Ok(()); // No thread mapping yet
-                }
-            } else {
-                // Try to find a session where this session_key belongs (new conversation)
-                return self.create_thread_for_new_conversation(session_key, text).await;
+        // First check if we have an existing thread mapping
+        if let Some(session) = self.find_session_for_key(session_key) {
+            let thread = thread_map::find_thread(&session.config, session_key);
+            if let Some(t) = thread {
+                let bot_token = session.config.bot_token.clone();
+                let channel_id = session.config.slack_channel_id.clone();
+                let agent_name = session.agent_name.clone();
+                let thread_ts = t.thread_ts.clone();
+
+                houston_channels::slack::api::post_message_as(
+                    &bot_token,
+                    &channel_id,
+                    text,
+                    Some(&thread_ts),
+                    Some(&agent_name),
+                    None,
+                )
+                .await
+                .map_err(|e| e.to_string())?;
+
+                return Ok(());
             }
-        };
+        }
 
-        houston_channels::slack::api::post_message(
-            &bot_token, &channel_id, text, thread_ts.as_deref(),
-        )
-        .await
-        .map_err(|e| e.to_string())?;
-
-        Ok(())
+        // No thread yet — create one for this new conversation
+        self.create_thread_for_new_conversation(session_key, text)
+            .await
     }
 
-    /// Create a new Slack thread for a conversation that doesn't have one yet.
     async fn create_thread_for_new_conversation(
         &mut self,
         session_key: &str,
         text: &str,
     ) -> Result<(), String> {
-        // Find any session where this agent's activities include this session_key
         let agent_path = self.find_agent_for_session_key(session_key)?;
-        let session = self.sessions.get(&agent_path)
-            .ok_or("session disappeared")?;
+        let session = self.sessions.get(&agent_path).ok_or("session disappeared")?;
 
         let bot_token = session.config.bot_token.clone();
         let channel_id = session.config.slack_channel_id.clone();
+        let agent_name = session.agent_name.clone();
         let title = truncate(text, 80);
 
-        // Post top-level message to create a thread
-        let result = houston_channels::slack::api::post_message(
-            &bot_token, &channel_id,
+        // Post top-level message to create the thread
+        let result = houston_channels::slack::api::post_message_as(
+            &bot_token,
+            &channel_id,
             &format!("New conversation: {title}"),
+            None,
+            Some(&agent_name),
             None,
         )
         .await
         .map_err(|e| e.to_string())?;
 
-        let thread_ts = result.message_ts
-            .ok_or("no ts in post_message response")?;
+        let thread_ts = result.message_ts.ok_or("no ts in post_message response")?;
 
-        // Save thread mapping
-        self.add_thread_mapping(&agent_path, session_key.to_string(), thread_ts.clone(), title)?;
+        self.add_thread_mapping(
+            &agent_path,
+            session_key.to_string(),
+            thread_ts.clone(),
+            title,
+        )?;
 
-        // Post the actual text as a thread reply
-        houston_channels::slack::api::post_message(
-            &bot_token, &channel_id, text, Some(&thread_ts),
+        // Post the actual response as a thread reply
+        houston_channels::slack::api::post_message_as(
+            &bot_token,
+            &channel_id,
+            text,
+            Some(&thread_ts),
+            Some(&agent_name),
+            None,
         )
         .await
         .map_err(|e| e.to_string())?;
@@ -160,7 +162,8 @@ impl SlackSyncManager {
             let root = expand_tilde(&PathBuf::from(agent_path));
             let activities = crate::agent_store::activity::list(&root).unwrap_or_default();
             for act in activities {
-                let act_key = act.session_key
+                let act_key = act
+                    .session_key
                     .unwrap_or_else(|| format!("activity-{}", act.id));
                 if act_key == session_key {
                     return Ok(agent_path.clone());
@@ -173,7 +176,6 @@ impl SlackSyncManager {
         Err(format!("no agent found for session_key {session_key}"))
     }
 
-    /// Add a thread mapping and persist to disk.
     pub fn add_thread_mapping(
         &mut self,
         agent_path: &str,
@@ -181,18 +183,12 @@ impl SlackSyncManager {
         thread_ts: String,
         title: String,
     ) -> Result<(), String> {
-        let session = self.sessions.get_mut(agent_path)
+        let session = self
+            .sessions
+            .get_mut(agent_path)
             .ok_or("no sync session for agent")?;
         let root = expand_tilde(&PathBuf::from(agent_path));
         thread_map::upsert_thread(&root, &mut session.config, session_key, thread_ts, title)
-    }
-
-    /// List all active sync sessions.
-    pub fn list_sessions(&self) -> Vec<(&str, &str)> {
-        self.sessions
-            .iter()
-            .map(|(path, s)| (path.as_str(), s.config.slack_channel_name.as_str()))
-            .collect()
     }
 }
 

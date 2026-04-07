@@ -16,7 +16,7 @@ export function CreateAgentDialog() {
   const currentWorkspace = useWorkspaceStore((s) => s.current);
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [selectedConfigId, setSelectedManifestId] = useState<string | null>(null);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -24,7 +24,7 @@ export function CreateAgentDialog() {
 
   const reset = () => {
     setStep(1);
-    setSelectedManifestId(null);
+    setSelectedConfigId(null);
     setName("");
     setError(null);
     setSearch("");
@@ -84,7 +84,7 @@ export function CreateAgentDialog() {
             communityAgents={communityAgents}
             hasResults={filtered.length > 0}
             onSelect={(id) => {
-              setSelectedManifestId(id);
+              setSelectedConfigId(id);
               setStep(2);
             }}
           />

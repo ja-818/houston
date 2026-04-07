@@ -1,10 +1,14 @@
 use crate::agent;
 use houston_tauri::agent_sessions::AgentSessionMap;
+use houston_tauri::houston_sessions;
 use houston_tauri::paths::expand_tilde;
 use houston_tauri::session_runner::PersistOptions;
+use houston_tauri::slack_sync::SlackSyncManager;
 use houston_tauri::state::AppState;
 use std::path::PathBuf;
-use tauri::{Emitter, State};
+use std::sync::Arc;
+use tauri::{Emitter, Manager, State};
+use tokio::sync::RwLock;
 
 #[tauri::command(rename_all = "snake_case")]
 pub async fn send_message(
@@ -14,6 +18,7 @@ pub async fn send_message(
     agent_path: String,
     prompt: String,
     session_key: Option<String>,
+    source: Option<String>,
 ) -> Result<String, String> {
     let working_dir = expand_tilde(&PathBuf::from(&agent_path));
     if !working_dir.exists() {
@@ -23,6 +28,7 @@ pub async fn send_message(
     agent::seed_agent(&working_dir)?;
     let system_prompt = agent::build_system_prompt(&working_dir);
 
+    let source = source.unwrap_or_else(|| "desktop".to_string());
     let session_key = session_key.unwrap_or_else(|| "main".to_string());
     let agent_key = format!("{}:{}", working_dir.to_string_lossy(), session_key);
     let chat_state = agent_sessions
@@ -41,9 +47,49 @@ pub async fn send_message(
             &session_key,
             "user_message",
             &serde_json::Value::String(prompt.clone()).to_string(),
-            "desktop",
+            &source,
         )
         .await;
+
+    // If message came from Slack, emit a FeedItem so the Houston UI shows it
+    if source == "slack" {
+        let _ = app_handle.emit(
+            "houston-event",
+            houston_tauri::events::HoustonEvent::FeedItem {
+                session_key: session_key.clone(),
+                item: houston_sessions::FeedItem::UserMessage(prompt.clone()),
+            },
+        );
+    }
+
+    // If message came from Houston desktop, mirror it to Slack
+    if source == "desktop" {
+        let sync_mgr: State<'_, Arc<RwLock<SlackSyncManager>>> = app_handle.state();
+        let agent_path_clone = agent_path.clone();
+        let session_key_clone = session_key.clone();
+        let prompt_clone = prompt.clone();
+        let mgr = sync_mgr.inner().clone();
+        tokio::spawn(async move {
+            let mgr: tokio::sync::RwLockReadGuard<'_, SlackSyncManager> = mgr.read().await;
+            if let Some(session) = mgr.session_for_agent(&agent_path_clone) {
+                if let Some(thread) = houston_tauri::slack_sync::thread_map::find_thread(
+                    &session.config,
+                    &session_key_clone,
+                ) {
+                    // Post as the user (their name + avatar) so Slack shows a real conversation
+                    let _ = houston_channels::slack::api::post_message_as(
+                        &session.config.bot_token,
+                        &session.config.slack_channel_id,
+                        &prompt_clone,
+                        Some(&thread.thread_ts),
+                        Some(&session.config.user_name),
+                        session.config.user_avatar.as_deref(),
+                    )
+                    .await;
+                }
+            }
+        });
+    }
 
     houston_tauri::session_runner::spawn_and_monitor(
         &app_handle,

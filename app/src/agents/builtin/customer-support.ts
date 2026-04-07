@@ -12,7 +12,6 @@ export const customerSupport: AgentConfig = {
     { id: "chat", label: "Chat", builtIn: "chat" },
     { id: "activity", label: "Tickets", builtIn: "board" },
     { id: "instructions", label: "Instructions", builtIn: "instructions" },
-    { id: "channels", label: "Channels", builtIn: "channels" },
     { id: "skills", label: "Skills", builtIn: "skills" },
     { id: "learnings", label: "Learnings", builtIn: "learnings" },
   ],
