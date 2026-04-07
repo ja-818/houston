@@ -2,7 +2,7 @@ import "./styles/globals.css";
 import { ToastContainer } from "@houston-ai/core";
 import type { Toast } from "@houston-ai/core";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Check, X } from "lucide-react";
+import { Check, X, Plus } from "lucide-react";
 import houstonIconWhite from "./assets/houston-icon-white.svg";
 
 import { tauriSlack } from "./lib/tauri";
@@ -53,6 +53,7 @@ export default function App() {
   const dismissToast = useUIStore((s) => s.dismissToast);
   const onStartMission = useUIStore((s) => s.onStartMission);
   const missionPanelOpen = useUIStore((s) => s.missionPanelOpen);
+  const setCreateAgentDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
   const [panelContainer, setPanelContainer] = useState<HTMLDivElement | null>(null);
 
   const agentDef = currentAgent ? getById(currentAgent.configId) : undefined;
@@ -139,7 +140,7 @@ export default function App() {
                             }}
                           >
                             <img src={houstonIconWhite} alt="" className="size-4" />
-                            Start a Mission
+                            New mission
                           </Button>
                         )}
                       </div>
@@ -158,11 +159,18 @@ export default function App() {
                 <div className="flex-1 flex flex-col items-center justify-center">
                   <Empty className="border-0">
                     <EmptyHeader>
-                      <EmptyTitle>No Agents yet</EmptyTitle>
+                      <EmptyTitle>No agents yet</EmptyTitle>
                       <EmptyDescription>
-                        Create your first Agent to get started.
+                        Build your AI team and ship the impossible.
                       </EmptyDescription>
                     </EmptyHeader>
+                    <Button
+                      className="mt-4 rounded-full"
+                      onClick={() => setCreateAgentDialogOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                      New Agent
+                    </Button>
                   </Empty>
                 </div>
               )}

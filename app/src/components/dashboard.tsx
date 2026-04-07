@@ -7,13 +7,19 @@ import {
   EmptyTitle,
   EmptyDescription,
   Button,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from "@houston-ai/core";
-import { Plus } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import houstonIcon from "../assets/houston-icon.svg";
+import houstonIconWhite from "../assets/houston-icon-white.svg";
 import { useAgentStore } from "../stores/agents";
 import { useUIStore } from "../stores/ui";
 import { useMissionControl } from "./use-mission-control";
 import { MissionControlNewDialog } from "./mission-control-new-dialog";
+import { useDetailPanelContainer } from "./shell/detail-panel-context";
 
 const MC_COLUMNS: KanbanColumnConfig[] = [
   { id: "running", label: "Running", statuses: ["running", "queue"] },
@@ -22,8 +28,10 @@ const MC_COLUMNS: KanbanColumnConfig[] = [
 ];
 
 export function Dashboard() {
+  const panelContainer = useDetailPanelContainer();
   const agents = useAgentStore((s) => s.agents);
   const setDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
+  const setMissionPanelOpen = useUIStore((s) => s.setMissionPanelOpen);
 
   const [filterPath, setFilterPath] = useState("");
   const [newDialogOpen, setNewDialogOpen] = useState(false);
@@ -45,16 +53,17 @@ export function Dashboard() {
       <div className="h-full flex items-center justify-center">
         <Empty className="border-0">
           <EmptyHeader>
-            <EmptyTitle>No Agents yet</EmptyTitle>
+            <EmptyTitle>No agents yet</EmptyTitle>
             <EmptyDescription>
-              Create your first Agent to get started.
+              Build your AI team and ship the impossible.
             </EmptyDescription>
           </EmptyHeader>
           <Button
             className="mt-4 rounded-full"
             onClick={() => setDialogOpen(true)}
           >
-            Create your first Agent
+            <Plus className="h-4 w-4" />
+            New Agent
           </Button>
         </Empty>
       </div>
@@ -74,8 +83,8 @@ export function Dashboard() {
         size="sm"
         onClick={() => setNewDialogOpen(true)}
       >
-        <Plus className="size-4" />
-        New conversation
+        <img src={houstonIconWhite} alt="" className="size-4" />
+        New mission
       </Button>
     </Empty>
   );
@@ -83,31 +92,44 @@ export function Dashboard() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-black/5 shrink-0">
-        <h1 className="text-sm font-medium text-foreground">
-          Mission Control
-        </h1>
-        <div className="flex items-center gap-2">
-          <select
-            value={filterPath}
-            onChange={(e) => setFilterPath(e.target.value)}
-            className="h-8 rounded-full border border-black/15 bg-background px-3 text-xs outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">All agents</option>
-            {agents.map((a) => (
-              <option key={a.id} value={a.folderPath}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-          <Button
-            size="sm"
-            className="rounded-full gap-1.5 h-8"
-            onClick={() => setNewDialogOpen(true)}
-          >
-            <Plus className="size-3.5" />
-            New conversation
-          </Button>
+      <div className="shrink-0 px-5 pt-4">
+        <div className="flex items-center gap-2 mb-3">
+          <h1 className="text-xl font-semibold text-foreground">
+            Mission Control
+          </h1>
+          <div className="ml-auto flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-full h-8 gap-1.5">
+                  {filterPath
+                    ? agents.find((a) => a.folderPath === filterPath)?.name ?? "All agents"
+                    : "All agents"}
+                  <ChevronDown className="size-3.5 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setFilterPath("")}>
+                  All agents
+                </DropdownMenuItem>
+                {agents.map((a) => (
+                  <DropdownMenuItem
+                    key={a.id}
+                    onClick={() => setFilterPath(a.folderPath)}
+                  >
+                    {a.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              size="sm"
+              className="rounded-full gap-1.5 h-8"
+              onClick={() => setNewDialogOpen(true)}
+            >
+              <img src={houstonIconWhite} alt="" className="size-4" />
+              New mission
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -125,6 +147,8 @@ export function Dashboard() {
           onSendMessage={mc.handleSendMessage}
           onLoadHistory={mc.loadHistory}
           emptyState={emptyBoard}
+          panelContainer={panelContainer}
+          onPanelOpenChange={setMissionPanelOpen}
           panelAvatar={
             <span className="size-10 rounded-full ring-1 ring-border flex items-center justify-center shrink-0">
               <img src={houstonIcon} alt="Houston" className="size-6" />
