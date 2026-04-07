@@ -125,7 +125,6 @@ export function Dashboard() {
           onSendMessage={mc.handleSendMessage}
           onLoadHistory={mc.loadHistory}
           emptyState={emptyBoard}
-          panelAgentName="Houston"
           panelAvatar={
             <span className="size-10 rounded-full ring-1 ring-border flex items-center justify-center shrink-0">
               <img src={houstonIcon} alt="Houston" className="size-6" />

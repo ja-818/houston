@@ -247,7 +247,7 @@ export function AIBoard({
             title={panelTitle}
             onClose={closePanel}
             avatar={panelAvatar}
-            agentName={panelAgentName}
+            agentName={panelAgentName ?? selectedItem?.group}
           >
             <div className="flex-1 min-h-0 flex flex-col">
               <ChatPanel
