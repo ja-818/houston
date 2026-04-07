@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import { invoke } from "@tauri-apps/api/core";
-import { tauriSpaces } from "../lib/tauri";
+import { tauriSpaces, tauriPreferences } from "../lib/tauri";
 import type { Space } from "../lib/types";
 
 interface SpaceState {
@@ -34,12 +33,7 @@ export const useSpaceStore = create<SpaceState>((set) => ({
 
   setCurrent: (space) => {
     set({ current: space });
-    invoke("set_preference", {
-      key: "last_space_id",
-      value: space.id,
-    }).catch((e) =>
-      console.error("[spaces] Failed to save preference:", e),
-    );
+    tauriPreferences.set("last_space_id", space.id);
   },
 
   create: async (name) => {

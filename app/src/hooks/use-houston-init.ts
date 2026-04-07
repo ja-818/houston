@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { tauriPreferences, tauriSystem } from "../lib/tauri";
 import { useExperienceStore } from "../stores/experiences";
 import { useSpaceStore } from "../stores/spaces";
 import { useWorkspaceStore } from "../stores/workspaces";
@@ -34,9 +34,7 @@ export function useHoustonInit() {
       const spaceState = useSpaceStore.getState();
       let currentSpace = spaceState.current;
       try {
-        const lastSpaceId = await invoke<string | null>("get_preference", {
-          key: "last_space_id",
-        });
+        const lastSpaceId = await tauriPreferences.get("last_space_id");
         if (lastSpaceId) {
           const saved = spaceState.spaces.find((s) => s.id === lastSpaceId);
           if (saved) {
@@ -55,9 +53,7 @@ export function useHoustonInit() {
 
       // 5. Restore last workspace from preferences
       try {
-        const lastId = await invoke<string | null>("get_preference", {
-          key: "last_workspace_id",
-        });
+        const lastId = await tauriPreferences.get("last_workspace_id");
         if (lastId) {
           const workspaces = useWorkspaceStore.getState().workspaces;
           const saved = workspaces.find((w) => w.id === lastId);
@@ -77,7 +73,7 @@ export function useHoustonInit() {
 
       // 6. Check Claude CLI availability
       try {
-        const available = await invoke<boolean>("check_claude_cli");
+        const available = await tauriSystem.checkClaudeCli();
         setClaudeAvailable(available);
       } catch {
         setClaudeAvailable(false);

@@ -162,16 +162,22 @@ export const tauriExperiences = {
     ),
 };
 
+interface RawConversation {
+  id: string;
+  title: string;
+  status?: string;
+  type: "primary" | "task";
+  session_key: string;
+  updated_at?: string;
+  workspace_path: string;
+  workspace_name: string;
+}
+
 export const tauriConversations = {
   list: (workspacePath: string) =>
-    invoke<Array<{
-      id: string;
-      title: string;
-      status?: string;
-      type: "primary" | "task";
-      session_key: string;
-      updated_at?: string;
-    }>>("list_conversations", { workspace_path: workspacePath }),
+    invoke<RawConversation[]>("list_conversations", { workspace_path: workspacePath }),
+  listAll: (workspacePaths: string[]) =>
+    invoke<RawConversation[]>("list_all_conversations", { workspace_paths: workspacePaths }),
 };
 
 export const tauriTasks = {
@@ -199,4 +205,16 @@ export const tauriConfig = {
     invoke<Record<string, unknown>>("read_config", { workspace_path: workspacePath }),
   write: (workspacePath: string, config: Record<string, unknown>) =>
     invoke<void>("write_config", { workspace_path: workspacePath, config }),
+};
+
+export const tauriPreferences = {
+  get: (key: string) =>
+    invoke<string | null>("get_preference", { key }),
+  set: (key: string, value: string) =>
+    invoke<void>("set_preference", { key, value }),
+};
+
+export const tauriSystem = {
+  checkClaudeCli: () => invoke<boolean>("check_claude_cli"),
+  openUrl: (url: string) => invoke<void>("open_url", { url }),
 };

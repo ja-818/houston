@@ -9,9 +9,21 @@ use crate::workspace_store::WorkspaceStore;
 #[tauri::command(rename_all = "snake_case")]
 pub async fn list_conversations(
     workspace_path: String,
-) -> Result<Vec<crate::workspace_store::types::ConversationEntry>, String> {
+) -> Result<Vec<ConversationEntry>, String> {
     let root = resolve_workspace_dir(&workspace_path)?;
     WorkspaceStore::new(&root).list_conversations()
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub async fn list_all_conversations(
+    workspace_paths: Vec<String>,
+) -> Result<Vec<ConversationEntry>, String> {
+    let roots: Vec<_> = workspace_paths
+        .iter()
+        .map(|p| resolve_workspace_dir(p))
+        .collect::<Result<Vec<_>, _>>()?;
+    let refs: Vec<&std::path::Path> = roots.iter().map(|p| p.as_path()).collect();
+    crate::workspace_store::conversations::list_all(&refs)
 }
 
 // -- Tasks --

@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ConnectionsView } from "@houston-ai/connections";
 import type { ConnectionsResult } from "@houston-ai/connections";
-import { invoke } from "@tauri-apps/api/core";
-import { tauriConnections } from "../lib/tauri";
+import { tauriConnections, tauriSystem } from "../lib/tauri";
 import { useComposioAuth } from "../hooks/use-composio-auth";
 import { ComposioAuthDialog } from "./composio-auth-dialog";
 
@@ -30,7 +29,7 @@ export function SpaceConnections() {
   }, [fetchConnections]);
 
   const handleManage = useCallback(() => {
-    invoke("open_url", { url: COMPOSIO_DASHBOARD_URL });
+    tauriSystem.openUrl(COMPOSIO_DASHBOARD_URL);
   }, []);
 
   const auth = useComposioAuth(fetchConnections);

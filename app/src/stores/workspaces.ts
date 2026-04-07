@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import { invoke } from "@tauri-apps/api/core";
-import { tauriWorkspaces } from "../lib/tauri";
+import { tauriWorkspaces, tauriPreferences } from "../lib/tauri";
 import type { Workspace } from "../lib/types";
 
 interface WorkspaceState {
@@ -35,12 +34,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   setCurrent: (ws) => {
     set({ current: ws });
-    invoke("set_preference", {
-      key: "last_workspace_id",
-      value: ws.id,
-    }).catch((e) =>
-      console.error("[workspaces] Failed to save preference:", e),
-    );
+    tauriPreferences.set("last_workspace_id", ws.id);
   },
 
   create: async (spaceId, name, experienceId, claudeMd?) => {
@@ -49,12 +43,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       workspaces: [...s.workspaces, ws],
       current: ws,
     }));
-    invoke("set_preference", {
-      key: "last_workspace_id",
-      value: ws.id,
-    }).catch((e) =>
-      console.error("[workspaces] Failed to save preference:", e),
-    );
+    tauriPreferences.set("last_workspace_id", ws.id);
     return ws;
   },
 
