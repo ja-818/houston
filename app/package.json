@@ -23,14 +23,15 @@
     "@houston-ai/skills": "workspace:*",
     "@houston-ai/workspace": "workspace:*",
     "@tauri-apps/api": "^2.5.0",
+    "@tauri-apps/plugin-notification": "^2.3.3",
     "lucide-react": "^0.577.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.5.0",
     "@tailwindcss/vite": "^4.1.8",
+    "@tauri-apps/cli": "^2.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.5.2",

@@ -56,6 +56,9 @@ importers:
       '@tauri-apps/api':
         specifier: ^2.5.0
         version: 2.10.1
+      '@tauri-apps/plugin-notification':
+        specifier: ^2.3.3
+        version: 2.3.3
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.2.4)
@@ -1818,6 +1821,9 @@ packages:
     resolution: {integrity: sha512-jQNGF/5quwORdZSSLtTluyKQ+o6SMa/AUICfhf4egCGFdMHqWssApVgYSbg+jmrZoc8e1DscNvjTnXtlHLS11g==}
     engines: {node: '>= 10'}
     hasBin: true
+
+  '@tauri-apps/plugin-notification@2.3.3':
+    resolution: {integrity: sha512-Zw+ZH18RJb41G4NrfHgIuofJiymusqN+q8fGUIIV7vyCH+5sSn5coqRv/MWB9qETsUs97vmU045q7OyseCV3Qg==}
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -4564,6 +4570,10 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.10.1
       '@tauri-apps/cli-win32-ia32-msvc': 2.10.1
       '@tauri-apps/cli-win32-x64-msvc': 2.10.1
+
+  '@tauri-apps/plugin-notification@2.3.3':
+    dependencies:
+      '@tauri-apps/api': 2.10.1
 
   '@types/babel__core@7.20.5':
     dependencies:

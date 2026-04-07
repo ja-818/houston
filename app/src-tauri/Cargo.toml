@@ -21,3 +21,4 @@ houston-memory = { path = "../../crates/houston-memory" }
 houston-skills = { path = "../../crates/houston-skills", features = ["remote"] }
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
+tauri-plugin-notification = "2"

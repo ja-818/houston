@@ -126,7 +126,6 @@ pub fn spawn_and_monitor(
                     }
                 }
                 SessionUpdate::Status(ref status) => {
-                    eprintln!("[houston:session] status event: {:?}", status);
                     let (status_str, err) = match status {
                         SessionStatus::Starting => ("starting".into(), None),
                         SessionStatus::Running => ("running".into(), None),

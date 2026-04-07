@@ -7,6 +7,10 @@
     "core:default",
     "core:event:default",
     "core:event:allow-listen",
-    "core:event:allow-emit"
+    "core:event:allow-emit",
+    "notification:default",
+    "notification:allow-notify",
+    "notification:allow-is-permission-granted",
+    "notification:allow-request-permission"
   ]
 }

@@ -9,6 +9,7 @@ use tauri::Manager;
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             let data_dir = houston_tauri::houston_db::db::default_data_dir("houston");
             let db_path = data_dir.join("houston.db");

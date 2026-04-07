@@ -8,23 +8,24 @@ import { useSpaceStore } from "../stores/spaces";
 import { useWorkspaceStore } from "../stores/workspaces";
 import { tauriTasks } from "../lib/tauri";
 
-function sendNotification(title: string, body: string) {
-  if (!("Notification" in window)) {
-    console.log("[notification:debug] Notification API not available");
-    return;
-  }
+async function sendNotification(title: string, body: string) {
+  try {
+    const {
+      isPermissionGranted,
+      requestPermission,
+      sendNotification: notify,
+    } = await import("@tauri-apps/plugin-notification");
 
-  console.log("[notification:debug] Sending notification:", title, body, "permission:", Notification.permission);
-
-  if (Notification.permission === "granted") {
-    new Notification(title, { body });
-  } else if (Notification.permission !== "denied") {
-    Notification.requestPermission().then((perm) => {
-      console.log("[notification:debug] Permission result:", perm);
-      if (perm === "granted") new Notification(title, { body });
-    });
-  } else {
-    console.log("[notification:debug] Permission denied");
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      const perm = await requestPermission();
+      granted = perm === "granted";
+    }
+    if (granted) {
+      notify({ title, body });
+    }
+  } catch (e) {
+    console.error("[notification] Failed:", e);
   }
 }
 
