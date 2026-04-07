@@ -65,7 +65,8 @@ const PROMPT_FILES: [(&str, &str); 1] = [("CLAUDE.md", "CLAUDE.md — Agent Inst
 
 const DEFAULT_SYSTEM_PROMPT: &str = "\
 You are an AI assistant running inside Houston, \
-a native desktop app. Your workspace files are injected below. Follow them.";
+a native desktop app. Your workspace files are injected below. Follow them.\n\n\
+Never use emojis unless being asked to.";
 
 const CLAUDE_MD: &str = r#"# Houston Agent
 
