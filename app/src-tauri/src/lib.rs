@@ -31,6 +31,7 @@ pub fn run() {
             });
             app.manage(AgentSessionMap::default());
             app.manage(WorkspaceRoot(root));
+            app.manage(houston_tauri::workspace_watcher::WatcherState::default());
 
             Ok(())
         })
@@ -74,13 +75,13 @@ pub fn run() {
             commands::skills::install_skills_from_repo,
             commands::skills::search_community_skills,
             commands::skills::install_community_skill,
-            // Workspace store — conversations, tasks, routines, goals, channels, skills, log, config
+            // Workspace store — conversations, activity, routines, goals, channels, skills, log, config
             houston_tauri::workspace_store::commands::list_conversations,
             houston_tauri::workspace_store::commands::list_all_conversations,
-            houston_tauri::workspace_store::commands::list_tasks,
-            houston_tauri::workspace_store::commands::create_task,
-            houston_tauri::workspace_store::commands::update_task,
-            houston_tauri::workspace_store::commands::delete_task,
+            houston_tauri::workspace_store::commands::list_activity,
+            houston_tauri::workspace_store::commands::create_activity,
+            houston_tauri::workspace_store::commands::update_activity,
+            houston_tauri::workspace_store::commands::delete_activity,
             houston_tauri::workspace_store::commands::list_routines,
             houston_tauri::workspace_store::commands::create_routine,
             houston_tauri::workspace_store::commands::update_routine,
@@ -112,6 +113,9 @@ pub fn run() {
             houston_tauri::workspace_commands::search_sessions,
             houston_tauri::workspace_commands::list_recent_sessions,
             houston_tauri::workspace_commands::load_session_feed,
+            // Workspace file watcher (AI-native reactivity)
+            houston_tauri::workspace_watcher::start_workspace_watcher,
+            houston_tauri::workspace_watcher::stop_workspace_watcher,
             // System
             commands::system::check_claude_cli,
             // Composio integrations

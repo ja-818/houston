@@ -10,7 +10,7 @@ export const dataAnalyst: ExperienceManifest = {
   tags: ["data", "analysis", "visualization", "reports", "csv"],
   tabs: [
     { id: "chat", label: "Chat", builtIn: "chat" },
-    { id: "tasks", label: "Analyses", builtIn: "board" },
+    { id: "activity", label: "Analyses", builtIn: "board" },
     { id: "files", label: "Data", builtIn: "files" },
     { id: "skills", label: "Skills", builtIn: "skills" },
     { id: "learnings", label: "Learnings", builtIn: "learnings" },

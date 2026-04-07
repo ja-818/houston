@@ -138,7 +138,7 @@ interface ExperienceTab {
   label: string;
   builtIn?: string;        // "chat" | "board" | "skills" | "files" | "connections" | "context" | "routines" | "channels" | "events" | "learnings"
   customComponent?: string;
-  badge?: "tasks" | "none";
+  badge?: "activity" | "none";
 }
 ```
 
@@ -148,15 +148,15 @@ interface ExperienceTab {
 
 **Workspace creation** seeds CLAUDE.md from the experience's `claudeMd` field. If `claudeMd` is not set, a generic template is used.
 
-### Tasks / Board Tab
+### Activity / Board Tab
 
-The "Tasks" tab uses `@houston-ai/board`'s `AIBoard` — a higher-level component that combines `KanbanBoard` + `KanbanDetailPanel` + `ChatPanel`. Each card represents a task backed by `.houston/tasks.json`, and clicking a card opens a chat panel with that conversation's history. The app's `board-tab.tsx` is a thin store wrapper (~140 lines) connecting Zustand stores and Tauri commands to `AIBoard` props.
+The "Activity" tab uses `@houston-ai/board`'s `AIBoard` — a higher-level component that combines `KanbanBoard` + `KanbanDetailPanel` + `ChatPanel`. Each card represents an activity backed by `.houston/activity.json`, and clicking a card opens a chat panel with that conversation's history. The app's `board-tab.tsx` is a thin store wrapper (~140 lines) connecting TanStack Query hooks and Tauri commands to `AIBoard` props.
 
-**`AIBoard` props:** `items`, `feedItems` (keyed by session key), `isLoading`, `onCreateConversation` (returns task ID), `onSendMessage`, `onLoadHistory`, `onDelete`, `onApprove`, `onSelect`, `selectedId`.
+**`AIBoard` props:** `items`, `feedItems` (keyed by session key), `isLoading`, `onCreateConversation` (returns activity ID), `onSendMessage`, `onLoadHistory`, `onDelete`, `onApprove`, `onSelect`, `selectedId`.
 
-**Status transitions:** When a session completes, the global `useSessionEvents` hook updates the task to `"needs_you"` and bumps `sessionStatusVersion` in the UI store. The board-tab subscribes to `sessionStatusVersion` via Zustand to reload tasks. This avoids the unreliable `useHoustonEvent` hook (which tears down/re-registers on callback changes, causing missed events).
+**Status transitions:** When a session completes, the `useSessionEvents` hook updates the activity to `"needs_you"`. The `ActivityChanged` event emitted by the Rust update command auto-invalidates TanStack Query caches, so the board refreshes automatically.
 
-Columns can include an `onAdd` callback, rendering a "+" button in the column header to create tasks directly from the board.
+Columns can include an `onAdd` callback, rendering a "+" button in the column header to create activities directly from the board.
 
 ### ChatSidebar (Progress Tracking)
 
@@ -200,7 +200,7 @@ Every Houston app project stores agent-visible data in a `.houston/` folder alon
 ~/Documents/Houston/{SpaceName}/{WorkspaceName}/
   .houston/
     workspace.json      -- WorkspaceMeta (id, experience_id, created_at, last_opened_at)
-    tasks.json          -- Task[] (id, title, description, status, claude_session_id, updated_at?)
+    activity.json       -- Activity[] (id, title, description, status, claude_session_id, updated_at?)
     routines.json       -- Routine[] (id, name, description, trigger_type, trigger_config, status, approval_mode, claude_session_id)
     channels.json       -- ChannelEntry[] (id, channel_type, name, token)
     goals.json          -- Goal[] (id, title, status)
@@ -210,13 +210,13 @@ Every Houston app project stores agent-visible data in a `.houston/` folder alon
     prompts/            -- Editable system prompt components
       system.md         -- Base system prompt
       self-improvement.md -- Self-improvement guidance
-    log.jsonl           -- Append-only session audit trail (session_id, task_id, status, duration_ms, cost_usd, timestamp)
+    log.jsonl           -- Append-only session audit trail (session_id, activity_id, status, duration_ms, cost_usd, timestamp)
     config.json         -- ProjectConfig (name, claude_model, claude_effort)
   CLAUDE.md             -- Agent instructions (workspace root)
   .claude_session_id    -- Persisted session ID for --resume across app restarts
 ```
 
-### Task statuses
+### Activity statuses
 `"queue"`, `"running"`, `"needs_you"`, `"done"`, `"cancelled"`
 
 ### Key design decisions
@@ -230,12 +230,12 @@ Every Houston app project stores agent-visible data in a `.houston/` folder alon
 Houston is an AI-native workspace. **Users and LLMs are equal participants** — both can read and write all workspace data, and all changes from either must be immediately visible to both.
 
 **Two writers to `.houston/` files:**
-1. **The frontend** (via Tauri commands) — user clicks "Create Task" → Tauri command → Rust writes file
+1. **The frontend** (via Tauri commands) — user clicks "Create Activity" → Tauri command → Rust writes file
 2. **Claude CLI agents** (direct file writes) — agent decides to install a skill → writes directly to `.houston/skills/`
 
 **Three-layer reactivity stack:**
-1. **TanStack Query (frontend)** — all `.houston/` data fetching uses `useQuery` with query keys like `["tasks", workspacePath]`. Automatic dedup, background refresh, stale-while-revalidate.
-2. **Event emission on Tauri command writes (Rust)** — `write_skill()` emits `SkillsChanged`, `create_task()` emits `TasksChanged`, etc. A global listener invalidates the matching query key.
+1. **TanStack Query (frontend)** — all `.houston/` data fetching uses `useQuery` with query keys like `["activity", workspacePath]`. Automatic dedup, background refresh, stale-while-revalidate.
+2. **Event emission on Tauri command writes (Rust)** — `write_skill()` emits `SkillsChanged`, `create_activity()` emits `ActivityChanged`, etc. A global listener invalidates the matching query key.
 3. **File watcher on `.houston/` (Rust, `notify` crate)** — catches agent writes that bypass Tauri commands. Emits the same events as layer 2. Debounced to avoid noise.
 
 **The rule:** Never build a feature where the agent can change data but the UI won't reflect it until manual refresh. If it's in `.houston/`, it must be reactive.
@@ -410,7 +410,7 @@ Tauri-specific helpers. The largest crate — provides session lifecycle, worksp
 | `agent_sessions.rs` | `AgentSessionMap` — per-agent session state with disk persistence. Loads/saves `.claude_session_id` from workspace folder. Conversations survive app restarts. |
 | `workspace.rs` | `seed_file()` (write-once templates), `build_system_prompt()` (assemble from workspace files), `list_files()` / `read_file()` |
 | `workspace_commands.rs` | Pre-built Tauri commands for file operations: `list_project_files`, `open_file`, `reveal_file`, `delete_file`, `import_files`, `create_workspace_folder`, `reveal_workspace`, `write_file_bytes`, `read_project_file`, `load_chat_feed`, `load_session_feed` |
-| `workspace_store/` | File-backed CRUD for `.houston/` workspace data. `WorkspaceStore` struct + 23 Tauri commands. Sub-modules: tasks, routines, goals, channels, skills, log, config, types, helpers, commands/ |
+| `workspace_store/` | File-backed CRUD for `.houston/` workspace data. `WorkspaceStore` struct + 23 Tauri commands. Sub-modules: activity, routines, goals, channels, skills, log, config, types, helpers, commands/ |
 | `session_runner.rs` | `spawn_and_monitor()` — generic session lifecycle: spawn Claude CLI, emit events, track session ID, persist feed items, write `.claude_session_id` to disk. Auto-calls `claude_path::init()`. Returns `JoinHandle<SessionResult>`. |
 | `session_queue.rs` | `SessionQueue` — message queue for sequential Claude sessions with automatic `--resume`. Messages queue while Claude is busy and process in order. |
 | `channel_manager.rs` | `ChannelManager` — starts/stops channel adapters, routes all incoming messages into one `mpsc::UnboundedReceiver<RoutedMessage>`. |
@@ -418,7 +418,7 @@ Tauri-specific helpers. The largest crate — provides session lifecycle, worksp
 
 **workspace_store Tauri commands (25 total):**
 Conversations: `list_conversations`, `list_all_conversations` (cross-workspace aggregation)
-Tasks: `list_tasks`, `create_task`, `update_task`, `delete_task`
+Activity: `list_activity`, `create_activity`, `update_activity`, `delete_activity`
 Routines: `list_routines`, `create_routine`, `update_routine`, `delete_routine`
 Goals: `list_goals`, `create_goal`, `update_goal`, `delete_goal`
 Channels: `list_channels_config`, `add_channel_config`, `remove_channel_config`
@@ -565,10 +565,10 @@ Pure function for smart-merging streaming FeedItems:
 ```rust
 let store = WorkspaceStore::new(&project_folder);
 store.ensure_houston_dir()?;            // creates .houston/ if missing
-let tasks = store.list_tasks()?;     // reads .houston/tasks.json
-let task = store.create_task("Title", "Desc")?;
-store.update_task(&task.id, TaskUpdate { status: Some("done".into()), ..Default::default() })?;
-store.delete_task(&task.id)?;
+let items = store.list_activity()?;     // reads .houston/activity.json
+let item = store.create_activity("Title", "Desc")?;
+store.update_activity(&item.id, ActivityUpdate { status: Some("done".into()), ..Default::default() })?;
+store.delete_activity(&item.id)?;
 // Same CRUD pattern for routines, goals, channels, skills, log, config
 ```
 All operations use atomic temp-file + rename to prevent corruption. Types defined in `workspace_store::types` — all derive `Serialize + Deserialize`.

@@ -3,260 +3,172 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
-use super::spaces::space_folder;
+use super::workspaces::WorkspaceRoot;
 
-/// Persisted workspace metadata stored in .houston/workspace.json.
 #[derive(Serialize, Deserialize, Clone)]
-pub struct WorkspaceMeta {
-    pub id: String,
-    pub experience_id: String,
-    pub created_at: String,
-    pub last_opened_at: Option<String>,
-}
-
-/// Workspace returned to the frontend (metadata + folder info).
-#[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Workspace {
+pub struct Space {
     pub id: String,
     pub name: String,
-    pub folder_path: String,
-    pub experience_id: String,
+    pub is_default: bool,
     pub created_at: String,
-    pub last_opened_at: Option<String>,
 }
-
-/// Managed Tauri state: path to ~/Documents/Houston/.
-pub struct WorkspaceRoot(pub PathBuf);
 
 // --- Helpers ---
 
-fn houston_dir(folder: &Path) -> PathBuf {
-    folder.join(".houston")
-}
-
-fn workspace_json_path(folder: &Path) -> PathBuf {
-    houston_dir(folder).join("workspace.json")
-}
-
-fn read_meta(folder: &Path) -> Result<WorkspaceMeta, String> {
-    let path = workspace_json_path(folder);
-    let contents =
-        fs::read_to_string(&path).map_err(|e| format!("Failed to read workspace.json: {e}"))?;
-    serde_json::from_str(&contents).map_err(|e| format!("Failed to parse workspace.json: {e}"))
-}
-
-/// Atomic write: write to .tmp then rename.
-fn write_meta(folder: &Path, meta: &WorkspaceMeta) -> Result<(), String> {
-    let dir = houston_dir(folder);
-    fs::create_dir_all(&dir)
-        .map_err(|e| format!("Failed to create .houston directory: {e}"))?;
-    let target = dir.join("workspace.json");
-    let tmp = dir.join("workspace.json.tmp");
-    let json =
-        serde_json::to_string_pretty(meta).map_err(|e| format!("Failed to serialize: {e}"))?;
-    fs::write(&tmp, &json)
-        .map_err(|e| format!("Failed to write workspace.json.tmp: {e}"))?;
-    fs::rename(&tmp, &target)
-        .map_err(|e| format!("Failed to rename workspace.json: {e}"))?;
-    Ok(())
-}
-
-fn meta_to_workspace(folder: &Path, meta: &WorkspaceMeta) -> Workspace {
-    let name = folder
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_default();
-    Workspace {
-        id: meta.id.clone(),
-        name,
-        folder_path: folder.to_string_lossy().to_string(),
-        experience_id: meta.experience_id.clone(),
-        created_at: meta.created_at.clone(),
-        last_opened_at: meta.last_opened_at.clone(),
-    }
-}
-
-/// Find a workspace folder by its ID (scan subdirs within a space folder).
-fn find_workspace_by_id(space_dir: &Path, id: &str) -> Result<PathBuf, String> {
-    let entries = fs::read_dir(space_dir).map_err(|e| e.to_string())?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if !path.is_dir() {
-            continue;
-        }
-        let meta_path = workspace_json_path(&path);
-        if !meta_path.exists() {
-            continue;
-        }
-        if let Ok(meta) = read_meta(&path) {
-            if meta.id == id {
-                return Ok(path);
-            }
-        }
-    }
-    Err(format!("Workspace not found: {id}"))
+fn spaces_json_path(root: &Path) -> PathBuf {
+    root.join("spaces.json")
 }
 
 fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339()
 }
 
-/// Resolve the space folder from root + space_id.
-fn resolve_space_folder(root: &Path, space_id: &str) -> Result<PathBuf, String> {
-    let folder = space_folder(root, space_id)?;
-    fs::create_dir_all(&folder)
-        .map_err(|e| format!("Failed to create space directory: {e}"))?;
-    Ok(folder)
+pub fn read_spaces(root: &Path) -> Result<Vec<Space>, String> {
+    let path = spaces_json_path(root);
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let contents =
+        fs::read_to_string(&path).map_err(|e| format!("Failed to read spaces.json: {e}"))?;
+    serde_json::from_str(&contents).map_err(|e| format!("Failed to parse spaces.json: {e}"))
+}
+
+/// Atomic write: write to .tmp then rename.
+fn write_spaces(root: &Path, spaces: &[Space]) -> Result<(), String> {
+    let target = spaces_json_path(root);
+    let tmp = root.join("spaces.json.tmp");
+    let json = serde_json::to_string_pretty(spaces)
+        .map_err(|e| format!("Failed to serialize spaces: {e}"))?;
+    fs::write(&tmp, &json).map_err(|e| format!("Failed to write spaces.json.tmp: {e}"))?;
+    fs::rename(&tmp, &target).map_err(|e| format!("Failed to rename spaces.json: {e}"))?;
+    Ok(())
+}
+
+/// Resolve a space's folder path from its ID.
+pub fn space_folder(root: &Path, space_id: &str) -> Result<PathBuf, String> {
+    let spaces = read_spaces(root)?;
+    let space = spaces
+        .iter()
+        .find(|s| s.id == space_id)
+        .ok_or_else(|| format!("Space not found: {space_id}"))?;
+    Ok(root.join(&space.name))
 }
 
 // --- Commands ---
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn list_workspaces(
+pub fn list_spaces(
     root: tauri::State<'_, WorkspaceRoot>,
-    space_id: String,
-) -> Result<Vec<Workspace>, String> {
-    let space_dir = resolve_space_folder(&root.0, &space_id)?;
-
-    let entries = fs::read_dir(&space_dir).map_err(|e| e.to_string())?;
-    let mut workspaces = Vec::new();
-
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if !path.is_dir() {
-            continue;
-        }
-        let name = entry.file_name().to_string_lossy().to_string();
-        if name.starts_with('.') {
-            continue;
-        }
-        if !workspace_json_path(&path).exists() {
-            continue;
-        }
-        match read_meta(&path) {
-            Ok(meta) => workspaces.push(meta_to_workspace(&path, &meta)),
-            Err(e) => eprintln!("[workspaces] skipping {name}: {e}"),
-        }
-    }
-
-    // Sort by last_opened_at descending (most recent first).
-    workspaces.sort_by(|a, b| {
-        let a_time = a.last_opened_at.as_deref().unwrap_or("");
-        let b_time = b.last_opened_at.as_deref().unwrap_or("");
-        b_time.cmp(a_time)
-    });
-
-    Ok(workspaces)
+) -> Result<Vec<Space>, String> {
+    fs::create_dir_all(&root.0)
+        .map_err(|e| format!("Failed to create workspace root: {e}"))?;
+    read_spaces(&root.0)
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn create_workspace(
+pub fn create_space(
     root: tauri::State<'_, WorkspaceRoot>,
-    space_id: String,
     name: String,
-    experience_id: String,
-    claude_md: Option<String>,
-) -> Result<Workspace, String> {
-    let space_dir = resolve_space_folder(&root.0, &space_id)?;
-    let folder = space_dir.join(&name);
+) -> Result<Space, String> {
+    let mut spaces = read_spaces(&root.0)?;
 
-    if folder.exists() {
-        return Err(format!("A workspace named \"{name}\" already exists"));
+    // Check for duplicate name
+    if spaces.iter().any(|s| s.name == name) {
+        return Err(format!("A space named \"{name}\" already exists"));
     }
 
-    fs::create_dir_all(&folder)
-        .map_err(|e| format!("Failed to create workspace directory: {e}"))?;
-
-    let houston = houston_dir(&folder);
-    fs::create_dir_all(houston.join("skills"))
-        .map_err(|e| format!("Failed to create .houston/skills: {e}"))?;
-
-    let now = now_iso();
-    let meta = WorkspaceMeta {
+    let space = Space {
         id: Uuid::new_v4().to_string(),
-        experience_id,
-        created_at: now.clone(),
-        last_opened_at: Some(now),
+        name: name.clone(),
+        is_default: false,
+        created_at: now_iso(),
     };
-    write_meta(&folder, &meta)?;
 
-    // Seed CLAUDE.md from experience manifest or use generic template
-    let claude_md_path = folder.join("CLAUDE.md");
-    if !claude_md_path.exists() {
-        let content = claude_md
-            .unwrap_or_else(|| "## Instructions\n\n## Learnings\n".to_string());
-        fs::write(&claude_md_path, content)
-            .map_err(|e| format!("Failed to write CLAUDE.md: {e}"))?;
+    // Create the space directory with .houston/connections.json
+    let space_dir = root.0.join(&name);
+    fs::create_dir_all(space_dir.join(".houston"))
+        .map_err(|e| format!("Failed to create space directory: {e}"))?;
+    let connections_path = space_dir.join(".houston").join("connections.json");
+    if !connections_path.exists() {
+        fs::write(&connections_path, "[]")
+            .map_err(|e| format!("Failed to write connections.json: {e}"))?;
     }
 
-    // Seed prompt files
-    crate::workspace::seed_workspace(&folder)?;
-
-    // Seed empty defaults
-    seed_json_if_missing(&houston, "tasks.json", "[]")?;
-    seed_json_if_missing(&houston, "config.json", "{}")?;
-
-    Ok(meta_to_workspace(&folder, &meta))
+    spaces.push(space.clone());
+    write_spaces(&root.0, &spaces)?;
+    Ok(space)
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn delete_workspace(
+pub fn rename_space(
     root: tauri::State<'_, WorkspaceRoot>,
-    space_id: String,
-    id: String,
-) -> Result<(), String> {
-    let space_dir = resolve_space_folder(&root.0, &space_id)?;
-    let folder = find_workspace_by_id(&space_dir, &id)?;
-    fs::remove_dir_all(&folder)
-        .map_err(|e| format!("Failed to delete workspace: {e}"))?;
-    Ok(())
-}
-
-#[tauri::command(rename_all = "snake_case")]
-pub fn rename_workspace(
-    root: tauri::State<'_, WorkspaceRoot>,
-    space_id: String,
     id: String,
     new_name: String,
-) -> Result<Workspace, String> {
-    let space_dir = resolve_space_folder(&root.0, &space_id)?;
-    let old_folder = find_workspace_by_id(&space_dir, &id)?;
-    let new_folder = space_dir.join(&new_name);
+) -> Result<Space, String> {
+    let mut spaces = read_spaces(&root.0)?;
 
-    if new_folder.exists() {
+    // Check for duplicate name
+    if spaces.iter().any(|s| s.name == new_name && s.id != id) {
         return Err(format!(
-            "A workspace named \"{new_name}\" already exists"
+            "A space named \"{new_name}\" already exists"
         ));
     }
 
-    fs::rename(&old_folder, &new_folder)
-        .map_err(|e| format!("Failed to rename workspace: {e}"))?;
+    let space = spaces
+        .iter_mut()
+        .find(|s| s.id == id)
+        .ok_or_else(|| format!("Space not found: {id}"))?;
 
-    let meta = read_meta(&new_folder)?;
-    Ok(meta_to_workspace(&new_folder, &meta))
+    let old_name = space.name.clone();
+    let old_dir = root.0.join(&old_name);
+    let new_dir = root.0.join(&new_name);
+
+    if new_dir.exists() && old_dir != new_dir {
+        return Err(format!(
+            "A directory named \"{new_name}\" already exists"
+        ));
+    }
+
+    // Rename the directory
+    if old_dir.exists() {
+        fs::rename(&old_dir, &new_dir)
+            .map_err(|e| format!("Failed to rename space directory: {e}"))?;
+    }
+
+    space.name = new_name;
+    let updated = space.clone();
+    write_spaces(&root.0, &spaces)?;
+    Ok(updated)
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn update_workspace_opened(
+pub fn delete_space(
     root: tauri::State<'_, WorkspaceRoot>,
-    space_id: String,
     id: String,
 ) -> Result<(), String> {
-    let space_dir = resolve_space_folder(&root.0, &space_id)?;
-    let folder = find_workspace_by_id(&space_dir, &id)?;
-    let mut meta = read_meta(&folder)?;
-    meta.last_opened_at = Some(now_iso());
-    write_meta(&folder, &meta)?;
-    Ok(())
-}
+    let spaces = read_spaces(&root.0)?;
 
-/// Write a JSON string to .houston/{filename} only if it doesn't exist.
-fn seed_json_if_missing(houston: &Path, filename: &str, content: &str) -> Result<(), String> {
-    let path = houston.join(filename);
-    if !path.exists() {
-        fs::write(&path, content)
-            .map_err(|e| format!("Failed to write {filename}: {e}"))?;
+    let space = spaces
+        .iter()
+        .find(|s| s.id == id)
+        .ok_or_else(|| format!("Space not found: {id}"))?;
+
+    if space.is_default {
+        return Err("Cannot delete the default space".to_string());
     }
+
+    let space_dir = root.0.join(&space.name);
+
+    // Remove from list
+    let remaining: Vec<Space> = spaces.into_iter().filter(|s| s.id != id).collect();
+    write_spaces(&root.0, &remaining)?;
+
+    // Delete directory
+    if space_dir.exists() {
+        fs::remove_dir_all(&space_dir)
+            .map_err(|e| format!("Failed to delete space directory: {e}"))?;
+    }
+
     Ok(())
 }

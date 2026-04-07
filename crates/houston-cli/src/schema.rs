@@ -17,10 +17,10 @@ pub fn run(command: Option<&str>, pretty: bool) {
 fn all_schemas() -> Value {
     json!({
         "commands": {
-            "task.create": command_schema("task.create"),
-            "task.list": command_schema("task.list"),
-            "task.update": command_schema("task.update"),
-            "task.delete": command_schema("task.delete"),
+            "activity.create": command_schema("activity.create"),
+            "activity.list": command_schema("activity.list"),
+            "activity.update": command_schema("activity.update"),
+            "activity.delete": command_schema("activity.delete"),
             "routine.create": command_schema("routine.create"),
             "routine.list": command_schema("routine.list"),
             "routine.update": command_schema("routine.update"),
@@ -35,28 +35,28 @@ fn all_schemas() -> Value {
 
 fn command_schema(cmd: &str) -> Value {
     match cmd {
-        "task.create" => json!({
-            "command": "houston task create",
-            "description": "Create a new task on the kanban board",
+        "activity.create" => json!({
+            "command": "houston activity create",
+            "description": "Create a new activity on the kanban board",
             "args": {
                 "--title": { "type": "string", "required": true },
                 "--description": { "type": "string", "required": false },
                 "--tags": { "type": "string", "required": false, "description": "Comma-separated" },
-                "--depends-on": { "type": "string", "required": false, "description": "Comma-separated task IDs" },
+                "--depends-on": { "type": "string", "required": false, "description": "Comma-separated activity IDs" },
             },
             "requires": ["--project-id"],
         }),
-        "task.list" => json!({
-            "command": "houston task list",
-            "description": "List tasks for a project",
+        "activity.list" => json!({
+            "command": "houston activity list",
+            "description": "List activities for a project",
             "args": {
                 "--status": { "type": "string", "required": false, "enum": ["queue", "running", "needs_you", "done", "cancelled"] },
             },
             "requires": ["--project-id"],
         }),
-        "task.update" => json!({
-            "command": "houston task update <ID>",
-            "description": "Update an existing task",
+        "activity.update" => json!({
+            "command": "houston activity update <ID>",
+            "description": "Update an existing activity",
             "args": {
                 "id": { "type": "string", "required": true, "positional": true },
                 "--title": { "type": "string", "required": false },
@@ -66,9 +66,9 @@ fn command_schema(cmd: &str) -> Value {
             },
             "requires": ["--project-id"],
         }),
-        "task.delete" => json!({
-            "command": "houston task delete <ID>",
-            "description": "Delete a task",
+        "activity.delete" => json!({
+            "command": "houston activity delete <ID>",
+            "description": "Delete an activity",
             "args": {
                 "id": { "type": "string", "required": true, "positional": true },
             },

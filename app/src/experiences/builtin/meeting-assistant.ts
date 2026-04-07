@@ -10,7 +10,7 @@ export const meetingAssistant: ExperienceManifest = {
   tags: ["meetings", "notes", "action items", "follow-up"],
   tabs: [
     { id: "chat", label: "Chat", builtIn: "chat" },
-    { id: "tasks", label: "Actions", builtIn: "board" },
+    { id: "activity", label: "Actions", builtIn: "board" },
     { id: "files", label: "Notes", builtIn: "files" },
     { id: "skills", label: "Skills", builtIn: "skills" },
     { id: "learnings", label: "Learnings", builtIn: "learnings" },

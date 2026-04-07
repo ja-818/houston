@@ -1,17 +1,17 @@
-//! Unified conversation listing: primary chat + task conversations.
+//! Unified conversation listing: primary chat + activity conversations.
 
-use super::tasks;
+use super::activity;
 use super::types::ConversationEntry;
 use std::fs;
 use std::path::Path;
 
-/// Return every conversation in a single workspace.
+/// Return every conversation in a single agent.
 ///
 /// The first entry is the primary chat (`session_key = "main"`).
-/// Task conversations follow, ordered by most-recently-updated first.
+/// Activity conversations follow, ordered by most-recently-updated first.
 pub fn list(root: &Path) -> Result<Vec<ConversationEntry>, String> {
-    let ws_path = root.to_string_lossy().to_string();
-    let ws_name = root
+    let agent_path_str = root.to_string_lossy().to_string();
+    let agent_name_str = root
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_default();
@@ -28,42 +28,42 @@ pub fn list(root: &Path) -> Result<Vec<ConversationEntry>, String> {
     // Only include primary chat if it has been used
     if primary_updated.is_some() {
         entries.push(ConversationEntry {
-            id: format!("primary:{ws_path}"),
+            id: format!("primary:{agent_path_str}"),
             title: "Primary chat".to_string(),
             status: None,
             entry_type: "primary".to_string(),
             session_key: "main".to_string(),
             updated_at: primary_updated,
-            workspace_path: ws_path.clone(),
-            workspace_name: ws_name.clone(),
+            agent_path: agent_path_str.clone(),
+            agent_name: agent_name_str.clone(),
         });
     }
 
-    // Task conversations — sorted by updated_at descending.
-    let mut tasks = tasks::list(root).unwrap_or_default();
-    tasks.sort_by(|a, b| {
+    // Activity conversations — sorted by updated_at descending.
+    let mut activities = activity::list(root).unwrap_or_default();
+    activities.sort_by(|a, b| {
         let a_time = a.updated_at.as_deref().unwrap_or("");
         let b_time = b.updated_at.as_deref().unwrap_or("");
         b_time.cmp(a_time)
     });
 
-    for task in tasks {
+    for entry in activities {
         entries.push(ConversationEntry {
-            id: task.id.clone(),
-            title: task.title,
-            status: Some(task.status),
-            entry_type: "task".to_string(),
-            session_key: format!("task-{}", task.id),
-            updated_at: task.updated_at,
-            workspace_path: ws_path.clone(),
-            workspace_name: ws_name.clone(),
+            id: entry.id.clone(),
+            title: entry.title,
+            status: Some(entry.status),
+            entry_type: "activity".to_string(),
+            session_key: format!("activity-{}", entry.id),
+            updated_at: entry.updated_at,
+            agent_path: agent_path_str.clone(),
+            agent_name: agent_name_str.clone(),
         });
     }
 
     Ok(entries)
 }
 
-/// Aggregate conversations across multiple workspaces.
+/// Aggregate conversations across multiple agents.
 ///
 /// Returns all entries sorted by updated_at descending (most recent first).
 pub fn list_all(roots: &[&Path]) -> Result<Vec<ConversationEntry>, String> {

@@ -12,14 +12,14 @@ export interface KanbanItem {
   metadata?: Record<string, unknown>
 }
 
-/** A unified conversation entry — either the primary chat or a task conversation. */
+/** A unified conversation entry — either the primary chat or an activity conversation. */
 export interface ConversationEntry {
   id: string
   title: string
   status?: string
-  /** `"primary"` for the workspace main chat, `"task"` for task conversations. */
-  type: "primary" | "task"
-  /** Session key used to address this conversation (e.g. `"main"`, `"task-{id}`). */
+  /** `"primary"` for the workspace main chat, `"activity"` for activity conversations. */
+  type: "primary" | "activity"
+  /** Session key used to address this conversation (e.g. `"main"`, `"activity-{id}`). */
   sessionKey: string
   updatedAt?: string
   /** Absolute path to the workspace this conversation belongs to. */

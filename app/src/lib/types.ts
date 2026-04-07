@@ -16,8 +16,8 @@ export interface ExperienceTab {
   builtIn?: string;
   /** Export name from bundle.js for custom React components */
   customComponent?: string;
-  /** Badge source: "tasks" shows count of active tasks */
-  badge?: "tasks" | "none";
+  /** Badge source: "activity" shows count of active items */
+  badge?: "activity" | "none";
 }
 
 /** Experience category for marketplace filtering */

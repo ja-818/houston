@@ -4,10 +4,10 @@ use houston_db::Database;
 use serde_json::{json, Value};
 
 #[derive(Subcommand)]
-pub enum TaskAction {
-    /// Create a new task
+pub enum ActivityAction {
+    /// Create a new activity
     Create {
-        /// Title of the task
+        /// Title of the activity
         #[arg(long)]
         title: String,
         /// Detailed description
@@ -16,19 +16,19 @@ pub enum TaskAction {
         /// Comma-separated tags
         #[arg(long)]
         tags: Option<String>,
-        /// IDs of tasks that must finish first (comma-separated)
+        /// IDs of activities that must finish first (comma-separated)
         #[arg(long)]
         depends_on: Option<String>,
     },
-    /// List tasks for the project
+    /// List activities for the project
     List {
         /// Filter by status: queue, running, needs_you, done, cancelled
         #[arg(long)]
         status: Option<String>,
     },
-    /// Update an existing task
+    /// Update an existing activity
     Update {
-        /// Task ID to update
+        /// Activity ID to update
         id: String,
         /// New title
         #[arg(long)]
@@ -43,9 +43,9 @@ pub enum TaskAction {
         #[arg(long)]
         tags: Option<String>,
     },
-    /// Delete a task
+    /// Delete an activity
     Delete {
-        /// Task ID to delete
+        /// Activity ID to delete
         id: String,
     },
 }
@@ -54,27 +54,27 @@ pub async fn run(
     db: &Database,
     project_id: &str,
     exclude_issue: Option<&str>,
-    action: TaskAction,
+    action: ActivityAction,
 ) -> Result<Value> {
     match action {
-        TaskAction::Create {
+        ActivityAction::Create {
             title,
             description,
             tags,
             depends_on,
         } => create(db, project_id, &title, description, tags, depends_on).await,
-        TaskAction::List { status } => list(db, project_id, exclude_issue, status).await,
-        TaskAction::Update {
+        ActivityAction::List { status } => list(db, project_id, exclude_issue, status).await,
+        ActivityAction::Update {
             id,
             title,
             description,
             status,
             tags,
         } => {
-            crate::task_ops::update(db, &id, exclude_issue, title, description, status, tags)
+            crate::activity_ops::update(db, &id, exclude_issue, title, description, status, tags)
                 .await
         }
-        TaskAction::Delete { id } => crate::task_ops::delete(db, &id, exclude_issue).await,
+        ActivityAction::Delete { id } => crate::activity_ops::delete(db, &id, exclude_issue).await,
     }
 }
 
@@ -103,7 +103,7 @@ async fn create(
         }
     }
 
-    Ok(task_to_json(&issue))
+    Ok(activity_to_json(&issue))
 }
 
 async fn list(
@@ -128,11 +128,11 @@ async fn list(
         issues
     };
 
-    let tasks: Vec<Value> = filtered.iter().map(task_to_json).collect();
-    Ok(json!(tasks))
+    let items: Vec<Value> = filtered.iter().map(activity_to_json).collect();
+    Ok(json!(items))
 }
 
-pub(crate) fn task_to_json(issue: &houston_db::Issue) -> Value {
+pub(crate) fn activity_to_json(issue: &houston_db::Issue) -> Value {
     json!({
         "id": issue.id,
         "title": issue.title,

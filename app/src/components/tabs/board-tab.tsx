@@ -1,26 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
-import { Rocket } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanItem } from "@houston-ai/board";
 import type { FeedItem } from "@houston-ai/chat";
 import { AgentAvatar } from "@houston-ai/core";
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
-import { tauriTasks, tauriChat } from "../../lib/tauri";
+import { useActivity, useDeleteActivity, useUpdateActivity, useCreateActivity } from "../../hooks/queries";
+import { tauriActivity, tauriChat } from "../../lib/tauri";
 import type { TabProps } from "../../lib/types";
-import houstonIcon from "../../assets/houston-icon.png";
-
-function StartMissionButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-2.5 rounded-full bg-gray-950 text-white h-9 px-4 text-sm font-medium hover:bg-gray-800 transition-colors"
-    >
-      <Rocket className="size-4" />
-      Start a Mission
-    </button>
-  );
-}
+import houstonIcon from "../../assets/houston-icon.svg";
 
 function ThinkingIndicator() {
   return (
@@ -35,13 +23,26 @@ function ThinkingIndicator() {
 }
 
 export default function BoardTab({ workspace }: TabProps) {
-  const [items, setItems] = useState<KanbanItem[]>([]);
-  const [loading, setLoading] = useState<Record<string, boolean>>({});
   const path = workspace.folderPath;
+  const { data: rawItems } = useActivity(path);
+  const deleteActivity = useDeleteActivity(path);
+  const updateActivity = useUpdateActivity(path);
+  const createActivity = useCreateActivity(path);
+  const setOnStartMission = useUIStore((s) => s.setOnStartMission);
+  const setMissionPanelOpen = useUIStore((s) => s.setMissionPanelOpen);
+  const openerRef = useRef<(() => void) | null>(null);
+
+  const items: KanbanItem[] = (rawItems ?? []).map((t) => ({
+    id: t.id,
+    title: t.title,
+    subtitle: t.description,
+    status: t.status,
+    updatedAt: t.updated_at ?? new Date().toISOString(),
+  }));
 
   // Read and consume pending selection from Mission Control
-  const pendingId = useUIStore((s) => s.taskPanelId);
-  const clearPending = useUIStore((s) => s.setTaskPanelId);
+  const pendingId = useUIStore((s) => s.activityPanelId);
+  const clearPending = useUIStore((s) => s.setActivityPanelId);
   const [selectedId, setSelectedId] = useState<string | null>(pendingId);
   useEffect(() => {
     if (pendingId) {
@@ -52,32 +53,21 @@ export default function BoardTab({ workspace }: TabProps) {
 
   const feedItems = useFeedStore((s) => s.items);
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
+  const [loadingState, setLoading] = useState<Record<string, boolean>>({});
 
-  const loadTasks = useCallback(async () => {
-    try {
-      const tasks = await tauriTasks.list(path);
-      setItems(
-        tasks.map((t) => ({
-          id: t.id,
-          title: t.title,
-          subtitle: t.description,
-          status: t.status,
-          updatedAt: new Date().toISOString(),
-        })),
-      );
-    } catch (e) {
-      console.error("[board] Failed to load tasks:", e);
-    }
-  }, [path]);
+  // Register the "Start a Mission" handler in the UI store for the TabBar
+  const handleOpenerReady = useCallback(
+    (opener: () => void) => {
+      openerRef.current = opener;
+      setOnStartMission(opener);
+    },
+    [setOnStartMission],
+  );
 
+  // Cleanup on unmount
   useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
-
-  const sessionStatusVersion = useUIStore((s) => s.sessionStatusVersion);
-  useEffect(() => {
-    if (sessionStatusVersion > 0) loadTasks();
-  }, [sessionStatusVersion, loadTasks]);
+    return () => setOnStartMission(null);
+  }, [setOnStartMission]);
 
   const loadHistory = useCallback(
     async (sessionKey: string) => {
@@ -89,48 +79,40 @@ export default function BoardTab({ workspace }: TabProps) {
 
   const handleDelete = useCallback(
     async (item: KanbanItem) => {
-      await tauriTasks.delete(path, item.id);
+      await deleteActivity.mutateAsync(item.id);
       if (selectedId === item.id) setSelectedId(null);
-      await loadTasks();
     },
-    [path, selectedId, loadTasks],
+    [deleteActivity, selectedId],
   );
 
   const handleApprove = useCallback(
     async (item: KanbanItem) => {
-      await tauriTasks.update(path, item.id, { status: "done" });
-      setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, status: "done" } : i)),
-      );
+      await updateActivity.mutateAsync({ activityId: item.id, update: { status: "done" } });
     },
-    [path],
+    [updateActivity],
   );
 
   const handleCreateConversation = useCallback(
     async (text: string) => {
       const title = text.length > 80 ? text.slice(0, 77) + "..." : text;
-      const task = await tauriTasks.create(path, title, text);
-      const sessionKey = `task-${task.id}`;
+      const item = await createActivity.mutateAsync({ title, description: text });
+      const sessionKey = `activity-${item.id}`;
       pushFeedItem(sessionKey, { feed_type: "user_message", data: text });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
-      await tauriTasks.update(path, task.id, { status: "running" });
-      await loadTasks();
+      await updateActivity.mutateAsync({ activityId: item.id, update: { status: "running" } });
       tauriChat.send(path, text, sessionKey);
-      return task.id;
+      return item.id;
     },
-    [path, pushFeedItem, loadTasks],
+    [path, pushFeedItem, createActivity, updateActivity],
   );
 
   const handleSendMessage = useCallback(
     async (sessionKey: string, text: string) => {
       pushFeedItem(sessionKey, { feed_type: "user_message", data: text });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
-      if (sessionKey.startsWith("task-")) {
-        const taskId = sessionKey.replace("task-", "");
-        setItems((prev) =>
-          prev.map((i) => (i.id === taskId ? { ...i, status: "running" } : i)),
-        );
-        tauriTasks.update(path, taskId, { status: "running" }).catch(console.error);
+      if (sessionKey.startsWith("activity-")) {
+        const activityId = sessionKey.replace("activity-", "");
+        tauriActivity.update(path, activityId, { status: "running" }).catch(console.error);
       }
       tauriChat.send(path, text, sessionKey);
     },
@@ -143,13 +125,14 @@ export default function BoardTab({ workspace }: TabProps) {
       selectedId={selectedId}
       onSelect={setSelectedId}
       feedItems={feedItems}
-      isLoading={loading}
+      isLoading={loadingState}
       onDelete={handleDelete}
       onApprove={handleApprove}
       onCreateConversation={handleCreateConversation}
       onSendMessage={handleSendMessage}
       onLoadHistory={loadHistory}
-      headerAction={(onStart) => <StartMissionButton onClick={onStart} />}
+      onNewPanelOpenerReady={handleOpenerReady}
+      onPanelOpenChange={setMissionPanelOpen}
       thinkingIndicator={<ThinkingIndicator />}
       panelAvatar={
         <AgentAvatar src={houstonIcon} alt="Houston" size="sm" />

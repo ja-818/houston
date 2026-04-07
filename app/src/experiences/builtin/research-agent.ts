@@ -10,7 +10,7 @@ export const researchAgent: ExperienceManifest = {
   tags: ["research", "analysis", "reports", "web"],
   tabs: [
     { id: "chat", label: "Chat", builtIn: "chat" },
-    { id: "tasks", label: "Research", builtIn: "board" },
+    { id: "activity", label: "Research", builtIn: "board" },
     { id: "files", label: "Notes", builtIn: "files" },
     { id: "skills", label: "Skills", builtIn: "skills" },
     { id: "learnings", label: "Learnings", builtIn: "learnings" },

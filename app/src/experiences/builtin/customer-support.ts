@@ -10,7 +10,7 @@ export const customerSupport: ExperienceManifest = {
   tags: ["support", "tickets", "customer", "help", "faq"],
   tabs: [
     { id: "chat", label: "Chat", builtIn: "chat" },
-    { id: "tasks", label: "Tickets", builtIn: "board" },
+    { id: "activity", label: "Tickets", builtIn: "board" },
     { id: "context", label: "Knowledge", builtIn: "context" },
     { id: "channels", label: "Channels", builtIn: "channels" },
     { id: "skills", label: "Skills", builtIn: "skills" },

@@ -10,24 +10,27 @@ export interface ToastItem {
 interface UIState {
   viewMode: string;
   assistantPanelOpen: boolean;
-  taskPanelId: string | null;
+  activityPanelId: string | null;
   claudeAvailable: boolean | null;
   authRequired: boolean;
   toasts: ToastItem[];
   createWorkspaceDialogOpen: boolean;
   chatDraft: string;
-  /** Increments on every SessionStatus event — subscribers can reload data. */
-  sessionStatusVersion: number;
+  /** Callback registered by the board tab to open the new-mission panel */
+  onStartMission: (() => void) | null;
+  /** Whether the mission chat panel is open (hides tab bar for full-height panel) */
+  missionPanelOpen: boolean;
   setViewMode: (mode: string) => void;
   setAssistantPanelOpen: (open: boolean) => void;
-  setTaskPanelId: (id: string | null) => void;
+  setActivityPanelId: (id: string | null) => void;
   setClaudeAvailable: (available: boolean | null) => void;
   setAuthRequired: (required: boolean) => void;
   addToast: (toast: Omit<ToastItem, "id">) => void;
   dismissToast: (id: string) => void;
   setCreateWorkspaceDialogOpen: (open: boolean) => void;
   setChatDraft: (draft: string) => void;
-  bumpSessionStatus: () => void;
+  setOnStartMission: (cb: (() => void) | null) => void;
+  setMissionPanelOpen: (open: boolean) => void;
 }
 
 let toastCounter = 0;
@@ -35,17 +38,18 @@ let toastCounter = 0;
 export const useUIStore = create<UIState>((set) => ({
   viewMode: "chat",
   assistantPanelOpen: false,
-  taskPanelId: null,
+  activityPanelId: null,
   claudeAvailable: null,
   authRequired: false,
   toasts: [],
   createWorkspaceDialogOpen: false,
   chatDraft: "",
-  sessionStatusVersion: 0,
+  onStartMission: null,
+  missionPanelOpen: false,
 
   setViewMode: (viewMode) => set({ viewMode }),
   setAssistantPanelOpen: (assistantPanelOpen) => set({ assistantPanelOpen }),
-  setTaskPanelId: (taskPanelId) => set({ taskPanelId }),
+  setActivityPanelId: (activityPanelId) => set({ activityPanelId }),
   setClaudeAvailable: (claudeAvailable) => set({ claudeAvailable }),
   setAuthRequired: (authRequired) => set({ authRequired }),
 
@@ -71,5 +75,6 @@ export const useUIStore = create<UIState>((set) => ({
     set({ createWorkspaceDialogOpen }),
 
   setChatDraft: (chatDraft) => set({ chatDraft }),
-  bumpSessionStatus: () => set((s) => ({ sessionStatusVersion: s.sessionStatusVersion + 1 })),
+  setOnStartMission: (onStartMission) => set({ onStartMission }),
+  setMissionPanelOpen: (missionPanelOpen) => set({ missionPanelOpen }),
 }));

@@ -1,7 +1,7 @@
-//! Typed read/write operations for `.houston/` workspace files.
+//! Typed read/write operations for `.houston/` agent files.
 //!
 //! Every Houston app project stores agent-visible data in a `.houston/` folder
-//! alongside the project root. This module provides [`WorkspaceStore`] for
+//! alongside the project root. This module provides [`AgentStore`] for
 //! safe, atomic CRUD over those files.
 
 pub mod channels;
@@ -13,21 +13,21 @@ mod helpers;
 pub mod log;
 pub mod routines;
 pub mod skills;
-pub mod tasks;
+pub mod activity;
 pub mod types;
 
 pub use types::*;
 
 use std::path::{Path, PathBuf};
 
-/// File-backed store for `.houston/` workspace data.
+/// File-backed store for `.houston/` agent data.
 ///
 /// All write operations use atomic temp-file + rename to prevent corruption.
-pub struct WorkspaceStore {
+pub struct AgentStore {
     root: PathBuf,
 }
 
-impl WorkspaceStore {
+impl AgentStore {
     pub fn new(project_folder: &Path) -> Self {
         Self {
             root: project_folder.to_path_buf(),
@@ -43,19 +43,19 @@ impl WorkspaceStore {
         conversations::list(&self.root)
     }
 
-    // -- Tasks --
-    pub fn list_tasks(&self) -> Result<Vec<Task>, String> {
-        tasks::list(&self.root)
+    // -- Activity --
+    pub fn list_activity(&self) -> Result<Vec<Activity>, String> {
+        activity::list(&self.root)
     }
-    pub fn create_task(&self, title: &str, description: &str) -> Result<Task, String> {
+    pub fn create_activity(&self, title: &str, description: &str) -> Result<Activity, String> {
         self.ensure_houston_dir()?;
-        tasks::create(&self.root, title, description)
+        activity::create(&self.root, title, description)
     }
-    pub fn update_task(&self, id: &str, updates: TaskUpdate) -> Result<Task, String> {
-        tasks::update(&self.root, id, updates)
+    pub fn update_activity(&self, id: &str, updates: ActivityUpdate) -> Result<Activity, String> {
+        activity::update(&self.root, id, updates)
     }
-    pub fn delete_task(&self, id: &str) -> Result<(), String> {
-        tasks::delete(&self.root, id)
+    pub fn delete_activity(&self, id: &str) -> Result<(), String> {
+        activity::delete(&self.root, id)
     }
 
     // -- Routines --

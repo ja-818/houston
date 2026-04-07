@@ -1,11 +1,11 @@
-//! Data types for `.houston/` workspace files.
+//! Data types for `.houston/` agent files.
 
 use serde::{Deserialize, Serialize};
 
-// -- Tasks --
+// -- Activity --
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Task {
+pub struct Activity {
     pub id: String,
     pub title: String,
     pub description: String,
@@ -17,7 +17,7 @@ pub struct Task {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct TaskUpdate {
+pub struct ActivityUpdate {
     pub title: Option<String>,
     pub description: Option<String>,
     pub status: Option<String>,
@@ -26,24 +26,24 @@ pub struct TaskUpdate {
 
 // -- Conversations --
 
-/// A unified conversation entry — either the primary chat or a task conversation.
+/// A unified conversation entry — either the primary chat or an activity conversation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConversationEntry {
     pub id: String,
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<String>,
-    /// `"primary"` for the workspace's main chat, `"task"` for task conversations.
+    /// `"primary"` for the agent's main chat, `"activity"` for activity conversations.
     #[serde(rename = "type")]
     pub entry_type: String,
-    /// Session key used to address this conversation (e.g. `"main"`, `"task-{id}"`).
+    /// Session key used to address this conversation (e.g. `"main"`, `"activity-{id}"`).
     pub session_key: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub updated_at: Option<String>,
-    /// Absolute path to the workspace folder this conversation belongs to.
-    pub workspace_path: String,
-    /// Human-readable workspace name.
-    pub workspace_name: String,
+    /// Absolute path to the agent folder this conversation belongs to.
+    pub agent_path: String,
+    /// Human-readable agent name.
+    pub agent_name: String,
 }
 
 // -- Routines --
@@ -128,7 +128,7 @@ pub struct Skill {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogEntry {
     pub session_id: String,
-    pub task_id: Option<String>,
+    pub activity_id: Option<String>,
     pub status: String,
     pub duration_ms: Option<u64>,
     pub cost_usd: Option<f64>,

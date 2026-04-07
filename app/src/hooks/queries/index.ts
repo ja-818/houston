@@ -1,4 +1,4 @@
-export { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "./use-tasks";
+export { useActivity, useCreateActivity, useUpdateActivity, useDeleteActivity } from "./use-activity";
 export {
   useSkills,
   useSkillDetail,

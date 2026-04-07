@@ -108,7 +108,7 @@ export function KanbanCard({
         open={showConfirm}
         onOpenChange={setShowConfirm}
         title={`Delete "${item.title}"?`}
-        description="This task and its history will be permanently removed."
+        description="This item and its history will be permanently removed."
         onConfirm={confirmDelete}
       />
     </>

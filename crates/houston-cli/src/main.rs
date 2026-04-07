@@ -1,13 +1,13 @@
 mod routine;
 mod routine_ops;
 mod schema;
-mod task;
-mod task_ops;
+mod activity;
+mod activity_ops;
 
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "houston", about = "Manage AI agent tasks and routines")]
+#[command(name = "houston", about = "Manage AI agent activity and routines")]
 struct Cli {
     /// Path to SQLite database file
     #[arg(long)]
@@ -31,10 +31,10 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Manage tasks on the kanban board
-    Task {
+    /// Manage activity on the kanban board
+    Activity {
         #[command(subcommand)]
-        action: task::TaskAction,
+        action: activity::ActivityAction,
     },
     /// Manage recurring routines
     Routine {
@@ -43,7 +43,7 @@ enum Commands {
     },
     /// Output command schemas for runtime introspection
     Schema {
-        /// Specific command to show schema for (e.g. "task.create")
+        /// Specific command to show schema for (e.g. "activity.create")
         command: Option<String>,
     },
 }
@@ -75,15 +75,15 @@ async fn main() {
     };
 
     let result = match cli.command {
-        Commands::Task { action } => {
+        Commands::Activity { action } => {
             let project_id = match cli.project_id {
                 Some(ref id) => id.as_str(),
                 None => {
-                    eprintln!("Error: --project-id is required for task commands");
+                    eprintln!("Error: --project-id is required for activity commands");
                     std::process::exit(1);
                 }
             };
-            task::run(&db, project_id, cli.exclude_issue.as_deref(), action).await
+            activity::run(&db, project_id, cli.exclude_issue.as_deref(), action).await
         }
         Commands::Routine { action } => {
             routine::run(&db, cli.project_id.as_deref(), action).await

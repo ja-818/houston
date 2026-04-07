@@ -6,7 +6,7 @@ import { useFeedStore } from "../stores/feeds";
 import { useUIStore } from "../stores/ui";
 import { useSpaceStore } from "../stores/spaces";
 import { useWorkspaceStore } from "../stores/workspaces";
-import { tauriTasks } from "../lib/tauri";
+import { tauriActivity } from "../lib/tauri";
 
 async function sendNotification(title: string, body: string) {
   try {
@@ -32,18 +32,19 @@ async function sendNotification(title: string, body: string) {
 /**
  * Subscribe to "houston-event" from the Rust backend.
  * Handles FeedItem, SessionStatus, Toast, AuthRequired, and native notifications.
+ *
+ * NOTE: Data invalidation is handled by useWorkspaceInvalidation (TanStack Query).
+ * This hook only handles push-based events (streaming, toasts, notifications).
  */
 export function useSessionEvents() {
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
   const addToast = useUIStore((s) => s.addToast);
   const setAuthRequired = useUIStore((s) => s.setAuthRequired);
-  const bumpSessionStatus = useUIStore((s) => s.bumpSessionStatus);
 
   const handlersRef = useRef({
     pushFeedItem,
     addToast,
     setAuthRequired,
-    bumpSessionStatus,
     getSpace: () => useSpaceStore.getState().current,
     getWorkspace: () => useWorkspaceStore.getState().current,
   });
@@ -51,13 +52,11 @@ export function useSessionEvents() {
     pushFeedItem,
     addToast,
     setAuthRequired,
-    bumpSessionStatus,
     getSpace: () => useSpaceStore.getState().current,
     getWorkspace: () => useWorkspaceStore.getState().current,
   };
 
   useEffect(() => {
-    // Request notification permission on mount
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
@@ -81,16 +80,15 @@ export function useSessionEvents() {
               data: `Session error: ${error}`,
             } as FeedItem);
           }
-          // Notify subscribers (e.g. board-tab) that a session status changed
-          h.bumpSessionStatus();
           if (status === "completed") {
-            // Move task conversations to "needs_you"
-            if (session_key.startsWith("task-")) {
-              const taskId = session_key.replace("task-", "");
+            // Move activity to "needs_you" — the ActivityChanged event
+            // emitted by the Rust update command will auto-invalidate queries.
+            if (session_key.startsWith("activity-")) {
+              const activityId = session_key.replace("activity-", "");
               const workspace = h.getWorkspace();
               if (workspace?.folderPath) {
-                tauriTasks.update(workspace.folderPath, taskId, { status: "needs_you" }).catch((e) =>
-                  console.error("[session] Failed to update task status:", e),
+                tauriActivity.update(workspace.folderPath, activityId, { status: "needs_you" }).catch((e) =>
+                  console.error("[session] Failed to update activity status:", e),
                 );
               }
             }

@@ -14,28 +14,30 @@ export interface AIBoardProps {
   onSelect?: (id: string | null) => void
   onDelete?: (item: KanbanItem) => void
   onApprove?: (item: KanbanItem) => void
-  /** Called when user sends the first message in a new conversation. Should return the created task ID. */
+  /** Called when user sends the first message in a new conversation. Should return the created activity ID. */
   onCreateConversation?: (text: string) => Promise<string>
   /** Called when user sends a follow-up message in an existing conversation. */
   onSendMessage?: (sessionKey: string, text: string) => Promise<void>
-  /** Feed items keyed by session key (e.g. "task-{id}"). */
+  /** Feed items keyed by session key (e.g. "activity-{id}"). */
   feedItems?: Record<string, FeedItem[]>
   /** Whether a message is currently being processed, keyed by session key. */
   isLoading?: Record<string, boolean>
   /** Custom empty state when the board has no items. */
   emptyState?: ReactNode
-  /** Maps a task ID to its session key. Defaults to `task-${id}`. */
-  sessionKeyFor?: (taskId: string) => string
+  /** Maps an activity ID to its session key. Defaults to `activity-${id}`. */
+  sessionKeyFor?: (activityId: string) => string
   runningStatuses?: string[]
   approveStatuses?: string[]
   /** Load persisted chat history for a session. Called once per session key when selected. */
   onLoadHistory?: (sessionKey: string) => Promise<FeedItem[]>
-  /** Render prop for an action above the kanban board. Receives a callback to open the new-conversation panel. */
-  headerAction?: (onStart: () => void) => ReactNode
+  /** Called with the openNewPanel function so the parent can trigger it externally (e.g. from a header button). */
+  onNewPanelOpenerReady?: (opener: () => void) => void
   /** Custom thinking indicator for the chat panel. */
   thinkingIndicator?: ReactNode
   /** Avatar element shown in the detail panel header. */
   panelAvatar?: ReactNode
+  /** Called when the detail panel opens or closes. */
+  onPanelOpenChange?: (open: boolean) => void
 }
 
 const DEFAULT_COLUMNS: KanbanColumn[] = [
@@ -44,7 +46,7 @@ const DEFAULT_COLUMNS: KanbanColumn[] = [
   { id: "done", label: "Done", statuses: ["done"] },
 ]
 
-const defaultSessionKey = (id: string) => `task-${id}`
+const defaultSessionKey = (id: string) => `activity-${id}`
 
 export function AIBoard({
   items,
@@ -62,9 +64,10 @@ export function AIBoard({
   runningStatuses = ["running"],
   approveStatuses = ["needs_you"],
   onLoadHistory,
-  headerAction,
+  onNewPanelOpenerReady,
   thinkingIndicator,
   panelAvatar,
+  onPanelOpenChange,
 }: AIBoardProps) {
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [newPanelOpen, setNewPanelOpen] = useState(false)
@@ -104,6 +107,11 @@ export function AIBoard({
     setNewPanelOpen(true)
   }, [setSelectedId])
 
+  // Expose openNewPanel to parent
+  useEffect(() => {
+    onNewPanelOpenerReady?.(openNewPanel)
+  }, [onNewPanelOpenerReady, openNewPanel])
+
   const resolvedColumns = columns ?? DEFAULT_COLUMNS
 
   const handleDelete = useCallback(
@@ -128,9 +136,9 @@ export function AIBoard({
       if (selectedItem && onSendMessage) {
         await onSendMessage(sessionKeyFor(selectedItem.id), text)
       } else if (newPanelOpen && onCreateConversation) {
-        const taskId = await onCreateConversation(text)
+        const activityId = await onCreateConversation(text)
         setNewPanelOpen(false)
-        setSelectedId(taskId)
+        setSelectedId(activityId)
       }
     },
     [selectedItem, onSendMessage, sessionKeyFor, newPanelOpen, onCreateConversation, setSelectedId],
@@ -146,13 +154,13 @@ export function AIBoard({
   const showPanel = selectedItem || newPanelOpen
   const panelTitle = selectedItem?.title ?? "New conversation"
 
+  // Notify parent when panel opens/closes
+  useEffect(() => {
+    onPanelOpenChange?.(!!showPanel)
+  }, [!!showPanel, onPanelOpenChange]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const board = (
     <div className="flex flex-col h-full">
-      {headerAction && (
-        <div className="shrink-0 px-3 pt-3">
-          {headerAction(openNewPanel)}
-        </div>
-      )}
       <KanbanBoard
         columns={resolvedColumns}
         items={items}

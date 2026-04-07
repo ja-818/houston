@@ -10,7 +10,7 @@ export const devOps: ExperienceManifest = {
   tags: ["devops", "infrastructure", "ci/cd", "monitoring", "deploy"],
   tabs: [
     { id: "chat", label: "Chat", builtIn: "chat" },
-    { id: "tasks", label: "Incidents", builtIn: "board" },
+    { id: "activity", label: "Incidents", builtIn: "board" },
     { id: "files", label: "Runbooks", builtIn: "files" },
     { id: "channels", label: "Alerts", builtIn: "channels" },
     { id: "skills", label: "Skills", builtIn: "skills" },

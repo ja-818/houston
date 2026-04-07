@@ -2,12 +2,12 @@
  * Centralized query key factory for TanStack Query.
  *
  * Every workspace-scoped query is keyed by [resource, workspacePath].
- * This makes invalidation trivial: on a "TasksChanged" event for path X,
- * invalidate queryKeys.tasks(X).
+ * This makes invalidation trivial: on an "ActivityChanged" event for path X,
+ * invalidate queryKeys.activity(X).
  */
 export const queryKeys = {
   // Workspace-scoped (reactive via file watcher + Tauri events)
-  tasks: (workspacePath: string) => ["tasks", workspacePath] as const,
+  activity: (workspacePath: string) => ["activity", workspacePath] as const,
   skills: (workspacePath: string) => ["skills", workspacePath] as const,
   skillDetail: (workspacePath: string, name: string) =>
     ["skill-detail", workspacePath, name] as const,

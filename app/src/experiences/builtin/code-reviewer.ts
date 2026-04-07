@@ -10,7 +10,7 @@ export const codeReviewer: ExperienceManifest = {
   tags: ["code", "review", "git", "quality"],
   tabs: [
     { id: "chat", label: "Chat", builtIn: "chat" },
-    { id: "tasks", label: "Reviews", builtIn: "board" },
+    { id: "activity", label: "Reviews", builtIn: "board" },
     { id: "files", label: "Files", builtIn: "files" },
     { id: "skills", label: "Skills", builtIn: "skills" },
     { id: "learnings", label: "Learnings", builtIn: "learnings" },

@@ -166,7 +166,7 @@ interface RawConversation {
   id: string;
   title: string;
   status?: string;
-  type: "primary" | "task";
+  type: "primary" | "activity";
   session_key: string;
   updated_at?: string;
   workspace_path: string;
@@ -180,24 +180,24 @@ export const tauriConversations = {
     invoke<RawConversation[]>("list_all_conversations", { workspace_paths: workspacePaths }),
 };
 
-export const tauriTasks = {
+export const tauriActivity = {
   list: (workspacePath: string) =>
     invoke<Array<{ id: string; title: string; description?: string; status: string; updated_at?: string }>>(
-      "list_tasks",
+      "list_activity",
       { workspace_path: workspacePath },
     ),
   create: (workspacePath: string, title: string, description?: string) =>
     invoke<{ id: string; title: string; status: string }>(
-      "create_task",
+      "create_activity",
       { workspace_path: workspacePath, title, description },
     ),
   update: (
     workspacePath: string,
-    taskId: string,
+    activityId: string,
     update: { status?: string; title?: string; description?: string },
-  ) => invoke<void>("update_task", { workspace_path: workspacePath, task_id: taskId, updates: update }),
-  delete: (workspacePath: string, taskId: string) =>
-    invoke<void>("delete_task", { workspace_path: workspacePath, task_id: taskId }),
+  ) => invoke<void>("update_activity", { workspace_path: workspacePath, activity_id: activityId, updates: update }),
+  delete: (workspacePath: string, activityId: string) =>
+    invoke<void>("delete_activity", { workspace_path: workspacePath, activity_id: activityId }),
 };
 
 export const tauriConfig = {
@@ -217,4 +217,10 @@ export const tauriPreferences = {
 export const tauriSystem = {
   checkClaudeCli: () => invoke<boolean>("check_claude_cli"),
   openUrl: (url: string) => invoke<void>("open_url", { url }),
+};
+
+export const tauriWatcher = {
+  start: (workspacePath: string) =>
+    invoke<void>("start_workspace_watcher", { workspace_path: workspacePath }),
+  stop: () => invoke<void>("stop_workspace_watcher"),
 };

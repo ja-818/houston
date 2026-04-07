@@ -10,7 +10,7 @@ export const contentWriter: ExperienceManifest = {
   tags: ["writing", "content", "blog", "copy", "docs"],
   tabs: [
     { id: "chat", label: "Chat", builtIn: "chat" },
-    { id: "tasks", label: "Drafts", builtIn: "board" },
+    { id: "activity", label: "Drafts", builtIn: "board" },
     { id: "files", label: "Content", builtIn: "files" },
     { id: "skills", label: "Skills", builtIn: "skills" },
     { id: "learnings", label: "Style Guide", builtIn: "learnings" },

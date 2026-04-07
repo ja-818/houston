@@ -18,8 +18,8 @@ export function useWorkspaceInvalidation() {
       const p = event.payload;
 
       switch (p.type) {
-        case "TasksChanged":
-          qc.invalidateQueries({ queryKey: queryKeys.tasks(p.data.workspace_path) });
+        case "ActivityChanged":
+          qc.invalidateQueries({ queryKey: queryKeys.activity(p.data.workspace_path) });
           qc.invalidateQueries({ queryKey: ["all-conversations"] });
           break;
         case "SkillsChanged":
@@ -44,11 +44,10 @@ export function useWorkspaceInvalidation() {
           qc.invalidateQueries({ queryKey: queryKeys.conversations(p.data.workspace_path) });
           qc.invalidateQueries({ queryKey: ["all-conversations"] });
           break;
-        // SessionStatus triggers task invalidation (agent finished → task status changed)
+        // SessionStatus triggers activity invalidation (agent finished → status changed)
         case "SessionStatus":
           if (p.data.status === "completed" || p.data.status === "error") {
-            // Invalidate all tasks — we don't know which workspace path from session_key alone
-            qc.invalidateQueries({ queryKey: ["tasks"] });
+            qc.invalidateQueries({ queryKey: ["activity"] });
             qc.invalidateQueries({ queryKey: ["all-conversations"] });
           }
           break;
