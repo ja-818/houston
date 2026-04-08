@@ -190,7 +190,7 @@ export function FileRow({
         <FileMenu
           file={file} position={menu}
           onClose={() => setMenu(null)}
-          onOpen={onOpen} onReveal={onReveal} onDelete={onDelete}
+          onOpen={onOpen} onRename={onRename ? startRename : undefined} onReveal={onReveal} onDelete={onDelete}
         />
       )}
     </>

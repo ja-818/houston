@@ -4,7 +4,7 @@
  */
 import type { ReactNode } from "react"
 import { createPortal } from "react-dom"
-import { ExternalLink, FolderSearch, Trash2 } from "lucide-react"
+import { ExternalLink, FolderSearch, Pencil, Trash2 } from "lucide-react"
 import type { FileEntry } from "./types"
 
 export function FileMenu({
@@ -12,6 +12,7 @@ export function FileMenu({
   position,
   onClose,
   onOpen,
+  onRename,
   onReveal,
   onDelete,
 }: {
@@ -19,6 +20,7 @@ export function FileMenu({
   position: { x: number; y: number }
   onClose: () => void
   onOpen?: (file: FileEntry) => void
+  onRename?: () => void
   onReveal?: (file: FileEntry) => void
   onDelete?: (file: FileEntry) => void
 }) {
@@ -37,10 +39,13 @@ export function FileMenu({
         {onOpen && (
           <MenuItem onClick={() => { onOpen(file); onClose() }} icon={<ExternalLink />} label="Open" />
         )}
+        {onRename && (
+          <MenuItem onClick={() => { onRename(); onClose() }} icon={<Pencil />} label="Rename" />
+        )}
         {onReveal && (
           <MenuItem onClick={() => { onReveal(file); onClose() }} icon={<FolderSearch />} label="Show in Finder" />
         )}
-        {(onOpen || onReveal) && onDelete && <div className="-mx-1 my-1 h-px bg-border" />}
+        {(onOpen || onRename || onReveal) && onDelete && <div className="-mx-1 my-1 h-px bg-border" />}
         {onDelete && (
           <MenuItem onClick={() => { onDelete(file); onClose() }} icon={<Trash2 />} label="Move to Trash" destructive />
         )}
