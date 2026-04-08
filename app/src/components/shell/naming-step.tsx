@@ -4,16 +4,17 @@ import { ArrowLeft, Check } from "lucide-react";
 import type { AgentDefinition } from "../../lib/types";
 import { getHoustonLogo, isLightColor } from "./experience-card";
 
-/** Blue–orange spectrum: 5 dark (white logo) + 5 light (black logo) */
 const AGENT_COLORS = [
-  // Dark — green to yellow (white helmet)
+  "#f9f9f9", // white
+  "#0d0d0d", // black
+  // Dark (white helmet)
   "#0f3d20", // deep green
   "#162d4a", // deep blue
   "#2d0550", // deep purple
   "#6b1a1a", // deep red
   "#7c3510", // deep orange
   "#6b5010", // deep yellow
-  // Light — yellow to green (black helmet)
+  // Light (black helmet)
   "#fef3c7", // light yellow
   "#fed7aa", // light orange
   "#fecdd3", // light red
@@ -43,11 +44,10 @@ export function NamingStep({
   onBack,
   onSubmit,
 }: NamingStepProps) {
-  // Pick a random color on mount if none selected
+  // Default to white on mount if none selected
   useEffect(() => {
     if (!color) {
-      const idx = Math.floor(Math.random() * AGENT_COLORS.length);
-      onColorChange(AGENT_COLORS[idx]);
+      onColorChange(AGENT_COLORS[0]);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
