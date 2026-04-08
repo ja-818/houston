@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanColumnConfig } from "@houston-ai/board";
 import {
@@ -12,11 +12,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@houston-ai/core";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import houstonIcon from "../assets/houston-icon.svg";
 import houstonIconWhite from "../assets/houston-icon-white.svg";
 import { useAgentStore } from "../stores/agents";
 import { useUIStore } from "../stores/ui";
+import { tauriChat } from "../lib/tauri";
 import { useMissionControl } from "./use-mission-control";
 import { MissionControlNewDialog } from "./mission-control-new-dialog";
 import { useDetailPanelContainer } from "./shell/detail-panel-context";
@@ -37,6 +38,13 @@ export function Dashboard() {
   const [newDialogOpen, setNewDialogOpen] = useState(false);
 
   const mc = useMissionControl(agents);
+
+  const handleStopSession = useCallback(
+    (sessionKey: string) => {
+      tauriChat.stop(sessionKey).catch(console.error);
+    },
+    [],
+  );
 
   const filteredItems = useMemo(
     () =>
@@ -149,6 +157,7 @@ export function Dashboard() {
           emptyState={emptyBoard}
           panelContainer={panelContainer}
           onPanelOpenChange={setMissionPanelOpen}
+          onStopSession={handleStopSession}
           panelAvatar={
             <span className="size-10 rounded-full ring-1 ring-border flex items-center justify-center shrink-0">
               <img src={houstonIcon} alt="Houston" className="size-6" />
