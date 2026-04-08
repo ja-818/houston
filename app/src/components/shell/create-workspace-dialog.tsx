@@ -4,6 +4,7 @@ import { useAgentCatalogStore } from "../../stores/agent-catalog";
 import { useAgentStore } from "../../stores/agents";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useUIStore } from "../../stores/ui";
+import { tauriChat } from "../../lib/tauri";
 import type { AgentCategory, StoreListing } from "../../lib/types";
 import { StoreStep } from "./store-step";
 import { NamingStep } from "./naming-step";
@@ -44,8 +45,28 @@ export function CreateAgentDialog() {
     const trimmed = name.trim();
     if (!trimmed || !selectedConfigId || !currentWorkspace) return;
     try {
-      await createAgent(currentWorkspace.id, trimmed, selectedConfigId, selectedDef?.config.claudeMd);
-      // Select the new agent's default tab so there's always an active tab
+      const agent = await createAgent(currentWorkspace.id, trimmed, selectedConfigId, selectedDef?.config.claudeMd);
+      // For blank agents, kick off the onboarding conversation
+      if (selectedConfigId === "blank") {
+        tauriChat.send(
+          agent.folderPath,
+          `This is a brand new agent with no configuration yet. Welcome the user and briefly tell them what they can provide to get this agent working:
+
+- A job description - What role do you want me to perform? e.g. SDR, Executive assistant, Customer Support Agent, Engineer.
+- Tools and integrations - Need Gmail or Slack? You can ask me connect any tool that has an API or an MCP, and those that don't have one, we'll find a way around.
+- Routines (anything to run on a schedule)
+
+Keep it short and warm. End with something like "Or if you'd rather skip setup and jump straight in, just tell me what you need — we can figure it out as we go."
+
+IMPORTANT — Setup validation:
+Once the user provides their job description, you MUST write BOTH of these before setup is complete:
+1. Update CLAUDE.md at the workspace root with the agent's role, responsibilities, and rules based on what the user described.
+2. Create at least one skill file in .agents/skills/ (e.g. .agents/skills/core-workflow.md) with an ## Instructions section covering the agent's primary workflow. Use the skill.sh convention: each skill is a markdown file with ## Instructions and ## Learnings sections.
+
+Do NOT consider setup complete until both CLAUDE.md and at least one skill have been written. If the user skips the description and jumps straight to a task, still write a CLAUDE.md and skill based on what you can infer from the task.`,
+          "activity-onboarding",
+        );
+      }
       const firstTab = selectedDef?.config.defaultTab ?? selectedDef?.config.tabs[0]?.id ?? "chat";
       useUIStore.getState().setViewMode(firstTab);
       handleClose();

@@ -52,6 +52,10 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       current: agent,
     }));
     tauriPreferences.set("last_agent_id", agent.id);
+    // Start file watcher so agent writes (CLAUDE.md, skills) trigger query invalidation
+    tauriWatcher.start(agent.folderPath).catch((e) =>
+      console.error("[watcher] Failed to start:", e),
+    );
     return agent;
   },
 
