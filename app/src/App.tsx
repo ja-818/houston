@@ -27,6 +27,7 @@ import { useWorkspaceStore } from "./stores/workspaces";
 import { useAgentStore } from "./stores/agents";
 import { useAgentCatalogStore } from "./stores/agent-catalog";
 import { useUIStore } from "./stores/ui";
+import { useActivity } from "./hooks/queries";
 import { Sidebar } from "./components/shell/sidebar";
 import { CreateAgentDialog } from "./components/shell/create-workspace-dialog";
 import { AgentRenderer } from "./components/shell/experience-renderer";
@@ -72,6 +73,8 @@ export default function App() {
 
   const agentDef = currentAgent ? getById(currentAgent.configId) : undefined;
   const tabs = agentDef?.config.tabs ?? [];
+  const { data: activities } = useActivity(currentAgent?.folderPath);
+  const needsYouCount = (activities ?? []).filter((a) => a.status === "needs_you").length;
 
   // Auto-correct viewMode if it doesn't match any tab on the current agent
   const isAgentView = viewMode !== "dashboard" && viewMode !== "connections";
@@ -133,7 +136,11 @@ export default function App() {
                 <>
                   <TabBar
                     title={currentAgent.name}
-                    tabs={tabs.map((t) => ({ id: t.id, label: t.label }))}
+                    tabs={tabs.map((t) => ({
+                      id: t.id,
+                      label: t.label,
+                      badge: t.badge === "activity" ? needsYouCount : undefined,
+                    }))}
                     activeTab={viewMode}
                     onTabChange={setViewMode}
                     actions={
