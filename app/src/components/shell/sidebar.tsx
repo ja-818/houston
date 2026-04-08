@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { LayoutDashboard, Blend, Settings } from "lucide-react";
-import { Button } from "@houston-ai/core";
+import { Button, ConfirmDialog } from "@houston-ai/core";
 import { AppSidebar, WorkspaceSwitcher } from "@houston-ai/layout";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useAgentStore } from "../../stores/agents";
@@ -20,6 +20,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
   const loadAgents = useAgentStore((s) => s.loadAgents);
   const renameAgent = useAgentStore((s) => s.rename);
   const deleteAgent = useAgentStore((s) => s.delete);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const getById = useAgentCatalogStore((s) => s.getById);
   const viewMode = useUIStore((s) => s.viewMode);
@@ -68,13 +69,26 @@ export function Sidebar({ children }: { children: ReactNode }) {
     await renameAgent(currentWorkspace.id, agentId, newName);
   };
 
-  const handleDelete = async (agentId: string) => {
-    if (!currentWorkspace) return;
-    if (!window.confirm("Delete this agent? This cannot be undone.")) return;
-    await deleteAgent(currentWorkspace.id, agentId);
+  const handleDelete = (agentId: string) => {
+    setPendingDeleteId(agentId);
+  };
+
+  const confirmDelete = async () => {
+    if (!currentWorkspace || !pendingDeleteId) return;
+    await deleteAgent(currentWorkspace.id, pendingDeleteId);
+    setPendingDeleteId(null);
   };
 
   return (
+    <>
+    <ConfirmDialog
+      open={pendingDeleteId !== null}
+      onOpenChange={(open) => { if (!open) setPendingDeleteId(null); }}
+      title="Delete agent?"
+      description="This will permanently delete the agent and all its data. This cannot be undone."
+      confirmLabel="Delete"
+      onConfirm={confirmDelete}
+    />
     <div className="flex h-full flex-1 min-w-0">
       <AppSidebar
         header={
@@ -123,5 +137,6 @@ export function Sidebar({ children }: { children: ReactNode }) {
         </div>
       </AppSidebar>
     </div>
+    </>
   );
 }
