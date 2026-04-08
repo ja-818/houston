@@ -6,7 +6,7 @@ import type { FeedItem } from "@houston-ai/chat";
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
 import { useActivity, useDeleteActivity, useUpdateActivity, useCreateActivity } from "../../hooks/queries";
-import { tauriActivity, tauriChat } from "../../lib/tauri";
+import { tauriActivity, tauriChat, tauriAttachments, withAttachmentPaths } from "../../lib/tauri";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
 import type { TabProps } from "../../lib/types";
 import { useDetailPanelContainer } from "../shell/detail-panel-context";
@@ -33,13 +33,18 @@ function ThinkingIndicator({ color }: { color?: string }) {
 export default function BoardTab({ agent }: TabProps) {
   const panelContainer = useDetailPanelContainer();
   const path = agent.folderPath;
-  const { isSpecialTool, renderToolResult } = useFileToolRenderer(path);
+  const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(path);
   const { data: rawItems } = useActivity(path);
   const deleteActivity = useDeleteActivity(path);
   const updateActivity = useUpdateActivity(path);
   const createActivity = useCreateActivity(path);
   const setOnStartMission = useUIStore((s) => s.setOnStartMission);
   const setMissionPanelOpen = useUIStore((s) => s.setMissionPanelOpen);
+  const addToast = useUIStore((s) => s.addToast);
+  const handleNotice = useCallback(
+    (message: string) => addToast({ title: message }),
+    [addToast],
+  );
   const openerRef = useRef<(() => void) | null>(null);
 
   const items: KanbanItem[] = (rawItems ?? []).map((t) => ({
@@ -133,14 +138,19 @@ export default function BoardTab({ agent }: TabProps) {
   );
 
   const handleCreateConversation = useCallback(
-    async (text: string) => {
+    async (text: string, files: File[]) => {
       const title = text.length > 80 ? text.slice(0, 77) + "..." : text;
       const item = await createActivity.mutateAsync({ title, description: text });
       const sessionKey = `activity-${item.id}`;
-      pushFeedItem(sessionKey, { feed_type: "user_message", data: text });
+      const visible = files.length > 0
+        ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
+        : text;
+      pushFeedItem(sessionKey, { feed_type: "user_message", data: visible });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
       await updateActivity.mutateAsync({ activityId: item.id, update: { status: "running" } });
-      tauriChat.send(path, text, sessionKey);
+      const paths = await tauriAttachments.save(`activity-${item.id}`, files);
+      const prompt = withAttachmentPaths(text, paths);
+      tauriChat.send(path, prompt, sessionKey);
       return item.id;
     },
     [path, pushFeedItem, createActivity, updateActivity],
@@ -163,8 +173,11 @@ export default function BoardTab({ agent }: TabProps) {
   );
 
   const handleSendMessage = useCallback(
-    async (sessionKey: string, text: string) => {
-      pushFeedItem(sessionKey, { feed_type: "user_message", data: text });
+    async (sessionKey: string, text: string, files: File[]) => {
+      const visible = files.length > 0
+        ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
+        : text;
+      pushFeedItem(sessionKey, { feed_type: "user_message", data: visible });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
       // Find the activity ID from the session key to update its status
       const activity = (rawItems ?? []).find(
@@ -173,7 +186,12 @@ export default function BoardTab({ agent }: TabProps) {
       if (activity) {
         tauriActivity.update(path, activity.id, { status: "running" }).catch(console.error);
       }
-      tauriChat.send(path, text, sessionKey);
+      // Scope by activity id so attachments outlive vacations and are wiped
+      // when the activity (conversation) is deleted.
+      const scopeId = activity ? `activity-${activity.id}` : sessionKey;
+      const paths = await tauriAttachments.save(scopeId, files);
+      const prompt = withAttachmentPaths(text, paths);
+      tauriChat.send(path, prompt, sessionKey);
     },
     [path, pushFeedItem, rawItems],
   );
@@ -197,6 +215,8 @@ export default function BoardTab({ agent }: TabProps) {
       onStopSession={handleStopSession}
       isSpecialTool={isSpecialTool}
       renderToolResult={renderToolResult}
+      renderTurnSummary={renderTurnSummary}
+      onNotice={handleNotice}
       thinkingIndicator={<ThinkingIndicator color={agent.color} />}
       panelAgentName={agent.name}
       panelAvatar={

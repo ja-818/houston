@@ -21,7 +21,7 @@ const TEXT_EXTS = new Set(["md", "txt", "doc", "docx", "rtf", "csv", "log"]);
 
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp"]);
 
-function getFileIcon(ext?: string): LucideIcon {
+export function getFileIcon(ext?: string): LucideIcon {
   if (!ext) return FileIcon;
   if (CODE_EXTS.has(ext)) return FileCodeIcon;
   if (TEXT_EXTS.has(ext)) return FileTextIcon;

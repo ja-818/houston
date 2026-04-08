@@ -17,9 +17,9 @@ export interface AIBoardProps {
   onDelete?: (item: KanbanItem) => void
   onApprove?: (item: KanbanItem) => void
   /** Called when user sends the first message in a new conversation. Should return the created activity ID. */
-  onCreateConversation?: (text: string) => Promise<string>
+  onCreateConversation?: (text: string, files: File[]) => Promise<string>
   /** Called when user sends a follow-up message in an existing conversation. */
-  onSendMessage?: (sessionKey: string, text: string) => Promise<void>
+  onSendMessage?: (sessionKey: string, text: string, files: File[]) => Promise<void>
   /** Feed items keyed by session key (e.g. "activity-{id}"). */
   feedItems?: Record<string, FeedItem[]>
   /** Whether a message is currently being processed, keyed by session key. */
@@ -52,6 +52,11 @@ export interface AIBoardProps {
   renderToolResult?: ToolsAndCardsProps["renderToolResult"]
   /** Custom tool name → human label mappings. */
   toolLabels?: ToolsAndCardsProps["toolLabels"]
+  /** Render prop for an end-of-turn summary (e.g., list of edited files). Forwarded to ChatPanel. */
+  renderTurnSummary?: import("@houston-ai/chat").ChatPanelProps["renderTurnSummary"]
+  /** Emitted by ChatPanel to surface short notices to the user
+   *  (e.g. duplicate-file drop). Forwarded as-is; app decides display. */
+  onNotice?: (message: string) => void
   /**
    * DOM element to portal the detail panel into. When provided, the panel
    * renders via createPortal into this element (for app-level layout).
@@ -95,6 +100,8 @@ export function AIBoard({
   isSpecialTool,
   renderToolResult,
   toolLabels,
+  renderTurnSummary,
+  onNotice,
 }: AIBoardProps) {
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [newPanelOpen, setNewPanelOpen] = useState(false)
@@ -159,11 +166,11 @@ export function AIBoard({
 
   // Unified send handler: creates conversation on first message, sends follow-ups after
   const handleSend = useCallback(
-    async (text: string) => {
+    async (text: string, files: File[]) => {
       if (selectedItem && onSendMessage) {
-        await onSendMessage(sessionKeyFor(selectedItem.id), text)
+        await onSendMessage(sessionKeyFor(selectedItem.id), text, files)
       } else if (newPanelOpen && onCreateConversation) {
-        const activityId = await onCreateConversation(text)
+        const activityId = await onCreateConversation(text, files)
         setNewPanelOpen(false)
         setSelectedId(activityId)
       }
@@ -231,6 +238,8 @@ export function AIBoard({
           isSpecialTool={isSpecialTool}
           renderToolResult={renderToolResult}
           toolLabels={toolLabels}
+          renderTurnSummary={renderTurnSummary}
+          onNotice={onNotice}
         />
       </div>
     </KanbanDetailPanel>

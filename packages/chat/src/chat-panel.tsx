@@ -3,30 +3,17 @@
  * Follows the Vercel AI Elements chatbot example exactly.
  * Generic version: accepts feedItems/status as props, no store dependencies.
  */
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type { FeedItem } from "./types";
 import type { ReactNode } from "react";
 
-import {
-  Conversation,
-  ConversationContent,
-  ConversationScrollButton,
-} from "./ai-elements/conversation";
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from "./ai-elements/message";
-import {
-  Reasoning,
-  ReasoningContent,
-  ReasoningTrigger,
-} from "./ai-elements/reasoning";
-
-import { feedItemsToMessages, ToolsAndCards } from "./chat-helpers";
+import { feedItemsToMessages } from "./chat-helpers";
 import type { ToolsAndCardsProps } from "./chat-helpers";
+import type { ToolEntry } from "./feed-to-messages";
 import { ChatInput } from "./chat-input";
+import { ChatMessages, ChatDropOverlay } from "./chat-messages";
 import { Shimmer } from "./ai-elements/shimmer";
+import { useFileDropZone, useControllable, mergeUniqueFiles } from "./use-file-drop-zone";
 
 // ---------------------------------------------------------------------------
 // ChatPanel props
@@ -43,6 +30,17 @@ export interface ChatPanelProps {
   isLoading: boolean;
   placeholder?: string;
   emptyState?: ReactNode;
+  /** Controlled composer text. Forwarded to ChatInput. */
+  value?: string;
+  /** Required if `value` is provided. */
+  onValueChange?: (value: string) => void;
+  /** Controlled composer attachments. Forwarded to ChatInput. */
+  attachments?: File[];
+  /** Required if `attachments` is provided. */
+  onAttachmentsChange?: (files: File[]) => void;
+  /** Emitted when the library wants to surface a short notice to the user
+   *  (e.g. a duplicate-file drop). The app decides how to display it. */
+  onNotice?: (message: string) => void;
   /** Override status derivation. If not provided, status is derived from feedItems. */
   status?: ChatStatus;
   /**
@@ -65,6 +63,15 @@ export interface ChatPanelProps {
   renderToolResult?: ToolsAndCardsProps["renderToolResult"];
   /** Optional callback to render an avatar for a message (e.g., channel logo). */
   renderMessageAvatar?: (msg: import("./feed-to-messages").ChatMessage) => ReactNode | undefined;
+  /**
+   * Optional render prop called once per *completed* assistant turn, on the
+   * last assistant message of that turn. Receives all tools from every
+   * assistant message in the turn (aggregated). Returned node is rendered
+   * below the assistant comment. The app uses this to show a summary of
+   * files edited/created during the turn. Not called while the turn is
+   * still streaming.
+   */
+  renderTurnSummary?: (tools: ToolEntry[]) => ReactNode;
 }
 
 function deriveStatus(items: FeedItem[], isLoading: boolean): ChatStatus {
@@ -103,13 +110,54 @@ export function ChatPanel({
   isSpecialTool,
   renderToolResult,
   renderMessageAvatar,
+  renderTurnSummary,
+  value,
+  onValueChange,
+  attachments,
+  onAttachmentsChange,
+  onNotice,
 }: ChatPanelProps) {
   const status = statusProp ?? deriveStatus(feedItems, isLoading);
   const messages = useMemo(() => feedItemsToMessages(feedItems), [feedItems]);
   const hasMessages = messages.length > 0;
 
+  // Attachments state lives at ChatPanel level so the ENTIRE panel can act as
+  // a drop target (not just the composer). When the parent passes controlled
+  // props we forward them; otherwise we manage internally and clear on send.
+  const [files, setFiles] = useControllable<File[]>(
+    attachments,
+    onAttachmentsChange,
+    [],
+  );
+  const isFilesControlled = attachments !== undefined;
+  const addDroppedFiles = useCallback(
+    (dropped: File[]) => {
+      const merged = mergeUniqueFiles(files, dropped);
+      if (merged.length < files.length + dropped.length) {
+        onNotice?.("File already in chat");
+      }
+      setFiles(merged);
+    },
+    [files, setFiles, onNotice],
+  );
+  const { isDraggingOver, dropProps } = useFileDropZone(addDroppedFiles);
+
+  // Wrap onSend so we clear internally-managed attachments after a send;
+  // in controlled mode the parent is responsible for clearing.
+  const handleSend = useCallback(
+    (text: string, sent: File[]) => {
+      onSend(text, sent);
+      if (!isFilesControlled) setFiles([]);
+    },
+    [onSend, isFilesControlled, setFiles],
+  );
+
   return (
-    <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+    <div
+      className="relative flex flex-1 flex-col min-h-0 overflow-hidden"
+      {...dropProps}
+    >
+      <ChatDropOverlay visible={isDraggingOver} />
       {onBack && (
         <div className="max-w-3xl mx-auto w-full px-4 pt-3">
           <button
@@ -121,71 +169,17 @@ export function ChatPanel({
         </div>
       )}
       {hasMessages || status !== "ready" ? (
-        <Conversation className="flex-1 min-h-0">
-          <ConversationContent className="max-w-3xl mx-auto">
-            {messages.map((msg, idx) => {
-              if (msg.from === "system") {
-                return (
-                  <div key={msg.key} className="flex justify-center py-2">
-                    <span className="text-xs text-muted-foreground/60 italic">
-                      {msg.content}
-                    </span>
-                  </div>
-                );
-              }
-              const isLastMsg = idx === messages.length - 1;
-              const streaming = msg.isStreaming && isLastMsg;
-              return (
-                <Message from={msg.from} key={msg.key} avatar={renderMessageAvatar?.(msg)}>
-                  <div>
-                    {msg.reasoning && (
-                      <Reasoning
-                        isStreaming={msg.reasoning.isStreaming && isLastMsg}
-                        defaultOpen={msg.reasoning.isStreaming && isLastMsg}
-                      >
-                        <ReasoningTrigger />
-                        <ReasoningContent>
-                          {msg.reasoning.content}
-                        </ReasoningContent>
-                      </Reasoning>
-                    )}
-                    {msg.tools.length > 0 && (
-                      <ToolsAndCards
-                        tools={msg.tools}
-                        isStreaming={streaming}
-                        toolLabels={toolLabels}
-                        isSpecialTool={isSpecialTool}
-                        renderToolResult={renderToolResult}
-                      />
-                    )}
-                    {msg.content && (() => {
-                      const transformed = msg.from === "assistant" && transformContent
-                        ? transformContent(msg.content)
-                        : null;
-                      const displayContent = transformed?.content ?? msg.content;
-                      return (
-                        <MessageContent>
-                          <MessageResponse isAnimating={streaming}>
-                            {displayContent}
-                          </MessageResponse>
-                          {transformed?.extra}
-                        </MessageContent>
-                      );
-                    })()}
-                  </div>
-                </Message>
-              );
-            })}
-            {status === "submitted" && (
-              <Message from="assistant">
-                <MessageContent>
-                  {thinkingIndicator ?? <DefaultThinkingIndicator />}
-                </MessageContent>
-              </Message>
-            )}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
+        <ChatMessages
+          messages={messages}
+          status={status}
+          thinkingIndicator={thinkingIndicator ?? <DefaultThinkingIndicator />}
+          transformContent={transformContent}
+          toolLabels={toolLabels}
+          isSpecialTool={isSpecialTool}
+          renderToolResult={renderToolResult}
+          renderMessageAvatar={renderMessageAvatar}
+          renderTurnSummary={renderTurnSummary}
+        />
       ) : (
         <div className="flex-1 min-h-0 flex items-center justify-center">
           {emptyState}
@@ -193,10 +187,15 @@ export function ChatPanel({
       )}
 
       <ChatInput
-        onSend={onSend}
+        onSend={handleSend}
         onStop={onStop}
         status={status}
         placeholder={placeholder}
+        value={value}
+        onValueChange={onValueChange}
+        attachments={files}
+        onAttachmentsChange={setFiles}
+        onNotice={onNotice}
       />
     </div>
   );
