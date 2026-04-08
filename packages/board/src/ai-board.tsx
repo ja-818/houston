@@ -57,6 +57,8 @@ export interface AIBoardProps {
   /** Emitted by ChatPanel to surface short notices to the user
    *  (e.g. duplicate-file drop). Forwarded as-is; app decides display. */
   onNotice?: (message: string) => void
+  /** Called when the user clicks the open button on an inline link. Forwarded to ChatPanel. */
+  onOpenLink?: import("@houston-ai/chat").ChatPanelProps["onOpenLink"]
   /**
    * DOM element to portal the detail panel into. When provided, the panel
    * renders via createPortal into this element (for app-level layout).
@@ -102,6 +104,7 @@ export function AIBoard({
   toolLabels,
   renderTurnSummary,
   onNotice,
+  onOpenLink,
 }: AIBoardProps) {
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [newPanelOpen, setNewPanelOpen] = useState(false)
@@ -240,6 +243,7 @@ export function AIBoard({
           toolLabels={toolLabels}
           renderTurnSummary={renderTurnSummary}
           onNotice={onNotice}
+          onOpenLink={onOpenLink}
         />
       </div>
     </KanbanDetailPanel>

@@ -40,6 +40,7 @@ export interface ChatMessagesProps {
   renderToolResult?: ToolsAndCardsProps["renderToolResult"];
   renderMessageAvatar?: (msg: ChatMessage) => ReactNode | undefined;
   renderTurnSummary?: (tools: ToolEntry[]) => ReactNode;
+  onOpenLink?: (url: string) => void;
 }
 
 /**
@@ -79,6 +80,7 @@ export function ChatMessages({
   renderToolResult,
   renderMessageAvatar,
   renderTurnSummary,
+  onOpenLink,
 }: ChatMessagesProps) {
   const turnEndTools = useMemo(
     () => computeTurnEndTools(messages, status),
@@ -130,7 +132,7 @@ export function ChatMessages({
                   const displayContent = transformed?.content ?? msg.content;
                   return (
                     <MessageContent>
-                      <MessageResponse isAnimating={streaming}>
+                      <MessageResponse isAnimating={streaming} onOpenLink={onOpenLink}>
                         {displayContent}
                       </MessageResponse>
                       {transformed?.extra}

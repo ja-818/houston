@@ -9,7 +9,7 @@ import {
 } from "@houston-ai/core";
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
-import { tauriChat, tauriAttachments, withAttachmentPaths } from "../../lib/tauri";
+import { tauriChat, tauriAttachments, tauriSystem, withAttachmentPaths } from "../../lib/tauri";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
 import type { TabProps } from "../../lib/types";
 
@@ -50,6 +50,10 @@ export default function ChatTab({ agent }: TabProps) {
     tauriChat.stop(sessionKey).catch(console.error);
   }, [sessionKey]);
 
+  const handleOpenLink = useCallback((url: string) => {
+    tauriSystem.openUrl(url).catch(console.error);
+  }, []);
+
   const handleSend = useCallback(
     async (text: string, files: File[]) => {
       if (sendingRef.current) return;
@@ -89,6 +93,7 @@ export default function ChatTab({ agent }: TabProps) {
         isLoading={isLoading}
         onSend={handleSend}
         onStop={handleStop}
+        onOpenLink={handleOpenLink}
         isSpecialTool={isSpecialTool}
         renderToolResult={renderToolResult}
         renderTurnSummary={renderTurnSummary}

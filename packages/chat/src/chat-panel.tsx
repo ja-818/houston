@@ -72,6 +72,8 @@ export interface ChatPanelProps {
    * still streaming.
    */
   renderTurnSummary?: (tools: ToolEntry[]) => ReactNode;
+  /** Called when the user clicks the open button on an inline link. */
+  onOpenLink?: (url: string) => void;
 }
 
 function deriveStatus(items: FeedItem[], isLoading: boolean): ChatStatus {
@@ -111,6 +113,7 @@ export function ChatPanel({
   renderToolResult,
   renderMessageAvatar,
   renderTurnSummary,
+  onOpenLink,
   value,
   onValueChange,
   attachments,
@@ -179,6 +182,7 @@ export function ChatPanel({
           renderToolResult={renderToolResult}
           renderMessageAvatar={renderMessageAvatar}
           renderTurnSummary={renderTurnSummary}
+          onOpenLink={onOpenLink}
         />
       ) : (
         <div className="flex-1 min-h-0 flex items-center justify-center">

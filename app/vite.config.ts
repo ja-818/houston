@@ -9,6 +9,23 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   define: { __APP_VERSION__: JSON.stringify(version) },
   clearScreen: false,
+  // Exclude workspace packages from Vite's dep pre-bundling so live edits
+  // are picked up immediately without stale cache issues.
+  optimizeDeps: {
+    exclude: [
+      "@houston-ai/chat",
+      "@houston-ai/core",
+      "@houston-ai/board",
+      "@houston-ai/layout",
+      "@houston-ai/connections",
+      "@houston-ai/events",
+      "@houston-ai/memory",
+      "@houston-ai/routines",
+      "@houston-ai/skills",
+      "@houston-ai/review",
+      "@houston-ai/agent",
+    ],
+  },
   server: {
     port: 1420,
     strictPort: true,

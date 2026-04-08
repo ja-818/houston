@@ -6,6 +6,7 @@ import type {
   SkillSummary,
   SkillDetail,
   CommunitySkillResult,
+  RepoSkill,
   FileEntry,
   LearningsData,
   ChannelEntry,
@@ -159,8 +160,10 @@ export const tauriSkills = {
     invoke<void>("delete_skill", { workspace_path: agentPath, name }),
   save: (agentPath: string, name: string, content: string) =>
     invoke<void>("save_skill", { workspace_path: agentPath, name, content }),
-  installFromRepo: (agentPath: string, source: string) =>
-    invoke<string[]>("install_skills_from_repo", { workspace_path: agentPath, source }),
+  listFromRepo: (source: string) =>
+    invoke<RepoSkill[]>("list_skills_from_repo", { source }),
+  installFromRepo: (agentPath: string, source: string, skills: RepoSkill[]) =>
+    invoke<string[]>("install_skills_from_repo", { workspace_path: agentPath, source, skills }),
   searchCommunity: (query: string) =>
     invoke<CommunitySkillResult[]>("search_community_skills", { query }),
   installCommunity: (agentPath: string, source: string, skillId: string) =>

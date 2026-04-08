@@ -6,7 +6,7 @@ import type { FeedItem } from "@houston-ai/chat";
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
 import { useActivity, useDeleteActivity, useUpdateActivity, useCreateActivity } from "../../hooks/queries";
-import { tauriActivity, tauriChat, tauriAttachments, withAttachmentPaths } from "../../lib/tauri";
+import { tauriActivity, tauriChat, tauriAttachments, tauriSystem, withAttachmentPaths } from "../../lib/tauri";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
 import type { TabProps } from "../../lib/types";
 import { useDetailPanelContainer } from "../shell/detail-panel-context";
@@ -40,11 +40,15 @@ export default function BoardTab({ agent }: TabProps) {
   const createActivity = useCreateActivity(path);
   const setOnStartMission = useUIStore((s) => s.setOnStartMission);
   const setMissionPanelOpen = useUIStore((s) => s.setMissionPanelOpen);
+  const missionPanelOpen = useUIStore((s) => s.missionPanelOpen);
   const addToast = useUIStore((s) => s.addToast);
   const handleNotice = useCallback(
     (message: string) => addToast({ title: message }),
     [addToast],
   );
+  const handleOpenLink = useCallback((url: string) => {
+    tauriSystem.openUrl(url).catch(console.error);
+  }, []);
   const openerRef = useRef<(() => void) | null>(null);
 
   const items: KanbanItem[] = (rawItems ?? []).map((t) => ({
@@ -66,10 +70,12 @@ export default function BoardTab({ agent }: TabProps) {
   const [selectedId, setSelectedId] = useState<string | null>(pendingId);
   useEffect(() => {
     if (pendingId) {
-      setSelectedId(pendingId);
+      // Only navigate if the user isn't already viewing a conversation
+      // and hasn't opened the New Mission panel.
+      if (!selectedId && !missionPanelOpen) setSelectedId(pendingId);
       clearPending(null);
     }
-  }, [pendingId, clearPending]);
+  }, [pendingId, clearPending, selectedId, missionPanelOpen]);
 
   const feedItems = useFeedStore((s) => s.items);
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
@@ -217,6 +223,7 @@ export default function BoardTab({ agent }: TabProps) {
       renderToolResult={renderToolResult}
       renderTurnSummary={renderTurnSummary}
       onNotice={handleNotice}
+      onOpenLink={handleOpenLink}
       thinkingIndicator={<ThinkingIndicator color={agent.color} />}
       panelAgentName={agent.name}
       panelAvatar={

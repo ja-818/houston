@@ -17,8 +17,8 @@ import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
+import { ChevronLeftIcon, ChevronRightIcon, ExternalLinkIcon } from "lucide-react";
+import type { AnchorHTMLAttributes, ComponentProps, HTMLAttributes, ReactElement } from "react";
 import {
   createContext,
   memo,
@@ -337,24 +337,55 @@ export const MessageBranchPage = ({
   );
 };
 
-export type MessageResponseProps = ComponentProps<typeof Streamdown>;
+export type MessageResponseProps = ComponentProps<typeof Streamdown> & {
+  onOpenLink?: (url: string) => void;
+};
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
 export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
-    <Streamdown
-      className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className
-      )}
-      plugins={streamdownPlugins}
-      {...props}
-    />
-  ),
+  ({ className, onOpenLink, ...props }: MessageResponseProps) => {
+    const components = useMemo(() => {
+      if (!onOpenLink) return undefined;
+      const fn = onOpenLink;
+      return {
+        a: ({ href, children, node: _node }: AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) => {
+          // Raw auto-linked URL: children text equals href → plain text, no button
+          if (!href || children === href) {
+            return <span>{children}</span>;
+          }
+          // Markdown link with custom text → button with text + icon
+          return (
+            <Button
+              type="button"
+              size="sm"
+              variant="default"
+              onClick={() => fn(href)}
+            >
+              {children}
+              <ExternalLinkIcon size={11} strokeWidth={2} />
+            </Button>
+          );
+        },
+      };
+    }, [onOpenLink]);
+
+    return (
+      <Streamdown
+        className={cn(
+          "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+          className
+        )}
+        plugins={streamdownPlugins}
+        components={components}
+        {...props}
+      />
+    );
+  },
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&
-    nextProps.isAnimating === prevProps.isAnimating
+    nextProps.isAnimating === prevProps.isAnimating &&
+    prevProps.onOpenLink === nextProps.onOpenLink
 );
 
 MessageResponse.displayName = "MessageResponse";
