@@ -169,8 +169,8 @@ pub fn create_agent(
         .map_err(|e| format!("Failed to create agent directory: {e}"))?;
 
     let houston = houston_dir(&folder);
-    fs::create_dir_all(houston.join("skills"))
-        .map_err(|e| format!("Failed to create .houston/skills: {e}"))?;
+    fs::create_dir_all(folder.join(".agents/skills"))
+        .map_err(|e| format!("Failed to create .agents/skills: {e}"))?;
 
     let now = now_iso();
     let meta = AgentMeta {
@@ -193,8 +193,23 @@ pub fn create_agent(
     // Seed prompt files
     crate::agent::seed_agent(&folder)?;
 
-    // Seed empty defaults
-    seed_json_if_missing(&houston, "activity.json", "[]")?;
+    // Seed onboarding activity for blank agents
+    if meta.config_id == "blank" {
+        let onboarding = serde_json::json!([{
+            "id": "onboarding",
+            "title": "Set up your agent",
+            "description": "I'll walk you through configuring your job description, connecting tools, and setting up routines.",
+            "status": "needs_you",
+            "updated_at": &meta.created_at
+        }]);
+        seed_json_if_missing(
+            &houston,
+            "activity.json",
+            &serde_json::to_string(&onboarding).unwrap_or_else(|_| "[]".to_string()),
+        )?;
+    } else {
+        seed_json_if_missing(&houston, "activity.json", "[]")?;
+    }
     seed_json_if_missing(&houston, "config.json", "{}")?;
 
     Ok(meta_to_agent(&folder, &meta))

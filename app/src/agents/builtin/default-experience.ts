@@ -1,21 +1,22 @@
 import type { AgentConfig } from "../../lib/types";
+import houstonIcon from "../../assets/houston-icon.svg";
 
-export const defaultExperience: AgentConfig = {
-  id: "default",
-  name: "AI Assistant",
-  description: "Chat with an AI assistant that can manage tasks, skills, and files",
-  icon: "Bot",
+export const blankAgent: AgentConfig = {
+  id: "blank",
+  name: "Start from scratch",
+  description: "A blank agent with no pre-configured skills, instructions, or learnings — build it your way",
+  icon: "Plus",
+  image: houstonIcon,
   category: "productivity",
   author: "Houston",
-  tags: ["general", "assistant", "activity"],
+  tags: ["blank", "custom", "starter"],
   tabs: [
     { id: "activity", label: "Activity", builtIn: "board" },
+    { id: "routines", label: "Routines", builtIn: "routines" },
     { id: "files", label: "Files", builtIn: "files" },
-    { id: "learnings", label: "Learnings", builtIn: "learnings" },
-    { id: "connections", label: "Connections", builtIn: "connections" },
-    { id: "skills", label: "Skills", builtIn: "skills" },
-    { id: "instructions", label: "Instructions", builtIn: "instructions" },
+    { id: "job-description", label: "Job Description", builtIn: "job-description" },
+    { id: "integrations", label: "Integrations", builtIn: "integrations" },
   ],
   defaultTab: "activity",
-  claudeMd: "## Instructions\n\nYou are a helpful AI assistant.\n\n## Learnings\n",
+  claudeMd: "",
 };

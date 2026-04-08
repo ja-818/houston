@@ -8,7 +8,7 @@ export interface Workspace {
 
 /** Tab definition in an agent config */
 export interface AgentTab {
-  /** Tab identifier. Built-in: "chat", "board", "skills", "files", "connections", "instructions", "routines", "channels", "events", "learnings". Custom: any string. */
+  /** Tab identifier. Built-in: "chat", "board", "files", "job-description", "integrations", "connections", "routines", "events". Custom: any string. */
   id: string;
   /** Display label in the tab bar */
   label: string;
@@ -34,7 +34,8 @@ export interface AgentConfig {
   name: string;
   description: string;
   version?: string;
-  icon?: string;           // Lucide icon name
+  icon?: string;           // Lucide icon name (fallback if no image)
+  image?: string;          // Image URL for store card
   color?: string;          // Brand color override
   category?: AgentCategory;
   author?: string;         // e.g. "Houston" for official, user name for community
@@ -121,10 +122,32 @@ export interface LearningsData {
   limit: number;
 }
 
+/** A tracked Composio integration for an agent */
+export interface TrackedIntegration {
+  toolkit: string;
+  first_used_at: string;
+  last_used_at: string;
+  use_count: number;
+}
+
 /** A channel entry from .houston/channels.json */
 export interface ChannelEntry {
   id: string;
   channel_type: string;
   name: string;
   token: string;
+}
+
+/** A listing from the Houston Store registry */
+export interface StoreListing {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  author: string;
+  tags: string[];
+  icon_url: string;
+  repo: string;
+  installs: number;
+  registered_at: string;
 }

@@ -33,6 +33,13 @@ impl Default for WatcherState {
 fn classify_change(agent_path: &str, relative: &Path) -> Option<HoustonEvent> {
     let rel_str = relative.to_string_lossy();
 
+    // .agents/skills/ (skill.sh convention — source of truth for skills)
+    if rel_str.starts_with(".agents/skills") {
+        return Some(HoustonEvent::SkillsChanged {
+            agent_path: agent_path.to_string(),
+        });
+    }
+
     // .houston/ internal files
     if rel_str.starts_with(".houston/") {
         let inner = &rel_str[".houston/".len()..];
@@ -129,13 +136,17 @@ pub fn start_watching(
                 let path = &event.path;
                 let relative = match path.strip_prefix(&root) {
                     Ok(r) => r,
-                    Err(_) => continue,
+                    Err(_) => {
+                        eprintln!("[watcher] skip: cannot strip prefix {} from {}", root.display(), path.display());
+                        continue;
+                    }
                 };
 
                 if let Some(houston_event) = classify_change(&ws_path, relative) {
                     // Use the event type name as dedup key
                     let key = format!("{:?}", std::mem::discriminant(&houston_event));
-                    if emitted.insert(key) {
+                    if emitted.insert(key.clone()) {
+                        eprintln!("[watcher] emit: {key} for {}", relative.display());
                         let _ = handle.emit("houston-event", houston_event);
                     }
                 }

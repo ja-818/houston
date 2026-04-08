@@ -1,7 +1,7 @@
 use houston_tauri::events::HoustonEvent;
 use houston_tauri::paths::expand_tilde;
 use serde::Serialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tauri::Emitter;
 
 #[derive(Serialize)]
@@ -23,7 +23,30 @@ pub struct SkillDetailResponse {
 }
 
 fn skills_dir(workspace_path: &str) -> PathBuf {
-    expand_tilde(&PathBuf::from(workspace_path)).join(".houston/skills")
+    expand_tilde(&PathBuf::from(workspace_path)).join(".agents/skills")
+}
+
+/// Create a `.claude/skills/{name}` symlink pointing to `../../.agents/skills/{name}`.
+/// Matches skill.sh convention so Claude Code can discover the skill.
+fn ensure_claude_symlink(workspace_path: &str, skill_name: &str) {
+    let root = expand_tilde(&PathBuf::from(workspace_path));
+    let claude_skills = root.join(".claude/skills");
+    let _ = std::fs::create_dir_all(&claude_skills);
+    let link = claude_skills.join(skill_name);
+    if !link.exists() {
+        let target = Path::new("../../.agents/skills").join(skill_name);
+        #[cfg(unix)]
+        let _ = std::os::unix::fs::symlink(&target, &link);
+    }
+}
+
+/// Remove a `.claude/skills/{name}` symlink.
+fn remove_claude_symlink(workspace_path: &str, skill_name: &str) {
+    let root = expand_tilde(&PathBuf::from(workspace_path));
+    let link = root.join(".claude/skills").join(skill_name);
+    if link.symlink_metadata().is_ok() {
+        let _ = std::fs::remove_file(&link);
+    }
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -71,13 +94,14 @@ pub async fn create_skill(
     houston_skills::create_skill(
         &dir,
         houston_skills::CreateSkillInput {
-            name,
+            name: name.clone(),
             description,
             content,
             tags: vec![],
         },
     )
     .map_err(|e| e.to_string())?;
+    ensure_claude_symlink(&workspace_path, &name);
     let _ = app_handle.emit("houston-event", HoustonEvent::SkillsChanged {
         agent_path: workspace_path.clone(),
     });
@@ -92,6 +116,7 @@ pub async fn delete_skill(
 ) -> Result<(), String> {
     let dir = skills_dir(&workspace_path);
     houston_skills::delete_skill(&dir, &name).map_err(|e| e.to_string())?;
+    remove_claude_symlink(&workspace_path, &name);
     let _ = app_handle.emit("houston-event", HoustonEvent::SkillsChanged {
         agent_path: workspace_path.clone(),
     });
@@ -123,6 +148,9 @@ pub async fn install_skills_from_repo(
     let result = houston_skills::remote::install_from_repo(&dir, &source)
         .await
         .map_err(|e| e.to_string())?;
+    for name in &result {
+        ensure_claude_symlink(&workspace_path, name);
+    }
     let _ = app_handle.emit("houston-event", HoustonEvent::SkillsChanged {
         agent_path: workspace_path.clone(),
     });
@@ -149,6 +177,7 @@ pub async fn install_community_skill(
     let result = houston_skills::remote::install_skill(&dir, &source, &skill_id)
         .await
         .map_err(|e| e.to_string())?;
+    ensure_claude_symlink(&workspace_path, &result);
     let _ = app_handle.emit("houston-event", HoustonEvent::SkillsChanged {
         agent_path: workspace_path.clone(),
     });

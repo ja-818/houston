@@ -17,11 +17,11 @@ pub const SELF_IMPROVEMENT_GUIDANCE: &str = r#"
 
 You have persistent skills and learnings that survive across sessions.
 
-### Skills (.houston/skills/)
+### Skills (.agents/skills/)
 
 Skills are reusable procedures you've learned from experience. Each skill is a directory with a SKILL.md file.
 
-**Before starting complex work:** Check if a relevant skill exists by reading `.houston/skills/` directory.
+**Before starting complex work:** Check if a relevant skill exists by reading `.agents/skills/` directory.
 
 **Create a skill when:**
 - A task took 5+ steps and the procedure would be reusable
@@ -29,7 +29,7 @@ Skills are reusable procedures you've learned from experience. Each skill is a d
 - You discovered a non-trivial workflow
 - The user asks you to remember a procedure
 
-To create: make a directory under `.houston/skills/<skill-name>/` and write a SKILL.md with this format:
+To create: make a directory under `.agents/skills/<skill-name>/` and write a SKILL.md with this format:
 ```
 ---
 name: skill-name

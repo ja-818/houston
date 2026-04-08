@@ -2,22 +2,20 @@ import { lazy, type ComponentType } from "react";
 import type { AgentTab, AgentDefinition, TabProps } from "../lib/types";
 import ChatTab from "../components/tabs/chat-tab";
 import BoardTab from "../components/tabs/board-tab";
-import SkillsTab from "../components/tabs/skills-tab";
-import LearningsTab from "../components/tabs/learnings-tab";
 import FilesTab from "../components/tabs/files-tab";
 import ConnectionsTab from "../components/tabs/connections-tab";
-import InstructionsTab from "../components/tabs/instructions-tab";
+import IntegrationsTab from "../components/tabs/integrations-tab";
+import JobDescriptionTab from "../components/tabs/job-description-tab";
 import RoutinesTab from "../components/tabs/routines-tab";
 import EventsTab from "../components/tabs/events-tab";
 
 const BUILTIN_TABS: Record<string, ComponentType<TabProps>> = {
   chat: ChatTab,
   board: BoardTab,
-  skills: SkillsTab,
-  learnings: LearningsTab,
   files: FilesTab,
+  integrations: IntegrationsTab,
   connections: ConnectionsTab,
-  instructions: InstructionsTab,
+  "job-description": JobDescriptionTab,
   routines: RoutinesTab,
   events: EventsTab,
 };

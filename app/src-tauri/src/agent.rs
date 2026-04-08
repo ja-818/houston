@@ -27,12 +27,8 @@ pub fn build_system_prompt(dir: &Path) -> String {
         .unwrap_or_else(|_| DEFAULT_SYSTEM_PROMPT.to_string());
     parts.push(base);
 
-    // 2. Self-improvement guidance (read from file, fall back to hardcoded default)
-    let si_path = dir.join(".houston/prompts/self-improvement.md");
-    let si = std::fs::read_to_string(&si_path).unwrap_or_else(|_| {
-        houston_tauri::self_improvement::SELF_IMPROVEMENT_GUIDANCE.to_string()
-    });
-    parts.push(si);
+    // 2. Self-improvement guidance (always use latest hardcoded version)
+    parts.push(houston_tauri::self_improvement::SELF_IMPROVEMENT_GUIDANCE.to_string());
 
     // 3. Learnings snapshot
     let memory_dir = dir.join(".houston/memory");
@@ -43,15 +39,46 @@ pub fn build_system_prompt(dir: &Path) -> String {
         }
     }
 
-    // 4. Skills index
-    let skills_dir = dir.join(".houston/skills");
+    // 4. Skills index (read from .agents/skills — skill.sh convention)
+    let skills_dir = dir.join(".agents/skills");
     if let Ok(index) = houston_skills::build_skills_index(&skills_dir) {
         if !index.is_empty() {
             parts.push(index);
         }
     }
 
-    // 5. Workspace files (CLAUDE.md)
+    // 5. Integrations context (tracked per-agent)
+    // The agent may write this as an array or a map — handle both.
+    let integrations_path = dir.join(".houston/integrations.json");
+    if let Ok(content) = std::fs::read_to_string(&integrations_path) {
+        let names: Vec<String> =
+            // Try array format: [{ "toolkit": "gmail", ... }]
+            serde_json::from_str::<Vec<serde_json::Value>>(&content)
+                .ok()
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.get("toolkit").and_then(|t| t.as_str()).map(String::from))
+                        .collect()
+                })
+                // Fall back to map format: { "gmail": { ... } }
+                .or_else(|| {
+                    serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&content)
+                        .ok()
+                        .map(|map| map.keys().cloned().collect())
+                })
+                .unwrap_or_default();
+
+        if !names.is_empty() {
+            parts.push(format!(
+                "# Integrations — Previously Used\n\n\
+                 You have used these Composio integrations in past sessions: {}.\n\
+                 Prefer these when the task involves their services.",
+                names.join(", ")
+            ));
+        }
+    }
+
+    // 6. Workspace files (CLAUDE.md)
     for (name, label) in &PROMPT_FILES {
         if let Ok(content) = std::fs::read_to_string(dir.join(name)) {
             parts.push(format!("# {label}\n\n{content}"));

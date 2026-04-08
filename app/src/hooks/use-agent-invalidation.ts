@@ -16,11 +16,15 @@ export function useAgentInvalidation() {
   useEffect(() => {
     const unlisten = listen<HoustonEvent>("houston-event", (event) => {
       const p = event.payload;
+      console.log("[invalidation] event:", p.type, "data" in p ? (p as { data: { agent_path?: string } }).data?.agent_path : "");
 
       switch (p.type) {
         case "ActivityChanged":
           qc.invalidateQueries({ queryKey: queryKeys.activity(p.data.agent_path) });
           qc.invalidateQueries({ queryKey: ["all-conversations"] });
+          break;
+        case "IntegrationsChanged":
+          qc.invalidateQueries({ queryKey: queryKeys.integrations(p.data.agent_path) });
           break;
         case "SkillsChanged":
           qc.invalidateQueries({ queryKey: queryKeys.skills(p.data.agent_path) });

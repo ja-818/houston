@@ -89,6 +89,7 @@ function InstructionField({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={handleBlur}
+        placeholder="Write instructions for your agent here..."
         rows={Math.max(4, value.split("\n").length + 1)}
         className="w-full text-sm text-foreground leading-relaxed bg-[#f9f9f9] outline-none rounded-xl px-4 py-3 border border-black/[0.04] hover:border-black/[0.1] focus:border-black/[0.15] focus:bg-white transition-all duration-200 resize-none placeholder:text-muted-foreground/30"
       />

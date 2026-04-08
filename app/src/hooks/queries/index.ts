@@ -15,6 +15,7 @@ export { useFiles, useDeleteFile, useRenameFile, useCreateFolder } from "./use-f
 export { useInstructions, useSaveInstructions } from "./use-instructions";
 export { useConversations, useAllConversations, useChatHistory } from "./use-conversations";
 export { useConnections, useInvalidateConnections } from "./use-connections";
+export { useAgentIntegrations } from "./use-integrations";
 export {
   useRoutines,
   useRoutineRuns,
