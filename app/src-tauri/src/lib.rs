@@ -147,6 +147,7 @@ pub fn run() {
             commands::chat::load_chat_history,
             commands::chat::read_agent_file,
             commands::chat::write_agent_file,
+            commands::chat::summarize_activity,
             // Learnings
             commands::memory::load_learnings,
             commands::memory::add_learning,

@@ -12,6 +12,9 @@ import type { TabProps } from "../../lib/types";
 import { useDetailPanelContainer } from "../shell/detail-panel-context";
 import { getHoustonLogo } from "../shell/experience-card";
 
+// Module-level so it persists across component remounts (tab switches)
+const summarizedActivityIds = new Set<string>();
+
 function ThinkingIndicator({ color }: { color?: string }) {
   const logo = getHoustonLogo(color);
   return (
@@ -66,19 +69,23 @@ export default function BoardTab({ agent }: TabProps) {
   const feedItems = useFeedStore((s) => s.items);
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
   const [loadingState, setLoading] = useState<Record<string, boolean>>({});
-  const summarizedIds = useRef<Set<string>>(new Set());
-
-  // Call Haiku to generate a concise title + description when an activity starts running
+  // Call Haiku once per activity to generate a concise title + description.
+  // Skip if already summarized (title no longer matches the raw user message).
   useEffect(() => {
     if (!rawItems) return;
     for (const activity of rawItems) {
       if (activity.status !== "running") continue;
-      if (summarizedIds.current.has(activity.id)) continue;
-      summarizedIds.current.add(activity.id);
+      if (summarizedActivityIds.has(activity.id)) continue;
 
-      const message = activity.description || activity.title;
+      // The original title is the description truncated to 80 chars.
+      // If they diverge, Haiku already ran — skip.
+      const desc = activity.description ?? "";
+      const originalTitle = desc.length > 80 ? desc.slice(0, 77) + "..." : desc;
+      if (activity.title !== originalTitle) continue;
+
+      summarizedActivityIds.add(activity.id);
       tauriChat
-        .summarize(message)
+        .summarize(desc)
         .then(({ title, description }) => {
           tauriActivity
             .update(path, activity.id, { title, description })
