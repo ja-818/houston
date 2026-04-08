@@ -165,7 +165,9 @@ impl SessionManager {
             match child.wait().await {
                 Ok(status) => {
                     eprintln!("[houston:session] process exited with {status}");
-                    if status.success() {
+                    // Exit 143 = SIGTERM (128+15) — expected when user stops session.
+                    let is_sigterm = status.code() == Some(143);
+                    if status.success() || is_sigterm {
                         let _ = tx.send(SessionUpdate::Status(SessionStatus::Completed));
                     } else {
                         let stderr_summary = if stderr_lines.is_empty() {
