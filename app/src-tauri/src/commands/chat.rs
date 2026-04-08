@@ -10,6 +10,7 @@ use houston_tauri::state::AppState;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{Emitter, Manager, State};
+use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
 
 #[tauri::command(rename_all = "snake_case")]
@@ -24,6 +25,7 @@ pub async fn send_message(
     source: Option<String>,
 ) -> Result<String, String> {
     let working_dir = expand_tilde(&PathBuf::from(&agent_path));
+    tracing::info!("[houston:session] send_message agent_path={agent_path} working_dir={}", working_dir.display());
     if !working_dir.exists() {
         std::fs::create_dir_all(&working_dir)
             .map_err(|e| format!("Failed to create agent directory: {e}"))?;
@@ -269,4 +271,66 @@ pub async fn stop_session(
         );
     }
     Ok(())
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct SummarizeResult {
+    pub title: String,
+    pub description: String,
+}
+
+/// Quick Haiku call to generate a concise title + description for an activity.
+#[tauri::command(rename_all = "snake_case")]
+pub async fn summarize_activity(message: String) -> Result<SummarizeResult, String> {
+    let prompt = format!(
+        "Generate a title and description for this task.\n\
+         Title: max 6 words, concise. Description: 1 short sentence.\n\
+         Return ONLY valid JSON, no markdown fences:\n\
+         {{\"title\": \"...\", \"description\": \"...\"}}\n\n\
+         Task: {message}"
+    );
+
+    let mut cmd = tokio::process::Command::new("claude");
+    cmd.env("PATH", houston_sessions::claude_path::shell_path());
+    cmd.env_remove("CLAUDE_CODE_ENTRYPOINT");
+    cmd.env_remove("CLAUDECODE");
+    cmd.arg("-p")
+        .arg("--model")
+        .arg("haiku")
+        .arg("--output-format")
+        .arg("text")
+        .arg("--allowedTools")
+        .arg("");
+    cmd.stdin(std::process::Stdio::piped());
+    cmd.stdout(std::process::Stdio::piped());
+    cmd.stderr(std::process::Stdio::null());
+
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to spawn claude: {e}"))?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(prompt.as_bytes())
+            .await
+            .map_err(|e| format!("Failed to write prompt: {e}"))?;
+        drop(stdin);
+    }
+
+    let output = child
+        .wait_with_output()
+        .await
+        .map_err(|e| format!("Claude process failed: {e}"))?;
+
+    let raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+    // Strip markdown code fences if haiku wraps the JSON
+    let json_str = raw
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
+
+    serde_json::from_str(json_str)
+        .map_err(|e| format!("Failed to parse response: {e}\nRaw: {raw}"))
 }
