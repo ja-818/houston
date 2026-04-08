@@ -1,7 +1,10 @@
 /**
  * AddSkillDialog — Marketplace modal for searching and installing skills
- * from skills.sh. Loads featured skills on open, with search.
- * Repo install is accessible via a secondary view (link icon).
+ * from skills.sh, or directly from any public GitHub repo.
+ *
+ * Repo install flow (two stages):
+ *   1. Input — user enters owner/repo
+ *   2. Selection — discovered skills shown with checkboxes + Install All
  */
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
@@ -16,17 +19,17 @@ import {
   Spinner,
 } from "@houston-ai/core"
 import {
-  AlertCircle, ArrowLeft, Check, Loader2,
-  Plus, Search,
+  AlertCircle, ArrowLeft, Check, Loader2, Plus, Search,
 } from "lucide-react"
-import type { CommunitySkill } from "./types"
+import type { CommunitySkill, RepoSkill } from "./types"
 
 export interface AddSkillDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSearch: (query: string) => Promise<CommunitySkill[]>
   onInstallCommunity: (skill: CommunitySkill) => Promise<string>
-  onInstallFromRepo?: (source: string) => Promise<string[]>
+  onListFromRepo?: (source: string) => Promise<RepoSkill[]>
+  onInstallFromRepo?: (source: string, skills: RepoSkill[]) => Promise<string[]>
 }
 
 type View = "store" | "repo"
@@ -36,14 +39,16 @@ export function AddSkillDialog({
   onOpenChange,
   onSearch,
   onInstallCommunity,
+  onListFromRepo,
   onInstallFromRepo,
 }: AddSkillDialogProps) {
   const [view, setView] = useState<View>("store")
 
-  // Reset view when dialog closes
   useEffect(() => {
     if (!open) setView("store")
   }, [open])
+
+  const canInstallFromRepo = !!onListFromRepo && !!onInstallFromRepo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -53,11 +58,12 @@ export function AddSkillDialog({
             open={open}
             onSearch={onSearch}
             onInstall={onInstallCommunity}
-            onSwitchToRepo={onInstallFromRepo ? () => setView("repo") : undefined}
+            onSwitchToRepo={canInstallFromRepo ? () => setView("repo") : undefined}
           />
         ) : (
           <RepoView
             onBack={() => setView("store")}
+            onList={onListFromRepo!}
             onInstall={onInstallFromRepo!}
           />
         )}
@@ -66,7 +72,7 @@ export function AddSkillDialog({
   )
 }
 
-// ── Store view (search + results) ─────────────────────────────────
+// ── Store view ────────────────────────────────────────────────────
 
 function StoreView({
   open,
@@ -93,7 +99,6 @@ function StoreView({
     return () => { mountedRef.current = false }
   }, [])
 
-  // Load featured on dialog open
   useEffect(() => {
     if (!open) {
       setQuery("")
@@ -113,13 +118,12 @@ function StoreView({
       const skills = await onSearch("ai")
       if (mountedRef.current) setFeatured(skills.slice(0, 10))
     } catch {
-      // Featured load failed — not critical, user can still search
+      // Not critical — user can still search
     } finally {
       if (mountedRef.current) setLoading(false)
     }
   }
 
-  // Debounced search on query change
   useEffect(() => {
     const q = query.trim()
     if (!q) {
@@ -178,14 +182,13 @@ function StoreView({
                 onClick={onSwitchToRepo}
                 className="font-medium text-foreground underline underline-offset-2 hover:text-foreground/80 transition-colors"
               >
-                direct install
+                install from GitHub
               </button>
             </>
           )}
         </DialogDescription>
       </DialogHeader>
 
-      {/* Search bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
         <input
@@ -199,7 +202,6 @@ function StoreView({
         />
       </div>
 
-      {/* Results */}
       <div className="flex-1 overflow-y-auto -mx-6 min-h-0">
         {loading && visibleSkills.length === 0 && (
           <div className="flex justify-center py-8">
@@ -237,36 +239,75 @@ function StoreView({
   )
 }
 
-// ── Repo view ─────────────────────────────────────────────────────
+// ── Repo view (two stages: input → selection) ─────────────────────
+
+type RepoStage =
+  | { kind: "input" }
+  | { kind: "loading"; source: string }
+  | { kind: "selection"; source: string; skills: RepoSkill[] }
+  | { kind: "installing"; source: string; skills: RepoSkill[]; selected: Set<string> }
+  | { kind: "done"; installed: string[] }
 
 function RepoView({
   onBack,
+  onList,
   onInstall,
 }: {
   onBack: () => void
-  onInstall: (source: string) => Promise<string[]>
+  onList: (source: string) => Promise<RepoSkill[]>
+  onInstall: (source: string, skills: RepoSkill[]) => Promise<string[]>
 }) {
   const [source, setSource] = useState("")
-  const [installing, setInstalling] = useState(false)
+  const [stage, setStage] = useState<RepoStage>({ kind: "input" })
   const [error, setError] = useState("")
-  const [success, setSuccess] = useState<string[]>([])
 
-  const handleInstall = useCallback(async () => {
+  const handleDiscover = useCallback(async () => {
     const trimmed = source.trim()
     if (!trimmed) return
-    setInstalling(true)
     setError("")
-    setSuccess([])
+    setStage({ kind: "loading", source: trimmed })
     try {
-      const names = await onInstall(trimmed)
-      setSuccess(names)
-      setSource("")
+      const skills = await onList(trimmed)
+      const allSelected = new Set(skills.map((s) => s.id))
+      setStage({ kind: "selection", source: trimmed, skills })
+      // Pre-select all
+      setStage({ kind: "selection", source: trimmed, skills })
+      // Store selection separately so we can mutate it
+      setSelected(allSelected)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setInstalling(false)
+      setStage({ kind: "input" })
     }
-  }, [source, onInstall])
+  }, [source, onList])
+
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  const toggleSkill = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const handleInstall = useCallback(async () => {
+    if (stage.kind !== "selection") return
+    const toInstall = stage.skills.filter((s) => selected.has(s.id))
+    if (toInstall.length === 0) return
+    setError("")
+    setStage({ kind: "installing", source: stage.source, skills: stage.skills, selected })
+    try {
+      const names = await onInstall(stage.source, toInstall)
+      setStage({ kind: "done", installed: names })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+      setStage({ kind: "selection", source: stage.source, skills: stage.skills })
+    }
+  }, [stage, selected, onInstall])
+
+  const isLoading = stage.kind === "loading"
+  const isInstalling = stage.kind === "installing"
 
   return (
     <>
@@ -279,49 +320,135 @@ function RepoView({
           >
             <ArrowLeft className="size-4" />
           </button>
-          <DialogTitle>Install from repo</DialogTitle>
+          <DialogTitle>Install from GitHub</DialogTitle>
         </div>
         <DialogDescription>
-          Enter a GitHub repo address to install all its skills at once
+          Enter a <span className="font-medium text-foreground">public</span> GitHub repo in{" "}
+          <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">owner/repo</span> format.
+          Houston will find every <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">SKILL.md</span>{" "}
+          file in the repo and let you pick which ones to install.
         </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-3">
-        <div className="flex gap-2">
-          <Input
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && source.trim() && !installing) handleInstall()
-            }}
-            placeholder="owner/repo"
-            disabled={installing}
-            autoFocus
-            className="flex-1"
-          />
-          <Button
-            onClick={handleInstall}
-            disabled={!source.trim() || installing}
-            className="rounded-full shrink-0"
-          >
-            {installing ? <Spinner className="size-4" /> : "Install"}
-          </Button>
-        </div>
+        {/* Input row — always visible unless done */}
+        {stage.kind !== "done" && (
+          <div className="flex gap-2">
+            <Input
+              value={source}
+              onChange={(e) => {
+                setSource(e.target.value)
+                if (stage.kind !== "input") setStage({ kind: "input" })
+                setError("")
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && source.trim() && !isLoading && !isInstalling) {
+                  if (stage.kind === "selection") handleInstall()
+                  else handleDiscover()
+                }
+              }}
+              placeholder="owner/repo"
+              disabled={isLoading || isInstalling}
+              autoFocus
+              className="flex-1"
+            />
+            {stage.kind === "input" || stage.kind === "loading" ? (
+              <Button
+                onClick={handleDiscover}
+                disabled={!source.trim() || isLoading}
+                className="rounded-full shrink-0"
+              >
+                {isLoading ? <Spinner className="size-4" /> : "Find skills"}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleInstall}
+                disabled={selected.size === 0 || isInstalling}
+                className="rounded-full shrink-0"
+              >
+                {isInstalling ? <Spinner className="size-4" /> : `Install ${selected.size}`}
+              </Button>
+            )}
+          </div>
+        )}
 
+        {/* Error */}
         {error && (
-          <p className="flex items-center gap-1.5 text-xs text-destructive">
-            <AlertCircle className="size-3.5 shrink-0" />
+          <p className="flex items-start gap-1.5 text-xs text-destructive">
+            <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
             {error}
           </p>
         )}
 
-        {success.length > 0 && (
-          <div className="flex items-center gap-2 text-sm text-foreground">
-            <Check className="size-4 text-emerald-600 shrink-0" />
-            <span>
-              Installed {success.length} skill{success.length !== 1 && "s"}:{" "}
-              {success.join(", ")}
-            </span>
+        {/* Selection list */}
+        {stage.kind === "selection" && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground">
+                {stage.skills.length} skill{stage.skills.length !== 1 && "s"} found
+              </p>
+              <button
+                onClick={() => {
+                  if (selected.size === stage.skills.length) {
+                    setSelected(new Set())
+                  } else {
+                    setSelected(new Set(stage.skills.map((s) => s.id)))
+                  }
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {selected.size === stage.skills.length ? "Deselect all" : "Select all"}
+              </button>
+            </div>
+            <div className="divide-y divide-border border border-border rounded-xl overflow-hidden">
+              {stage.skills.map((skill) => (
+                <RepoSkillRow
+                  key={skill.id}
+                  skill={skill}
+                  selected={selected.has(skill.id)}
+                  onToggle={() => toggleSkill(skill.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Installing state */}
+        {stage.kind === "installing" && (
+          <div className="divide-y divide-border border border-border rounded-xl overflow-hidden opacity-60 pointer-events-none">
+            {stage.skills.filter((s) => stage.selected.has(s.id)).map((skill) => (
+              <RepoSkillRow
+                key={skill.id}
+                skill={skill}
+                selected
+                onToggle={() => {}}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Success */}
+        {stage.kind === "done" && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <Check className="size-4 text-emerald-600 shrink-0" />
+              <span>
+                Installed {stage.installed.length} skill{stage.installed.length !== 1 && "s"}:{" "}
+                {stage.installed.join(", ")}
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setStage({ kind: "input" })
+                setSource("")
+                setError("")
+                setSelected(new Set())
+              }}
+              className="rounded-full w-full"
+            >
+              Install from another repo
+            </Button>
           </div>
         )}
       </div>
@@ -329,15 +456,44 @@ function RepoView({
   )
 }
 
-// ── Store row ─────────────────────────────────────────────────────
+// ── Repo skill row ────────────────────────────────────────────────
 
-function kebabToTitle(s: string): string {
-  return s
-    .split("-")
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ")
+function RepoSkillRow({
+  skill,
+  selected,
+  onToggle,
+}: {
+  skill: RepoSkill
+  selected: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
+    >
+      <div
+        className={cn(
+          "size-4 rounded border shrink-0 flex items-center justify-center transition-colors",
+          selected
+            ? "bg-foreground border-foreground"
+            : "border-border bg-background",
+        )}
+      >
+        {selected && <Check className="size-2.5 text-background" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate">{skill.name}</p>
+        {skill.description && (
+          <p className="text-xs text-muted-foreground truncate">{skill.description}</p>
+        )}
+        <p className="text-xs text-muted-foreground/60 truncate font-mono">{skill.path}</p>
+      </div>
+    </button>
+  )
 }
+
+// ── Store row ─────────────────────────────────────────────────────
 
 function formatInstalls(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -359,9 +515,7 @@ function StoreRow({
   return (
     <div className="flex items-center gap-3 px-6 py-3 hover:bg-accent/50 transition-colors">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">
-          {kebabToTitle(skill.name)}
-        </p>
+        <p className="text-sm font-medium text-foreground truncate">{skill.name}</p>
         <p className="text-xs text-muted-foreground truncate">
           {skill.source}
           {skill.installs > 0 && ` · ${formatInstalls(skill.installs)} installs`}

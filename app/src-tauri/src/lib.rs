@@ -74,6 +74,13 @@ pub fn run() {
                 });
             }
 
+            // Warm the Composio catalog cache in the background so the integrations
+            // tab loads instantly when the user opens it.
+            tauri::async_runtime::spawn(async {
+                let apps = houston_tauri::composio_apps::list_all_apps().await;
+                tracing::info!("[composio] Pre-warmed catalog: {} apps", apps.len());
+            });
+
             // Listen for inbound Slack messages → route to Claude sessions
             {
                 use tauri::Listener;
@@ -163,6 +170,7 @@ pub fn run() {
             commands::skills::create_skill,
             commands::skills::save_skill,
             commands::skills::delete_skill,
+            commands::skills::list_skills_from_repo,
             commands::skills::install_skills_from_repo,
             commands::skills::search_community_skills,
             commands::skills::install_community_skill,
@@ -235,16 +243,24 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| {
-            // When the app is activated from the background (e.g. clicking a macOS
-            // notification), bring the main window to front and tell the frontend.
-            if let tauri::RunEvent::Resumed = event {
-                tracing::info!("[app] RunEvent::Resumed — bringing window to front");
-                if let Some(window) = app_handle.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.unminimize();
-                    let _ = window.set_focus();
+            match &event {
+                // App-level activation (cmd+tab, dock click, etc.)
+                tauri::RunEvent::Resumed => {
+                    tracing::info!("[app] RunEvent::Resumed — bringing window to front");
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.unminimize();
+                        let _ = window.set_focus();
+                    }
+                    let _ = app_handle.emit("app-activated", ());
                 }
-                let _ = app_handle.emit("app-activated", ());
+                // Window-level focus gain — fires when a notification click brings
+                // the window to front even if RunEvent::Resumed doesn't fire.
+                tauri::RunEvent::WindowEvent { label, event: tauri::WindowEvent::Focused(true), .. } if label == "main" => {
+                    tracing::debug!("[app] WindowEvent::Focused(true) — emitting app-activated");
+                    let _ = app_handle.emit("app-activated", ());
+                }
+                _ => {}
             }
         });
 }

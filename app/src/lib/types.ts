@@ -18,6 +18,10 @@ export interface AgentTab {
   customComponent?: string;
   /** Badge source: "activity" shows count of active items */
   badge?: "activity" | "none";
+  /** If true, the tab is non-clickable (shown muted in the tab bar). */
+  disabled?: boolean;
+  /** Optional text chip shown next to the label (e.g. "Soon"). */
+  chip?: string;
 }
 
 /** Agent category for Houston Store filtering */
@@ -106,6 +110,14 @@ export interface CommunitySkillResult {
   name: string;
   installs: number;
   source: string;
+}
+
+/** A skill discovered in a GitHub repo */
+export interface RepoSkill {
+  id: string;
+  name: string;
+  description: string;
+  path: string;
 }
 
 /** File entry returned by list_project_files */

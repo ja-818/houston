@@ -8,7 +8,7 @@ import {
   Empty, EmptyHeader, EmptyTitle, EmptyDescription,
 } from "@houston-ai/core"
 import { Plus } from "lucide-react"
-import type { Skill, CommunitySkill } from "./types"
+import type { Skill, CommunitySkill, RepoSkill } from "./types"
 import { SkillRow } from "./skill-row"
 import { AddSkillDialog } from "./add-skill-dialog"
 
@@ -20,8 +20,10 @@ export interface SkillsGridProps {
   onSearch?: (query: string) => Promise<CommunitySkill[]>
   /** Install a single community skill. Returns installed skill name. */
   onInstallCommunity?: (skill: CommunitySkill) => Promise<string>
-  /** Install all skills from a repo address. Returns installed names. */
-  onInstallFromRepo?: (source: string) => Promise<string[]>
+  /** Discover all SKILL.md files in a GitHub repo. */
+  onListFromRepo?: (source: string) => Promise<RepoSkill[]>
+  /** Install selected skills from a repo. Returns installed names. */
+  onInstallFromRepo?: (source: string, skills: RepoSkill[]) => Promise<string[]>
 }
 
 export function SkillsGrid({
@@ -30,6 +32,7 @@ export function SkillsGrid({
   onSkillClick,
   onSearch,
   onInstallCommunity,
+  onListFromRepo,
   onInstallFromRepo,
 }: SkillsGridProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -113,6 +116,7 @@ export function SkillsGrid({
           onOpenChange={setDialogOpen}
           onSearch={onSearch}
           onInstallCommunity={onInstallCommunity}
+          onListFromRepo={onListFromRepo}
           onInstallFromRepo={onInstallFromRepo}
         />
       )}

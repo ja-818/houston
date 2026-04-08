@@ -13,6 +13,7 @@ import {
   useSkillDetail,
   useSaveSkill,
   useInstallCommunitySkill,
+  useListSkillsFromRepo,
   useInstallSkillFromRepo,
   useSearchCommunitySkills,
   useLearnings,
@@ -43,6 +44,7 @@ export default function JobDescriptionTab({ agent }: TabProps) {
   const { data: skillDetail } = useSkillDetail(path, selectedSkillName ?? undefined);
   const saveSkill = useSaveSkill(path);
   const installCommunity = useInstallCommunitySkill(path);
+  const listFromRepo = useListSkillsFromRepo();
   const installFromRepo = useInstallSkillFromRepo(path);
   const searchCommunity = useSearchCommunitySkills();
 
@@ -97,9 +99,16 @@ export default function JobDescriptionTab({ agent }: TabProps) {
     [installCommunity],
   );
 
-  const handleInstallFromRepo = useCallback(
+  const handleListFromRepo = useCallback(
     async (source: string) => {
-      return await installFromRepo.mutateAsync(source);
+      return await listFromRepo.mutateAsync(source);
+    },
+    [listFromRepo],
+  );
+
+  const handleInstallFromRepo = useCallback(
+    async (source: string, skills: import("@houston-ai/skills").RepoSkill[]) => {
+      return await installFromRepo.mutateAsync({ source, skills });
     },
     [installFromRepo],
   );
@@ -152,6 +161,7 @@ export default function JobDescriptionTab({ agent }: TabProps) {
                   onSkillClick={handleSkillClick}
                   onSearch={handleSearch}
                   onInstallCommunity={handleInstallCommunity}
+                  onListFromRepo={handleListFromRepo}
                   onInstallFromRepo={handleInstallFromRepo}
                 />
               )}

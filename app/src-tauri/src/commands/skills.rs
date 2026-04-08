@@ -144,14 +144,41 @@ pub async fn save_skill(
     Ok(())
 }
 
+#[derive(serde::Deserialize)]
+pub struct RepoSkillInput {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub path: String,
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub async fn list_skills_from_repo(
+    source: String,
+) -> Result<Vec<houston_skills::remote::RepoSkill>, String> {
+    houston_skills::remote::list_skills_from_repo(&source)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command(rename_all = "snake_case")]
 pub async fn install_skills_from_repo(
     app_handle: tauri::AppHandle,
     workspace_path: String,
     source: String,
+    skills: Vec<RepoSkillInput>,
 ) -> Result<Vec<String>, String> {
     let dir = skills_dir(&workspace_path);
-    let result = houston_skills::remote::install_from_repo(&dir, &source)
+    let repo_skills: Vec<houston_skills::remote::RepoSkill> = skills
+        .into_iter()
+        .map(|s| houston_skills::remote::RepoSkill {
+            id: s.id,
+            name: s.name,
+            description: s.description,
+            path: s.path,
+        })
+        .collect();
+    let result = houston_skills::remote::install_from_repo(&dir, &source, &repo_skills)
         .await
         .map_err(|e| e.to_string())?;
     for name in &result {

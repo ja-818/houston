@@ -53,10 +53,17 @@ export function useDeleteSkill(agentPath: string | undefined) {
   });
 }
 
+export function useListSkillsFromRepo() {
+  return useMutation({
+    mutationFn: (source: string) => tauriSkills.listFromRepo(source),
+  });
+}
+
 export function useInstallSkillFromRepo(agentPath: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (source: string) => tauriSkills.installFromRepo(agentPath!, source),
+    mutationFn: ({ source, skills }: { source: string; skills: import("../../lib/types").RepoSkill[] }) =>
+      tauriSkills.installFromRepo(agentPath!, source, skills),
     onSuccess: () => {
       if (agentPath) qc.invalidateQueries({ queryKey: queryKeys.skills(agentPath) });
     },

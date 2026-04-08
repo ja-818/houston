@@ -2,6 +2,7 @@
 export type {
   Skill,
   CommunitySkill,
+  RepoSkill,
   LearningCategory,
   SkillLearning,
 } from "./types"

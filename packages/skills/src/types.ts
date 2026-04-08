@@ -15,6 +15,14 @@ export interface CommunitySkill {
   source: string
 }
 
+/** A skill discovered in a GitHub repo */
+export interface RepoSkill {
+  id: string
+  name: string
+  description: string
+  path: string
+}
+
 export type LearningCategory =
   | "pattern"
   | "pitfall"
