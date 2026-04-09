@@ -164,16 +164,6 @@ export { ChatInput } from "./chat-input";
 export type { ChatInputProps } from "./chat-input";
 export type { AttachMenuItem } from "./chat-input-parts";
 
-export { MentionPicker } from "./mention-picker";
-export type { MentionPickerProps } from "./mention-picker";
-export { useMentionPicker } from "./use-mention-picker";
-export type {
-  MentionOption,
-  MentionConfig,
-  UseMentionPickerArgs,
-  UseMentionPickerResult,
-} from "./use-mention-picker";
-
 export { ToolActivity, ToolsAndCards, ToolBlock, feedItemsToMessages } from "./chat-helpers";
 export type { ToolActivityProps, ToolsAndCardsProps, ToolBlockProps } from "./chat-helpers";
 

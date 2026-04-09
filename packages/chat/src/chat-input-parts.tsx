@@ -6,54 +6,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { FileIcon, XIcon } from "lucide-react";
-import { AttachmentChip } from "./attachment-chip";
-
-// ---------------------------------------------------------------------------
-// AttachmentStrip — hidden native file input + the row of attachment chips
-// above the composer. Kept out of chat-input.tsx to respect the 200-line cap.
-// ---------------------------------------------------------------------------
-
-export interface AttachmentStripProps {
-  files: File[];
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onRemove: (index: number) => void;
-}
-
-export function AttachmentStrip({
-  files,
-  fileInputRef,
-  onFileChange,
-  onRemove,
-}: AttachmentStripProps) {
-  return (
-    <>
-      {/* Native file input — hidden, triggered programmatically via ref */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        className="sr-only"
-        onChange={onFileChange}
-        tabIndex={-1}
-      />
-      {files.length > 0 && (
-        <div
-          className="flex gap-2 pb-1 mb-2 overflow-x-auto"
-          style={{ scrollbarWidth: "thin" }}
-        >
-          {files.map((file, idx) => (
-            <AttachmentChip
-              key={`${file.name}-${idx}`}
-              name={file.name}
-              onRemove={() => onRemove(idx)}
-            />
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // FileChip — shows an attached file with a remove button

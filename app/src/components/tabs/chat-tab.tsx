@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import { ChatPanel } from "@houston-ai/chat";
-import type { FeedItem, MentionConfig } from "@houston-ai/chat";
+import type { FeedItem } from "@houston-ai/chat";
 import {
   Empty,
   EmptyHeader,
@@ -11,7 +11,7 @@ import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
 import { tauriChat, tauriAttachments, tauriSystem, withAttachmentPaths } from "../../lib/tauri";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
-import { useConnectedToolkits, useConnections, useSkills } from "../../hooks/queries";
+import { useConnectedToolkits, useConnections } from "../../hooks/queries";
 import { COMPOSIO_PROBE_SLUGS } from "../../lib/composio-catalog";
 import {
   ComposioLinkCard,
@@ -74,36 +74,6 @@ export default function ChatTab({ agent }: TabProps) {
     () => new Set(connectedList ?? []),
     [connectedList],
   );
-
-  // Skills feed the `@` mention picker. Each option is a skill; selecting
-  // one inserts `@<name>` at the caret. At send time we rewrite those
-  // tokens into explicit "Use the `<name>` skill." language so Claude Code
-  // actually loads the skill (headless mode does NOT expand `/slash`
-  // commands — the model only picks up skills by description-matching).
-  const { data: skills } = useSkills(agentPath);
-  // eslint-disable-next-line no-console
-  console.log("[chat-tab] skills for", agentPath, skills);
-  const mentionConfig = useMemo<MentionConfig | undefined>(() => {
-    if (!skills || skills.length === 0) return undefined;
-    const names = new Set(skills.map((s) => s.name));
-    return {
-      options: skills.map((s) => ({
-        id: s.name,
-        label: s.name,
-        description: s.description,
-      })),
-      transformOnSend: (text: string) => {
-        // Replace each whitespace-delimited `@<name>` token whose name
-        // matches a real skill. Non-matching `@foo` is left as-is so the
-        // user can still @-mention things we don't recognise.
-        return text.replace(/(^|\s)@([\w-]+)/g, (match, pre, name) => {
-          return names.has(name)
-            ? `${pre}Use the \`${name}\` skill.`
-            : match;
-        });
-      },
-    };
-  }, [skills]);
 
   // Custom link renderer — intercepts Composio connect URLs tagged
   // with `#houston_toolkit=<slug>` and renders them as rich cards.
@@ -174,7 +144,6 @@ export default function ChatTab({ agent }: TabProps) {
         attachments={composerFiles}
         onAttachmentsChange={setComposerFiles}
         onNotice={handleNotice}
-        mentions={mentionConfig}
         emptyState={
           <Empty className="border-0">
             <EmptyHeader>

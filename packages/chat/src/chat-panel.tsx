@@ -11,7 +11,6 @@ import { feedItemsToMessages } from "./chat-helpers";
 import type { ToolsAndCardsProps } from "./chat-helpers";
 import type { ToolEntry } from "./feed-to-messages";
 import { ChatInput } from "./chat-input";
-import type { MentionConfig } from "./use-mention-picker";
 import { ChatMessages, ChatDropOverlay } from "./chat-messages";
 import type { ChatMessagesProps } from "./chat-messages";
 import { Shimmer } from "./ai-elements/shimmer";
@@ -83,11 +82,6 @@ export interface ChatPanelProps {
    * render as the default `onOpenLink` button.
    */
   renderLink?: ChatMessagesProps["renderLink"];
-  /**
-   * Optional `@` mention config for the composer. See `MentionConfig`.
-   * The app wires this to, e.g., skills or files.
-   */
-  mentions?: MentionConfig;
 }
 
 function deriveStatus(items: FeedItem[], isLoading: boolean): ChatStatus {
@@ -134,7 +128,6 @@ export function ChatPanel({
   attachments,
   onAttachmentsChange,
   onNotice,
-  mentions,
 }: ChatPanelProps) {
   const status = statusProp ?? deriveStatus(feedItems, isLoading);
   const messages = useMemo(() => feedItemsToMessages(feedItems), [feedItems]);
@@ -217,7 +210,6 @@ export function ChatPanel({
         attachments={files}
         onAttachmentsChange={setFiles}
         onNotice={onNotice}
-        mentions={mentions}
       />
     </div>
   );

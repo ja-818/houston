@@ -24,13 +24,8 @@ import {
   PromptInputTextarea,
 } from "./ai-elements/prompt-input";
 import { PlusIcon } from "lucide-react";
-import { ComposerTrailing } from "./attachment-chip";
-import { AttachmentStrip } from "./chat-input-parts";
-import { useControllable } from "./use-file-drop-zone";
-import { useMentionPicker } from "./use-mention-picker";
-import type { MentionConfig } from "./use-mention-picker";
-import { MentionPicker } from "./mention-picker";
-import { useFileAttachments } from "./use-file-attachments";
+import { AttachmentChip, ComposerTrailing } from "./attachment-chip";
+import { useControllable, mergeUniqueFiles } from "./use-file-drop-zone";
 
 type InputStatus = "ready" | "streaming" | "submitted";
 
@@ -51,12 +46,6 @@ export interface ChatInputProps {
   /** Emitted when the library wants to surface a short notice to the user
    *  (e.g. a duplicate-file drop). The app decides how to display it. */
   onNotice?: (message: string) => void;
-  /**
-   * Optional `@` mention config. When provided, typing `@` opens a filter
-   * picker. Selecting an option inserts `@label` at the caret. On submit,
-   * `transformOnSend` (if set) rewrites the text before `onSend` is called.
-   */
-  mentions?: MentionConfig;
 }
 
 export function ChatInput({
@@ -69,7 +58,6 @@ export function ChatInput({
   status = "ready",
   placeholder = "Type a message...",
   onNotice,
-  mentions,
 }: ChatInputProps) {
   const [text, setText] = useControllable(value, onValueChange, "");
   const [files, setFiles] = useControllable<File[]>(
@@ -80,69 +68,67 @@ export function ChatInput({
   const isTextControlled = value !== undefined;
   const isFilesControlled = attachments !== undefined;
 
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const mention = useMentionPicker({
-    text,
-    setText,
-    textareaRef,
-    config: mentions,
-  });
-  const { fileInputRef, openFilePicker, handleFileChange, removeFile } =
-    useFileAttachments({ files, setFiles, onNotice });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const addFiles = useCallback(
+    (incoming: File[]) => {
+      const merged = mergeUniqueFiles(files, incoming);
+      if (merged.length < files.length + incoming.length) {
+        onNotice?.("File already in chat");
+      }
+      setFiles(merged);
+    },
+    [files, setFiles, onNotice],
+  );
 
   const handleTextChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      // Capture the live textarea element so the mention hook can restore
-      // caret position after insertion. PromptInputTextarea does not forward
-      // refs, so we lazily grab it from the event target.
-      textareaRef.current = e.target;
-      if (mentions) {
-        mention.handleTextChange(e);
-      } else {
-        setText(e.target.value);
-      }
-    },
-    [mentions, mention, setText],
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value),
+    [setText],
   );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      textareaRef.current = e.currentTarget;
-      // Mention picker keys (Arrow/Enter/Tab/Esc) take priority while open.
-      if (mentions) {
-        mention.handleKeyDown(e);
-        if (e.defaultPrevented) return;
-      }
       if (e.key === "Escape" && status === "streaming" && onStop) {
         e.preventDefault();
         onStop();
       }
     },
-    [mentions, mention, status, onStop],
+    [status, onStop],
   );
 
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
       const trimmed = message.text?.trim();
       if (!trimmed && files.length === 0) return;
-      const finalText = mentions?.transformOnSend
-        ? mentions.transformOnSend(trimmed ?? "")
-        : (trimmed ?? "");
-      onSend(finalText, files);
+      onSend(trimmed ?? "", files);
       // In uncontrolled mode, clear our own state. In controlled mode the
       // parent is responsible for clearing.
       if (!isTextControlled) setText("");
       if (!isFilesControlled) setFiles([]);
     },
-    [
-      onSend,
-      files,
-      isTextControlled,
-      isFilesControlled,
-      setText,
-      setFiles,
-      mentions,
-    ],
+    [onSend, files, isTextControlled, isFilesControlled, setText, setFiles],
+  );
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!e.target.files || e.target.files.length === 0) return;
+      addFiles(Array.from(e.target.files));
+      e.target.value = "";
+    },
+    [addFiles],
+  );
+
+  const openFilePicker = useCallback(() => {
+    const input = fileInputRef.current;
+    if (!input) return;
+    // Reset BEFORE click so the same file can be re-picked and so WKWebView
+    // doesn't hold onto stale state between invocations.
+    input.value = "";
+    input.click();
+  }, []);
+
+  const removeFile = useCallback(
+    (index: number) => setFiles(files.filter((_, i) => i !== index)),
+    [files, setFiles],
   );
 
   const hasContent = text.trim().length > 0 || files.length > 0;
@@ -150,19 +136,30 @@ export function ChatInput({
   return (
     <div className="shrink-0 px-4 pb-6 pt-2">
       <div className="max-w-3xl mx-auto relative">
-        <AttachmentStrip
-          files={files}
-          fileInputRef={fileInputRef}
-          onFileChange={handleFileChange}
-          onRemove={removeFile}
+        {/* Native file input — hidden, triggered programmatically via ref */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="sr-only"
+          onChange={handleFileChange}
+          tabIndex={-1}
         />
 
-        {mention.open && (
-          <MentionPicker
-            options={mention.filtered}
-            selectedIndex={mention.selectedIndex}
-            onSelect={mention.insert}
-          />
+        {/* Attachment cards — ABOVE the composer, always-visible scrollbar */}
+        {files.length > 0 && (
+          <div
+            className="flex gap-2 pb-1 mb-2 overflow-x-auto"
+            style={{ scrollbarWidth: "thin" }}
+          >
+            {files.map((file, idx) => (
+              <AttachmentChip
+                key={`${file.name}-${idx}`}
+                name={file.name}
+                onRemove={() => removeFile(idx)}
+              />
+            ))}
+          </div>
         )}
 
         <PromptInput onSubmit={handleSubmit}>
