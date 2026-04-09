@@ -3,22 +3,27 @@
  * Fully props-driven: host app provides the skill data and save callback.
  */
 import { useCallback, useEffect, useState } from "react"
+import { ConfirmDialog } from "@houston-ai/core"
 import type { Skill } from "./types"
-import { ArrowLeft, FileText } from "lucide-react"
+import { ArrowLeft, FileText, Trash2 } from "lucide-react"
 
 export interface SkillDetailPageProps {
   skill: Skill | undefined
   onBack: () => void
   onSave: (skillName: string, instructions: string) => Promise<void>
+  onDelete: (skillName: string) => Promise<void>
 }
 
 export function SkillDetailPage({
   skill,
   onBack,
   onSave,
+  onDelete,
 }: SkillDetailPageProps) {
   const [instructions, setInstructions] = useState("")
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   useEffect(() => {
     if (skill) setInstructions(skill.instructions)
@@ -33,6 +38,18 @@ export function SkillDetailPage({
       setSaving(false)
     }
   }, [skill, instructions, onSave])
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!skill) return
+    setConfirmOpen(false)
+    setDeleting(true)
+    try {
+      await onDelete(skill.name)
+      onBack()
+    } finally {
+      setDeleting(false)
+    }
+  }, [skill, onDelete, onBack])
 
   if (!skill) {
     return (
@@ -64,8 +81,25 @@ export function SkillDetailPage({
               {skill.file_path}
             </p>
           </div>
+          <button
+            onClick={() => setConfirmOpen(true)}
+            disabled={deleting}
+            title="Delete skill"
+            className="size-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Trash2 className="size-4" />
+          </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Delete "${skill.name}"?`}
+        description="This removes the skill folder from .agents/skills and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleConfirmDelete}
+      />
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-6">

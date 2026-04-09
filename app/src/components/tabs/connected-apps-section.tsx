@@ -1,0 +1,110 @@
+import { useMemo, useState } from "react";
+import { Check } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { COMPOSIO_CATALOG, type ComposioApp } from "../../lib/composio-catalog";
+import { tauriConnections } from "../../lib/tauri";
+
+interface ConnectedAppsSectionProps {
+  connectedToolkits: Set<string>;
+}
+
+export function ConnectedAppsSection({
+  connectedToolkits,
+}: ConnectedAppsSectionProps) {
+  // Use the scraped catalog for name/logo/description lookups so Connected
+  // cards match the Browse grid visually. Falls back to the hardcoded
+  // catalog when the scrape hasn't loaded yet.
+  const { data: apiApps } = useQuery({
+    queryKey: ["composio-apps"],
+    queryFn: () => tauriConnections.listApps(),
+    staleTime: 1000 * 60 * 60,
+  });
+
+  const catalog: ComposioApp[] = useMemo(() => {
+    if (apiApps && apiApps.length > 0) {
+      return apiApps.map((a) => ({
+        toolkit: a.toolkit,
+        name: a.name,
+        description: a.description,
+        logoUrl: a.logo_url || fallbackLogo(a.toolkit),
+      }));
+    }
+    return COMPOSIO_CATALOG;
+  }, [apiApps]);
+
+  const connectedApps = useMemo(() => {
+    const byToolkit = new Map(catalog.map((a) => [a.toolkit, a]));
+    return Array.from(connectedToolkits)
+      .map(
+        (slug) =>
+          byToolkit.get(slug) ?? {
+            toolkit: slug,
+            name: slug,
+            description: "Connected",
+            logoUrl: fallbackLogo(slug),
+          },
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [catalog, connectedToolkits]);
+
+  if (connectedApps.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="mt-6">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-medium text-foreground">Connected</h2>
+        <span className="text-xs text-muted-foreground">
+          {connectedApps.length}{" "}
+          {connectedApps.length === 1 ? "app" : "apps"}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {connectedApps.map((app) => (
+          <ConnectedAppCard key={app.toolkit} app={app} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ConnectedAppCard({ app }: { app: ComposioApp }) {
+  const [imgError, setImgError] = useState(false);
+  const initial = app.name.charAt(0).toUpperCase();
+
+  return (
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-black/5 hover:bg-accent/50 transition-colors">
+      {!imgError ? (
+        <img
+          src={app.logoUrl}
+          alt={app.name}
+          className="size-8 rounded-lg object-contain shrink-0"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div className="size-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
+          <span className="text-xs font-semibold text-muted-foreground">
+            {initial}
+          </span>
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-medium text-foreground truncate">
+          {app.name}
+        </p>
+        <p className="text-[11px] text-muted-foreground truncate">
+          {app.description}
+        </p>
+      </div>
+      <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium shrink-0">
+        <Check className="size-3" />
+        Connected
+      </span>
+    </div>
+  );
+}
+
+function fallbackLogo(toolkit: string): string {
+  return `https://www.google.com/s2/favicons?domain=${toolkit}.com&sz=128`;
+}

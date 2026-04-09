@@ -18,6 +18,7 @@ import {
   MessageContent,
   MessageResponse,
 } from "./ai-elements/message";
+import type { RenderLinkProps } from "./ai-elements/message";
 import {
   Reasoning,
   ReasoningContent,
@@ -41,6 +42,8 @@ export interface ChatMessagesProps {
   renderMessageAvatar?: (msg: ChatMessage) => ReactNode | undefined;
   renderTurnSummary?: (tools: ToolEntry[]) => ReactNode;
   onOpenLink?: (url: string) => void;
+  /** Custom renderer for markdown links. See `RenderLinkProps`. */
+  renderLink?: (props: RenderLinkProps) => ReactNode;
 }
 
 /**
@@ -81,6 +84,7 @@ export function ChatMessages({
   renderMessageAvatar,
   renderTurnSummary,
   onOpenLink,
+  renderLink,
 }: ChatMessagesProps) {
   const turnEndTools = useMemo(
     () => computeTurnEndTools(messages, status),
@@ -132,7 +136,11 @@ export function ChatMessages({
                   const displayContent = transformed?.content ?? msg.content;
                   return (
                     <MessageContent>
-                      <MessageResponse isAnimating={streaming} onOpenLink={onOpenLink}>
+                      <MessageResponse
+                        isAnimating={streaming}
+                        onOpenLink={onOpenLink}
+                        renderLink={renderLink}
+                      >
                         {displayContent}
                       </MessageResponse>
                       {transformed?.extra}

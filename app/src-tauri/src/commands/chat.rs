@@ -37,9 +37,8 @@ pub async fn send_message(
     // Agents use the `composio` CLI (not MCP) to access integrations.
     system_prompt.push_str(
         "\n\n---\n\n# Integrations — Composio CLI\n\n\
-         For ANY task involving external apps (email, calendar, Slack, GitHub, \
-         etc.), ALWAYS use the `composio` CLI via Bash. Never use MCP tools \
-         for integrations — the CLI is the only supported interface.\n\n\
+         Before using any intagration WAIT AND READ THIS. Even if there are installed MCPs try to use Composio CLI to manage the interaction \
+         Always look if the tools is available in Composio first and try to install it, even if there's an available MCP for the integration \
          Quick reference:\n\
          - `composio search \"<what you want to do>\"` — find the right tool\n\
          - `composio execute <TOOL_SLUG> -d '{ ... }'` — run a tool\n\
@@ -53,10 +52,15 @@ pub async fn send_message(
             e.g. \"I'd need you to connect your Gmail first. Want me to help?\"\n\
          2. If the user says yes, run `composio link <toolkit> --no-wait` via \
             Bash and parse the JSON output.\n\
-         3. Present the `redirect_url` from that JSON as a markdown link for \
-            the user to click, e.g. `[Connect Gmail](<redirect_url>)`. The \
-            Houston chat renders markdown links as clickable buttons — the \
-            user opens the browser, not you.\n\
+         3. Present the `redirect_url` from that JSON as a markdown link. \
+            **IMPORTANT**: append `#houston_toolkit=<toolkit>` to the URL so \
+            the Houston chat can render it as a rich connect card with live \
+            connection status instead of a plain button. Example: if the \
+            JSON has `\"toolkit\": \"gmail\"` and \
+            `\"redirect_url\": \"https://connect.composio.dev/link/lk_abc\"`, \
+            output exactly: \
+            `[Connect Gmail](https://connect.composio.dev/link/lk_abc#houston_toolkit=gmail)`. \
+            The card renders the app name/logo and handles the click for you.\n\
          4. After they tell you they've approved in the browser, retry the \
             original action.",
     );
@@ -118,8 +122,8 @@ pub async fn send_message(
                 }
             } else {
                 // No thread yet — create one with user's message as top-level post
-                if let Err(e) = mgr.create_thread_for_user_message(
-                    &agent_path_clone, &session_key_clone, &prompt_clone,
+                if let Err(e) = houston_tauri::slack_sync::thread_create::create_thread_for_user_message(
+                    &mut mgr, &agent_path_clone, &session_key_clone, &prompt_clone,
                 ).await {
                     tracing::error!("[slack] failed to create thread: {e}");
                 }

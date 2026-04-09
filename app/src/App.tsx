@@ -33,7 +33,7 @@ import { Sidebar } from "./components/shell/sidebar";
 import { CreateAgentDialog } from "./components/shell/create-workspace-dialog";
 import { AgentRenderer } from "./components/shell/experience-renderer";
 import { Dashboard } from "./components/dashboard";
-import { WorkspaceConnections } from "./components/space-connections";
+import { IntegrationsView } from "./components/tabs/integrations-view";
 import { DetailPanelProvider } from "./components/shell/detail-panel-context";
 
 export default function App() {
@@ -145,7 +145,7 @@ export default function App() {
               {viewMode === "dashboard" ? (
                 <Dashboard />
               ) : viewMode === "connections" ? (
-                <WorkspaceConnections />
+                <IntegrationsView title="Integrations" />
               ) : currentAgent && agentDef && tabs.length > 0 ? (
                 <>
                   <TabBar

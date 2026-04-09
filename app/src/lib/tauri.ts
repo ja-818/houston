@@ -220,6 +220,8 @@ export interface StartLinkResponse {
 export const tauriConnections = {
   list: () => invoke<ComposioStatus>("list_composio_connections"),
   listApps: () => invoke<ComposioAppEntry[]>("list_composio_apps"),
+  listConnectedToolkits: (toolkits: string[]) =>
+    invoke<string[]>("list_composio_connected_toolkits", { toolkits }),
   connectApp: (toolkit: string) =>
     invoke<StartLinkResponse>("connect_composio_app", { toolkit }),
   startOAuth: () => invoke<StartLoginResponse>("start_composio_oauth"),

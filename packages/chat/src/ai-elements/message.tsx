@@ -18,7 +18,7 @@ import { math } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon, ExternalLinkIcon } from "lucide-react";
-import type { AnchorHTMLAttributes, ComponentProps, HTMLAttributes, ReactElement } from "react";
+import type { AnchorHTMLAttributes, ComponentProps, HTMLAttributes, ReactElement, ReactNode } from "react";
 import {
   createContext,
   memo,
@@ -337,16 +337,41 @@ export const MessageBranchPage = ({
   );
 };
 
+/**
+ * Props passed to a custom link renderer. `onOpen` is the default
+ * open-URL handler (what the built-in button would call on click) — the
+ * custom renderer can invoke it directly or ignore it. Returning
+ * `undefined` (or `null`) from the renderer falls back to the default
+ * button, which lets the app handle *only* specific URL patterns and
+ * leave everything else alone.
+ */
+export type RenderLinkProps = {
+  href: string;
+  children: ReactNode;
+  onOpen: () => void;
+};
+export type RenderLinkFn = (props: RenderLinkProps) => ReactNode | undefined;
+
 export type MessageResponseProps = ComponentProps<typeof Streamdown> & {
   onOpenLink?: (url: string) => void;
+  /**
+   * Optional custom renderer for markdown links. When provided, it
+   * replaces the default button for every `<a>` tag rendered by
+   * Streamdown. The default button behavior is exposed to the custom
+   * renderer as `onOpen` so it can fall back when it doesn't want to
+   * handle a particular link. Pure generic — the chat package stays
+   * Composio-unaware; the app layer is responsible for detecting
+   * special URL patterns.
+   */
+  renderLink?: RenderLinkFn;
 };
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
 export const MessageResponse = memo(
-  ({ className, onOpenLink, ...props }: MessageResponseProps) => {
+  ({ className, onOpenLink, renderLink, ...props }: MessageResponseProps) => {
     const components = useMemo(() => {
-      if (!onOpenLink) return undefined;
+      if (!onOpenLink && !renderLink) return undefined;
       const fn = onOpenLink;
       return {
         a: ({ href, children, node: _node }: AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) => {
@@ -354,13 +379,24 @@ export const MessageResponse = memo(
           if (!href || children === href) {
             return <span>{children}</span>;
           }
-          // Markdown link with custom text → button with text + icon
+          const onOpen = () => fn?.(href);
+          // If a custom renderer is provided and returns something, use
+          // it. If it returns undefined/null, fall through to the
+          // default button so the app can selectively override only
+          // specific URL patterns.
+          if (renderLink) {
+            const custom = renderLink({ href, children, onOpen });
+            if (custom != null) {
+              return <>{custom}</>;
+            }
+          }
+          // Markdown link with custom text → default button with text + icon
           return (
             <Button
               type="button"
               size="sm"
               variant="default"
-              onClick={() => fn(href)}
+              onClick={onOpen}
             >
               {children}
               <ExternalLinkIcon size={11} strokeWidth={2} />
@@ -368,7 +404,7 @@ export const MessageResponse = memo(
           );
         },
       };
-    }, [onOpenLink]);
+    }, [onOpenLink, renderLink]);
 
     return (
       <Streamdown
@@ -385,7 +421,8 @@ export const MessageResponse = memo(
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&
     nextProps.isAnimating === prevProps.isAnimating &&
-    prevProps.onOpenLink === nextProps.onOpenLink
+    prevProps.onOpenLink === nextProps.onOpenLink &&
+    prevProps.renderLink === nextProps.renderLink
 );
 
 MessageResponse.displayName = "MessageResponse";

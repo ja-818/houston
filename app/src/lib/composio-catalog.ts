@@ -59,3 +59,19 @@ export const COMPOSIO_CATALOG: ComposioApp[] = [
   { toolkit: "shopify", name: "Shopify", description: "E-commerce management", logoUrl: fav("shopify.com") },
   { toolkit: "stripe", name: "Stripe", description: "Payments and billing", logoUrl: fav("stripe.com") },
 ].sort((a, b) => a.name.localeCompare(b.name));
+
+/**
+ * Slugs we probe on load to populate connection state across the app
+ * (Integrations tab's Connected section, inline ComposioLinkCard in
+ * chat, etc.). Shared so every surface reads from the same TanStack
+ * Query cache — otherwise each consumer would trigger its own probe.
+ *
+ * Using the curated catalog (~45 popular apps) rather than the full
+ * scraped list (~200) keeps the refresh under 5s and covers what most
+ * users connect. Exotic connections made outside Houston won't show up
+ * here — acceptable tradeoff until Composio ships a proper "list
+ * consumer accounts" command.
+ */
+export const COMPOSIO_PROBE_SLUGS: string[] = COMPOSIO_CATALOG.map(
+  (a) => a.toolkit,
+);

@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edge cases at runtime — Learn Houston</title>
+    <meta
+      name="description"
+      content="How the AI handles edge cases you never wrote code for, without waiting for you."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <a href="index.html" class="nav-brand">
+        <span class="nav-brand-mark">H</span>
+        Houston
+        <span class="nav-brand-label">/ Learn</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Learn</a>
+        <a href="https://github.com/anthropics/houston">GitHub</a>
+      </div>
+    </nav>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Learn</div>
+        <ul class="sidebar-nav">
+          <li><a href="index.html"><span class="num">—</span>Overview</a></li>
+          <li>
+            <a href="01-the-shift.html">
+              <span class="num">01</span>The mental shift
+            </a>
+          </li>
+          <li>
+            <a href="02-symmetric-participation.html">
+              <span class="num">02</span>Humans and AI, as equals
+            </a>
+          </li>
+          <li>
+            <a href="03-pages-and-components.html">
+              <span class="num">03</span>Pages and components
+            </a>
+          </li>
+          <li>
+            <a href="04-teaching-the-app.html">
+              <span class="num">04</span>Teaching, not configuring
+            </a>
+          </li>
+          <li>
+            <a href="05-code-at-runtime.html" class="active">
+              <span class="num">05</span>Edge cases at runtime
+            </a>
+          </li>
+          <li>
+            <a href="06-showing-the-user.html">
+              <span class="num">06</span>Showing, not driving
+            </a>
+          </li>
+          <li>
+            <a href="07-building.html">
+              <span class="num">07</span>Building a Houston app
+            </a>
+          </li>
+          <li>
+            <a href="08-what-this-is-not.html">
+              <span class="num">08</span>What Houston isn't
+            </a>
+          </li>
+        </ul>
+      </aside>
+
+      <main class="content">
+        <div class="content-label">Chapter 05</div>
+        <h1>Edge cases at runtime.</h1>
+        <p class="lead">
+          The hardest problem in every real-world app is the one you
+          couldn't predict. Houston gives the user's AI the authority to
+          handle it on the spot.
+        </p>
+
+        <div class="toc">
+          <div class="toc-label">On this page</div>
+          <ol>
+            <li><a href="#problem">The edge case problem</a></li>
+            <li><a href="#different">What Houston does differently</a></li>
+            <li><a href="#allowed">What the AI can and can't touch</a></li>
+            <li><a href="#rules-as-data">Rules as data, not code branches</a></li>
+            <li><a href="#safety">Tests and rollback</a></li>
+          </ol>
+        </div>
+
+        <h2 id="problem">The edge case problem</h2>
+        <p>Every real app has edge cases the vendor didn't anticipate.</p>
+        <ul>
+          <li>One client needs a different column in the export.</li>
+          <li>
+            Brazilian clients need the date written as <code>DD/MM/YYYY</code>.
+          </li>
+          <li>When the total is over $10k, add a discount row.</li>
+        </ul>
+        <p>
+          In traditional apps, the user has three options. Email support and
+          wait. Do without. Take the output to another tool and fix it by hand.
+        </p>
+        <p>None of these are good.</p>
+
+        <h2 id="different">What Houston does differently</h2>
+        <p>
+          In a Houston app, the user's AI can edit the local code that
+          handles their workflow.
+        </p>
+        <p>
+          A Python script that generates an export? The AI can edit it. On
+          the user's machine. For this user only.
+        </p>
+        <p>
+          Next time the user exports, the new code runs. Done.
+        </p>
+
+        <div class="chat-example">
+          <div class="chat-user">
+            Add an "exchange rate" column to my exports. Pull it from the
+            transaction date.
+          </div>
+          <div class="chat-ai">
+            Done. Your next export will have an exchange rate column,
+            looked up by each transaction's date. Want me to run a test
+            export on last month's data so you can check it's what you
+            need?
+          </div>
+          <div class="chat-chips">
+            <span class="chip">
+              <span class="chip-arrow">→</span>Run a test export
+            </span>
+            <span class="chip">Undo</span>
+          </div>
+        </div>
+
+        <p>
+          The user never talked to you. You never shipped a custom build.
+          They got what they needed.
+        </p>
+
+        <h2 id="allowed">What the AI can and can't touch</h2>
+        <p>
+          The AI can only write inside the agent folder:
+          <code>~/Documents/Houston/{Workspace}/{AgentName}/</code>.
+        </p>
+        <p>
+          Inside that folder, it can touch:
+        </p>
+        <ul>
+          <li>Scripts the user's workflow depends on.</li>
+          <li>Data files.</li>
+          <li>Learned rules (<code>prompt.local.md</code>).</li>
+          <li>Page manifests (<code>page.json</code>).</li>
+        </ul>
+        <p>It cannot touch:</p>
+        <ul>
+          <li>The Houston framework itself.</li>
+          <li>The app binary.</li>
+          <li>Files anywhere else on the filesystem.</li>
+        </ul>
+        <p>
+          This boundary is enforced by the framework, not by a prompt. The
+          AI isn't asked nicely to stay in its folder. It physically can't
+          leave.
+        </p>
+
+        <div class="callout callout-warning">
+          <div class="callout-label">Important</div>
+          <p>
+            The AI can rewrite the scripts <em>your app ships with</em>. That
+            means the user's copy of those scripts diverges from yours.
+            That's the point — it's how edge cases get handled. Design your
+            app for scripts that are meant to be customized.
+          </p>
+        </div>
+
+        <h2 id="rules-as-data">Rules as data, not code branches</h2>
+        <p>
+          There's a pattern that makes this work well over time.
+          <strong>Keep variance in data, not in code.</strong>
+        </p>
+        <p>
+          The script stays small and general. The rules live in a file like
+          <code>rules.json</code>. The script reads the rules and applies them.
+        </p>
+        <p>
+          Most of the time, the AI edits the rules file, not the script. The
+          script only changes when the <em>shape</em> of the rules changes,
+          which is rare.
+        </p>
+
+        <div class="tree">
+<span class="dir">.houston/scripts/</span>
+  export.py         <span class="comment"># small, general, edited rarely</span>
+  rules.json        <span class="comment"># per-client rules, edited by the AI often</span></div>
+
+        <p>
+          Without this pattern, six months of edge cases becomes spaghetti.
+          With it, the script stays clean and the rules file grows into a
+          record of everything the user has asked for.
+        </p>
+        <p>
+          When a rule repeats across clients, the AI can suggest lifting it
+          to a default:
+        </p>
+
+        <div class="chat-example">
+          <div class="chat-ai">
+            I've noticed you've asked for the exchange rate column for three
+            clients now. Want me to make it the default for everyone?
+          </div>
+          <div class="chat-chips">
+            <span class="chip">Yes, make it the default</span>
+            <span class="chip">No, keep it per-client</span>
+          </div>
+        </div>
+
+        <h2 id="safety">Tests and rollback</h2>
+        <p>
+          Code changes are higher stakes than rule changes. Houston treats
+          them that way.
+        </p>
+        <p>
+          When the AI edits a script, three things happen:
+        </p>
+        <ol>
+          <li>
+            The change is committed to git with a plain-English message.
+          </li>
+          <li>
+            The user sees a one-line summary of what changed, with an undo
+            button.
+          </li>
+          <li>
+            Where possible, the AI writes a test alongside the change and
+            runs it. If the test fails, the change doesn't land.
+          </li>
+        </ol>
+        <p>
+          Rule changes are eager — they apply immediately. Code changes
+          pause for a beat. That asymmetry is on purpose: rewriting logic
+          deserves more care than rewriting an English sentence.
+        </p>
+
+        <div class="callout callout-success">
+          <div class="callout-label">The unified timeline</div>
+          <p>
+            Learned rules, rule-file edits, and script edits all show up in
+            the same "what the agent has changed for you" timeline. One
+            place, plain English, undo on every entry. The user doesn't
+            have to understand the difference between a rule and a script
+            edit to roll one back.
+          </p>
+        </div>
+
+        <div class="pager">
+          <a href="04-teaching-the-app.html">
+            <div class="pager-label">← Previous</div>
+            <div class="pager-title">Teaching, not configuring</div>
+          </a>
+          <a href="06-showing-the-user.html" class="next">
+            <div class="pager-label">Next →</div>
+            <div class="pager-title">Showing, not driving</div>
+          </a>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

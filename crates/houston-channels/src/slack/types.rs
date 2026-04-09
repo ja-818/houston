@@ -9,9 +9,13 @@ pub struct ConnectionsOpenResponse {
 }
 
 /// A Socket Mode envelope wrapping an event.
+///
+/// Note: `envelope_id` is `Option` because system frames like the `hello`
+/// and `disconnect` messages don't include one. Only `events_api` envelopes
+/// (which carry real user messages) have an `envelope_id` to ack.
 #[derive(Debug, Deserialize)]
 pub struct SlackEnvelope {
-    pub envelope_id: String,
+    pub envelope_id: Option<String>,
     #[serde(rename = "type")]
     pub envelope_type: String,
     pub payload: Option<SlackEventPayload>,

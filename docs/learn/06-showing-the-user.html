@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Showing, not driving — Learn Houston</title>
+    <meta
+      name="description"
+      content="How the AI points at things in the UI without hijacking the user."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <a href="index.html" class="nav-brand">
+        <span class="nav-brand-mark">H</span>
+        Houston
+        <span class="nav-brand-label">/ Learn</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Learn</a>
+        <a href="https://github.com/anthropics/houston">GitHub</a>
+      </div>
+    </nav>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Learn</div>
+        <ul class="sidebar-nav">
+          <li><a href="index.html"><span class="num">—</span>Overview</a></li>
+          <li>
+            <a href="01-the-shift.html">
+              <span class="num">01</span>The mental shift
+            </a>
+          </li>
+          <li>
+            <a href="02-symmetric-participation.html">
+              <span class="num">02</span>Humans and AI, as equals
+            </a>
+          </li>
+          <li>
+            <a href="03-pages-and-components.html">
+              <span class="num">03</span>Pages and components
+            </a>
+          </li>
+          <li>
+            <a href="04-teaching-the-app.html">
+              <span class="num">04</span>Teaching, not configuring
+            </a>
+          </li>
+          <li>
+            <a href="05-code-at-runtime.html">
+              <span class="num">05</span>Edge cases at runtime
+            </a>
+          </li>
+          <li>
+            <a href="06-showing-the-user.html" class="active">
+              <span class="num">06</span>Showing, not driving
+            </a>
+          </li>
+          <li>
+            <a href="07-building.html">
+              <span class="num">07</span>Building a Houston app
+            </a>
+          </li>
+          <li>
+            <a href="08-what-this-is-not.html">
+              <span class="num">08</span>What Houston isn't
+            </a>
+          </li>
+        </ul>
+      </aside>
+
+      <main class="content">
+        <div class="content-label">Chapter 06</div>
+        <h1>Showing, not driving.</h1>
+        <p class="lead">
+          Houston gives the AI a way to point at things on screen. When it
+          wants the user to look at something — a row in a table, a field
+          in a form, a whole page — it can light it up with a soft pulse.
+        </p>
+
+        <p>
+          This is new. Traditional AI apps can't do it. Their AI sits
+          behind an API, and the UI is on the other side of a wall. The AI
+          can describe what it did; it can't actually point.
+        </p>
+
+        <div class="toc">
+          <div class="toc-label">On this page</div>
+          <ol>
+            <li><a href="#why">Why this is possible in Houston</a></li>
+            <li><a href="#how">How it works</a></li>
+          </ol>
+        </div>
+
+        <h2 id="why">Why this is possible in Houston</h2>
+        <p>
+          In Houston, the AI and the UI operate on the same workspace.
+          Pages are files. Elements have stable IDs derived from data.
+        </p>
+        <p>
+          When the AI says "the client I just updated," it's naming
+          something the UI already knows how to render. The framework
+          takes that reference and draws a ring around the real element on
+          the user's screen.
+        </p>
+        <p>
+          This isn't a feature bolted onto a chat bubble. It's what
+          becomes possible once the AI and the UI stop being separated by
+          a wall.
+        </p>
+
+        <h2 id="how">How it works</h2>
+        <p>
+          The AI can attach action chips to its replies. A chip is a small
+          button that targets either a page or a specific element on a
+          page.
+        </p>
+        <ul>
+          <li>
+            <strong>Page chip</strong> — click, and the app navigates to
+            that page.
+          </li>
+          <li>
+            <strong>Element chip</strong> — click, and the app navigates
+            to the page <em>and</em> the element gets a pulsing ring
+            around it.
+          </li>
+        </ul>
+        <p>
+          The chip is an offer. The AI never takes the user anywhere
+          without a click.
+        </p>
+
+        <div class="chat-example">
+          <div class="chat-ai">
+            I updated John Doe's email address to the new one.
+          </div>
+          <div class="chat-chips">
+            <span class="chip">
+              <span class="chip-arrow">→</span>Show me the client
+            </span>
+            <span class="chip">Open clients page</span>
+          </div>
+        </div>
+
+        <p>
+          If the AI wants to point at multiple things, it just emits
+          multiple chips. The user clicks through them at their own pace.
+          No tour mode, no forced sequence.
+        </p>
+
+        <div class="pager">
+          <a href="05-code-at-runtime.html">
+            <div class="pager-label">← Previous</div>
+            <div class="pager-title">Edge cases at runtime</div>
+          </a>
+          <a href="07-building.html" class="next">
+            <div class="pager-label">Next →</div>
+            <div class="pager-title">Building a Houston app</div>
+          </a>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

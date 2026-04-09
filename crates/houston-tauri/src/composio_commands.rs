@@ -60,3 +60,13 @@ pub async fn connect_composio_app(toolkit: String) -> Result<StartLinkResponse, 
 pub async fn list_composio_apps() -> Vec<crate::composio_apps::ComposioAppEntry> {
     crate::composio_apps::list_all_apps().await
 }
+
+/// Probe each toolkit in `toolkits` against the consumer ("Composio
+/// for You") namespace and return the subset that is currently
+/// connected. Uses `composio proxy` with a bogus URL to trigger the
+/// tool router's auth check without touching any third-party API.
+/// Safe to call with 40+ toolkits — parallelism is bounded internally.
+#[tauri::command(rename_all = "snake_case")]
+pub async fn list_composio_connected_toolkits(toolkits: Vec<String>) -> Vec<String> {
+    composio_cli::probe_connected_many(toolkits).await
+}

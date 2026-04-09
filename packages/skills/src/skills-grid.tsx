@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react"
 import {
   Button,
+  ConfirmDialog,
   Empty, EmptyHeader, EmptyTitle, EmptyDescription,
 } from "@houston-ai/core"
 import { Plus } from "lucide-react"
@@ -16,6 +17,8 @@ export interface SkillsGridProps {
   skills: Skill[]
   loading: boolean
   onSkillClick: (skill: Skill) => void
+  /** Delete a skill by name. Enables per-row trash buttons when provided. */
+  onDelete?: (name: string) => Promise<void>
   /** Search skills.sh. Required to enable the marketplace modal. */
   onSearch?: (query: string) => Promise<CommunitySkill[]>
   /** Install a single community skill. Returns installed skill name. */
@@ -30,12 +33,21 @@ export function SkillsGrid({
   skills,
   loading,
   onSkillClick,
+  onDelete,
   onSearch,
   onInstallCommunity,
   onListFromRepo,
   onInstallFromRepo,
 }: SkillsGridProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<Skill | null>(null)
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete || !onDelete) return
+    const name = pendingDelete.name
+    setPendingDelete(null)
+    await onDelete(name)
+  }
 
   const sorted = useMemo(() => {
     return [...skills].sort((a, b) => a.name.localeCompare(b.name))
@@ -102,12 +114,24 @@ export function SkillsGrid({
                   key={skill.id}
                   skill={skill}
                   onClick={() => onSkillClick(skill)}
+                  onDelete={onDelete ? () => setPendingDelete(skill) : undefined}
                 />
               ))}
             </div>
           </section>
         )}
       </div>
+
+      {onDelete && (
+        <ConfirmDialog
+          open={pendingDelete !== null}
+          onOpenChange={(open) => { if (!open) setPendingDelete(null) }}
+          title={pendingDelete ? `Delete "${pendingDelete.name}"?` : "Delete skill?"}
+          description="This removes the skill folder from .agents/skills and cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={handleConfirmDelete}
+        />
+      )}
 
       {/* Marketplace modal */}
       {canAdd && (

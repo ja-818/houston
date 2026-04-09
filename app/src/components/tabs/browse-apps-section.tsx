@@ -3,7 +3,7 @@ import { Search, Loader2, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { COMPOSIO_CATALOG, type ComposioApp } from "../../lib/composio-catalog";
 import { tauriConnections, tauriSystem } from "../../lib/tauri";
-import { useInvalidateConnections } from "../../hooks/queries";
+import { useComposioRefetchOnReturn } from "../../hooks/use-composio-refetch-on-return";
 
 interface BrowseAppsSectionProps {
   connectedToolkits: Set<string>;
@@ -15,7 +15,7 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
   const [search, setSearch] = useState("");
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [connecting, setConnecting] = useState<string | null>(null);
-  const invalidate = useInvalidateConnections();
+  const markWaitingForAuth = useComposioRefetchOnReturn();
 
   const { data: apiApps } = useQuery({
     queryKey: ["composio-apps"],
@@ -59,14 +59,18 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
       try {
         const { redirect_url } = await tauriConnections.connectApp(toolkit);
         tauriSystem.openUrl(redirect_url);
-        setTimeout(() => invalidate(), 2000);
+        // Targeted polling for this slug — see useComposioRefetchOnReturn
+        // for the full rationale. Poll until Composio's backend flips
+        // the toolkit to connected, then invalidate the main query so
+        // this Browse grid and every other surface updates at once.
+        markWaitingForAuth(toolkit);
       } catch {
         // Error already shown via invoke toast
       } finally {
         setConnecting(null);
       }
     },
-    [invalidate],
+    [markWaitingForAuth],
   );
 
   return (

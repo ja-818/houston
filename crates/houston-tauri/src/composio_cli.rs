@@ -200,14 +200,11 @@ pub async fn start_link(toolkit: &str) -> Result<StartLinkResponse, String> {
     if toolkit.is_empty() {
         return Err("toolkit must not be empty".into());
     }
-    let output = run_cli(&[
-        "dev",
-        "connected-accounts",
-        "link",
-        toolkit,
-        "--no-wait",
-    ])
-    .await?;
+    // Top-level `composio link` (consumer / "Composio for You" namespace).
+    // NOT `composio dev connected-accounts link` — that's the developer/
+    // platform namespace, and accounts created there are invisible to
+    // `composio execute` / `composio search` which agents use at runtime.
+    let output = run_cli(&["link", toolkit, "--no-wait"]).await?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
@@ -400,4 +397,126 @@ fn cli_binary() -> Result<PathBuf, String> {
         ));
     }
     Ok(p)
+}
+
+// -- Connection probing --
+//
+// We need to know "is toolkit X connected?" for each app in our catalog so
+// the Integrations tab can render a Connected section and dedupe the Browse
+// grid. The CLI has no dedicated "list consumer connected accounts" command
+// (`composio dev connected-accounts list` is developer-project-scoped and
+// does NOT see consumer/for-you connections), and the COMPOSIO_*
+// meta-tools are blocked from `composio execute` / `composio run`.
+//
+// The trick: `composio proxy https://invalid.invalid/ --toolkit <slug>`
+// reaches Composio's tool router, runs the auth check first, and then
+// runs the outbound URL through an SSRF guard. The two failure modes are
+// distinguishable by the `slug` field in the JSON response:
+//
+//   - NotConnected → `"slug": "ToolRouterV2_NoActiveConnection"`
+//   - Connected    → `"slug": "ExternalProxy_SSRFBlocked"`
+//
+// When connected, the SSRF guard fires BEFORE any outbound request to
+// the third-party API, so no real Gmail/Slack/etc. calls happen — just
+// a lightweight audit entry at Composio's tool router. When not
+// connected, the call short-circuits at the auth check. Exit code is
+// always 1 in both cases, so we key off the JSON slug.
+
+/// Probe whether a single toolkit is connected in the consumer
+/// ("Composio for You") namespace. Returns `Ok(true)` if connected,
+/// `Ok(false)` if definitively not connected, and `Err(_)` if the
+/// probe response was unrecognizable (network error, CLI crash, etc.).
+pub async fn probe_connected(toolkit: &str) -> Result<bool, String> {
+    if toolkit.is_empty() {
+        return Err("toolkit must not be empty".into());
+    }
+    // 10s timeout per probe — the CLI typically responds in ~500ms, but
+    // we give headroom for cold-start and network jitter.
+    let output = run_cli_with_timeout(
+        &["proxy", "https://invalid.invalid/", "--toolkit", toolkit],
+        std::time::Duration::from_secs(10),
+    )
+    .await?;
+
+    // Exit code is 1 in both the connected and not-connected cases
+    // (both are "failures" from the CLI's perspective), so we ignore it
+    // and parse stdout. The CLI prints clean JSON to stdout and pretty
+    // error decoration to stderr.
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout_trimmed = stdout.trim();
+    if stdout_trimmed.is_empty() {
+        return Err(format!(
+            "composio proxy returned empty stdout (stderr: {})",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+
+    #[derive(Deserialize)]
+    struct ProbeResponse {
+        slug: Option<String>,
+    }
+
+    let parsed: ProbeResponse = serde_json::from_str(stdout_trimmed).map_err(|e| {
+        format!("Unrecognized probe response for {toolkit}: {e}\nstdout: {stdout_trimmed}")
+    })?;
+
+    match parsed.slug.as_deref() {
+        Some("ToolRouterV2_NoActiveConnection") => Ok(false),
+        Some("ExternalProxy_SSRFBlocked") => Ok(true),
+        Some(other) => {
+            // Unexpected slug. Log and treat as not connected so we
+            // don't show misleading green states on unrelated errors.
+            tracing::warn!(
+                "[composio:cli] unexpected probe slug for {}: {}",
+                toolkit,
+                other
+            );
+            Ok(false)
+        }
+        None => Err(format!(
+            "probe response for {toolkit} missing `slug` field: {stdout_trimmed}"
+        )),
+    }
+}
+
+/// Probe many toolkits in parallel and return the subset that came
+/// back connected. Individual probe errors are logged and skipped —
+/// a single flaky toolkit should not blank the whole Connected list.
+///
+/// Parallelism is capped by a `JoinSet` with a semaphore-like bound
+/// so we don't spawn 45+ subprocesses at once on weaker machines.
+pub async fn probe_connected_many(toolkits: Vec<String>) -> Vec<String> {
+    use tokio::sync::Semaphore;
+    const MAX_CONCURRENT: usize = 10;
+
+    let sem = std::sync::Arc::new(Semaphore::new(MAX_CONCURRENT));
+    let mut set = tokio::task::JoinSet::new();
+
+    for toolkit in toolkits {
+        let sem = sem.clone();
+        set.spawn(async move {
+            let _permit = sem.acquire_owned().await.ok()?;
+            match probe_connected(&toolkit).await {
+                Ok(true) => Some(toolkit),
+                Ok(false) => None,
+                Err(e) => {
+                    tracing::warn!(
+                        "[composio:cli] probe failed for {}: {}",
+                        toolkit,
+                        e
+                    );
+                    None
+                }
+            }
+        });
+    }
+
+    let mut connected = Vec::new();
+    while let Some(join_result) = set.join_next().await {
+        if let Ok(Some(toolkit)) = join_result {
+            connected.push(toolkit);
+        }
+    }
+    connected.sort();
+    connected
 }

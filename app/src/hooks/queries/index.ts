@@ -15,7 +15,7 @@ export { useChannels, useAddChannel, useRemoveChannel } from "./use-channels";
 export { useFiles, useDeleteFile, useRenameFile, useCreateFolder } from "./use-files";
 export { useInstructions, useSaveInstructions } from "./use-instructions";
 export { useConversations, useAllConversations, useChatHistory } from "./use-conversations";
-export { useConnections, useComposioApps, useInvalidateConnections, useResetConnections } from "./use-connections";
+export { useConnections, useComposioApps, useConnectedToolkits, useInvalidateConnections, useResetConnections } from "./use-connections";
 export { useAgentIntegrations } from "./use-integrations";
 export {
   useRoutines,

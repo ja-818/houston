@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pages and components — Learn Houston</title>
+    <meta
+      name="description"
+      content="How a Houston app is organized, and how the AI reads it without being told."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <a href="index.html" class="nav-brand">
+        <span class="nav-brand-mark">H</span>
+        Houston
+        <span class="nav-brand-label">/ Learn</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Learn</a>
+        <a href="https://github.com/anthropics/houston">GitHub</a>
+      </div>
+    </nav>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Learn</div>
+        <ul class="sidebar-nav">
+          <li><a href="index.html"><span class="num">—</span>Overview</a></li>
+          <li>
+            <a href="01-the-shift.html">
+              <span class="num">01</span>The mental shift
+            </a>
+          </li>
+          <li>
+            <a href="02-symmetric-participation.html">
+              <span class="num">02</span>Humans and AI, as equals
+            </a>
+          </li>
+          <li>
+            <a href="03-pages-and-components.html" class="active">
+              <span class="num">03</span>Pages and components
+            </a>
+          </li>
+          <li>
+            <a href="04-teaching-the-app.html">
+              <span class="num">04</span>Teaching, not configuring
+            </a>
+          </li>
+          <li>
+            <a href="05-code-at-runtime.html">
+              <span class="num">05</span>Edge cases at runtime
+            </a>
+          </li>
+          <li>
+            <a href="06-showing-the-user.html">
+              <span class="num">06</span>Showing, not driving
+            </a>
+          </li>
+          <li>
+            <a href="07-building.html">
+              <span class="num">07</span>Building a Houston app
+            </a>
+          </li>
+          <li>
+            <a href="08-what-this-is-not.html">
+              <span class="num">08</span>What Houston isn't
+            </a>
+          </li>
+        </ul>
+      </aside>
+
+      <main class="content">
+        <div class="content-label">Chapter 03</div>
+        <h1>Pages and components.</h1>
+        <p class="lead">
+          A Houston app is built out of pages. Each page is a list of
+          components plus a small amount of text that tells the AI what the
+          page is for.
+        </p>
+
+        <div class="toc">
+          <div class="toc-label">On this page</div>
+          <ol>
+            <li><a href="#atomic">The atomic unit is a page</a></li>
+            <li><a href="#what">What a page actually is</a></li>
+            <li><a href="#registry">Components come from a registry</a></li>
+            <li><a href="#see">How the AI sees the page</a></li>
+            <li><a href="#why">Why this matters</a></li>
+          </ol>
+        </div>
+
+        <h2 id="atomic">The atomic unit is a page</h2>
+        <p>
+          Every Houston app is a set of pages. Each page does one job.
+        </p>
+        <p>
+          The client detail page shows a client. The invoices page shows
+          invoices. The dashboard shows a summary.
+        </p>
+        <p>
+          A page is how a user thinks about part of the app. It's also how
+          the AI thinks about it.
+        </p>
+
+        <h2 id="what">What a page actually is</h2>
+        <p>A page in Houston is three files:</p>
+
+        <div class="tree">
+<span class="dir">pages/client-detail/</span>
+  page.json          <span class="comment"># the list of components on the page</span>
+  prompt.seed.md     <span class="comment"># what the page is for (you write this)</span>
+  prompt.local.md    <span class="comment"># rules the user has taught (starts empty)</span></div>
+
+        <p>That's it. No routing framework. No template syntax. Just JSON and markdown.</p>
+
+        <p>
+          The <code>page.json</code> lists components and what data they're
+          bound to. It looks like this:
+        </p>
+
+        <pre><code>{
+  "components": [
+    { "type": "Header", "props": { "title": "Client" } },
+    { "type": "Card",   "bind": "clients/{id}.json" },
+    { "type": "Table",  "bind": "invoices/",
+      "filter": "client = {id}",
+      "columns": ["number", "amount", "status"] }
+  ]
+}</code></pre>
+
+        <p>
+          The page renderer reads the file, mounts the components, and shows
+          them. You don't write routes. You don't write a layout. You list
+          what you want, and the framework renders it.
+        </p>
+
+        <h2 id="registry">Components come from a registry</h2>
+        <p>
+          You can't drop any React component onto a page. Components have to
+          be registered.
+        </p>
+        <p>
+          Houston ships with a base set of primitives that cover most
+          assistant-style apps:
+        </p>
+        <ul>
+          <li><strong>Table</strong> — sortable, filterable, groupable data grid.</li>
+          <li><strong>Card</strong> — configurable content card with slots.</li>
+          <li><strong>Form</strong> — schema-driven form with validation.</li>
+          <li><strong>Chart</strong> — line, bar, pie, area.</li>
+          <li><strong>Kanban</strong> — card columns grouped by status.</li>
+          <li><strong>Timeline</strong> — chronological event list.</li>
+          <li><strong>Split</strong> and <strong>Tabs</strong> — layout primitives.</li>
+        </ul>
+        <p>
+          If you need something these don't cover, you build it. You write a
+          normal React component and register it. Chapter 07 walks through
+          exactly how.
+        </p>
+
+        <div class="callout callout-info">
+          <div class="callout-label">Closed vocabulary by design</div>
+          <p>
+            The AI can only use components that are in the registry. It can't
+            invent a component at runtime. This is the boundary that keeps
+            Houston apps predictable and secure.
+          </p>
+        </div>
+
+        <h2 id="see">How the AI sees the page</h2>
+        <p>
+          Here's the part that's easy to miss: the AI doesn't read your
+          component source code to understand what's on screen.
+        </p>
+        <p>
+          Every registered component self-reports. When it renders, it tells
+          Houston what it looks like and what data it's showing right now.
+        </p>
+        <p>
+          Houston bundles these self-reports into a structured description of
+          the page. The AI fetches it with one tool call:
+        </p>
+
+        <pre><code>get_page("client-detail")
+→ {
+    structure: { /* what's on the page */ },
+    intent:    "seed + learned rules"
+  }</code></pre>
+
+        <p>
+          You don't write this description. You don't maintain it. You don't
+          keep it in sync.
+        </p>
+        <p>
+          It's generated at render time by the components themselves. It
+          can't drift from reality because it <em>is</em> reality.
+        </p>
+
+        <h2 id="why">Why this matters</h2>
+        <p>
+          In most AI apps, the LLM's knowledge of the UI is whatever the
+          engineer stuffed into the system prompt. It goes stale fast. The UI
+          changes, the prompt doesn't, and now the AI is talking about
+          buttons that don't exist.
+        </p>
+        <p>
+          In Houston, the AI's knowledge of the UI is always the current UI.
+          You never write it, you never update it, it's just there.
+        </p>
+        <p>
+          You write React components. Houston handles the rest.
+        </p>
+
+        <div class="pager">
+          <a href="02-symmetric-participation.html">
+            <div class="pager-label">← Previous</div>
+            <div class="pager-title">Humans and AI, as equals</div>
+          </a>
+          <a href="04-teaching-the-app.html" class="next">
+            <div class="pager-label">Next →</div>
+            <div class="pager-title">Teaching, not configuring</div>
+          </a>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

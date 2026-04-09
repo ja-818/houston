@@ -12,6 +12,10 @@ use crate::types::SendResult;
 
 const BASE: &str = "https://slack.com/api";
 
+/// Brand-voice placeholder text used while the agent is working.
+/// Italicized via Slack mrkdwn so it reads as a status line, not a message.
+pub const THINKING_TEXT: &str = "_Thinking…_";
+
 /// Post a message (optionally threaded, optionally with a custom display name).
 pub async fn post_message(
     bot_token: &str,
@@ -66,6 +70,82 @@ pub async fn post_message_as(
     Ok(SendResult {
         message_ts: result.ts,
     })
+}
+
+/// Delete a Slack message via `chat.delete`.
+///
+/// Used by the slack_sync "pending reply" flow to clean up a trailing
+/// `_Thinking…_` placeholder when a turn ends without producing further
+/// text — so the thread doesn't end on a useless ghost message.
+pub async fn delete_message(
+    bot_token: &str,
+    channel: &str,
+    ts: &str,
+) -> anyhow::Result<()> {
+    let client = reqwest::Client::new();
+    let body = serde_json::json!({
+        "channel": channel,
+        "ts": ts,
+    });
+
+    let resp = client
+        .post(format!("{BASE}/chat.delete"))
+        .bearer_auth(bot_token)
+        .json(&body)
+        .send()
+        .await
+        .context("chat.delete request failed")?;
+
+    let result: serde_json::Value = resp
+        .json()
+        .await
+        .context("failed to parse chat.delete response")?;
+
+    if !result["ok"].as_bool().unwrap_or(false) {
+        let err = result["error"].as_str().unwrap_or("unknown");
+        anyhow::bail!("chat.delete: {err}");
+    }
+
+    Ok(())
+}
+
+/// Edit an existing Slack message via `chat.update`.
+///
+/// Used by the slack_sync "pending reply" flow to flip a single threaded
+/// message between `_Thinking…_` and the latest assistant text as the model
+/// works through a turn.
+pub async fn update_message(
+    bot_token: &str,
+    channel: &str,
+    ts: &str,
+    text: &str,
+) -> anyhow::Result<()> {
+    let client = reqwest::Client::new();
+    let body = serde_json::json!({
+        "channel": channel,
+        "ts": ts,
+        "text": text,
+    });
+
+    let resp = client
+        .post(format!("{BASE}/chat.update"))
+        .bearer_auth(bot_token)
+        .json(&body)
+        .send()
+        .await
+        .context("chat.update request failed")?;
+
+    let result: serde_json::Value = resp
+        .json()
+        .await
+        .context("failed to parse chat.update response")?;
+
+    if !result["ok"].as_bool().unwrap_or(false) {
+        let err = result["error"].as_str().unwrap_or("unknown");
+        anyhow::bail!("chat.update: {err}");
+    }
+
+    Ok(())
 }
 
 /// Create a public Slack channel. Returns the channel ID.

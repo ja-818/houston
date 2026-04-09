@@ -12,7 +12,7 @@ interface AgentState {
   agents: Agent[];
   current: Agent | null;
   loading: boolean;
-  loadAgents: (workspaceId: string) => Promise<void>;
+  loadAgents: (workspaceId: string, options?: { silent?: boolean }) => Promise<void>;
   setCurrent: (agent: Agent) => void;
   create: (workspaceId: string, name: string, configId: string, color?: string, claudeMd?: string) => Promise<CreatedAgent>;
   delete: (workspaceId: string, id: string) => Promise<void>;
@@ -24,13 +24,14 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   current: null,
   loading: false,
 
-  loadAgents: async (workspaceId) => {
-    set({ loading: true });
+  loadAgents: async (workspaceId, options) => {
+    const silent = options?.silent ?? false;
+    if (!silent) set({ loading: true });
     try {
       const agents = await tauriAgents.list(workspaceId);
       const current = get().current;
       const selected =
-        agents.find((a) => a.id === current?.id) ?? null;
+        agents.find((a) => a.id === current?.id) ?? current;
       set({ agents, current: selected, loading: false });
     } catch (e) {
       console.error("[agents] Failed to load:", e);

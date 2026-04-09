@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The mental shift — Learn Houston</title>
+    <meta
+      name="description"
+      content="Why AI as a feature has a ceiling, and what it means to build past it."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <a href="index.html" class="nav-brand">
+        <span class="nav-brand-mark">H</span>
+        Houston
+        <span class="nav-brand-label">/ Learn</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Learn</a>
+        <a href="https://github.com/anthropics/houston">GitHub</a>
+      </div>
+    </nav>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Learn</div>
+        <ul class="sidebar-nav">
+          <li>
+            <a href="index.html"><span class="num">—</span>Overview</a>
+          </li>
+          <li>
+            <a href="01-the-shift.html" class="active">
+              <span class="num">01</span>The mental shift
+            </a>
+          </li>
+          <li>
+            <a href="02-symmetric-participation.html">
+              <span class="num">02</span>Humans and AI, as equals
+            </a>
+          </li>
+          <li>
+            <a href="03-pages-and-components.html">
+              <span class="num">03</span>Pages and components
+            </a>
+          </li>
+          <li>
+            <a href="04-teaching-the-app.html">
+              <span class="num">04</span>Teaching, not configuring
+            </a>
+          </li>
+          <li>
+            <a href="05-code-at-runtime.html">
+              <span class="num">05</span>Edge cases at runtime
+            </a>
+          </li>
+          <li>
+            <a href="06-showing-the-user.html">
+              <span class="num">06</span>Showing, not driving
+            </a>
+          </li>
+          <li>
+            <a href="07-building.html">
+              <span class="num">07</span>Building a Houston app
+            </a>
+          </li>
+          <li>
+            <a href="08-what-this-is-not.html">
+              <span class="num">08</span>What Houston isn't
+            </a>
+          </li>
+        </ul>
+      </aside>
+
+      <main class="content">
+        <div class="content-label">Chapter 01</div>
+        <h1>The mental shift.</h1>
+        <p class="lead">
+          Almost every app today treats AI as a feature. Houston is built
+          around a different starting point.
+        </p>
+
+        <div class="toc">
+          <div class="toc-label">On this page</div>
+          <ol>
+            <li>
+              <a href="#ai-as-feature">How most apps use AI today</a>
+            </li>
+            <li>
+              <a href="#the-ceiling">Why this hits a ceiling</a>
+            </li>
+            <li>
+              <a href="#ai-native">What AI-native means</a>
+            </li>
+            <li>
+              <a href="#claude-code">Claude, meet Claude Code</a>
+            </li>
+            <li>
+              <a href="#example">Two apps, one job</a>
+            </li>
+            <li>
+              <a href="#difference">The key difference</a>
+            </li>
+            <li>
+              <a href="#what-changes">What this changes for you</a>
+            </li>
+          </ol>
+        </div>
+
+        <h2 id="ai-as-feature">How most apps use AI today</h2>
+        <p>
+          Start with how every app is built, not just AI ones.
+        </p>
+        <p>
+          Engineers write code. The code defines workflows — the paths a
+          user takes through the app. Inside those workflows, the code
+          calls capabilities: a database, an API, a function, a library.
+        </p>
+        <p>
+          This shape is as old as software. Every app you've ever used is
+          built this way.
+        </p>
+        <p>
+          When AI shows up, it's one more capability. The code calls an LLM
+          the way it used to call a function.
+        </p>
+        <p>
+          The workflow is the app. The AI is a tool the workflow reaches
+          for.
+        </p>
+        <p>
+          This is true whether the AI feature is a one-line prompt or a
+          sophisticated agentic loop. The workflow is fixed at build time.
+          The AI runs inside it.
+        </p>
+
+        <h2 id="the-ceiling">Why this hits a ceiling</h2>
+        <p>
+          The workflow was written by an engineer before the user showed
+          up. It covers the cases the engineer thought of.
+        </p>
+        <p>
+          Every other case falls outside it.
+        </p>
+        <p>
+          When a user hits one, the AI can't help. Not because the model
+          isn't capable — because there's no path through the workflow
+          that reaches what they need. The AI sits inside a box the
+          engineer built, and it can't step out.
+        </p>
+        <p>
+          Growing the box means shipping new code. Engineering time,
+          prioritization, a release, an update. For most edge cases, that
+          process never starts.
+        </p>
+        <p>
+          This isn't a quality ceiling. It's a ceiling on what the user
+          can ask for without calling you.
+        </p>
+
+        <h2 id="ai-native">What AI-native means</h2>
+        <p>
+          An AI-native app flips the relationship. The AI isn't a feature
+          inside the app. It's how the user works with the app.
+        </p>
+        <p>
+          It can do everything the user can do.
+          It can also do things you never wrote code for.
+        </p>
+        <p>
+          When an edge case comes up, the AI handles it by adapting. Not by
+          waiting for you to ship a fix.
+        </p>
+
+        <h2 id="claude-code">Claude, meet Claude Code</h2>
+        <p>
+          AI-native apps became possible because of the gap between Claude
+          and Claude Code. Here's why.
+        </p>
+        <p>
+          <strong>Claude</strong> is the model you call through an API. You
+          send a prompt, you get a response. It's stateless. It doesn't see
+          your files, it doesn't run commands, it doesn't know your machine
+          exists.
+        </p>
+        <p>
+          <strong>Claude Code</strong> is Claude running locally with a set
+          of tools: read a file, write a file, run a shell command, edit
+          code, search a folder. It lives inside a working directory and
+          can do real work there.
+        </p>
+        <p>
+          An API call to Claude can answer "what columns should this export
+          have?" Claude Code can open the script, add the columns, run the
+          script, and put the file on the user's desktop.
+        </p>
+        <p>
+          Houston is built on the Claude Code architecture, and Codex or
+          any other local coding agent shaped like it works too.
+        </p>
+
+        <h2 id="example">Two apps, one job</h2>
+        <p>
+          Here's the same job in both shapes: turn bank statement PDFs into a
+          clean Excel workbook.
+        </p>
+
+        <div class="compare">
+          <div class="compare-card bad">
+            <h4>AI as a feature</h4>
+            <div class="compare-title">SimpleBooks</div>
+            <ol>
+              <li>User uploads a PDF.</li>
+              <li>The app sends it to Claude via API.</li>
+              <li>Claude extracts the transactions.</li>
+              <li>The app runs Python to format a workbook.</li>
+              <li>The user downloads the workbook.</li>
+            </ol>
+          </div>
+
+          <div class="compare-card good">
+            <h4>AI-native</h4>
+            <div class="compare-title">SmartBooks</div>
+            <ol>
+              <li>User drops the PDF into a chat input.</li>
+              <li>
+                Claude Code reads it, runs the app's Python scripts, and
+                produces a workbook.
+              </li>
+              <li>User sees the result.</li>
+            </ol>
+          </div>
+        </div>
+
+        <p>
+          Both apps work. Both produce a workbook. The difference shows up the
+          moment the user wants something the engineer didn't plan for.
+        </p>
+
+        <h3>The user wants a new column</h3>
+        <p>
+          In SimpleBooks, the user has three choices. Edit the Excel by hand.
+          File a feature request. Take the file to a different AI.
+        </p>
+        <p>
+          In SmartBooks, the user says so. Claude Code edits the Python
+          script on their machine. The next export has the new column.
+          Done.
+        </p>
+
+        <h3>The edge case is for one client only</h3>
+        <p>
+          In SimpleBooks, there's no version of this that works.
+        </p>
+        <p>
+          In SmartBooks, Claude Code adds a rule that only applies to that
+          one client. Nothing else changes. The edge case is handled.
+        </p>
+
+        <h2 id="difference">The key difference</h2>
+        <p>
+          In SimpleBooks, the workflow is frozen. The AI fits where the
+          engineer said it could.
+        </p>
+        <p>
+          In SmartBooks, the workflow is soft. The AI is in the middle. The
+          code around it is something the AI can change.
+        </p>
+        <p>
+          This is the shift. Everything else in Houston follows from it.
+        </p>
+
+        <h2 id="what-changes">What this changes for you</h2>
+        <p>
+          You stop trying to anticipate every user need. You stop building
+          rigid workflows that break on edge cases you couldn't see coming.
+        </p>
+        <p>
+          You ship a set of capabilities instead. The AI figures out how to
+          combine them for what the user actually wants.
+        </p>
+        <p>
+          Your app becomes a toolkit. Your users' AI becomes the operator.
+        </p>
+
+        <div class="pager">
+          <a href="index.html">
+            <div class="pager-label">← Previous</div>
+            <div class="pager-title">Overview</div>
+          </a>
+          <a href="02-symmetric-participation.html" class="next">
+            <div class="pager-label">Next →</div>
+            <div class="pager-title">Humans and AI, as equals</div>
+          </a>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

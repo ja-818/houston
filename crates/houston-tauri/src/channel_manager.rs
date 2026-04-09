@@ -45,11 +45,29 @@ impl ChannelManager {
             let tx = self.message_tx.clone();
             let registry_id = id.clone();
             tokio::spawn(async move {
+                tracing::info!(
+                    registry_id = %registry_id,
+                    "[channel_manager] forwarder task started"
+                );
                 while let Some(msg) = rx.recv().await {
+                    tracing::info!(
+                        registry_id = %registry_id,
+                        sender = %msg.sender_name,
+                        text_preview = %msg.text.chars().take(40).collect::<String>(),
+                        "[channel_manager] forwarding adapter message → manager tx"
+                    );
                     if tx.send((registry_id.clone(), msg)).is_err() {
-                        break; // Manager dropped
+                        tracing::warn!(
+                            registry_id = %registry_id,
+                            "[channel_manager] manager tx dropped — forwarder exiting"
+                        );
+                        break;
                     }
                 }
+                tracing::warn!(
+                    registry_id = %registry_id,
+                    "[channel_manager] adapter rx closed — forwarder exiting"
+                );
             });
         }
 

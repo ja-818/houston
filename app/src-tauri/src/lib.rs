@@ -233,6 +233,7 @@ pub fn run() {
             // Composio integrations (CLI-backed)
             houston_tauri::composio_commands::list_composio_connections,
             houston_tauri::composio_commands::list_composio_apps,
+            houston_tauri::composio_commands::list_composio_connected_toolkits,
             houston_tauri::composio_commands::connect_composio_app,
             houston_tauri::composio_commands::start_composio_oauth,
             houston_tauri::composio_commands::complete_composio_login,

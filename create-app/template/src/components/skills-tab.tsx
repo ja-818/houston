@@ -55,6 +55,14 @@ export function SkillsTab({ workspacePath }: SkillsTabProps) {
     [workspacePath],
   );
 
+  const handleDelete = useCallback(
+    async (skillName: string) => {
+      await tauriSkills.delete(workspacePath, skillName);
+      await loadSkills();
+    },
+    [workspacePath, loadSkills],
+  );
+
   const handleSearch = useCallback(async (query: string) => {
     const results = await tauriSkills.searchCommunity(query);
     return results as CommunitySkill[];
@@ -96,6 +104,7 @@ export function SkillsTab({ workspacePath }: SkillsTabProps) {
         skill={selectedSkill}
         onBack={handleBack}
         onSave={handleSave}
+        onDelete={handleDelete}
       />
     );
   }

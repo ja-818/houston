@@ -76,21 +76,36 @@ pub async fn listen_socket_mode(
             _ => continue,
         };
 
+        // Log every raw frame so we can see what Slack actually sends.
+        // Truncate to keep the log readable.
+        let preview: String = text.chars().take(300).collect();
+        tracing::info!(
+            len = text.len(),
+            preview = %preview,
+            "[slack socket_mode] raw frame received"
+        );
+
         let envelope: SlackEnvelope = match serde_json::from_str(&text) {
             Ok(e) => e,
             Err(err) => {
-                tracing::warn!(error = %err, "failed to parse Slack envelope");
+                tracing::warn!(
+                    error = %err,
+                    preview = %preview,
+                    "[slack socket_mode] failed to parse Slack envelope"
+                );
                 continue;
             }
         };
 
         // Acknowledge the envelope immediately to prevent retries.
-        let ack = SocketModeAck {
-            envelope_id: envelope.envelope_id.clone(),
-        };
-        if let Ok(ack_json) = serde_json::to_string(&ack) {
-            if let Err(err) = write.send(Message::Text(ack_json.into())).await {
-                tracing::error!(error = %err, "failed to send envelope ack");
+        // Only events_api envelopes have an envelope_id; system frames
+        // (hello, disconnect) don't and don't need acking.
+        if let Some(envelope_id) = envelope.envelope_id.clone() {
+            let ack = SocketModeAck { envelope_id };
+            if let Ok(ack_json) = serde_json::to_string(&ack) {
+                if let Err(err) = write.send(Message::Text(ack_json.into())).await {
+                    tracing::error!(error = %err, "failed to send envelope ack");
+                }
             }
         }
 
@@ -110,8 +125,17 @@ pub async fn listen_socket_mode(
         // Skip non-message events, message subtypes (edits, joins), and bot messages.
         let event_type = event.event_type.as_deref().unwrap_or("");
         if event_type != "message" || event.subtype.is_some() || event.bot_id.is_some() {
+            tracing::debug!(
+                event_type = %event_type,
+                subtype = ?event.subtype,
+                has_bot_id = event.bot_id.is_some(),
+                "[slack socket_mode] skipping event"
+            );
             continue;
         }
+        tracing::info!(
+            "[slack socket_mode] forwarding message to channel adapter tx"
+        );
 
         let text_content = event.text.unwrap_or_default();
         let channel_id = event.channel.unwrap_or_default();

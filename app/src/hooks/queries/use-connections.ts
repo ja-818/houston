@@ -23,6 +23,26 @@ export function useComposioApps() {
   });
 }
 
+/**
+ * Probe which of the given toolkit slugs are currently connected in the
+ * consumer ("Composio for You") namespace. Runs in parallel on the Rust
+ * side with bounded concurrency — safe to call with 40+ slugs.
+ *
+ * Enabled only when `slugs` is non-empty to avoid a no-op CLI round trip
+ * on initial mount before the catalog has loaded.
+ */
+export function useConnectedToolkits(slugs: string[]) {
+  return useQuery({
+    queryKey: queryKeys.connectedToolkits(slugs),
+    queryFn: () => tauriConnections.listConnectedToolkits(slugs),
+    enabled: slugs.length > 0,
+    // The probe is ~5s for 45 toolkits; cache for 60s to make tab
+    // switches feel instant without showing stale data too long.
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useInvalidateConnections() {
   const qc = useQueryClient();
   return () => qc.invalidateQueries({ queryKey: queryKeys.connections() });

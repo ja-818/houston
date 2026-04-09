@@ -59,6 +59,8 @@ export interface AIBoardProps {
   onNotice?: (message: string) => void
   /** Called when the user clicks the open button on an inline link. Forwarded to ChatPanel. */
   onOpenLink?: import("@houston-ai/chat").ChatPanelProps["onOpenLink"]
+  /** Custom renderer for markdown links. Forwarded to ChatPanel. */
+  renderLink?: import("@houston-ai/chat").ChatPanelProps["renderLink"]
   /**
    * DOM element to portal the detail panel into. When provided, the panel
    * renders via createPortal into this element (for app-level layout).
@@ -105,6 +107,7 @@ export function AIBoard({
   renderTurnSummary,
   onNotice,
   onOpenLink,
+  renderLink,
 }: AIBoardProps) {
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [newPanelOpen, setNewPanelOpen] = useState(false)
@@ -269,6 +272,7 @@ export function AIBoard({
           renderTurnSummary={renderTurnSummary}
           onNotice={onNotice}
           onOpenLink={onOpenLink}
+          renderLink={renderLink}
         />
       </div>
     </KanbanDetailPanel>

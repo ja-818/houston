@@ -278,8 +278,9 @@ Types: `ChannelType` ("slack" | "telegram"), `ChannelStatus` ("disconnected" | "
 
 | Component | What it does |
 |-----------|-------------|
-| `SkillsGrid` | Grid of installed skills |
-| `SkillDetailPage` | Detail view with instructions + learnings |
+| `SkillsGrid` | Grid of installed skills (per-row delete via optional `onDelete`) |
+| `SkillDetailPage` | Detail view with instructions + delete button (requires `onDelete`) |
+| `AddSkillDialog` | Fixed-size modal with Skills.sh / GitHub pill tabs |
 | `CommunitySkillsSection` | Browse and install from skills.sh |
 
 ---

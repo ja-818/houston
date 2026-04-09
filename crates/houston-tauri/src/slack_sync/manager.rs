@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use crate::agent_store::types::SlackSyncConfig;
 use crate::paths::expand_tilde;
 
+use super::pending_reply::PendingReply;
 use super::thread_map;
 
 /// Per-agent sync state.
@@ -20,6 +21,10 @@ pub struct SlackSyncSession {
 pub struct SlackSyncManager {
     sessions: HashMap<String, SlackSyncSession>,
     registry_to_agent: HashMap<String, String>,
+    /// Live placeholder messages keyed by `session_key`. Owned here so the
+    /// pending_reply module's free functions can access it via `&mut self`
+    /// or via `Arc<RwLock<Self>>` from a debouncer task.
+    pub(super) pending_replies: HashMap<String, PendingReply>,
 }
 
 impl SlackSyncManager {
@@ -27,7 +32,15 @@ impl SlackSyncManager {
         Self {
             sessions: HashMap::new(),
             registry_to_agent: HashMap::new(),
+            pending_replies: HashMap::new(),
         }
+    }
+
+    /// True if there's a live placeholder for this conversation.
+    /// Used by `outbound.rs` to decide between "edit placeholder" and
+    /// "post a fresh reply" (the routine/heartbeat path).
+    pub fn has_pending_reply(&self, session_key: &str) -> bool {
+        self.pending_replies.contains_key(session_key)
     }
 
     pub fn register(
@@ -65,6 +78,21 @@ impl SlackSyncManager {
 
     pub fn session_for_agent(&self, agent_path: &str) -> Option<&SlackSyncSession> {
         self.sessions.get(agent_path)
+    }
+
+    /// Find the agent that owns a given Slack channel by its `channel_id`.
+    ///
+    /// **Why this is the right routing key:** All Houston agents share the
+    /// same Slack app (single `SLACK_APP_TOKEN`), so opening N Socket Mode
+    /// WebSockets just gives Slack N redundant connections for one app.
+    /// Slack distributes events across them randomly — so a message in
+    /// `#houston-moana` can land on the `AgentTestChannel` WebSocket. The
+    /// only stable way to identify the owning agent is by the channel the
+    /// message was actually posted in.
+    pub fn session_for_channel(&self, channel_id: &str) -> Option<&SlackSyncSession> {
+        self.sessions
+            .values()
+            .find(|s| s.config.slack_channel_id == channel_id)
     }
 
     fn find_session_for_key(&self, session_key: &str) -> Option<&SlackSyncSession> {
@@ -109,53 +137,6 @@ impl SlackSyncManager {
         Ok(())
     }
 
-    /// Create a Slack thread for a conversation by posting the user's message as the
-    /// top-level post (under the user's identity). Returns the thread_ts.
-    pub async fn create_thread_for_user_message(
-        &mut self,
-        agent_path: &str,
-        session_key: &str,
-        user_text: &str,
-    ) -> Result<Option<String>, String> {
-        let session = match self.sessions.get(agent_path) {
-            Some(s) => s,
-            None => return Ok(None), // No Slack sync for this agent
-        };
-        // If thread already exists, return its ts
-        if let Some(thread) = thread_map::find_thread(&session.config, session_key) {
-            return Ok(Some(thread.thread_ts.clone()));
-        }
-
-        let bot_token = session.config.bot_token.clone();
-        let channel_id = session.config.slack_channel_id.clone();
-        let user_name = session.config.user_name.clone();
-        let user_avatar = session.config.user_avatar.clone();
-
-        // Post the user's message as the top-level post (creates the thread)
-        let result = houston_channels::slack::api::post_message_as(
-            &bot_token,
-            &channel_id,
-            user_text,
-            None,
-            Some(&user_name),
-            user_avatar.as_deref(),
-        )
-        .await
-        .map_err(|e| e.to_string())?;
-
-        let thread_ts = result.message_ts.ok_or("no ts in post_message response")?;
-        let title = truncate(user_text, 80);
-
-        self.add_thread_mapping(
-            agent_path,
-            session_key.to_string(),
-            thread_ts.clone(),
-            title,
-        )?;
-
-        Ok(Some(thread_ts))
-    }
-
     pub fn add_thread_mapping(
         &mut self,
         agent_path: &str,
@@ -175,13 +156,5 @@ impl SlackSyncManager {
 impl Default for SlackSyncManager {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.len() <= max {
-        s.to_string()
-    } else {
-        format!("{}...", &s[..max.min(s.len())])
     }
 }

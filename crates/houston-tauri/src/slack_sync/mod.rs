@@ -10,9 +10,13 @@
 //! - **Thread map**: Persisted in `.houston/slack_sync.json` per agent. Maps
 //!   `session_key ↔ thread_ts`.
 
+pub mod debounce;
+pub mod finalize;
 pub mod inbound;
 pub mod manager;
 pub mod outbound;
+pub mod pending_reply;
+pub mod thread_create;
 pub mod thread_map;
 
 pub use manager::SlackSyncManager;

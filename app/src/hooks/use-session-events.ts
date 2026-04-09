@@ -190,7 +190,9 @@ export function useSessionEvents() {
       consumePendingNav();
       const ws = useWorkspaceStore.getState().current;
       if (ws) {
-        useAgentStore.getState().loadAgents(ws.id);
+        // Silent refresh — don't flip loading:true, which would unmount the
+        // entire UI tree and wipe local state (open modals, sub-tabs, panels).
+        useAgentStore.getState().loadAgents(ws.id, { silent: true });
       }
     });
 

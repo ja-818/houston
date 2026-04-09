@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>What Houston isn't — Learn Houston</title>
+    <meta
+      name="description"
+      content="The limits, the positioning, and when to pick a different tool."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <a href="index.html" class="nav-brand">
+        <span class="nav-brand-mark">H</span>
+        Houston
+        <span class="nav-brand-label">/ Learn</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Learn</a>
+        <a href="https://github.com/anthropics/houston">GitHub</a>
+      </div>
+    </nav>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Learn</div>
+        <ul class="sidebar-nav">
+          <li><a href="index.html"><span class="num">—</span>Overview</a></li>
+          <li>
+            <a href="01-the-shift.html">
+              <span class="num">01</span>The mental shift
+            </a>
+          </li>
+          <li>
+            <a href="02-symmetric-participation.html">
+              <span class="num">02</span>Humans and AI, as equals
+            </a>
+          </li>
+          <li>
+            <a href="03-pages-and-components.html">
+              <span class="num">03</span>Pages and components
+            </a>
+          </li>
+          <li>
+            <a href="04-teaching-the-app.html">
+              <span class="num">04</span>Teaching, not configuring
+            </a>
+          </li>
+          <li>
+            <a href="05-code-at-runtime.html">
+              <span class="num">05</span>Edge cases at runtime
+            </a>
+          </li>
+          <li>
+            <a href="06-showing-the-user.html">
+              <span class="num">06</span>Showing, not driving
+            </a>
+          </li>
+          <li>
+            <a href="07-building.html">
+              <span class="num">07</span>Building a Houston app
+            </a>
+          </li>
+          <li>
+            <a href="08-what-this-is-not.html" class="active">
+              <span class="num">08</span>What Houston isn't
+            </a>
+          </li>
+        </ul>
+      </aside>
+
+      <main class="content">
+        <div class="content-label">Chapter 08</div>
+        <h1>What Houston isn't.</h1>
+        <p class="lead">
+          Houston is very good at one shape of problem because it's not
+          trying to be good at every shape. Here's the positioning, stated
+          plainly.
+        </p>
+
+        <div class="toc">
+          <div class="toc-label">On this page</div>
+          <ol>
+            <li><a href="#for">What Houston is for</a></li>
+            <li><a href="#not-for">What Houston isn't for</a></li>
+            <li><a href="#scale">The scale ceiling</a></li>
+            <li><a href="#cost">Cost and privacy</a></li>
+            <li><a href="#pick">When to pick something else</a></li>
+          </ol>
+        </div>
+
+        <h2 id="for">What Houston is for</h2>
+        <p>
+          Houston is for building local, AI-native apps that replace the
+          role of a junior employee for one user or one small team.
+        </p>
+        <p>Examples of what fits:</p>
+        <ul>
+          <li>A bookkeeper who handles 200 clients.</li>
+          <li>A research assistant tracking 100 sources.</li>
+          <li>A project manager running a dozen projects.</li>
+          <li>A content writer organizing a few dozen drafts.</li>
+          <li>A personal CRM for a freelancer.</li>
+        </ul>
+        <p>
+          The unit of scale is "what one person does well." Houston aims to
+          make one person <strong>10x as effective</strong>, not to make a
+          company more efficient.
+        </p>
+
+        <h2 id="not-for">What Houston isn't for</h2>
+        <p>Houston is not for:</p>
+
+        <ul>
+          <li>
+            <strong>Multi-tenant SaaS.</strong> There's no server. There's
+            no "users" table. There's the user.
+          </li>
+          <li>
+            <strong>Massive datasets.</strong> Houston uses the filesystem
+            as the source of truth. Fast for thousands of entities. Slow
+            for millions.
+          </li>
+          <li>
+            <strong>Real-time collaboration.</strong> It's a personal tool.
+            Two humans don't share a workspace.
+          </li>
+          <li>
+            <strong>Offline-first apps.</strong> Houston assumes Claude
+            Code is available. Without the AI, the app is a UI with
+            nothing behind it.
+          </li>
+          <li>
+            <strong>Apps where AI is optional.</strong> If your users
+            should be able to do everything without the AI, you're
+            building a normal app, not an AI-native one.
+          </li>
+        </ul>
+
+        <p>
+          These aren't bugs. They're positioning choices. Houston is very
+          good at what it's for because it's not trying to be everything.
+        </p>
+
+        <h2 id="scale">The scale ceiling</h2>
+        <p>
+          A Houston workspace is fast up to a few thousand entities. Past
+          that, filesystem queries start to drag.
+        </p>
+        <p>
+          A simple test: "can one person reasonably care about all this?"
+        </p>
+        <ul>
+          <li>
+            If yes, Houston fits. 50 clients, 100 projects, 300 contacts —
+            all fine.
+          </li>
+          <li>
+            If no, Houston is the wrong tool. 50,000 contacts across a
+            sales org isn't an assistant problem, it's a database problem.
+          </li>
+        </ul>
+        <p>
+          The ceiling matches the product. Houston is for apps at human
+          scale, because the AI in Houston is operating at human scale.
+        </p>
+
+        <h2 id="cost">Cost and privacy</h2>
+        <p>
+          Houston is free and open source. The user pays for the LLM calls
+          directly — they bring their own Claude Code setup or API key.
+        </p>
+        <p>This means a few things:</p>
+        <ul>
+          <li>There's no subscription fee from Houston.</li>
+          <li>There's no server that sees your users' data.</li>
+          <li>
+            Cost scales with the user's own usage, under their own account.
+          </li>
+          <li>
+            The AI still sees what it processes — that's between your user
+            and Claude, not a problem Houston solves.
+          </li>
+        </ul>
+        <p>
+          If your users have sensitive data and strict compliance
+          requirements, they need to read the Claude terms of service and
+          decide. Houston doesn't make that decision for them.
+        </p>
+
+        <h2 id="pick">When to pick something else</h2>
+        <p><strong>Pick something else if:</strong></p>
+        <ul>
+          <li>You're building multi-tenant SaaS.</li>
+          <li>You need real-time collaboration.</li>
+          <li>You're storing millions of records.</li>
+          <li>Your users need to work offline.</li>
+          <li>AI is a feature, not the interface.</li>
+        </ul>
+
+        <p><strong>Pick Houston if:</strong></p>
+        <ul>
+          <li>
+            You're building a tool that replaces or augments a specific role.
+          </li>
+          <li>Your user is a person, not an organization.</li>
+          <li>
+            Edge cases are common and impossible to predict ahead of time.
+          </li>
+          <li>
+            You want your users to bend the app to their needs without
+            calling you.
+          </li>
+          <li>
+            You'd rather ship capabilities than workflows.
+          </li>
+        </ul>
+
+        <div class="callout callout-info">
+          <div class="callout-label">What to do next</div>
+          <p>
+            Scaffold a project with <code>pnpm create houston-agent</code>
+            and start with one page. Ship it. Use it yourself. Teach it
+            things. That's the fastest way to understand what AI-native
+            actually feels like in practice.
+          </p>
+        </div>
+
+        <div class="pager">
+          <a href="07-building.html">
+            <div class="pager-label">← Previous</div>
+            <div class="pager-title">Building a Houston app</div>
+          </a>
+          <a href="index.html" class="next">
+            <div class="pager-label">Back to</div>
+            <div class="pager-title">Overview</div>
+          </a>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

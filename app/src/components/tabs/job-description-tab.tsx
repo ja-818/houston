@@ -12,6 +12,7 @@ import {
   useSkills,
   useSkillDetail,
   useSaveSkill,
+  useDeleteSkill,
   useInstallCommunitySkill,
   useListSkillsFromRepo,
   useInstallSkillFromRepo,
@@ -43,6 +44,7 @@ export default function JobDescriptionTab({ agent }: TabProps) {
   const [selectedSkillName, setSelectedSkillName] = useState<string | null>(null);
   const { data: skillDetail } = useSkillDetail(path, selectedSkillName ?? undefined);
   const saveSkill = useSaveSkill(path);
+  const deleteSkill = useDeleteSkill(path);
   const installCommunity = useInstallCommunitySkill(path);
   const listFromRepo = useListSkillsFromRepo();
   const installFromRepo = useInstallSkillFromRepo(path);
@@ -83,6 +85,14 @@ export default function JobDescriptionTab({ agent }: TabProps) {
       await saveSkill.mutateAsync({ name: skillName, content });
     },
     [saveSkill],
+  );
+
+  const handleSkillDelete = useCallback(
+    async (skillName: string) => {
+      await deleteSkill.mutateAsync(skillName);
+      setSelectedSkillName(null);
+    },
+    [deleteSkill],
   );
 
   const handleSearch = useCallback(
@@ -153,12 +163,14 @@ export default function JobDescriptionTab({ agent }: TabProps) {
                   skill={selectedSkill}
                   onBack={() => setSelectedSkillName(null)}
                   onSave={handleSkillSave}
+                  onDelete={handleSkillDelete}
                 />
               ) : (
                 <SkillsGrid
                   skills={skills}
                   loading={skillsLoading}
                   onSkillClick={handleSkillClick}
+                  onDelete={handleSkillDelete}
                   onSearch={handleSearch}
                   onInstallCommunity={handleInstallCommunity}
                   onListFromRepo={handleListFromRepo}
