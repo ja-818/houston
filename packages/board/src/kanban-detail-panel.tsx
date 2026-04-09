@@ -1,3 +1,4 @@
+import { forwardRef } from "react"
 import { XIcon, Loader2 } from "lucide-react"
 import { cn } from "@houston-ai/core"
 
@@ -26,24 +27,27 @@ export interface KanbanDetailPanelProps {
   statusLabels?: Record<string, string>
 }
 
-export function KanbanDetailPanel({
-  title,
-  subtitle,
-  status,
-  onClose,
-  children,
-  actions,
-  avatar,
-  agentName,
-  runningStatuses = ["running"],
-  statusLabels,
-}: KanbanDetailPanelProps) {
+export const KanbanDetailPanel = forwardRef<HTMLDivElement, KanbanDetailPanelProps>(function KanbanDetailPanel(
+  {
+    title,
+    subtitle,
+    status,
+    onClose,
+    children,
+    actions,
+    avatar,
+    agentName,
+    runningStatuses = ["running"],
+    statusLabels,
+  },
+  ref,
+) {
   const labels = statusLabels ?? STATUS_LABEL
   const isRunning = status ? runningStatuses.includes(status) : false
   const missionLabel = title ? `Mission: ${title}` : subtitle
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div ref={ref} className="flex flex-col h-full min-h-0">
       {/* Header */}
       <div className="shrink-0 px-4 py-3 border-b border-border">
         <div className="flex items-center gap-3">
@@ -85,4 +89,4 @@ export function KanbanDetailPanel({
       {children}
     </div>
   )
-}
+})

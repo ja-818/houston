@@ -196,17 +196,41 @@ export function AIBoard({
     onPanelOpenChange?.(!!showPanel)
   }, [!!showPanel, onPanelOpenChange]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Ensure parent resets its "panel open" state when AIBoard unmounts
+  // (e.g. tab switch). Without this, portal containers in the app layout
+  // would remain visible but empty.
+  useEffect(() => {
+    return () => {
+      onPanelOpenChange?.(false)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const closePanel = useCallback(() => {
     setNewPanelOpen(false)
     setSelectedId(null)
   }, [setSelectedId])
 
-  const handleBoardClick = useCallback(() => {
-    if (showPanel) closePanel()
+  // Refs for outside-click detection.
+  const boardRef = useRef<HTMLDivElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+
+  // Close the panel when the user clicks anywhere outside the board or the
+  // detail panel (sidebar, tab bar, other app chrome, etc.).
+  useEffect(() => {
+    if (!showPanel) return
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node | null
+      if (!target) return
+      if (boardRef.current?.contains(target)) return
+      if (panelRef.current?.contains(target)) return
+      closePanel()
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
   }, [showPanel, closePanel])
 
   const board = (
-    <div className="flex flex-col h-full" onClick={handleBoardClick}>
+    <div ref={boardRef} className="flex flex-col h-full">
       <KanbanBoard
         columns={resolvedColumns}
         items={items}
@@ -223,6 +247,7 @@ export function AIBoard({
 
   const detailPanel = (
     <KanbanDetailPanel
+      ref={panelRef}
       title={panelTitle}
       onClose={closePanel}
       avatar={panelAvatar}
