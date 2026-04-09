@@ -131,6 +131,22 @@ export default function BoardTab({ agent }: TabProps) {
   const feedItems = feedBucket ?? EMPTY_FEED_BUCKET;
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
   const [loadingState, setLoading] = useState<Record<string, boolean>>({});
+  // A session is "loading" from the user's perspective whenever its activity
+  // is running — not just when WE started it from this component. This catches
+  // sessions kicked off elsewhere (onboarding, routines, Mission Control, agent
+  // writes) so the ChatPanel shows the Thinking indicator instead of an empty
+  // chat while the first streaming event is in flight. Once feed items arrive,
+  // ChatPanel's deriveStatus takes over based on feed contents.
+  const effectiveLoading = useMemo(() => {
+    const out: Record<string, boolean> = { ...loadingState };
+    for (const a of rawItems ?? []) {
+      if (a.status === "running") {
+        const key = a.session_key ?? `activity-${a.id}`;
+        out[key] = true;
+      }
+    }
+    return out;
+  }, [loadingState, rawItems]);
   // Call Haiku once per activity to generate a concise title + description.
   // Skip if already summarized (title no longer matches the raw user message).
   useEffect(() => {
@@ -260,7 +276,7 @@ export default function BoardTab({ agent }: TabProps) {
       onSelect={setSelectedId}
       panelContainer={panelContainer}
       feedItems={feedItems}
-      isLoading={loadingState}
+      isLoading={effectiveLoading}
       sessionKeyFor={sessionKeyFor}
       onDelete={handleDelete}
       onApprove={handleApprove}
