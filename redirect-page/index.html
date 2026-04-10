@@ -3,8 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Houston — AI Agents for Everything</title>
-<meta name="description" content="One app, dozens of AI agents. Research, write, code, manage projects, handle support — all from your desktop. Free and open source.">
+<title>OpenClaw for non technical founders</title>
+<meta name="description" content="One desktop app. A workspace of pre-built agents that generate value from day one. Real tools, 1000+ integrations, trained on real tasks. Free forever.">
+
+<!-- Open Graph / Facebook / Slack / LinkedIn -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gethouston.ai/">
+<meta property="og:title" content="OpenClaw for non technical founders">
+<meta property="og:description" content="One desktop app. A workspace of pre-built agents that generate value from day one. Real tools, 1000+ integrations, trained on real tasks. Free forever.">
+<meta property="og:site_name" content="Houston">
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://gethouston.ai/">
+<meta name="twitter:title" content="OpenClaw for non technical founders">
+<meta name="twitter:description" content="One desktop app. A workspace of pre-built agents that generate value from day one. Real tools, 1000+ integrations, trained on real tasks. Free forever.">
+<meta name="twitter:creator" content="@ja818_">
 <style>
   /* ═══════════════════════════════════════════
      DESIGN SYSTEM
@@ -62,6 +76,67 @@
     30% { transform: translateY(-4px); opacity: 1; }
   }
 
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  @keyframes hero-gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  @keyframes comet-border {
+    0% { --angle: 0deg; }
+    100% { --angle: 360deg; }
+  }
+
+  @property --angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+  }
+
+  /* Signature comet-border running state */
+  .comet-card {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: white;
+  }
+
+  .comet-card::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 18px;
+    background: conic-gradient(
+      from var(--angle),
+      transparent 60%,
+      #3b82f6 72%,
+      #818cf8 80%,
+      #f97316 88%,
+      #eab308 92%,
+      transparent 100%
+    );
+    animation: comet-border 2.5s linear infinite;
+    z-index: 0;
+  }
+
+  .comet-card::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border-radius: 14px;
+    background: white;
+    z-index: 0;
+  }
+
+  .comet-card > * {
+    position: relative;
+    z-index: 1;
+  }
 
   /* ═══════════════════════════════════════════
      REVEAL ON SCROLL
@@ -97,23 +172,23 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(13,13,13,0.95);
+    background: rgba(255,255,255,0.8);
     backdrop-filter: blur(20px);
-    border-bottom: none;
+    border-bottom: 1px solid var(--border-light);
   }
 
   .nav-logo {
     font-size: 18px;
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: white;
+    color: var(--gray-950);
     display: flex;
     align-items: center;
     gap: 8px;
     text-decoration: none;
   }
 
-  .nav-logo svg { width: 28px; height: 28px; }
+  .nav-logo svg { width: 28px; height: 28px; color: var(--gray-950); }
 
   .nav-center {
     position: absolute;
@@ -126,12 +201,12 @@
 
   .nav-center a {
     font-size: 14px;
-    color: rgba(255,255,255,0.6);
+    color: var(--gray-600);
     text-decoration: none;
     transition: color 0.2s;
   }
 
-  .nav-center a:hover { color: white; }
+  .nav-center a:hover { color: var(--gray-950); }
 
   .nav-right {
     display: flex;
@@ -139,13 +214,13 @@
     align-items: center;
   }
 
-  .nav-right a {
-    color: rgba(255,255,255,0.6);
+  .nav-right a:not(.btn) {
+    color: var(--gray-600);
     text-decoration: none;
     transition: color 0.2s;
   }
 
-  .nav-right a:hover { color: white; }
+  .nav-right a:not(.btn):hover { color: var(--gray-950); }
 
   /* ═══════════════════════════════════════════
      BUTTONS
@@ -202,8 +277,7 @@
     font-size: 12px;
     font-weight: 500;
     color: var(--gray-500);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0;
     margin-bottom: 16px;
   }
 
@@ -232,39 +306,24 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 140px 40px 80px;
+    padding: 160px 40px 80px;
     position: relative;
     overflow: hidden;
+    background: var(--background);
   }
 
   .hero-bg {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 85%;
+    inset: 0;
     background:
-      linear-gradient(to bottom, #0d0d0d 40%, transparent 100%),
-      radial-gradient(ellipse 120% 60% at 20% 50%, rgba(30,30,60,0.8), transparent 70%),
-      radial-gradient(ellipse 80% 50% at 80% 40%, rgba(40,20,40,0.6), transparent 70%),
-      radial-gradient(ellipse 60% 40% at 50% 70%, rgba(20,20,50,0.4), transparent 60%);
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59,130,246,0.10), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 60%, rgba(249,115,22,0.07), transparent),
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(129,140,248,0.06), transparent);
     pointer-events: none;
-  }
-
-  @keyframes star-drift {
-    0% { transform: translate(0, 0); }
-    50% { transform: translate(-30px, 12px); }
-    100% { transform: translate(0, 0); }
   }
 
   .hero-stars {
-    position: absolute;
-    top: -20px;
-    left: -30px;
-    right: -30px;
-    height: 75%;
-    animation: star-drift 60s ease-in-out infinite;
-    pointer-events: none;
+    display: none;
     background-image:
       radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.7), transparent),
       radial-gradient(1px 1px at 25% 8%, rgba(255,255,255,0.5), transparent),
@@ -317,11 +376,11 @@
   }
 
   .hero h1 {
-    font-size: clamp(32px, 4.5vw, 52px);
+    font-size: clamp(40px, 6vw, 72px);
     font-weight: 700;
     letter-spacing: -0.04em;
     line-height: 1.05;
-    color: white;
+    color: var(--gray-950);
     margin-bottom: 24px;
     animation: float-up 0.8s ease 0.1s both;
     max-width: 900px;
@@ -329,7 +388,7 @@
 
   .hero p {
     font-size: 20px;
-    color: rgba(255,255,255,0.7);
+    color: var(--muted-foreground);
     max-width: 560px;
     line-height: 1.6;
     margin-bottom: 48px;
@@ -404,8 +463,7 @@
     font-weight: 500;
     color: var(--gray-400);
     padding: 8px 10px 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
   }
 
   .sidebar-item {
@@ -503,8 +561,45 @@
   }
 
   .kanban-card-mock.running {
-    border-color: var(--border-medium);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    position: relative;
+    overflow: hidden;
+    border-color: transparent;
+  }
+
+  .kanban-card-mock.running::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 14px;
+    background: conic-gradient(
+      from var(--angle),
+      transparent 60%,
+      #3b82f6 72%,
+      #818cf8 80%,
+      #f97316 88%,
+      #eab308 92%,
+      transparent 100%
+    );
+    animation: comet-border 2.5s linear infinite;
+    z-index: 0;
+  }
+
+  .kanban-card-mock.running::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border-radius: 10px;
+    background: white;
+    z-index: 0;
+  }
+
+  .kanban-card-mock.running > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .status-running .dot {
+    animation: pulse-dot 1s ease infinite;
   }
 
   .kanban-card-title {
@@ -878,97 +973,6 @@
   }
 
   /* ═══════════════════════════════════════════
-     ARCHITECTURE
-     ═══════════════════════════════════════════ */
-
-  .arch-diagram {
-    margin-top: 64px;
-    padding: 48px;
-    border-radius: 16px;
-    background: var(--gray-50);
-    border: 1px solid var(--border-light);
-  }
-
-  .arch-layers {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    max-width: 700px;
-    margin: 0 auto;
-  }
-
-  .arch-layer {
-    padding: 20px 24px;
-    border: 1px solid var(--border-light);
-    text-align: center;
-    position: relative;
-  }
-
-  .arch-layer:first-child { border-radius: 16px 16px 0 0; }
-  .arch-layer:last-child { border-radius: 0 0 16px 16px; }
-  .arch-layer + .arch-layer { border-top: none; }
-
-  .arch-layer-label {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 10px;
-  }
-
-  .arch-items {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .arch-item {
-    font-size: 12px;
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-    padding: 4px 12px;
-    border-radius: 9999px;
-    border: 1px solid var(--border-light);
-  }
-
-  .layer-agents { background: white; }
-  .layer-agents .arch-layer-label { color: var(--gray-700); }
-  .layer-agents .arch-item { background: white; color: var(--gray-700); }
-
-  .layer-ui { background: rgba(59,130,246,0.03); }
-  .layer-ui .arch-layer-label { color: #3b82f6; }
-  .layer-ui .arch-item { background: rgba(59,130,246,0.06); color: #3b82f6; border-color: rgba(59,130,246,0.15); }
-
-  .layer-engine { background: rgba(249,115,22,0.03); }
-  .layer-engine .arch-layer-label { color: #f97316; }
-  .layer-engine .arch-item { background: rgba(249,115,22,0.06); color: #c2410c; border-color: rgba(249,115,22,0.15); }
-
-  .layer-platform { background: var(--gray-950); }
-  .layer-platform .arch-layer-label { color: var(--gray-400); }
-  .layer-platform .arch-item { background: rgba(255,255,255,0.1); color: var(--gray-300); border-color: rgba(255,255,255,0.15); }
-
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-    margin-top: 48px;
-    text-align: center;
-  }
-
-  .stat-item .number {
-    font-size: 40px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    color: var(--gray-950);
-  }
-
-  .stat-item .label {
-    font-size: 14px;
-    color: var(--muted-foreground);
-    margin-top: 4px;
-  }
-
-  /* ═══════════════════════════════════════════
      HOSTING CTA
      ═══════════════════════════════════════════ */
 
@@ -976,13 +980,28 @@
     margin-top: 0;
     padding: 80px 48px;
     border-radius: 20px;
-    background: var(--gray-950);
-    color: white;
+    background: var(--gray-50);
+    border: 1px solid var(--border-light);
+    color: var(--gray-950);
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 60px;
     align-items: center;
+    position: relative;
+    overflow: hidden;
   }
+
+  .hosting-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 10% 100%, rgba(59,130,246,0.08), transparent),
+      radial-gradient(ellipse 50% 40% at 90% 0%, rgba(249,115,22,0.05), transparent);
+    pointer-events: none;
+  }
+
+  .hosting-section > * { position: relative; z-index: 1; }
 
   .hosting-section h3 {
     font-size: 36px;
@@ -990,11 +1009,12 @@
     letter-spacing: -0.03em;
     line-height: 1.2;
     margin-bottom: 16px;
+    color: var(--gray-950);
   }
 
   .hosting-section p {
     font-size: 16px;
-    color: var(--gray-400);
+    color: var(--muted-foreground);
     line-height: 1.6;
     margin-bottom: 32px;
   }
@@ -1011,21 +1031,21 @@
     align-items: center;
     gap: 10px;
     font-size: 14px;
-    color: var(--gray-300);
+    color: var(--gray-700);
   }
 
   .hosting-features .check {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.1);
+    background: rgba(13,13,13,0.06);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
 
-  .hosting-features .check svg { width: 12px; height: 12px; color: #3b82f6; }
+  .hosting-features .check svg { width: 12px; height: 12px; color: var(--gray-950); }
 
   .btn-blue {
     background: #3b82f6;
@@ -1055,23 +1075,22 @@
   .hosting-card {
     padding: 20px 24px;
     border-radius: 14px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: white;
+    border: 1px solid var(--border-light);
   }
 
   .hosting-card-label {
     font-size: 11px;
     font-weight: 500;
     color: var(--gray-500);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
     margin-bottom: 8px;
   }
 
   .hosting-card-value {
     font-size: 15px;
     font-weight: 500;
-    color: var(--gray-200);
+    color: var(--gray-950);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1082,6 +1101,7 @@
     height: 6px;
     border-radius: 50%;
     background: var(--success);
+    animation: pulse-dot 2s ease infinite;
   }
 
   /* ═══════════════════════════════════════════
@@ -1097,7 +1117,10 @@
   .cta-section .cta-bg {
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(0,0,0,0.02), transparent);
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 100%, rgba(59,130,246,0.07), transparent),
+      radial-gradient(ellipse 50% 40% at 30% 80%, rgba(249,115,22,0.05), transparent),
+      radial-gradient(ellipse 50% 40% at 70% 20%, rgba(129,140,248,0.04), transparent);
     pointer-events: none;
   }
 
@@ -1146,31 +1169,219 @@
   footer a:hover { color: var(--gray-950); }
 
   /* ═══════════════════════════════════════════
-     STATS STRIP
+     FRAMEWORK CARDS (developers section)
      ═══════════════════════════════════════════ */
 
-  .stats-strip {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 64px 40px;
+  .framework-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: 1fr 1fr;
     gap: 24px;
-    text-align: center;
-    border-bottom: 1px solid var(--border-light);
+    margin-top: 64px;
   }
 
-  .stats-strip .stat-item .number {
-    font-size: 48px;
+  .framework-card {
+    position: relative;
+    padding: 36px;
+    border-radius: 20px;
+    border: 1px solid var(--border-light);
+    background: white;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .framework-card:hover {
+    border-color: var(--border-medium);
+    box-shadow: 0 12px 60px rgba(0,0,0,0.05);
+  }
+
+  .framework-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .framework-card.card-ui::before {
+    background: radial-gradient(ellipse 100% 60% at 100% 0%, rgba(59,130,246,0.06), transparent);
+  }
+
+  .framework-card.card-engine::before {
+    background: radial-gradient(ellipse 100% 60% at 100% 0%, rgba(249,115,22,0.05), transparent);
+  }
+
+  .framework-card > * { position: relative; z-index: 1; }
+
+  .framework-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    gap: 16px;
+  }
+
+  .framework-card-title {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-700);
+    letter-spacing: -0.01em;
+  }
+
+  .framework-card.card-ui .framework-card-title { color: #2964aa; }
+  .framework-card.card-engine .framework-card-title { color: #c2410c; }
+
+  .framework-card-count {
+    font-size: 32px;
     font-weight: 700;
     letter-spacing: -0.03em;
     color: var(--gray-950);
+    line-height: 1;
   }
 
-  .stats-strip .stat-item .label {
+  .framework-card-count .unit {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-500);
+    margin-top: 4px;
+    letter-spacing: 0;
+  }
+
+  .framework-card h3 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--gray-950);
+    margin-bottom: 8px;
+  }
+
+  .framework-card-desc {
     font-size: 14px;
     color: var(--muted-foreground);
-    margin-top: 4px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    max-width: 90%;
+  }
+
+  .framework-pill-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .framework-pill-list li {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-light);
+    background: var(--gray-50);
+    color: var(--gray-700);
+  }
+
+  .framework-card.card-ui .framework-pill-list li {
+    background: rgba(59,130,246,0.06);
+    border-color: rgba(59,130,246,0.15);
+    color: #2964aa;
+  }
+
+  .framework-card.card-engine .framework-pill-list li {
+    background: rgba(249,115,22,0.06);
+    border-color: rgba(249,115,22,0.15);
+    color: #c2410c;
+  }
+
+  .framework-platform {
+    margin-top: 28px;
+    padding: 20px 28px;
+    border-radius: 16px;
+    background: var(--gray-950);
+    color: var(--gray-300);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+
+  .framework-platform .label {
+    color: var(--gray-500);
+    font-weight: 500;
+  }
+
+  .framework-platform .platform-pill {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--gray-200);
+  }
+
+  /* ═══════════════════════════════════════════
+     PILLARS (real tools / integrations / training)
+     ═══════════════════════════════════════════ */
+
+  .pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 56px;
+  }
+
+  .pillar-card {
+    padding: 32px;
+    border-radius: 16px;
+    border: 1px solid var(--border-light);
+    background: white;
+    transition: all 0.3s ease;
+  }
+
+  .pillar-card:hover {
+    border-color: var(--border-medium);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.04);
+  }
+
+  .pillar-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--gray-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .pillar-icon svg { width: 24px; height: 24px; color: var(--gray-700); }
+
+  .pillar-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    color: var(--gray-950);
+  }
+
+  .pillar-card .pillar-num {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--gray-950);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .pillar-card p {
+    font-size: 14px;
+    color: var(--muted-foreground);
+    line-height: 1.55;
   }
 
   .board-card {
@@ -1186,30 +1397,220 @@
   }
 
   /* ═══════════════════════════════════════════
+     LEARN CARD (inside developers section)
+     ═══════════════════════════════════════════ */
+
+  .learn-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 40px;
+    align-items: center;
+    padding: 40px 48px;
+    border-radius: 20px;
+    background: var(--gray-950);
+    color: white;
+    margin-top: 48px;
+  }
+
+  .learn-card .eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-400);
+    letter-spacing: 0;
+    margin-bottom: 10px;
+  }
+
+  .learn-card h3 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: white;
+    margin-bottom: 10px;
+  }
+
+  .learn-card p {
+    font-size: 15px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.55;
+    max-width: 520px;
+  }
+
+  .learn-card .btn {
+    background: white;
+    color: var(--gray-950);
+    white-space: nowrap;
+  }
+
+  .learn-card .btn:hover { background: var(--gray-100); }
+
+  /* ═══════════════════════════════════════════
+     FOUNDERS SECTION
+     ═══════════════════════════════════════════ */
+
+  .founders-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 64px;
+    align-items: center;
+    margin-top: 64px;
+  }
+
+  .founders-copy h3 {
+    font-size: 36px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin-bottom: 20px;
+    color: var(--gray-950);
+  }
+
+  .founders-copy > p {
+    font-size: 16px;
+    color: var(--muted-foreground);
+    line-height: 1.6;
+    margin-bottom: 24px;
+    max-width: 520px;
+  }
+
+  .founders-bullets {
+    list-style: none;
+    margin: 0 0 28px;
+    padding: 0;
+  }
+
+  .founders-bullets li {
+    font-size: 14px;
+    color: var(--gray-700);
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .founders-bullets .check {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(13,13,13,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .founders-bullets .check svg { width: 12px; height: 12px; }
+
+  .founders-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .founders-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 28px;
+    border-radius: 20px;
+    background: var(--gray-50);
+    border: 1px solid var(--border-light);
+  }
+
+  .founders-stat {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+  }
+
+  .founders-stat .label {
+    font-size: 13px;
+    color: var(--muted-foreground);
+  }
+
+  .founders-stat .value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--gray-950);
+    letter-spacing: -0.01em;
+  }
+
+  /* ═══════════════════════════════════════════
+     FINAL CTA DUAL
+     ═══════════════════════════════════════════ */
+
+  .final-cta-dual {
+    max-width: 880px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 20px;
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+    background: white;
+    text-align: left;
+  }
+
+  .final-cta-card {
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .final-cta-card + .final-cta-card {
+    border-left: 1px solid var(--border-light);
+    background: var(--gray-50);
+  }
+
+  .final-cta-card h3 {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+    color: var(--gray-950);
+  }
+
+  .final-cta-card p {
+    font-size: 15px;
+    color: var(--muted-foreground);
+    line-height: 1.55;
+    margin-bottom: 24px;
+    max-width: 100%;
+  }
+
+  /* ═══════════════════════════════════════════
      RESPONSIVE
      ═══════════════════════════════════════════ */
 
   @media (max-width: 900px) {
     .agent-grid { grid-template-columns: 1fr; }
+    .pillars { grid-template-columns: 1fr; }
+    .framework-grid { grid-template-columns: 1fr; }
     .feature-row { grid-template-columns: 1fr; gap: 40px; }
     .feature-row.reverse { direction: ltr; }
     .steps-grid { grid-template-columns: 1fr; }
     .capabilities-grid { grid-template-columns: 1fr; }
     .hosting-section { grid-template-columns: 1fr; }
-    .stats-row { grid-template-columns: 1fr 1fr; }
-    .stats-strip { grid-template-columns: 1fr 1fr; }
     .mockup-sidebar { display: none; }
     section { padding: 80px 24px; }
     .section-title { font-size: 36px; }
     nav { padding: 16px 20px; }
     .nav-center { display: none; }
+    .learn-card { grid-template-columns: 1fr; padding: 32px; gap: 24px; }
+    .learn-card h3 { font-size: 22px; }
+    .founders-grid { grid-template-columns: 1fr; gap: 40px; }
+    .founders-copy h3 { font-size: 28px; }
+    .final-cta-dual { grid-template-columns: 1fr; }
+    .final-cta-card + .final-cta-card { border-left: none; border-top: 1px solid var(--border-light); }
+    .final-cta-card { padding: 36px 28px; }
   }
 
   @media (max-width: 600px) {
     .agent-grid { grid-template-columns: 1fr; }
-    .stats-row { grid-template-columns: 1fr 1fr; gap: 16px; }
-    .stats-strip { grid-template-columns: 1fr 1fr; gap: 16px; padding: 40px 24px; }
-    .stats-strip .stat-item .number { font-size: 32px; }
     .hero h1 { font-size: 28px; }
     .hero { padding: 120px 24px 60px; }
     .hero p { font-size: 16px; margin-bottom: 32px; }
@@ -1240,12 +1641,15 @@
     <a href="#agents">Agents</a>
     <a href="#features">Features</a>
     <a href="#developers">Developers</a>
+    <a href="#founders">Founders</a>
+    <a href="learn/index.html">Learn</a>
+    <a href="vision/index.html">Vision</a>
   </div>
   <div class="nav-right">
-    <a href="https://github.com/ja-818/houston" style="display:inline-flex;align-items:center;">
+    <a href="https://github.com/ja-818/houston" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;">
       <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
     </a>
-    <a href="https://github.com/ja-818/houston/releases" class="btn" style="height:36px;padding:0 16px;font-size:13px;background:white;color:var(--gray-950);">Download</a>
+    <a href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Join the waiting list</a>
   </div>
 </nav>
 
@@ -1255,21 +1659,14 @@
 
 <div class="hero">
   <div class="hero-bg"></div>
-  <div class="hero-stars"></div>
-  <!-- Subtle planet — top right -->
-  <div style="position: absolute; top: 12%; right: 8%; width: 6px; height: 6px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.12), rgba(255,255,255,0.03)); pointer-events: none;"></div>
-  <!-- Subtle planet — left -->
-  <div style="position: absolute; top: 32%; left: 5%; width: 4px; height: 4px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(200,180,255,0.15), rgba(200,180,255,0.03)); pointer-events: none;"></div>
-  <!-- Distant planet — center-ish -->
-  <div style="position: absolute; top: 8%; left: 45%; width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); box-shadow: 0 0 12px rgba(255,255,255,0.04); pointer-events: none;"></div>
 
   <h1>OpenClaw's power.<br>Built for your use case.<br>No <span class="terminal-chip"><span class="prompt">$</span> terminal</span> required.</h1>
 
-  <p>One Mac app. A workspace of pre-built agents that generate value from day one. Free forever.</p>
+  <p>One desktop app. A workspace of pre-built agents that generate value from day one. Free forever.</p>
 
   <div class="hero-actions">
-    <a href="https://github.com/ja-818/houston/releases" class="btn btn-lg" style="background: white; color: var(--gray-950);"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> Download for Mac</a>
-    <a href="#agents" class="btn btn-lg" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.25);">Browse agents</a>
+    <a href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">Join the waiting list</a>
+    <a href="#agents" class="btn btn-secondary btn-lg">Browse agents</a>
   </div>
 
   <div class="app-mockup" style="max-width: 960px; width: 100%; margin-top: 64px; animation: float-up 0.8s ease 0.4s both;">
@@ -1379,27 +1776,43 @@
 </div>
 
 <!-- ═══════════════════════════════════════════
-     STATS STRIP
+     PILLARS — Why these are real agents, not chatbots
      ═══════════════════════════════════════════ -->
 
-<div class="stats-strip reveal">
-  <div class="stat-item">
-    <div class="number">9+</div>
-    <div class="label">Pre-built agents</div>
+<section id="why-real" style="padding-top: 80px; padding-bottom: 40px;">
+  <div class="reveal">
+    <div class="section-label">Real agents, not chatbots</div>
+    <h2 class="section-title">Built to actually do the work.</h2>
+    <p class="section-subtitle">Houston agents use the same kind of tools a human uses — real software, real systems, real data. They come trained on real tasks, not just prompted to sound smart.</p>
   </div>
-  <div class="stat-item">
-    <div class="number">Free</div>
-    <div class="label">No credit card needed</div>
+
+  <div class="pillars reveal">
+    <div class="pillar-card">
+      <div class="pillar-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <h3>Real tools, not chat tricks</h3>
+      <p>Agents read files, run code, send messages, hit APIs, edit documents. The same kind of operations a human teammate would perform — not text snippets pretending to be actions.</p>
+    </div>
+
+    <div class="pillar-card">
+      <div class="pillar-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+      </div>
+      <span class="pillar-num">1000+</span>
+      <h3>Integrations out of the box</h3>
+      <p>Slack, Notion, Linear, Stripe, Gmail, HubSpot, Google Drive, GitHub — and a thousand more. Connect once and your agent works across all of them.</p>
+    </div>
+
+    <div class="pillar-card">
+      <div class="pillar-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <h3>Trained on real tasks</h3>
+      <p>Every agent in the store ships pre-trained on the actual workflows it's built for — outbound sequences, fundraising memos, ICP analysis, support triage. Not generic prompting. Real, tested playbooks.</p>
+    </div>
   </div>
-  <div class="stat-item">
-    <div class="number">0</div>
-    <div class="label">Setup required</div>
-  </div>
-  <div class="stat-item">
-    <div class="number">100%</div>
-    <div class="label">Open source</div>
-  </div>
-</div>
+</section>
 
 <!-- ═══════════════════════════════════════════
      AGENT STORE
@@ -1408,8 +1821,8 @@
 <section id="agents">
   <div class="reveal">
     <div class="section-label">Agent Store</div>
-    <h2 class="section-title">Pre-built agents that work<br>from the moment you add them.</h2>
-    <p class="section-subtitle">No setup. No configuration. No prompt engineering. Every agent comes ready to deliver real value on day one. Add in one click.</p>
+    <h2 class="section-title">Install a whole workspace.<br>Not just another chatbot.</h2>
+    <p class="section-subtitle">Each agent comes with its own files, skills, routines and prompts — pre-configured for a real job. Add one in a click, and it delivers value from day one. No setup, no prompt engineering.</p>
   </div>
 
   <div class="agent-grid" style="margin-top: 64px;">
@@ -1701,8 +2114,8 @@
 <section>
   <div class="hosting-section reveal">
     <div>
-      <h3>Run your agents in the cloud</h3>
-      <p>Love the desktop app? Run the same agents 24/7 in the cloud. One click to deploy. No infra to manage. Your agents work while you sleep.</p>
+      <h3>Need it running 24/7?</h3>
+      <p>Love the desktop app? Run the same agents in the cloud while your laptop is closed. One click to deploy. No infra to manage. Your agents work while you sleep.</p>
       <ul class="hosting-features">
         <li>
           <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
@@ -1721,7 +2134,7 @@
           Routines run even when your laptop is closed
         </li>
       </ul>
-      <a href="#" class="btn-blue" style="margin-top: 8px;">Get started with hosting</a>
+      <a href="mailto:hello@gethouston.ai" class="btn btn-lg" style="margin-top: 8px; background: white; color: var(--gray-950);">Get in touch</a>
     </div>
     <div class="hosting-visual">
       <div class="hosting-card">
@@ -1754,8 +2167,17 @@
 <section id="developers">
   <div class="reveal">
     <div class="section-label">Developers</div>
-    <h2 class="section-title">Build agents. Publish to the store.</h2>
-    <p class="section-subtitle">Houston is also an open-source framework. React packages for the UI, Rust crates for the engine. Build agents that thousands of people can use.</p>
+    <h2 class="section-title">Build your own agent.<br>Publish to the store.</h2>
+    <p class="section-subtitle">Houston is open source. React packages for the UI, Rust crates for the engine. Ship an agent that thousands of people can install in one click.</p>
+  </div>
+
+  <div class="learn-card reveal">
+    <div>
+      <div class="eyebrow">The guide</div>
+      <h3>Learn Houston in 8 chapters.</h3>
+      <p>A short developer guide to building agents on Houston — the mental model, the project layout, and how to ship one. Written for people who've built with AI before.</p>
+    </div>
+    <a class="btn btn-lg" href="learn/index.html">Start reading</a>
   </div>
 
   <div class="steps-grid">
@@ -1776,69 +2198,126 @@
     </div>
   </div>
 
-  <!-- Architecture -->
-  <div class="arch-diagram reveal" style="margin-top: 64px;">
-    <div class="arch-layers">
-      <div class="arch-layer layer-agents">
-        <div class="arch-layer-label">Agent Store</div>
-        <div class="arch-items">
-          <span class="arch-item">Content Writer</span>
-          <span class="arch-item">Research</span>
-          <span class="arch-item">Code Review</span>
-          <span class="arch-item" style="border-style: dashed; opacity: 0.5;">Your Agent</span>
+  <!-- Framework: two cards side-by-side + platform footer strip -->
+  <div class="framework-grid reveal">
+    <div class="framework-card card-ui">
+      <div class="framework-card-head">
+        <div class="framework-card-title">@houston-ai/*</div>
+        <div class="framework-card-count">
+          11
+          <span class="unit">React packages</span>
         </div>
       </div>
-      <div class="arch-layer layer-ui">
-        <div class="arch-layer-label">@houston-ai &mdash; React UI</div>
-        <div class="arch-items">
-          <span class="arch-item">chat</span>
-          <span class="arch-item">board</span>
-          <span class="arch-item">layout</span>
-          <span class="arch-item">core</span>
-          <span class="arch-item">skills</span>
-          <span class="arch-item">routines</span>
-          <span class="arch-item">+5 more</span>
+      <h3>The UI library</h3>
+      <p class="framework-card-desc">Production-grade React components for chat, kanban, layout, skills, routines, memory and more — all matching the Houston design system out of the box.</p>
+      <ul class="framework-pill-list">
+        <li>core</li>
+        <li>chat</li>
+        <li>board</li>
+        <li>layout</li>
+        <li>connections</li>
+        <li>events</li>
+        <li>memory</li>
+        <li>routines</li>
+        <li>skills</li>
+        <li>review</li>
+        <li>agent</li>
+      </ul>
+    </div>
+
+    <div class="framework-card card-engine">
+      <div class="framework-card-head">
+        <div class="framework-card-title">houston-*</div>
+        <div class="framework-card-count">
+          8
+          <span class="unit">Rust crates</span>
         </div>
       </div>
-      <div class="arch-layer layer-engine">
-        <div class="arch-layer-label">houston-* &mdash; Rust Engine</div>
-        <div class="arch-items">
-          <span class="arch-item">sessions</span>
-          <span class="arch-item">db</span>
-          <span class="arch-item">channels</span>
-          <span class="arch-item">scheduler</span>
-          <span class="arch-item">tauri</span>
-          <span class="arch-item">+3 more</span>
-        </div>
-      </div>
-      <div class="arch-layer layer-platform">
-        <div class="arch-layer-label">Platform</div>
-        <div class="arch-items">
-          <span class="arch-item">Tauri 2</span>
-          <span class="arch-item">Claude CLI</span>
-          <span class="arch-item">SQLite</span>
-          <span class="arch-item">macOS</span>
-        </div>
-      </div>
+      <h3>The engine</h3>
+      <p class="framework-card-desc">Rust crates that handle agent sessions, persistence, channel adapters, scheduling and the Tauri integration. The whole runtime your agent needs to actually do work.</p>
+      <ul class="framework-pill-list">
+        <li>sessions</li>
+        <li>db</li>
+        <li>channels</li>
+        <li>scheduler</li>
+        <li>events</li>
+        <li>memory</li>
+        <li>tauri</li>
+        <li>cli</li>
+      </ul>
     </div>
   </div>
 
-  <div class="stats-row reveal">
-    <div class="stat-item">
-      <div class="number">11</div>
-      <div class="label">React packages</div>
+  <div class="framework-platform reveal" style="margin-top: 24px;">
+    <span class="label">Runs on</span>
+    <span class="platform-pill">Tauri 2</span>
+    <span class="platform-pill">Claude Code</span>
+    <span class="platform-pill">SQLite</span>
+    <span class="platform-pill">macOS</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FOUNDERS
+     ═══════════════════════════════════════════ -->
+
+<section id="founders">
+  <div class="reveal">
+    <div class="section-label">For founders</div>
+    <h2 class="section-title">Skip six months.<br>Ship your vertical workspace.</h2>
+    <p class="section-subtitle">Building an AI product for a specific industry? Don't rebuild the plumbing. Fork Houston, rename it, and ship your vertical on top.</p>
+  </div>
+
+  <div class="founders-grid reveal">
+    <div class="founders-copy">
+      <ul class="founders-bullets">
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Fork and rename — it's your brand, your product
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Your code, your customers, your moat
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Desktop app, Slack sync, board, chat — already built
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Hosting available when you're ready to scale
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          MIT licensed — free forever for the base framework
+        </li>
+      </ul>
+      <div class="founders-actions">
+        <a class="btn btn-primary btn-lg" href="mailto:hello@gethouston.ai">Get in touch</a>
+        <a class="btn btn-secondary btn-lg" href="#developers">See the framework</a>
+      </div>
     </div>
-    <div class="stat-item">
-      <div class="number">8</div>
-      <div class="label">Rust crates</div>
-    </div>
-    <div class="stat-item">
-      <div class="number">38</div>
-      <div class="label">UI components</div>
-    </div>
-    <div class="stat-item">
-      <div class="number">9</div>
-      <div class="label">Built-in agents</div>
+    <div class="founders-visual">
+      <div class="founders-stat">
+        <div class="label">Time to first working prototype</div>
+        <div class="value">A weekend</div>
+      </div>
+      <div class="founders-stat">
+        <div class="label">Months you didn't spend on plumbing</div>
+        <div class="value">6+</div>
+      </div>
+      <div class="founders-stat">
+        <div class="label">React packages ready to reuse</div>
+        <div class="value">11</div>
+      </div>
+      <div class="founders-stat">
+        <div class="label">Rust crates powering the engine</div>
+        <div class="value">8</div>
+      </div>
+      <div class="founders-stat">
+        <div class="label">License</div>
+        <div class="value">MIT</div>
+      </div>
     </div>
   </div>
 </section>
@@ -1850,10 +2329,19 @@
 <div class="cta-section">
   <div class="cta-bg"></div>
   <div class="reveal">
-    <h2>Stop configuring. Start delegating.</h2>
-    <p>Free. Runs on your Mac. Every agent works out of the box. No terminal, no setup, no 40-hour learning curve.</p>
-    <div class="cta-actions">
-      <a href="https://github.com/ja-818/houston/releases" class="btn btn-primary btn-lg">Download Houston</a>
+    <h2>Two ways to start.</h2>
+    <p>Run it on your Mac, or have us run it for you 24/7.</p>
+    <div class="final-cta-dual" style="margin-top: 48px;">
+      <div class="final-cta-card">
+        <h3>Join the waiting list</h3>
+        <p>Free, open source, runs on your Mac. Every agent works out of the box. No terminal, no setup.</p>
+        <a href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">Join the waiting list</a>
+      </div>
+      <div class="final-cta-card">
+        <h3>Run it 24/7</h3>
+        <p>Same agents, same skills, same memory — running in the cloud while your laptop is closed.</p>
+        <a href="mailto:hello@gethouston.ai" class="btn btn-secondary btn-lg">Get in touch</a>
+      </div>
     </div>
   </div>
 </div>
@@ -1867,12 +2355,15 @@
     <svg viewBox="0 0 412 449" fill="currentColor" width="18" height="18" style="color: var(--gray-700);"><path d="M54.4 370a373 373 0 0036.6 16.5c42.9 16.5 81 27 127 32.7 39 4.9 98 6.1 134-9.7l.2-28.7 10.9-4.2.1 7.6c.1 9.5 10.2 10 10.1 16.6l-.2 19.5a10.9 10.9 0 01-5.3 8.8 126 126 0 01-34.7 13.1c-27.4 5.9-54.8 7.6-83 6.1a502 502 0 01-114.8-19.3C98.3 418.3 63.3 404.2 30.4 384.4c-1.8-1.1-4.6-4.1-4.6-5.8l.5-25.2 11-8.4c1.5-34.5-.5-23-14.7-49.9C-4.9 243.1-6.6 188.6 13.7 132.1c9.6 20.2 21.2 38.3 37.4 52.9C37.7 162.7 27.2 140 22.1 114.6 58.6 40.2 137.3-5.7 220.2.6c51 3.8 94.2 25.6 130.4 62-12-3.2-22.2-5.6-33.7-6.8-41.1-31.1-89.5-44.9-140.7-36.2-20.9 3.5-34 7-50.7 16.9l14.1-2.5 15.9-2.8c8.5-1.5 24.6-1 33.8-.2 22.7 2.1 53.6 13.7 71.7 29-12.6 3.8-24.8 7-37.2 12.5-54.8 24.4-99.9 64.9-131 115.9-7.9-2.9-15.5-4.4-23.5-2.5 29.8 6 39 41.1 31.8 68-2.4 9-7.4 16.2-14.7 22.4a346.5 346.5 0 00147.3 97.2l12 21.2c1.8 3.3.4 10.1.3 14.5-54.7-3.5-108.5-14.2-157.9-37.6l-33.3-15.8a55.5 55.5 0 00-.3 14.3m15.8-103.6c8.8-2.1 12.7-9.2 15.7-16.5 4-13 2.4-27.4-5.3-38.7-5.4-7.8-14.8-12.2-23.8-9.3a20.8 20.8 0 00-13.4 12.7c8.4-7.9 19.2-8.3 27.1-.2 12.6 13.1 13.3 38-.3 52M56.2 335.7c19.3 9.7 37.1 17.6 57.6 25.6l.5-41c0-5.6-7.1-8.2-10.9-7.4-13.3 2.7-5.9 17.1-8 29.2l-39.8-19.4c-1 4.6-1.3 9.4.6 13m139.6 48.3c1.1-4.4 1.2-8.7-.8-11.5a513 513 0 01-66-18 16.3 16.3 0 00-.1 12.2c8.3 2.7 16.2 5.3 24.7 7.3z"/><path d="M326 373.5c-78.7 7.3-171.3-41.7-224.8-98.7 21-21.4 19.6-56.4 1.4-79.5 14.1-22 29.7-42 48.5-59.7C194 95.2 252.8 65.2 312.9 67.5c31.5 1.8 71.1 11.3 70.5 49.8a215.2 215.2 0 017.4 201.1c3.6 38.3-33.5 51.8-64.9 55.1m-156.6-69.6c44.6 29.3 106.3 54.1 159.9 46.5 8.5-1.2 16.5-3.9 24.6-6.3 5-1.5 7.1-5.2 9.6-9 48.2-74.2 42.9-170.7-13.8-238.4C301.1 78.6 245.2 94.2 203 121.5c-17 11-32.9 23.2-46.2 38.5-14.8 17-20.8 39.2-21.9 61.4-1.2 23.5 5.3 45.1 17.5 64.8a53.6 53.6 0 0017 17.8"/><path d="M298.5 409.1c-4.5.4-7.9-1.7-9.4-5.2a12.3 12.3 0 011.1-11c1.5-2.5 5.4-4.9 8.9-5.2l31.9-2.5a8.6 8.6 0 019.3 6.1c.9 3.4.5 9.3-3.5 10.6-12.4 4.1-24.7 6-38.3 7.2"/><rect width="15.3" height="16.2" x="258.6" y="409.9" rx="0" transform="rotate(-89.7 266.3 418)"/><path d="M370.4 283.3c-6.1 17.6-13.5 33.4-26.4 47.2 26-57.7 30.3-124.2 4.1-182.3-6.7-14.8-15-27.3-24.8-41 5.1.8 13 .9 17 4.2 7.8 6.5 12.5 15.5 17.4 24.5 24.5 45.2 29.8 98.2 12.7 147.5"/></svg>
     <a href="/" style="font-weight: 500; color: var(--gray-700); text-decoration: none;">Houston</a>
   </div>
-  <div style="font-size: 14px; color: var(--gray-700); font-weight: 500; margin-bottom: 12px; letter-spacing: -0.01em;">Ship the impossible.</div>
   <span>Free and open source.</span>
   <span style="margin: 0 8px;">&middot;</span>
-  <a href="https://github.com/ja-818/houston">GitHub</a>
+  <a href="learn/index.html">Learn</a>
   <span style="margin: 0 8px;">&middot;</span>
-  <a href="https://github.com/ja-818/houston/releases">Download</a>
+  <a href="vision/index.html">Vision</a>
+  <span style="margin: 0 8px;">&middot;</span>
+  <a href="https://github.com/ja-818/houston" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <span style="margin: 0 8px;">&middot;</span>
+  <a href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer">Join the waiting list</a>
 </footer>
 
 <!-- ═══════════════════════════════════════════

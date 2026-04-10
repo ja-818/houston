@@ -1,9 +1,21 @@
 <p align="center">
-  <strong>Houston</strong>
+  <a href="https://gethouston.ai">
+    <strong>Houston</strong>
+  </a>
 </p>
 
 <p align="center">
-  The framework for building AI agent desktop apps.
+  <strong>OpenClaw for non-technical founders.</strong><br>
+  One desktop app. A workspace of pre-built AI agents that generate value from day one.<br>
+  Real tools. 1000+ integrations. Trained on real tasks. Free forever.
+</p>
+
+<p align="center">
+  <a href="https://gethouston.ai">gethouston.ai</a> ·
+  <a href="https://gethouston.ai/vision/">Vision</a> ·
+  <a href="https://gethouston.ai/learn/">Learn</a> ·
+  <a href="https://forms.gle/ac24qrKSufYvfudt8">Join the waiting list</a> ·
+  <a href="https://x.com/ja818_">@ja818_</a>
 </p>
 
 <p align="center">
@@ -11,24 +23,37 @@
   <a href="https://crates.io/crates/houston-sessions"><img src="https://img.shields.io/crates/v/houston-sessions?color=0d0d0d" alt="crates.io"></a>
   <a href="https://github.com/ja-818/houston/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-0d0d0d" alt="MIT License"></a>
   <a href="https://github.com/ja-818/houston/stargazers"><img src="https://img.shields.io/github/stars/ja-818/houston?color=0d0d0d" alt="Stars"></a>
-  <a href="https://skills.sh"><img src="https://img.shields.io/badge/skills.sh-houston--ai-0d0d0d" alt="AI Skill"></a>
 </p>
 
 ---
 
-## What is this?
+## Houston is three things at once
 
-**Houston** is an AI work delegation desktop app and framework for building AI agent experiences. It includes 10 React packages with 100+ components, Rust crates for session management and agent persistence, and the Houston app itself — a Tauri 2 desktop app where you create AI workspaces, delegate tasks to Claude agents, and track progress on a kanban board.
+**For non-technical users —** a free Mac app you download. Install a workspace built by someone else (a fundraising co-pilot, a sales outreach engine, a customer-support triage system) and you get real AI agents working for you on day one. No terminal. No prompt engineering. No 40-hour learning curve.
 
-Files-first architecture: agent-visible data lives in `.houston/` agent files (JSON + markdown), not in a database. Agents read and write files naturally. The only SQL is for chat conversation replay.
+**For developers —** an open-source framework for building AI agent experiences. React packages for the UI, Rust crates for the engine. Your agent is a manifest + optional custom React. Publish it once, anyone can install it in one click.
 
-Built with Tauri 2, React 19, TypeScript, Tailwind CSS 4, shadcn/ui, and Framer Motion.
+**For founders —** the foundation of your vertical AI product. Fork Houston, rename it, ship a workspace specialized for your industry. Your code, your customers, your moat. Skip six months of plumbing and focus on the part that's actually different. We make money by hosting it for you 24/7 — the framework itself is free forever.
+
+> **Read the full vision:** [Why AI-native workspaces](https://gethouston.ai/vision/) — an essay on how every app is CRUD, why AI-as-a-feature has a ceiling, and what changes when humans and AI share all the operations on the same data.
 
 ---
 
-## Quick Start
+## Real agents, not chatbots
 
-### Run the Houston App
+Most AI products bolt a chat sidebar onto a SaaS app and call it AI. Houston agents are different.
+
+- **Real tools** — agents read files, run code, send messages, hit APIs, edit documents. The same kind of operations a human teammate would do — not text snippets pretending to be actions.
+- **1000+ integrations** — Slack, Notion, Linear, Stripe, Gmail, HubSpot, Google Drive, GitHub, and a thousand more. Connect once, the agent works across all of them.
+- **Trained on real tasks** — every agent in the store ships pre-configured for a specific job: outbound sequences, fundraising memos, ICP analysis, support triage. Real, tested playbooks — not generic prompting.
+- **Files-first architecture** — agent-visible data lives in `.houston/` files, not in a database. Agents read and write naturally; you can open the same files yourself in any text editor.
+- **Symmetric participation** — both you and the AI can take any action. Click a button or ask in chat — same outcome, same data.
+
+---
+
+## Quick start
+
+### Run the Houston app
 
 ```bash
 git clone https://github.com/ja-818/houston.git
@@ -39,7 +64,7 @@ cd app && pnpm tauri dev
 
 On first launch, create a workspace and an agent. Pick an agent definition (Project Manager, Research Agent, Code Reviewer, etc.) and start chatting with Claude.
 
-### Build Your Own Agent
+### Build your own agent
 
 ```bash
 npx create-houston-agent my-app
@@ -48,11 +73,21 @@ pnpm install
 pnpm tauri dev
 ```
 
-You get a working app with Chat + CLAUDE.md editor out of the box. Add @houston-ai components as you need them.
+You get a working app with Chat + CLAUDE.md editor out of the box. Add `@houston-ai` components as you need them. The [Learn guide](https://gethouston.ai/learn/) walks through the full mental model in eight short chapters — written for developers who've built with AI before.
+
+### Fork it (for founders building a vertical)
+
+```bash
+git clone https://github.com/ja-818/houston.git my-vertical-app
+cd my-vertical-app
+# Rename, rebrand, build on top
+```
+
+Your code, your customers, your moat. Free under MIT. If you hit something missing in the base framework, send it back as a PR. [Get in touch](mailto:hello@gethouston.ai) when you're ready to scale.
 
 ---
 
-## How the App Works
+## How the app works
 
 Houston organizes work into **Workspaces** and **Agents**:
 
@@ -61,16 +96,16 @@ Houston organizes work into **Workspaces** and **Agents**:
 - **Agent Definition** — defines what tabs and capabilities an agent has. Pick from built-in definitions or build your own.
 
 ```
-Workspace ("Personal")
-  +-- Agent ("Research Agent")    <- definition: Research Agent
-  |     Chat | Files | Skills
-  +-- Agent ("Project Manager")   <- definition: Project Manager
-  |     Chat | Tasks | Context | Skills
-  +-- Agent ("Code Reviewer")     <- definition: Code Reviewer
-        Chat | Files | Skills
+Workspace ("My Startup")
+  +-- Agent ("Growth Agent")          <- definition: Growth Agent
+  |     Activity | Chat | Skills | Routines | Files
+  +-- Agent ("Investor Relations")    <- definition: Investor Relations
+  |     Activity | Chat | Context | Skills
+  +-- Agent ("Sales Outreach")        <- definition: Sales Outreach
+        Activity | Chat | Files | Skills
 ```
 
-Each kanban card is a Claude conversation. Click a task to see its full chat history. The agent's progress shows as a step-by-step checklist alongside the chat.
+Each kanban card on the **Activity** tab is a Claude conversation. Click a card to see its full chat history. The agent's progress shows as a step-by-step checklist alongside the chat. Connect Slack and the same conversation becomes a thread — reply from your phone, the agent responds there too.
 
 ---
 
@@ -84,23 +119,24 @@ Agent definitions are JSON manifests that define what an AI agent looks like. Th
 | **Custom React** | `manifest.json` + `bundle.js` | Custom React components (import @houston-ai as peer deps) |
 | **Custom Rust** | PR a new crate | Declare `features: ["capability"]` in manifest |
 
-### Manifest
+### Manifest example
 
 ```json
 {
-  "id": "project-manager",
-  "name": "Project Manager",
-  "description": "AI project manager that breaks down work and tracks progress",
-  "icon": "LayoutGrid",
+  "id": "growth-agent",
+  "name": "Growth Agent",
+  "description": "Competitor teardowns, outbound sequences, ICP analysis",
+  "icon": "Zap",
   "tabs": [
+    { "id": "activity", "label": "Activity", "builtIn": "board" },
     { "id": "chat", "label": "Chat", "builtIn": "chat" },
-    { "id": "tasks", "label": "Tasks", "builtIn": "board" },
-    { "id": "context", "label": "Context", "builtIn": "context" },
-    { "id": "skills", "label": "Skills", "builtIn": "skills" }
+    { "id": "skills", "label": "Skills", "builtIn": "skills" },
+    { "id": "routines", "label": "Routines", "builtIn": "routines" },
+    { "id": "files", "label": "Files", "builtIn": "files" }
   ],
-  "defaultTab": "tasks",
-  "systemPrompt": "You are a project manager...",
-  "claudeMd": "# Project Manager\n..."
+  "defaultTab": "activity",
+  "systemPrompt": "You are a growth marketing expert...",
+  "claudeMd": "# Growth Agent\n..."
 }
 ```
 
@@ -136,11 +172,13 @@ Every Houston agent stores agent-visible data in a `.houston/` folder:
 
 **The rule:** if `@houston-ai` has a component that renders it, the data lives in `.houston/`. App-specific files go in their own folder.
 
-Agents interact with these files directly — no CLI intermediary, no SQL queries. The `agent_store` module provides typed CRUD with atomic writes.
+Agents interact with these files directly — no CLI intermediary, no SQL queries. The `agent_store` module provides typed CRUD with atomic writes. Because everything lives in plain files, **you can read and edit the same data yourself in any text editor**, and the agent sees it instantly via the file watcher.
 
 ---
 
 ## Houston UI (React Packages)
+
+11 packages on `@houston-ai/*`. Generic, props-driven, no store lock-in. Use Zustand, Redux, Jotai — whatever you want.
 
 ### @houston-ai/core
 
@@ -160,7 +198,7 @@ Drop-in chat experience for Claude sessions. One component does streaming markdo
 
 | Export | What it does |
 |--------|-------------|
-| `ChatPanel` | Full chat -- messages + streaming + thinking + tools + input |
+| `ChatPanel` | Full chat — messages + streaming + thinking + tools + input |
 | `ChatInput` | Input with send/stop/mic states, auto-expand textarea |
 | `ToolActivity` | Collapsing tool call list with spinners and elapsed time |
 | `ProgressPanel` | Step checklist (pending/active/done states) |
@@ -186,6 +224,7 @@ Kanban board with animated cards that glow when agents are running.
 | `KanbanColumn` | Animated card list with Framer Motion transitions |
 | `KanbanCard` | Status-aware card with conic-gradient glow animation |
 | `KanbanDetailPanel` | Right panel with header + children slot |
+| `AIBoard` | Higher-level: KanbanBoard + KanbanDetailPanel + ChatPanel wired together |
 
 ### @houston-ai/layout
 
@@ -193,7 +232,7 @@ App shell components.
 
 | Export | What it does |
 |--------|-------------|
-| `AppSidebar` | Project/agent switcher with add/delete |
+| `AppSidebar` | Workspace/agent switcher with add/delete |
 | `TabBar` | Tab navigation with optional badges and actions |
 | `SplitView` | Resizable two-panel layout (default 55/45) |
 
@@ -260,9 +299,19 @@ Agent file management.
 | `FilesBrowser` | File browser with folder grouping, type icons, drag-and-drop |
 | `InstructionsPanel` | Editable instruction files with auto-save on blur |
 
+### @houston-ai/memory
+
+Agent memory and learnings store.
+
+| Export | What it does |
+|--------|-------------|
+| `MemoryBrowser` | Browse and edit agent learnings |
+
 ---
 
-## Houston (Rust Crates)
+## Houston Engine (Rust Crates)
+
+8 crates on `houston-*`. The runtime your agent needs to actually do work.
 
 ### houston-sessions
 
@@ -278,7 +327,7 @@ Claude CLI session management. Spawns `claude -p --output-format stream-json`, p
 
 ### houston-db
 
-Minimal SQLite layer. Two tables: `chat_feed` and `preferences`. That's it.
+Minimal SQLite layer. Two tables: `chat_feed` and `preferences`. That's it — agent-visible data lives in files, not in the DB.
 
 | Export | What it does |
 |--------|-------------|
@@ -293,12 +342,12 @@ The integration layer. Wraps everything into Tauri 2 commands and state.
 
 | Module | What it provides |
 |--------|-----------------|
-| `agent_store` | Typed CRUD for `.houston/` files -- 23 Tauri commands for tasks, routines, goals, channels, skills, log, config |
-| `session_runner` | `spawn_and_monitor()` -- spawn Claude, emit events, persist feed, track session ID to disk |
+| `agent_store` | Typed CRUD for `.houston/` files — 23 Tauri commands for activities, routines, goals, channels, skills, log, config |
+| `session_runner` | `spawn_and_monitor()` — spawn Claude, emit events, persist feed, track session ID to disk |
 | `session_queue` | Sequential message queue with automatic `--resume` |
 | `agent_sessions` | Per-agent session state with `.claude_session_id` disk persistence |
 | `channel_manager` | Start/stop channel adapters, route messages, auto-reconnect |
-| `events` | `HoustonEvent` enum for Rust->JS event emission |
+| `events` | `HoustonEvent` enum for Rust→JS event emission |
 | `agent` | Seed files, build system prompts, file operations |
 | `tray` | System tray with show/quit menu |
 | `paths` | `expand_tilde()` for user-facing paths |
@@ -310,7 +359,7 @@ Channel adapters for messaging platforms.
 | Export | What it does |
 |--------|-------------|
 | `TelegramChannel` | Long-polling via `getUpdates`, typing indicators |
-| `SlackChannel` | Socket Mode WebSocket, `chat.postMessage` |
+| `SlackChannel` | Socket Mode WebSocket, `chat.postMessage`, threading per conversation |
 | `Channel` trait | `connect()`, `disconnect()`, `send_message()`, `send_typing()` |
 
 ### houston-events
@@ -320,6 +369,10 @@ Event queue for hooks, webhooks, and lifecycle events.
 ### houston-scheduler
 
 Cron jobs and heartbeat timer scheduling.
+
+### houston-memory
+
+Agent memory store (evaluating for removal — most learnings now live in `.houston/memory/`).
 
 ---
 
@@ -331,7 +384,7 @@ Cron jobs and heartbeat timer scheduling.
 |   Workspaces > Agents > Agent Definitions                   |
 +------------------------+------------------------------------+
 |                        |                                    |
-|   Houston UI (React)   |   Houston (Rust)                   |
+|   Houston UI (React)   |   Houston Engine (Rust)            |
 |                        |                                    |
 |   @houston-ai/core     |   houston-tauri                    |
 |   @houston-ai/chat     |     +-- agent_store (.houston/)    |
@@ -352,7 +405,9 @@ Cron jobs and heartbeat timer scheduling.
 
 **Houston UI** components are props-driven with no store lock-in. Use Zustand, Redux, Jotai — whatever you want.
 
-**Houston** handles session lifecycle, agent file management, and channel routing. Agent-visible data lives in `.houston/` files. SQLite is only for chat conversation replay.
+**Houston Engine** handles session lifecycle, agent file management, and channel routing. Agent-visible data lives in `.houston/` files. SQLite is only for chat conversation replay.
+
+**Built on Claude Code** — and on anything shaped like it. Claude Code is the default local agent runtime, but Houston works with Codex or any other coding agent that can read files, write files, and run commands inside a working directory.
 
 ---
 
@@ -374,15 +429,48 @@ Override `--color-primary` for brand theming. All components pick it up automati
 
 ---
 
-## Built with Houston
+## Monorepo layout
 
-Build your own AI agent with `create-houston-agent`:
-
-```bash
-npx create-houston-agent my-app
+```
+houston/
+├── app/                Houston app (Tauri 2) — the flagship desktop app
+│   ├── src/            React frontend
+│   └── src-tauri/      Rust backend
+├── packages/           @houston-ai/* — 11 React packages
+│   ├── core/
+│   ├── chat/
+│   ├── board/
+│   ├── layout/
+│   ├── connections/
+│   ├── events/
+│   ├── memory/
+│   ├── routines/
+│   ├── skills/
+│   ├── review/
+│   └── agent/
+├── crates/             houston-* — 8 Rust crates
+│   ├── houston-sessions/
+│   ├── houston-db/
+│   ├── houston-tauri/
+│   ├── houston-channels/
+│   ├── houston-events/
+│   ├── houston-scheduler/
+│   └── houston-memory/
+├── create-app/         create-houston-agent — scaffolding template
+├── showcase/           Component showcase — live demos for all @houston-ai components
+└── redirect-page/      gethouston.ai — landing + vision essay + learn guide
 ```
 
-*Building something? Open a PR to add it here.*
+---
+
+## Resources
+
+- **[gethouston.ai](https://gethouston.ai)** — landing page
+- **[Vision essay](https://gethouston.ai/vision/)** — Why AI-native workspaces (the *why* behind Houston)
+- **[Learn guide](https://gethouston.ai/learn/)** — Eight chapters on building Houston apps (the *how*)
+- **[Join the waiting list](https://forms.gle/ac24qrKSufYvfudt8)** — Get notified when the app ships
+- **[skills.sh](https://skills.sh)** — Community AI skills marketplace
+- **[@ja818_ on X](https://x.com/ja818_)** — Updates and announcements
 
 ---
 
@@ -395,6 +483,18 @@ npx skills add ja-818/houston
 ```
 
 Browse on [skills.sh](https://skills.sh).
+
+---
+
+## Built with Houston
+
+Building something on Houston? Open a PR to add it here.
+
+---
+
+## Contributing
+
+Houston is open source under MIT. Issues and PRs welcome — for big architectural changes, open an issue first to discuss the direction.
 
 ---
 

@@ -64,60 +64,97 @@ a {
 }
 
 /* ═══════════════════════════════════════════
-   Top Nav
+   Top Nav (mirrors landing /redirect-page/index.html)
    ═══════════════════════════════════════════ */
 
-.nav {
-  position: sticky;
+body {
+  padding-top: 65px;
+}
+
+nav {
+  position: fixed;
   top: 0;
-  z-index: 50;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border-light);
-  padding: 16px 32px;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 16px 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-light);
 }
 
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 15px;
+.nav-logo {
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.nav-brand-mark {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--gray-950);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.nav-brand-label {
-  color: var(--gray-600);
-  font-weight: 400;
-  margin-left: 2px;
-}
-
-.nav-links {
+  letter-spacing: -0.02em;
+  color: var(--gray-950);
   display: flex;
-  gap: 24px;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.nav-logo svg {
+  width: 28px;
+  height: 28px;
+  color: var(--gray-950);
+}
+
+.nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+
+.nav-center a {
   font-size: 14px;
   color: var(--gray-600);
+  text-decoration: none;
+  transition: color 0.2s;
 }
 
-.nav-links a:hover {
+.nav-center a:hover {
   color: var(--gray-950);
+}
+
+.nav-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.nav-right a:not(.btn) {
+  color: var(--gray-600);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-right a:not(.btn):hover {
+  color: var(--gray-950);
+}
+
+/* Navbar button is the small landing variant (36px), not learn's default 44px */
+nav .btn {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  nav {
+    padding: 16px 20px;
+  }
+  .nav-center {
+    display: none;
+  }
 }
 
 /* ═══════════════════════════════════════════
