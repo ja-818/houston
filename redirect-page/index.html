@@ -751,6 +751,7 @@
   .phone-mockup {
     display: none;
     width: 280px;
+    aspect-ratio: 9 / 19.5;
     margin: 40px auto 0;
     border-radius: 36px;
     border: 4px solid var(--gray-950);
@@ -773,7 +774,6 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-height: 420px;
   }
 
   .phone-header {
@@ -828,15 +828,55 @@
     gap: 16px;
     padding: 16px;
     border-radius: 16px;
-    background: #f5f5f5;
+    background: transparent;
     border: none;
-    transition: background 0.2s;
     cursor: default;
     text-align: left;
+    position: relative;
+    overflow: hidden;
   }
 
-  .agent-card:hover {
+  .agent-card::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 18px;
+    background: conic-gradient(
+      from var(--angle),
+      transparent 60%,
+      #3b82f6 72%,
+      #818cf8 80%,
+      #f97316 88%,
+      #eab308 92%,
+      transparent 100%
+    );
+    animation: comet-border 2.5s linear infinite;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .agent-card:hover::before {
+    opacity: 1;
+  }
+
+  .agent-card::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border-radius: 14px;
+    background: #f5f5f5;
+    z-index: 0;
+    transition: background 0.2s;
+  }
+
+  .agent-card:hover::after {
     background: #ebebeb;
+  }
+
+  .agent-card > * {
+    position: relative;
+    z-index: 1;
   }
 
   .agent-avatar {
@@ -1443,6 +1483,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    gap: 20px;
   }
 
   .final-cta-card + .final-cta-card {
@@ -1488,8 +1529,10 @@
     .nav-right .btn .btn-full-text { display: none; }
     .nav-right .btn .btn-short-text { display: inline; }
     .final-cta-dual { grid-template-columns: 1fr; }
-    .final-cta-card + .final-cta-card { border-left: none; border-top: 1px solid var(--border-light); }
+    .final-cta-card + .final-cta-card { border-left: none !important; border-top: 1px solid var(--border-light); }
     .final-cta-card { padding: 36px 28px; }
+    .cta-section [style*="grid-template-columns: 1fr 1fr 1fr"] { grid-template-columns: 1fr !important; }
+    .cta-section [style*="grid-template-columns: 1fr 1fr 1fr"] .final-cta-card { border-left: none !important; border-top: 1px solid var(--border-light); }
     .kanban-mockup { grid-template-columns: 1fr; }
     .mockup-body { min-height: auto; }
     .app-mockup { max-width: 100% !important; }
@@ -1518,8 +1561,13 @@
     .kanban-card-title { font-size: 12px; }
     .kanban-card-desc { font-size: 11px; }
     .mockup-sidebar { display: none; }
-    .app-mockup { display: none !important; }
-    .phone-mockup { display: block; }
+    .app-mockup { max-width: 100% !important; margin-top: 40px !important; }
+    .app-mockup .mockup-sidebar { display: none !important; }
+    .app-mockup .mockup-body { min-height: auto !important; }
+    .app-mockup .kanban-mockup { grid-template-columns: 1fr !important; }
+    .app-mockup .kanban-col:nth-child(2),
+    .app-mockup .kanban-col:nth-child(3) { display: none; }
+    .phone-mockup { display: none !important; }
   }
 </style>
 </head>
@@ -1626,9 +1674,9 @@
         <!-- Header -->
         <div style="padding: 16px 20px 0;">
           <div style="font-size: 18px; font-weight: 600; color: var(--gray-950); margin-bottom: 12px; letter-spacing: -0.02em;">Mission Control</div>
-          <div style="display: flex; gap: 20px; border-bottom: 1px solid var(--border-light);">
-            <div style="font-size: 13px; font-weight: 500; color: var(--gray-950); padding-bottom: 10px; border-bottom: 2px solid var(--gray-950); margin-bottom: -1px;">Activity</div>
-            <div style="font-size: 13px; color: var(--gray-500); padding-bottom: 10px;">All Agents</div>
+          <div style="display: flex; gap: 8px; padding-bottom: 12px;">
+            <div style="font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--border-medium); color: var(--gray-700); display: inline-flex; align-items: center; gap: 4px;">All Agents <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M4 6l4 4 4-4"/></svg></div>
+            <div style="font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--border-medium); color: var(--gray-700); display: inline-flex; align-items: center; gap: 4px;">All Statuses <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M4 6l4 4 4-4"/></svg></div>
           </div>
         </div>
         <!-- Kanban board -->
@@ -1696,105 +1744,17 @@
       </div>
     </div>
   </div>
-  <!-- Phone mockup (mobile only) -->
-  <div class="phone-mockup">
-    <div class="phone-notch"></div>
-    <div class="phone-content">
-      <div class="phone-header">
-        <span class="title">Mission Control</span>
-        <img src="houston-gray.svg" width="18" height="18" alt="" style="opacity: 0.7;">
-      </div>
-      <div class="phone-tabs">
-        <span class="active">All Agents</span>
-        <span>Email</span>
-        <span>Books</span>
-        <span>Reports</span>
-      </div>
-      <!-- Cards -->
-      <div class="kanban-card-mock running" style="font-size: 13px;">
-        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
-          <img src="houston-gray.svg" width="12" height="12" alt="">
-          <span style="font-size: 10px; color: var(--gray-500);">Email and Outreach</span>
-        </div>
-        <div class="kanban-card-title">Follow up with event contacts</div>
-        <div class="kanban-card-desc">Sending 31 personalized emails from Gmail</div>
-      </div>
-      <div class="kanban-card-mock running" style="font-size: 13px;">
-        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
-          <img src="houston-gray.svg" width="12" height="12" alt="">
-          <span style="font-size: 10px; color: var(--gray-500);">Bookkeeping</span>
-        </div>
-        <div class="kanban-card-title">Categorize March expenses</div>
-        <div class="kanban-card-desc">Processing 47 transactions in QuickBooks</div>
-      </div>
-      <div class="kanban-card-mock" style="font-size: 13px;">
-        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
-          <img src="houston-gray.svg" width="12" height="12" alt="">
-          <span style="font-size: 10px; color: var(--gray-500);">Research</span>
-        </div>
-        <div class="kanban-card-title">Compare CRM options</div>
-        <div class="kanban-card-desc">Reviewed 5 platforms, waiting for your pick</div>
-      </div>
-      <div class="kanban-card-mock" style="font-size: 13px;">
-        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
-          <img src="houston-gray.svg" width="12" height="12" alt="">
-          <span style="font-size: 10px; color: var(--gray-500);">Reporting</span>
-        </div>
-        <div class="kanban-card-title">Weekly sales summary</div>
-        <div class="kanban-card-desc" style="color: var(--success);">Done</div>
-      </div>
-    </div>
-  </div>
 </div>
-
-<!-- ═══════════════════════════════════════════
-     PILLARS — Why these are real agents, not chatbots
-     ═══════════════════════════════════════════ -->
-
-<section id="why-real" style="padding-top: 80px; padding-bottom: 40px;">
-  <div class="reveal">
-    <div class="section-label">Not another chatbot</div>
-    <h2 class="section-title">They use your tools. Not just words.</h2>
-    <p class="section-subtitle">Houston agents log into real software, move real data, and complete real tasks. Not text suggestions you still have to copy-paste somewhere.</p>
-  </div>
-
-  <div class="pillars reveal">
-    <div class="pillar-card">
-      <div class="pillar-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-      </div>
-      <h3>Real tools, not chat tricks</h3>
-      <p>Agents read files, run code, send messages, hit APIs, edit documents. The same kind of operations a human teammate would perform — not text snippets pretending to be actions.</p>
-    </div>
-
-    <div class="pillar-card">
-      <div class="pillar-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-      </div>
-      <span class="pillar-num">1000+</span>
-      <h3>Integrations out of the box</h3>
-      <p>Slack, Notion, Linear, Stripe, Gmail, HubSpot, Google Drive, GitHub — and a thousand more. Connect once and your agent works across all of them.</p>
-    </div>
-
-    <div class="pillar-card">
-      <div class="pillar-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      </div>
-      <h3>Trained on real tasks</h3>
-      <p>Every agent ships pre-trained on the actual workflows it's built for. Not generic prompting. Real, tested playbooks that work on day one.</p>
-    </div>
-  </div>
-</section>
 
 <!-- ═══════════════════════════════════════════
      AGENT STORE
      ═══════════════════════════════════════════ -->
 
-<section id="agents">
+<section id="agents" style="padding-top: 80px;">
   <div class="reveal">
-    <div class="section-label">Agent Store</div>
-    <h2 class="section-title">Pick an agent. It starts working.</h2>
-    <p class="section-subtitle">Each agent is pre-built for a specific job. Add one in a click and it starts doing the work. No setup, no prompt engineering, no instructions to write.</p>
+    <div class="section-label">Your team</div>
+    <h2 class="section-title">Hire your team. Results on day one.</h2>
+    <p class="section-subtitle">Pre-trained on real workflows. Connected to 1000+ tools you already use. Learns your preferences after every task.</p>
   </div>
 
   <div class="agent-grid" style="margin-top: 64px;">
@@ -1816,7 +1776,7 @@
     </div>
 
     <div class="agent-card reveal reveal-delay-2">
-      <div class="agent-avatar" style="background: rgba(44,160,28,0.08);">
+      <div class="agent-avatar" style="background: rgba(234,179,8,0.08);">
         <img src="houston-black.svg" width="24" height="24" alt="Houston">
       </div>
       <div class="agent-card-content">
@@ -1831,7 +1791,7 @@
     </div>
 
     <div class="agent-card reveal reveal-delay-1">
-      <div class="agent-avatar" style="background: rgba(249,115,22,0.08);">
+      <div class="agent-avatar" style="background: rgba(168,85,247,0.08);">
         <img src="houston-black.svg" width="24" height="24" alt="Houston">
       </div>
       <div class="agent-card-content">
@@ -1862,7 +1822,7 @@
     </div>
 
     <div class="agent-card reveal reveal-delay-1">
-      <div class="agent-avatar" style="background: rgba(255,122,89,0.08);">
+      <div class="agent-avatar" style="background: rgba(239,68,68,0.08);">
         <img src="houston-black.svg" width="24" height="24" alt="Houston">
       </div>
       <div class="agent-card-content">
@@ -1877,7 +1837,7 @@
     </div>
 
     <div class="agent-card reveal reveal-delay-2">
-      <div class="agent-avatar" style="background: rgba(234,179,8,0.08);">
+      <div class="agent-avatar" style="background: rgba(59,130,246,0.08);">
         <img src="houston-black.svg" width="24" height="24" alt="Houston">
       </div>
       <div class="agent-card-content">
@@ -1892,7 +1852,7 @@
     </div>
 
     <div class="agent-card reveal reveal-delay-1">
-      <div class="agent-avatar" style="background: rgba(168,85,247,0.08);">
+      <div class="agent-avatar" style="background: rgba(249,115,22,0.08);">
         <img src="houston-black.svg" width="24" height="24" alt="Houston">
       </div>
       <div class="agent-card-content">
@@ -1906,262 +1866,144 @@
       </div>
     </div>
 
-    <div class="agent-card reveal reveal-delay-2" style="background: transparent; border: 1.5px dashed var(--gray-300); justify-content: center; align-items: center; text-align: center; min-height: 88px;">
-      <div class="agent-card-content" style="align-items: center; padding: 0;">
-        <h4>Build your own</h4>
-        <p style="-webkit-line-clamp: unset;">Submit agents to the Houston Store</p>
-      </div>
+    <div class="reveal reveal-delay-2" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 88px; border-radius: 16px; border: 1px solid var(--border-light); padding: 24px; gap: 12px;">
+      <span style="font-size: 14px; font-weight: 600; color: var(--gray-950);">+30 more agents</span>
+      <span class="btn btn-primary" style="opacity: 0.5; pointer-events: none; font-size: 13px; height: 32px; padding: 0 16px;">Agent Store coming soon</span>
     </div>
 
   </div>
 </section>
 
-
 <!-- ═══════════════════════════════════════════
-     FEATURES — CHAT
+     HOW IT WORKS (unified steps + chat)
      ═══════════════════════════════════════════ -->
 
-<section id="features" style="padding-bottom: 60px;">
+<section id="features" style="padding-top: 60px; padding-bottom: 60px;">
+  <div class="reveal" style="text-align: center;">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">You ask. Your agent does it.</h2>
+  </div>
+
+  <!-- Agent selector tabs -->
+  <div class="reveal" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 32px 0 48px;">
+    <button class="hiw-tab active" data-agent="0" style="font-size: 13px; padding: 6px 16px; border-radius: 9999px; border: 1px solid var(--border-medium); background: var(--gray-950); color: white; cursor: pointer; font-weight: 500; transition: all 0.2s;">Personal Assistant</button>
+    <button class="hiw-tab" data-agent="1" style="font-size: 13px; padding: 6px 16px; border-radius: 9999px; border: 1px solid var(--border-medium); background: white; color: var(--gray-950); cursor: pointer; font-weight: 500; transition: all 0.2s;">Bookkeeper</button>
+    <button class="hiw-tab" data-agent="2" style="font-size: 13px; padding: 6px 16px; border-radius: 9999px; border: 1px solid var(--border-medium); background: white; color: var(--gray-950); cursor: pointer; font-weight: 500; transition: all 0.2s;">HR Manager</button>
+    <button class="hiw-tab" data-agent="3" style="font-size: 13px; padding: 6px 16px; border-radius: 9999px; border: 1px solid var(--border-medium); background: white; color: var(--gray-950); cursor: pointer; font-weight: 500; transition: all 0.2s;">Support Rep</button>
+    <button class="hiw-tab" data-agent="4" style="font-size: 13px; padding: 6px 16px; border-radius: 9999px; border: 1px solid var(--border-medium); background: white; color: var(--gray-950); cursor: pointer; font-weight: 500; transition: all 0.2s;">Sales Rep</button>
+    <button class="hiw-tab" data-agent="5" style="font-size: 13px; padding: 6px 16px; border-radius: 9999px; border: 1px solid var(--border-medium); background: white; color: var(--gray-950); cursor: pointer; font-weight: 500; transition: all 0.2s;">Office Manager</button>
+    <button class="hiw-tab" data-agent="6" style="font-size: 13px; padding: 6px 16px; border-radius: 9999px; border: 1px solid var(--border-medium); background: white; color: var(--gray-950); cursor: pointer; font-weight: 500; transition: all 0.2s;">Financial Analyst</button>
+  </div>
+
+  <!-- Steps left + Chat right -->
   <div class="feature-row reveal">
-    <div class="feature-info">
-      <h3>Talk to your agents like you'd text a colleague</h3>
-      <p>The primary interface is a chat. Agents understand context, ask clarifying questions, and show their progress as they work. Connect Slack and reply from your phone — the agent responds there too.</p>
-      <ul class="feature-list">
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Chat-first interface — no forms, no config screens
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Slack sync — each conversation becomes a thread
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Real-time streaming — see the agent think and work
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Progress tracking alongside every conversation
-        </li>
-      </ul>
+    <!-- Steps (left) -->
+    <div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+      <div style="flex: 1; padding: 24px; border-radius: 16px; border: 1px solid var(--border-light); background: white; display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--gray-50); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--gray-400);">1</div>
+        <div>
+          <div style="font-size: 15px; font-weight: 600; color: var(--gray-950); margin-bottom: 4px;">You ask in plain English</div>
+          <p id="hiw-ask" style="font-size: 14px; color: var(--muted-foreground); line-height: 1.5; margin: 0;"></p>
+        </div>
+      </div>
+      <div style="flex: 1; padding: 24px; border-radius: 16px; border: 1px solid var(--border-light); background: white; display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--gray-50); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--gray-400);">2</div>
+        <div>
+          <div style="font-size: 15px; font-weight: 600; color: var(--gray-950); margin-bottom: 4px;">Your agent gets to work</div>
+          <p id="hiw-work" style="font-size: 14px; color: var(--muted-foreground); line-height: 1.5; margin: 0;"></p>
+        </div>
+      </div>
+      <div style="flex: 1; padding: 24px; border-radius: 16px; border: 1px solid var(--border-light); background: white; display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--gray-50); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--gray-400);">3</div>
+        <div>
+          <div style="font-size: 15px; font-weight: 600; color: var(--gray-950); margin-bottom: 4px;">You review the results</div>
+          <p id="hiw-result" style="font-size: 14px; color: var(--muted-foreground); line-height: 1.5; margin: 0;"></p>
+        </div>
+      </div>
     </div>
 
-    <div class="app-mockup">
-      <div class="mockup-titlebar">
-        <div class="traffic-lights">
-          <span class="tl-red"></span>
-          <span class="tl-yellow"></span>
-          <span class="tl-green"></span>
-        </div>
-        <span class="title">Houston — Email and Outreach</span>
-      </div>
-      <div class="chat-mockup">
-        <div class="chat-msg user">
-          Follow up with everyone who came to the event last week. Personalize each email based on what we talked about.
-        </div>
-        <div class="chat-msg assistant">
-          On it. I found 34 contacts from the event. I'll pull their LinkedIn profiles and write a personalized follow-up for each. I'll send them from your Gmail once they're ready.
-        </div>
-        <div class="chat-msg user" style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
-          <div class="channel-badge badge-slack">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="10" height="10"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.271 0a2.528 2.528 0 0 1-2.521 2.521 2.528 2.528 0 0 1-2.521-2.521V2.522A2.528 2.528 0 0 1 15.164 0a2.528 2.528 0 0 1 2.521 2.522v6.312zM15.164 18.956a2.528 2.528 0 0 1 2.521 2.522A2.528 2.528 0 0 1 15.164 24a2.528 2.528 0 0 1-2.521-2.522v-2.522h2.521zm0-1.271a2.528 2.528 0 0 1-2.521-2.521 2.528 2.528 0 0 1 2.521-2.521h6.314A2.528 2.528 0 0 1 24 15.164a2.528 2.528 0 0 1-2.522 2.521h-6.314z"/></svg>
-            via Slack
-          </div>
-          Skip anyone from competing companies
-        </div>
-        <div class="chat-msg assistant">
-          Got it. Filtered out 3 competitors. Sending the remaining 31 emails now.
-        </div>
-        <div class="typing-dots">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-        <div class="chat-composer-mock">
-          <span class="placeholder">Ask anything...</span>
-          <span class="send-btn">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2L2 8.5l4.5 1.5L14 2zM6.5 10L14 2M6.5 10v4l2.5-2.5"/></svg>
-          </span>
+    <!-- Chat (right) -->
+    <div style="border-radius: 16px; border: 1px solid var(--border-light); background: white; overflow: hidden; max-width: 480px; width: 100%;">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid var(--border-light); background: var(--gray-50);">
+        <img src="houston-black.svg" width="22" height="22" alt="Houston" style="opacity: 0.7;">
+        <div>
+          <div id="hiw-agent-name" style="font-size: 13px; font-weight: 600; color: var(--gray-950);"></div>
+          <div id="hiw-agent-mission" style="font-size: 11px; color: var(--gray-500);"></div>
         </div>
       </div>
+      <div id="hiw-chat" class="chat-mockup" style="padding: 16px 20px; min-height: 260px; max-width: 100%; gap: 12px;"></div>
     </div>
   </div>
 </section>
 
 <!-- ═══════════════════════════════════════════
-     FEATURES — BOARD
-     ═══════════════════════════════════════════ -->
-
-<section style="padding-top: 60px; padding-bottom: 60px;">
-  <div class="feature-row reverse reveal">
-    <div class="feature-info">
-      <h3>Every mission on one board</h3>
-      <p>Each conversation becomes a tracked activity on a visual kanban board. See what's running, what needs your attention, and what's shipped — all at a glance.</p>
-      <ul class="feature-list">
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Visual kanban — Running, Needs You, Done
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Click any card to see the full conversation
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Real-time updates — no refresh needed
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Multiple agents run in parallel
-        </li>
-      </ul>
-    </div>
-
-    <!-- Board demo cards (matching hero mockup style) -->
-    <div style="display: flex; flex-direction: column; gap: 10px; padding: 20px; max-width: 380px;">
-      <div class="kanban-card-mock running">
-        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-          <img src="houston-gray.svg" width="14" height="14" alt="" style="flex-shrink: 0;">
-          <span style="font-size: 11px; color: var(--gray-500);">Bookkeeping</span>
-        </div>
-        <div class="kanban-card-title">Categorize March expenses</div>
-        <div class="kanban-card-desc">Processing 47 transactions in QuickBooks</div>
-      </div>
-      <div class="kanban-card-mock running">
-        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-          <img src="houston-gray.svg" width="14" height="14" alt="" style="flex-shrink: 0;">
-          <span style="font-size: 11px; color: var(--gray-500);">Scheduling</span>
-        </div>
-        <div class="kanban-card-title">Reschedule Thursday meetings</div>
-        <div class="kanban-card-desc">Moving 3 meetings and sending updated calendar invites</div>
-      </div>
-      <div class="kanban-card-mock">
-        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-          <img src="houston-gray.svg" width="14" height="14" alt="" style="flex-shrink: 0;">
-          <span style="font-size: 11px; color: var(--gray-500);">Reporting</span>
-        </div>
-        <div class="kanban-card-title">Weekly sales summary</div>
-        <div class="kanban-card-desc">Built spreadsheet with this week's numbers from Stripe</div>
-      </div>
-      <div class="kanban-card-mock">
-        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-          <img src="houston-gray.svg" width="14" height="14" alt="" style="flex-shrink: 0;">
-          <span style="font-size: 11px; color: var(--gray-500);">Email and Outreach</span>
-        </div>
-        <div class="kanban-card-title">Reply to pending invoices</div>
-        <div class="kanban-card-desc">Sent payment reminders to 4 overdue accounts</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════
-     CAPABILITIES
+     HOUSTON vs CHATGPT
      ═══════════════════════════════════════════ -->
 
 <section style="padding-top: 60px;">
-  <div class="reveal">
-    <div class="section-label">How it works</div>
-    <h2 class="section-title">More than a chat window</h2>
-    <p class="section-subtitle">Houston agents don't just answer questions. They do the work, learn from it, and get better every time.</p>
+  <div class="reveal" style="text-align: center;">
+    <div class="section-label">The difference</div>
+    <h2 class="section-title">Stop being the USB cable between AI and your tools.</h2>
+    <p class="section-subtitle" style="margin: 0 auto;">ChatGPT gives you text. You copy it. You paste it into Gmail. You go to QuickBooks. You paste again. You are the integration. Houston plugs in directly.</p>
   </div>
 
-  <div class="capabilities-grid">
-    <div class="capability-card reveal reveal-delay-1">
-      <div class="capability-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><circle cx="12" cy="12" r="10"/></svg>
-      </div>
-      <h3>Learns how you work</h3>
-      <p>After every task, your agent gets smarter. It remembers your preferences, your tone, your contacts. Teach it once, it remembers forever.</p>
-    </div>
-    <div class="capability-card reveal reveal-delay-2">
-      <div class="capability-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      </div>
-      <h3>Works on autopilot</h3>
-      <p>Set recurring tasks. Your agent sends that weekly report every Monday, follows up on pending emails, or checks inventory every morning.</p>
-    </div>
-    <div class="capability-card reveal reveal-delay-3">
-      <div class="capability-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-      </div>
-      <h3>Uses your tools</h3>
-      <p>Connects to Gmail, Google Sheets, QuickBooks, Slack, and 1000+ apps. Your agent works inside the software you already use.</p>
-    </div>
-    <div class="capability-card reveal reveal-delay-1">
-      <div class="capability-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-      </div>
-      <h3>Keeps everything organized</h3>
-      <p>Every task produces files, reports, and documents. All saved in one place. Nothing gets lost in email threads or chat messages.</p>
-    </div>
-    <div class="capability-card reveal reveal-delay-2">
-      <div class="capability-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-      </div>
-      <h3>You stay in control</h3>
-      <p>Review what your agent did before it sends anything. Approve, edit, or redirect. It works for you, not instead of you.</p>
-    </div>
-    <div class="capability-card reveal reveal-delay-3">
-      <div class="capability-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <h3>Your data stays private</h3>
-      <p>Runs on your computer. Your files, your emails, your data. Nothing gets sent to servers you don't control.</p>
-    </div>
-  </div>
-</section>
+  <!-- One example, visual flow -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 900px; margin: 48px auto 0;" class="reveal">
 
-<!-- ═══════════════════════════════════════════
-     HOSTING
-     ═══════════════════════════════════════════ -->
-
-<section>
-  <div class="hosting-section reveal">
-    <div>
-      <h3>Want it working while you sleep?</h3>
-      <p>Houston runs on your computer. But if you want your agents working around the clock, we can run them for you. Close your laptop. They keep going.</p>
-      <ul class="hosting-features">
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Agents work even when your computer is off
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Everything stays the same, nothing to set up again
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Check in from your phone or browser, anytime
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Recurring tasks run on schedule, no reminders needed
-        </li>
-      </ul>
-      <a href="mailto:hello@gethouston.ai" class="btn btn-lg" style="margin-top: 8px; background: white; color: var(--gray-950);">Get in touch</a>
-    </div>
-    <div class="hosting-visual">
-      <div class="hosting-card">
-        <div class="hosting-card-label">Status</div>
-        <div class="hosting-card-value">
-          <span class="live-dot"></span>
-          3 agents running
+    <!-- ChatGPT flow -->
+    <div style="border-radius: 20px; border: 1px solid var(--border-light); padding: 32px; background: white; position: relative;">
+      <div style="position: absolute; top: -12px; left: 24px; background: var(--gray-400); color: white; font-size: 12px; font-weight: 600; padding: 4px 14px; border-radius: 9999px;">ChatGPT</div>
+      <div style="font-size: 16px; font-weight: 600; color: var(--gray-700); margin-bottom: 20px; margin-top: 8px;">Follow up with stale leads</div>
+      <div style="display: flex; flex-direction: column; gap: 0;">
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--gray-100); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--gray-400);">1</div>
+          <div style="font-size: 13px; color: var(--gray-700); line-height: 1.5;">Open HubSpot. Find stale leads. Copy their info.</div>
+        </div>
+        <div style="width: 1px; height: 8px; background: var(--gray-200); margin-left: 12px;"></div>
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--gray-100); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--gray-400);">2</div>
+          <div style="font-size: 13px; color: var(--gray-700); line-height: 1.5;">Paste into ChatGPT. Explain context. Get a draft.</div>
+        </div>
+        <div style="width: 1px; height: 8px; background: var(--gray-200); margin-left: 12px;"></div>
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--gray-100); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--gray-400);">3</div>
+          <div style="font-size: 13px; color: var(--gray-700); line-height: 1.5;">Copy the draft. Open Gmail. Paste. Personalize. Send.</div>
+        </div>
+        <div style="width: 1px; height: 8px; background: var(--gray-200); margin-left: 12px;"></div>
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--gray-100); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--gray-400);">4</div>
+          <div style="font-size: 13px; color: var(--gray-700); line-height: 1.5;">Go back to HubSpot. Log the activity. Update the status.</div>
+        </div>
+        <div style="width: 1px; height: 8px; background: var(--gray-200); margin-left: 12px;"></div>
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--gray-100); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--gray-400);">5</div>
+          <div style="font-size: 13px; color: var(--gray-700); line-height: 1.5;">Repeat for each lead. 12 leads = 60 tabs.</div>
         </div>
       </div>
-      <div class="hosting-card">
-        <div class="hosting-card-label">Uptime</div>
-        <div class="hosting-card-value">99.9% &mdash; 14 days</div>
-      </div>
-      <div class="hosting-card">
-        <div class="hosting-card-label">Tasks completed</div>
-        <div class="hosting-card-value">247 this week</div>
-      </div>
-      <div class="hosting-card">
-        <div class="hosting-card-label">Slack messages handled</div>
-        <div class="hosting-card-value">1,283 this month</div>
+    </div>
+
+    <!-- Houston flow -->
+    <div style="border-radius: 20px; border: 3px solid var(--gray-950); padding: 32px; background: white; position: relative;">
+      <div style="position: absolute; top: -12px; left: 24px; background: var(--gray-950); color: white; font-size: 12px; font-weight: 600; padding: 4px 14px; border-radius: 9999px;">Houston</div>
+      <div style="font-size: 16px; font-weight: 600; color: var(--gray-950); margin-bottom: 20px; margin-top: 8px;">Follow up with stale leads</div>
+      <div style="display: flex; flex-direction: column; gap: 0;">
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--gray-950); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: white;">1</div>
+          <div style="font-size: 13px; color: var(--gray-700); line-height: 1.5;">Tell your agent: "Follow up with stale leads"</div>
+        </div>
+        <div style="width: 1px; height: 8px; background: var(--gray-950); margin-left: 12px;"></div>
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--gray-950); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: white;">2</div>
+          <div style="font-size: 13px; color: var(--gray-700); line-height: 1.5;">Reads HubSpot. Writes 12 personalized emails. Sends from Gmail. Logs everything.</div>
+        </div>
+        <div style="width: 1px; height: 8px; background: var(--gray-950); margin-left: 12px;"></div>
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--gray-950); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: white;">3</div>
+          <div style="font-size: 13px; color: var(--gray-700); line-height: 1.5;">Done. You review the results.</div>
+        </div>
       </div>
     </div>
+
   </div>
 </section>
 
@@ -2173,17 +2015,44 @@
   <div class="cta-bg"></div>
   <div class="reveal">
     <h2>Ready to stop doing the work yourself?</h2>
-    <p>Download the app for free, or let us run your agents around the clock.</p>
-    <div class="final-cta-dual" style="margin-top: 48px;">
-      <div class="final-cta-card">
-        <h3>Get the app</h3>
-        <p>Free. Runs on your Mac. Pick an agent and it starts working. No account needed, no setup.</p>
+    <p>The app is free. Forever. We make money when you need your agents running 24/7.</p>
+    <div style="max-width: 960px; margin: 48px auto 0; display: grid; grid-template-columns: 1fr 1fr 1fr; border-radius: 20px; border: 1px solid var(--border-light); overflow: hidden; background: white; text-align: left;">
+      <div class="final-cta-card" style="display: flex; flex-direction: column;">
+        <div style="font-size: 12px; font-weight: 500; color: var(--gray-400); margin-bottom: 8px;">Personal</div>
+        <h3>Free forever</h3>
+        <p>Runs on your Mac. Bring your own GPT subscription.</p>
+        <ul style="list-style: none; padding: 0; margin: 0 0 auto; display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: var(--gray-700);">
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Desktop app</li>
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> All agents + agent store</li>
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Phone companion app</li>
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> 1000+ integrations</li>
+        </ul>
         <a href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">Join the waiting list</a>
       </div>
-      <div class="final-cta-card">
-        <h3>Always on</h3>
-        <p>Your agents keep working when your laptop is closed. Check in from your phone or browser anytime.</p>
-        <a href="mailto:hello@gethouston.ai" class="btn btn-secondary btn-lg">Get in touch</a>
+      <div class="final-cta-card" style="border-left: 1px solid var(--border-light); display: flex; flex-direction: column; position: relative; overflow: hidden;">
+        <div style="position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 20% 100%, rgba(59,130,246,0.08), transparent), radial-gradient(ellipse 60% 50% at 80% 0%, rgba(249,115,22,0.06), transparent); pointer-events: none;"></div>
+        <div style="font-size: 12px; font-weight: 500; color: var(--gray-400); margin-bottom: 8px; position: relative;">Pro</div>
+        <h3 style="position: relative;">Always on</h3>
+        <p style="position: relative;">Your agents run around the clock, even when your laptop is closed.</p>
+        <ul style="list-style: none; padding: 0; margin: 0 0 auto; display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: var(--gray-700); position: relative;">
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Everything in Free</li>
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Agents run 24/7</li>
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Web app access</li>
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Scheduled tasks run on time</li>
+        </ul>
+        <a href="mailto:hello@gethouston.ai" class="btn btn-secondary btn-lg" style="position: relative;">Get in touch</a>
+      </div>
+      <div class="final-cta-card" style="border-left: 1px solid var(--border-light); background: var(--gray-950); color: white; display: flex; flex-direction: column;">
+        <div style="font-size: 12px; font-weight: 500; color: var(--gray-500); margin-bottom: 8px;">Teams</div>
+        <h3 style="color: white;">Enterprise</h3>
+        <p style="color: rgba(255,255,255,0.65);">Your whole team on Houston. Custom agents for your business.</p>
+        <ul style="list-style: none; padding: 0; margin: 0 0 auto; display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: var(--gray-300);">
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Everything in Pro</li>
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Unlimited team members</li>
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Dedicated support</li>
+          <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Custom agent development</li>
+        </ul>
+        <a href="mailto:hello@gethouston.ai" class="btn btn-lg" style="background: white; color: var(--gray-950);">Talk to us</a>
       </div>
     </div>
   </div>
@@ -2378,6 +2247,122 @@
 
     // Start cycling
     setInterval(cycleToNext, DISPLAY_DURATION);
+  })();
+
+  // How it works — interactive agent selector with chat
+  (function() {
+    var agents = [
+      { name: 'Personal Assistant', mission: 'Clear my inbox',
+        ask: '"Clear my inbox. Reply to anything urgent, archive the rest."',
+        work: 'Opens Gmail, reads 23 unread emails, drafts replies to urgent ones, archives newsletters.',
+        result: '23 emails handled. 4 replies ready for approval. Inbox at zero.',
+        chat: [
+          { role: 'user', text: 'Clear my inbox. Reply to anything urgent, archive the rest.' },
+          { role: 'assistant', text: 'On it. Found 23 unread emails. Drafting replies to 4 urgent ones, archiving 17 newsletters, flagging 2 from your boss.' },
+          { role: 'user', text: 'Don\u2019t reply to Sarah\u2019s email yet, I need to think about it.' },
+          { role: 'assistant', text: 'Got it. Skipping Sarah. The other 3 replies are ready for your approval.' }
+        ]},
+      { name: 'Bookkeeper', mission: 'File March expenses',
+        ask: '"Categorize all my March expenses and file them in QuickBooks."',
+        work: 'Logs into QuickBooks, reads bank transactions, categorizes each one based on past patterns.',
+        result: '47 transactions categorized. 3 flagged for review. Done in minutes.',
+        chat: [
+          { role: 'user', text: 'Categorize all my March expenses and file them in QuickBooks.' },
+          { role: 'assistant', text: 'Reading your bank feed now. I see 47 transactions from March. Categorizing based on your past patterns.' },
+          { role: 'user', text: 'The $340 from Office Depot should go under office supplies, not miscellaneous.' },
+          { role: 'assistant', text: 'Fixed. I\u2019ll remember that for next time. 44 categorized, 3 flagged for your review.' }
+        ]},
+      { name: 'HR Manager', mission: 'Post job and screen resumes',
+        ask: '"Post the marketing manager job and screen last week\u2019s resumes."',
+        work: 'Writes the job post, publishes on LinkedIn and Indeed, reads 34 resumes and scores them.',
+        result: 'Job posted on 2 platforms. 34 resumes screened. Top 8 shortlisted.',
+        chat: [
+          { role: 'user', text: 'Post the marketing manager job on LinkedIn and Indeed. Then screen the resumes in my Drive.' },
+          { role: 'assistant', text: 'Job post written and published on both platforms. Now reading 34 resumes from your Drive folder.' },
+          { role: 'user', text: 'Prioritize candidates with B2B experience.' },
+          { role: 'assistant', text: 'Done. 8 candidates shortlisted, 5 of them have B2B backgrounds. Notes attached to each.' }
+        ]},
+      { name: 'Support Rep', mission: 'Handle support tickets',
+        ask: '"Go through the support inbox and reply to everything with a clear answer."',
+        work: 'Reads Zendesk tickets, matches FAQs, drafts responses, escalates complex issues.',
+        result: '18 tickets answered. 3 escalated with context. Avg response: 2 min.',
+        chat: [
+          { role: 'user', text: 'Go through the support inbox. Reply to anything with a clear answer, escalate the rest.' },
+          { role: 'assistant', text: 'Reading 21 open tickets. 18 match known answers. Drafting replies now.' },
+          { role: 'user', text: 'For the billing questions, mention our new refund policy.' },
+          { role: 'assistant', text: 'Updated. 18 replies sent, 3 escalated to you with full context.' }
+        ]},
+      { name: 'Sales Rep', mission: 'Follow up with stale leads',
+        ask: '"Follow up with every lead that went quiet in the last 2 weeks."',
+        work: 'Checks HubSpot for stale leads, pulls LinkedIn info, writes personalized follow-ups.',
+        result: '12 follow-ups sent. Each references their company and last conversation.',
+        chat: [
+          { role: 'user', text: 'Follow up with every lead that went quiet in the last 2 weeks. Personalize each one.' },
+          { role: 'assistant', text: 'Found 12 stale leads in HubSpot. Pulling their LinkedIn profiles to personalize.' },
+          { role: 'user', text: 'Skip anyone from Acme Corp, we lost that deal.' },
+          { role: 'assistant', text: 'Removed Acme. 11 follow-ups sent from your Gmail. Each mentions their company and last touchpoint.' }
+        ]},
+      { name: 'Office Manager', mission: 'Reschedule this week',
+        ask: '"Move the Wednesday all-hands to Thursday and find time for a 1-on-1 with Sarah."',
+        work: 'Checks Calendar for conflicts, moves meetings, notifies attendees, finds open slots.',
+        result: 'All-hands moved. 14 notified. 1-on-1 booked Thursday 2pm.',
+        chat: [
+          { role: 'user', text: 'Move Wednesday\u2019s all-hands to Thursday. And find a time for a 1-on-1 with Sarah.' },
+          { role: 'assistant', text: 'Checking calendars. Thursday 10am works for the all-hands. Sarah has a slot at 2pm.' },
+          { role: 'user', text: 'Perfect. Send the updates.' },
+          { role: 'assistant', text: 'Done. All-hands moved, 14 people notified. 1-on-1 with Sarah booked for Thursday 2pm.' }
+        ]},
+      { name: 'Financial Analyst', mission: 'Monthly revenue report',
+        ask: '"Pull this month\u2019s revenue from Stripe and compare to last month."',
+        work: 'Connects to Stripe, pulls data, builds comparison in Google Sheets, flags anomalies.',
+        result: 'Report built. Revenue up 12%. One refund spike flagged.',
+        chat: [
+          { role: 'user', text: 'Pull this month\u2019s revenue from Stripe. Compare it to last month and flag anything weird.' },
+          { role: 'assistant', text: 'Connected to Stripe. Pulling transaction data for March and February. Building the comparison now.' },
+          { role: 'user', text: 'Add a breakdown by product line.' },
+          { role: 'assistant', text: 'Done. Report is in Google Sheets. Revenue up 12% overall. Product B had an unusual refund spike \u2014 flagged for your review.' }
+        ]}
+    ];
+
+    var tabs = document.querySelectorAll('.hiw-tab');
+    var askEl = document.getElementById('hiw-ask');
+    var workEl = document.getElementById('hiw-work');
+    var resultEl = document.getElementById('hiw-result');
+    var chatEl = document.getElementById('hiw-chat');
+    var nameEl = document.getElementById('hiw-agent-name');
+    var missionEl = document.getElementById('hiw-agent-mission');
+    if (!tabs.length || !askEl) return;
+
+    function setAgent(idx) {
+      var a = agents[idx];
+      askEl.textContent = a.ask;
+      workEl.textContent = a.work;
+      resultEl.textContent = a.result;
+      nameEl.textContent = a.name;
+      missionEl.textContent = a.mission;
+      // Build chat
+      var html = '';
+      a.chat.forEach(function(msg) {
+        html += '<div class="chat-msg ' + msg.role + '">' + msg.text + '</div>';
+      });
+      html += '<div class="typing-dots"><span></span><span></span><span></span></div>';
+      html += '<div class="chat-composer-mock"><span class="placeholder">Tell your agent what to do...</span><span class="send-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 14V2M8 2l-4 4M8 2l4 4"/></svg></span></div>';
+      chatEl.innerHTML = html;
+      // Update tabs
+      tabs.forEach(function(t) {
+        var isActive = parseInt(t.getAttribute('data-agent')) === idx;
+        t.style.background = isActive ? 'var(--gray-950)' : 'white';
+        t.style.color = isActive ? 'white' : 'var(--gray-950)';
+      });
+    }
+
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        setAgent(parseInt(tab.getAttribute('data-agent')));
+      });
+    });
+
+    setAgent(0);
   })();
 
   // Smooth scroll
