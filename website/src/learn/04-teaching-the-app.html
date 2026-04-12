@@ -1,0 +1,207 @@
+---
+activeChapter: "04"
+rootPath: "../"
+learnPath: "index.html"
+visionPath: "../vision/index.html"
+permalink: "learn/04-teaching-the-app.html"
+---
+{% extends "base.njk" %}
+{% block title %}Teaching, not configuring — Learn Houston{% endblock %}
+{% block meta %}
+<meta name="description" content="How users bend a Houston app to their needs by talking to it.">
+{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="style.css?v=3">
+{% endblock %}
+{% block body %}
+    {% include "nav-docs.njk" %}
+
+    <div class="layout">
+      {% include "sidebar-learn.njk" %}
+
+      <main class="content">
+        <div class="content-label">Chapter 04</div>
+        <h1>Teaching, not configuring.</h1>
+        <p class="lead">
+          Houston apps don't have a settings page. Users teach the app by
+          talking to it, and the AI writes the rules down so they stick.
+        </p>
+
+        <div class="toc">
+          <div class="toc-label">On this page</div>
+          <ol>
+            <li><a href="#problem">The problem with settings</a></li>
+            <li><a href="#two-files">How Houston handles it</a></li>
+            <li><a href="#learning">How the AI actually learns</a></li>
+            <li><a href="#user">What the user sees</a></li>
+            <li><a href="#updates">Updates without losing teachings</a></li>
+          </ol>
+        </div>
+
+        <h2 id="problem">The problem with settings</h2>
+        <p>
+          Every app has preferences. Things some users want and others don't.
+        </p>
+        <p>
+          Traditional apps handle this with a settings page. Checkboxes.
+          Dropdowns. Forms.
+        </p>
+        <p>
+          This breaks down fast. The settings page grows. Users can't find
+          what they need. The preferences one user wants conflict with what
+          another expects, and no single set of defaults is right.
+        </p>
+
+        <h2 id="two-files">How Houston handles it</h2>
+        <p>Every page has two prompt files:</p>
+
+        <div class="tree">
+<span class="dir">pages/client-detail/</span>
+  prompt.seed.md    <span class="comment"># you write this. read-only. ships with the app.</span>
+  prompt.local.md   <span class="comment"># starts empty. the AI writes to it over time.</span></div>
+
+        <p>
+          The seed is what the page is for. Written by you, the developer.
+          It ships with the app and never changes at runtime.
+        </p>
+        <p>
+          The local file is how the page gets personalized. Starts empty. The
+          AI writes to it when the user teaches something new.
+        </p>
+        <p>
+          The effective prompt the AI reads is the seed plus the local file,
+          concatenated. The seed provides defaults. The local file overrides
+          them.
+        </p>
+
+        <h2 id="learning">How the AI actually learns</h2>
+        <p>
+          A user says something like:
+        </p>
+
+        <div class="chat-example">
+          <div class="chat-user">
+            Don't auto-email clients when I delete them. It caused a mess
+            last week.
+          </div>
+          <div class="chat-ai">
+            Got it. I've added a rule to this page: <em>don't send emails on
+            client deletion</em>. I'll follow it from now on.
+          </div>
+        </div>
+
+        <p>
+          Behind the scenes, the AI appends a line to
+          <code>prompt.local.md</code> for this page. A week later, in a
+          fresh session, the AI reads the same file and honors the rule.
+          Automatically.
+        </p>
+        <p>
+          If the user changes their mind, they say so. The AI removes the
+          rule. Same file, same mechanism.
+        </p>
+
+        <div class="callout callout-info">
+          <div class="callout-label">The user never edits prompt files</div>
+          <p>
+            They just talk to the AI. The AI takes care of writing things
+            down. That's the point — the user gets to use their own words.
+          </p>
+        </div>
+
+        <h2 id="user">What the user sees</h2>
+        <p>
+          The user doesn't see <code>prompt.local.md</code>. They see a
+          list labeled <strong>What the agent has learned about this
+          page</strong>:
+        </p>
+
+        <div class="compare-card good" style="margin: 20px 0;">
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            <li style="padding: 10px 0; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 14px; color: var(--gray-950);">
+                  Don't auto-email clients when I delete them.
+                </div>
+                <div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">
+                  3 days ago
+                </div>
+              </div>
+              <button class="chip" style="height: 28px; font-size: 12px;">Undo</button>
+            </li>
+            <li style="padding: 10px 0; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 14px; color: var(--gray-950);">
+                  Always show amounts in USD.
+                </div>
+                <div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">
+                  Last week
+                </div>
+              </div>
+              <button class="chip" style="height: 28px; font-size: 12px;">Undo</button>
+            </li>
+            <li style="padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 14px; color: var(--gray-950);">
+                  Mark clients as VIP when they spend over $10k.
+                </div>
+                <div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">
+                  Last month
+                </div>
+              </div>
+              <button class="chip" style="height: 28px; font-size: 12px;">Undo</button>
+            </li>
+          </ul>
+        </div>
+
+        <p>
+          Each rule has a short, plain-English summary. Each has an undo
+          button. Click it, the rule is gone.
+        </p>
+
+        <p>
+          Under the hood, this is git. Every change to
+          <code>prompt.local.md</code> is a commit. Every undo is a revert.
+          The user never sees the word "git."
+        </p>
+
+        <h2 id="updates">Updates without losing teachings</h2>
+        <p>
+          Here's the part that matters when you ship v2.
+        </p>
+        <p>
+          You improve the seed prompt. You add a new default behavior. You
+          ship an update. Users install it.
+        </p>
+        <p>
+          Their local teachings don't get overwritten. The seed updates
+          underneath. The local overlay stays on top. Both apply.
+        </p>
+        <p>
+          The user gets your improvements <em>and</em> keeps what they've
+          taught. No migration, no reset, no "sorry your settings are gone."
+        </p>
+
+        <div class="callout callout-success">
+          <div class="callout-label">Why this feels different</div>
+          <p>
+            Settings ask the user to think like the app. Teaching lets the
+            user speak their mind. The AI translates natural language into
+            persistent rules. The user says what they want — in their own
+            words — and it sticks.
+          </p>
+        </div>
+
+        <div class="pager">
+          <a href="03-pages-and-components.html">
+            <div class="pager-label">← Previous</div>
+            <div class="pager-title">Pages and components</div>
+          </a>
+          <a href="05-code-at-runtime.html" class="next">
+            <div class="pager-label">Next →</div>
+            <div class="pager-title">Edge cases at runtime</div>
+          </a>
+        </div>
+      </main>
+    </div>
+  {% endblock %}

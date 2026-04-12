@@ -1,0 +1,13 @@
+{
+  "name": "website",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npx @11ty/eleventy",
+    "dev": "npx @11ty/eleventy --serve"
+  },
+  "dependencies": {
+    "@11ty/eleventy": "^3.1.5"
+  }
+}

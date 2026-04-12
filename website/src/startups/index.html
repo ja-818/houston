@@ -1,0 +1,761 @@
+---
+rootPath: "../"
+learnPath: "../learn/index.html"
+visionPath: "../vision/index.html"
+---
+{% extends "base.njk" %}
+{% block title %}Houston for Startups — Build your vertical AI product{% endblock %}
+{% block meta %}
+<meta name="description" content="Build your B2B product on Houston. 11 React packages, 8 Rust crates, MIT licensed. Ship your vertical in a weekend, not 6 months.">
+{% endblock %}
+{% block favicon %}<link rel="icon" type="image/svg+xml" href="../favicon.svg">{% endblock %}
+{% block stylesheets %}
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../learn/style.css?v=3">
+{% endblock %}
+{% block inlineStyles %}
+<style>
+  /* Sections */
+  section {
+    padding: 120px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-500);
+    letter-spacing: 0;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--gray-950);
+    margin-bottom: 20px;
+  }
+
+  .section-subtitle {
+    font-size: 20px;
+    color: var(--muted-foreground);
+    line-height: 1.5;
+    max-width: 640px;
+  }
+
+  /* Reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+
+  /* Steps grid */
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 64px;
+  }
+
+  .step-card {
+    padding: 40px 32px;
+    border-radius: 16px;
+    border: 1px solid var(--border-light);
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .step-card:hover {
+    border-color: var(--border-medium);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.04);
+  }
+
+  .step-number {
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--gray-200);
+    margin-bottom: 16px;
+  }
+
+  .step-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+
+  .step-card p {
+    font-size: 14px;
+    color: var(--muted-foreground);
+    line-height: 1.6;
+  }
+
+  /* Framework cards */
+  .framework-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 64px;
+  }
+
+  .framework-card {
+    position: relative;
+    padding: 36px;
+    border-radius: 20px;
+    border: 1px solid var(--border-light);
+    background: white;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .framework-card:hover {
+    border-color: var(--border-medium);
+    box-shadow: 0 12px 60px rgba(0,0,0,0.05);
+  }
+
+  .framework-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .framework-card.card-ui::before {
+    background: radial-gradient(ellipse 100% 60% at 100% 0%, rgba(59,130,246,0.06), transparent);
+  }
+
+  .framework-card.card-engine::before {
+    background: radial-gradient(ellipse 100% 60% at 100% 0%, rgba(249,115,22,0.05), transparent);
+  }
+
+  .framework-card > * { position: relative; z-index: 1; }
+
+  .framework-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    gap: 16px;
+  }
+
+  .framework-card-title {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-700);
+    letter-spacing: -0.01em;
+  }
+
+  .framework-card.card-ui .framework-card-title { color: #2964aa; }
+  .framework-card.card-engine .framework-card-title { color: #c2410c; }
+
+  .framework-card-count {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--gray-950);
+    line-height: 1;
+  }
+
+  .framework-card-count .unit {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-500);
+    margin-top: 4px;
+    letter-spacing: 0;
+  }
+
+  .framework-card h3 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--gray-950);
+    margin-bottom: 8px;
+  }
+
+  .framework-card-desc {
+    font-size: 14px;
+    color: var(--muted-foreground);
+    line-height: 1.6;
+    margin-bottom: 24px;
+    max-width: 90%;
+  }
+
+  .framework-pill-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .framework-pill-list li {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-light);
+    background: var(--gray-50);
+    color: var(--gray-700);
+  }
+
+  .framework-card.card-ui .framework-pill-list li {
+    background: rgba(59,130,246,0.06);
+    border-color: rgba(59,130,246,0.15);
+    color: #2964aa;
+  }
+
+  .framework-card.card-engine .framework-pill-list li {
+    background: rgba(249,115,22,0.06);
+    border-color: rgba(249,115,22,0.15);
+    color: #c2410c;
+  }
+
+  .framework-platform {
+    margin-top: 28px;
+    padding: 20px 28px;
+    border-radius: 16px;
+    background: var(--gray-950);
+    color: var(--gray-300);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+
+  .framework-platform .label {
+    color: var(--gray-500);
+    font-weight: 500;
+  }
+
+  .framework-platform .platform-pill {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--gray-200);
+  }
+
+  /* Learn card */
+  .learn-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 40px;
+    align-items: center;
+    padding: 40px 48px;
+    border-radius: 20px;
+    background: var(--gray-950);
+    color: white;
+    margin-top: 48px;
+  }
+
+  .learn-card .eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-400);
+    letter-spacing: 0;
+    margin-bottom: 10px;
+  }
+
+  .learn-card h3 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: white;
+    margin-bottom: 10px;
+  }
+
+  .learn-card p {
+    font-size: 15px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.55;
+    max-width: 520px;
+  }
+
+  .learn-card .btn {
+    background: white;
+    color: var(--gray-950);
+    white-space: nowrap;
+  }
+
+  .learn-card .btn:hover { background: var(--gray-100); }
+
+  /* Founders */
+  .founders-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 64px;
+    align-items: center;
+    margin-top: 64px;
+  }
+
+  .founders-bullets {
+    list-style: none;
+    margin: 0 0 28px;
+    padding: 0;
+  }
+
+  .founders-bullets li {
+    font-size: 14px;
+    color: var(--gray-700);
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .founders-bullets .check {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(13,13,13,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .founders-bullets .check svg { width: 12px; height: 12px; }
+
+  .founders-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .founders-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 28px;
+    border-radius: 20px;
+    background: var(--gray-50);
+    border: 1px solid var(--border-light);
+  }
+
+  .founders-stat {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+  }
+
+  .founders-stat .label {
+    font-size: 13px;
+    color: var(--muted-foreground);
+  }
+
+  .founders-stat .value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--gray-950);
+    letter-spacing: -0.01em;
+  }
+
+  /* CTA */
+  .cta-section {
+    text-align: center;
+    padding: 120px 40px 160px;
+    position: relative;
+  }
+
+  .cta-section .cta-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 100%, rgba(59,130,246,0.07), transparent),
+      radial-gradient(ellipse 50% 40% at 30% 80%, rgba(249,115,22,0.05), transparent),
+      radial-gradient(ellipse 50% 40% at 70% 20%, rgba(129,140,248,0.04), transparent);
+    pointer-events: none;
+  }
+
+  .cta-section h2 {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .cta-section p {
+    font-size: 18px;
+    color: var(--muted-foreground);
+    max-width: 480px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+    position: relative;
+  }
+
+  .final-cta-dual {
+    max-width: 880px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 20px;
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+    background: white;
+    text-align: left;
+  }
+
+  .final-cta-card {
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .final-cta-card + .final-cta-card {
+    border-left: 1px solid var(--border-light);
+    background: var(--gray-50);
+  }
+
+  .final-cta-card h3 {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+    color: var(--gray-950);
+  }
+
+  .final-cta-card p {
+    font-size: 15px;
+    color: var(--muted-foreground);
+    line-height: 1.55;
+    margin-bottom: 24px;
+    max-width: 100%;
+  }
+
+  /* Footer */
+  footer {
+    padding: 40px;
+    border-top: 1px solid var(--border-light);
+    text-align: center;
+    font-size: 13px;
+    color: var(--gray-500);
+  }
+
+  footer a {
+    color: var(--gray-500);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  footer a:hover { color: var(--gray-950); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .framework-grid { grid-template-columns: 1fr; }
+    .steps-grid { grid-template-columns: 1fr; }
+    [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+    section { padding: 80px 24px; }
+    .section-title { font-size: 36px; }
+    .learn-card { grid-template-columns: 1fr; padding: 32px; gap: 24px; }
+    .learn-card h3 { font-size: 22px; }
+    .founders-grid { grid-template-columns: 1fr; gap: 40px; }
+    .final-cta-dual { grid-template-columns: 1fr; }
+    .final-cta-card + .final-cta-card { border-left: none; border-top: 1px solid var(--border-light); }
+    .final-cta-card { padding: 36px 28px; }
+  }
+
+  @media (max-width: 600px) {
+    .section-title { font-size: 28px; }
+    .cta-section h2 { font-size: 28px; }
+    .cta-section { padding: 80px 24px 120px; }
+    footer { padding: 32px 24px; }
+    .framework-platform { font-size: 12px; padding: 16px 20px; }
+    .framework-platform .platform-pill { font-size: 11px; padding: 3px 10px; }
+    .founders-visual { padding: 20px; }
+    .founders-stat { padding: 12px 16px; }
+    .founders-stat .label { font-size: 12px; }
+    .founders-stat .value { font-size: 16px; }
+  }
+</style>
+{% endblock %}
+{% block body %}
+
+{% include "nav-startups.njk" %}
+
+<!-- ═══════════════════════════════════════════
+     HERO — THE PITCH
+     ═══════════════════════════════════════════ -->
+
+<section style="padding-top: 100px; padding-bottom: 40px; text-align: center;">
+  <div class="reveal">
+    <div class="section-label">For startups</div>
+    <h2 class="section-title" style="font-size: 52px; max-width: 800px; margin: 0 auto 24px;">Your AI app has a ceiling.<br>Break it with Houston.</h2>
+    <p class="section-subtitle" style="max-width: 560px; margin: 0 auto 40px;">You added AI to your product. It generates text. But every edge case still needs a human. You're building a traditional app with a chat window bolted on.</p>
+    <div style="display: flex; gap: 12px; justify-content: center;">
+      <a href="mailto:hello@gethouston.ai" class="btn btn-primary btn-lg">Get in touch</a>
+      <a href="../vision/index.html" class="btn btn-secondary btn-lg">Read the thesis</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     PROBLEM → SOLUTION (visual side-by-side)
+     ═══════════════════════════════════════════ -->
+
+<section id="problem" style="padding-top: 40px; padding-bottom: 60px;">
+  <div class="reveal" style="text-align: center; margin-bottom: 64px;">
+    <h2 class="section-title">Three problems. Three fixes.</h2>
+    <p class="section-subtitle" style="margin: 0 auto;">Every AI app hits the same walls. Houston breaks through all three.</p>
+  </div>
+
+  <!-- Problem/Solution 1 -->
+  <div class="reveal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: white;">
+      <div style="font-size: 11px; font-weight: 500; color: var(--gray-400); margin-bottom: 12px;">The problem</div>
+      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">Edge cases kill you</h3>
+      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">You code for the happy path. A weird input shows up. The AI can't handle it because you didn't write a rule for it. A human steps in. Every. Single. Time.</p>
+    </div>
+    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--gray-50);">
+      <div style="font-size: 11px; font-weight: 500; color: var(--gray-950); margin-bottom: 12px;">With Houston</div>
+      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">Edge cases handled at runtime</h3>
+      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">The AI reads context, makes judgment calls, handles the unexpected. You stop coding rules. The model reasons through them. Your product gets smarter, not bigger.</p>
+    </div>
+  </div>
+
+  <!-- Problem/Solution 2 -->
+  <div class="reveal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: white;">
+      <div style="font-size: 11px; font-weight: 500; color: var(--gray-400); margin-bottom: 12px;">The problem</div>
+      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">Integrations eat your time</h3>
+      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">Every customer wants Slack, then Salesforce, then QuickBooks. Each one is a new API, a new auth flow, a new thing to maintain. You become an integration company.</p>
+    </div>
+    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--gray-50);">
+      <div style="font-size: 11px; font-weight: 500; color: var(--gray-950); margin-bottom: 12px;">With Houston</div>
+      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">1000+ tools. Zero integration code.</h3>
+      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">Composio gives your agents Gmail, Slack, QuickBooks, Salesforce, and 1000+ more. The AI decides which tool to use and when. You never write another OAuth flow.</p>
+    </div>
+  </div>
+
+  <!-- Problem/Solution 3 -->
+  <div class="reveal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 48px;">
+    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: white;">
+      <div style="font-size: 11px; font-weight: 500; color: var(--gray-400); margin-bottom: 12px;">The problem</div>
+      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">Customization doesn't scale</h3>
+      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">Customer A wants the dashboard one way. Customer B wants different fields. You add feature flags, config panels, admin settings. The codebase bloats. Every customer is a fork in your head.</p>
+    </div>
+    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--gray-50);">
+      <div style="font-size: 11px; font-weight: 500; color: var(--gray-950); margin-bottom: 12px;">With Houston</div>
+      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">One product. Infinite versions.</h3>
+      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">Each customer's AI adapts the workspace to their data, their language, their workflows. No forks. No feature flags. You ship one product. They each get theirs.</p>
+    </div>
+  </div>
+
+  <div class="learn-card reveal">
+    <div>
+      <div class="eyebrow">The full thesis</div>
+      <h3>Ship the impossible.</h3>
+      <p>An essay on why every workspace is about to be rebuilt, what AI-native actually means, and why the ceiling exists. The idea behind Houston.</p>
+    </div>
+    <a class="btn btn-lg" href="../vision/index.html">Read the essay</a>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     WHAT YOU GET
+     ═══════════════════════════════════════════ -->
+
+<section style="padding-top: 60px; padding-bottom: 60px;">
+  <div class="founders-grid reveal" style="margin-top: 0;">
+    <div class="founders-copy">
+      <div class="section-label">What you get</div>
+      <h2 class="section-title" style="font-size: 36px;">A complete AI-native app. Build on it. Ship it as yours.</h2>
+      <ul class="founders-bullets">
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Desktop app with chat, kanban board, and file manager
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Agent runtime that executes tasks, not just generates text
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          1000+ integrations via Composio, no code required
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Memory, skills, scheduling, Slack sync built in
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          Your brand, your product, your customers, your moat
+        </li>
+        <li>
+          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
+          MIT licensed. Free forever. Hosting available when you scale
+        </li>
+      </ul>
+    </div>
+    <div class="founders-visual">
+      <div class="founders-stat">
+        <div class="label">Time to first working prototype</div>
+        <div class="value">A weekend</div>
+      </div>
+      <div class="founders-stat">
+        <div class="label">React packages ready to use</div>
+        <div class="value">11</div>
+      </div>
+      <div class="founders-stat">
+        <div class="label">Rust crates powering the engine</div>
+        <div class="value">8</div>
+      </div>
+      <div class="founders-stat">
+        <div class="label">Integrations out of the box</div>
+        <div class="value">1000+</div>
+      </div>
+      <div class="founders-stat">
+        <div class="label">License</div>
+        <div class="value">MIT</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     THE FRAMEWORK
+     ═══════════════════════════════════════════ -->
+
+<section id="framework" style="padding-top: 60px;">
+  <div class="reveal">
+    <div class="section-label">The framework</div>
+    <h2 class="section-title">11 React packages. 8 Rust crates.<br>One command to start.</h2>
+    <p class="section-subtitle">Everything you need to build an AI-native desktop app. The UI, the engine, and the agent runtime. Production-grade, MIT licensed.</p>
+  </div>
+
+  <div class="framework-grid reveal">
+    <div class="framework-card card-ui">
+      <div class="framework-card-head">
+        <div class="framework-card-title">@houston-ai/*</div>
+        <div class="framework-card-count">
+          11
+          <span class="unit">React packages</span>
+        </div>
+      </div>
+      <h3>The UI library</h3>
+      <p class="framework-card-desc">Production-grade React components for chat, kanban, layout, skills, routines, memory and more. Matching design system out of the box.</p>
+      <ul class="framework-pill-list">
+        <li>core</li>
+        <li>chat</li>
+        <li>board</li>
+        <li>layout</li>
+        <li>connections</li>
+        <li>events</li>
+        <li>memory</li>
+        <li>routines</li>
+        <li>skills</li>
+        <li>review</li>
+        <li>agent</li>
+      </ul>
+    </div>
+
+    <div class="framework-card card-engine">
+      <div class="framework-card-head">
+        <div class="framework-card-title">houston-*</div>
+        <div class="framework-card-count">
+          8
+          <span class="unit">Rust crates</span>
+        </div>
+      </div>
+      <h3>The engine</h3>
+      <p class="framework-card-desc">Rust crates that handle agent sessions, persistence, channel adapters, scheduling and the Tauri integration. The full runtime.</p>
+      <ul class="framework-pill-list">
+        <li>sessions</li>
+        <li>db</li>
+        <li>channels</li>
+        <li>scheduler</li>
+        <li>events</li>
+        <li>memory</li>
+        <li>tauri</li>
+        <li>cli</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="framework-platform reveal" style="margin-top: 24px;">
+    <span class="label">Runs on</span>
+    <span class="platform-pill">Tauri 2</span>
+    <span class="platform-pill">Claude Code</span>
+    <span class="platform-pill">SQLite</span>
+    <span class="platform-pill">macOS</span>
+  </div>
+
+  <div class="learn-card reveal" style="margin-top: 48px;">
+    <div>
+      <div class="eyebrow">The guide</div>
+      <h3>Learn Houston in 8 chapters.</h3>
+      <p>The mental model, the project layout, and how to ship your first agent. Written for people who've built with AI before.</p>
+    </div>
+    <a class="btn btn-lg" href="../learn/index.html">Start reading</a>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     CTA
+     ═══════════════════════════════════════════ -->
+
+<div class="cta-section">
+  <div class="cta-bg"></div>
+  <div class="reveal">
+    <h2>People want the impossible. Ship it.</h2>
+    <p>The framework is free. The opportunity is now. Let's talk about what you're building.</p>
+    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 40px;">
+      <a href="mailto:hello@gethouston.ai" class="btn btn-primary btn-lg">Get in touch</a>
+      <a href="https://github.com/ja-818/houston" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg">View on GitHub</a>
+    </div>
+  </div>
+</div>
+
+{% include "footer-startups.njk" %}
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+
+{% endblock %}

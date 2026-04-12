@@ -1,0 +1,11 @@
+# Cloudflare Pages headers
+# Keep HTML and CSS short-cached so updates show up fast
+
+/*.html
+  Cache-Control: public, max-age=60, must-revalidate
+
+/*.css
+  Cache-Control: public, max-age=60, must-revalidate
+
+/
+  Cache-Control: public, max-age=60, must-revalidate

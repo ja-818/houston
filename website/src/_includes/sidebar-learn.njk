@@ -1,0 +1,52 @@
+{# Learn sidebar navigation. Set `activeChapter` in front matter to highlight the current page.
+   Values: "overview", "01", "02", "03", "04", "05", "06", "07", "08" #}
+<aside class="sidebar">
+  <div class="sidebar-label">Learn</div>
+  <ul class="sidebar-nav">
+    <li>
+      <a href="index.html"{% if activeChapter == "overview" %} class="active"{% endif %}>
+        <span class="num">—</span>Overview
+      </a>
+    </li>
+    <li>
+      <a href="01-the-shift.html"{% if activeChapter == "01" %} class="active"{% endif %}>
+        <span class="num">01</span>The mental shift
+      </a>
+    </li>
+    <li>
+      <a href="02-symmetric-participation.html"{% if activeChapter == "02" %} class="active"{% endif %}>
+        <span class="num">02</span>Humans and AI, as equals
+      </a>
+    </li>
+    <li>
+      <a href="03-pages-and-components.html"{% if activeChapter == "03" %} class="active"{% endif %}>
+        <span class="num">03</span>Pages and components
+      </a>
+    </li>
+    <li>
+      <a href="04-teaching-the-app.html"{% if activeChapter == "04" %} class="active"{% endif %}>
+        <span class="num">04</span>Teaching, not configuring
+      </a>
+    </li>
+    <li>
+      <a href="05-code-at-runtime.html"{% if activeChapter == "05" %} class="active"{% endif %}>
+        <span class="num">05</span>Edge cases at runtime
+      </a>
+    </li>
+    <li>
+      <a href="06-showing-the-user.html"{% if activeChapter == "06" %} class="active"{% endif %}>
+        <span class="num">06</span>Showing, not driving
+      </a>
+    </li>
+    <li>
+      <a href="07-building.html"{% if activeChapter == "07" %} class="active"{% endif %}>
+        <span class="num">07</span>Building a Houston app
+      </a>
+    </li>
+    <li>
+      <a href="08-what-this-is-not.html"{% if activeChapter == "08" %} class="active"{% endif %}>
+        <span class="num">08</span>What Houston isn't
+      </a>
+    </li>
+  </ul>
+</aside>

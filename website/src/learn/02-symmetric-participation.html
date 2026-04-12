@@ -1,0 +1,163 @@
+---
+activeChapter: "02"
+rootPath: "../"
+learnPath: "index.html"
+visionPath: "../vision/index.html"
+permalink: "learn/02-symmetric-participation.html"
+---
+{% extends "base.njk" %}
+{% block title %}Humans and AI, as equals — Learn Houston{% endblock %}
+{% block meta %}
+<meta name="description" content="The one architectural decision that makes everything else possible.">
+{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="style.css?v=3">
+{% endblock %}
+{% block body %}
+    {% include "nav-docs.njk" %}
+
+    <div class="layout">
+      {% include "sidebar-learn.njk" %}
+
+      <main class="content">
+        <div class="content-label">Chapter 02</div>
+        <h1>Humans and AI, as equals.</h1>
+        <p class="lead">
+          One decision about how the app stores and shares state is what makes
+          everything else in Houston possible.
+        </p>
+
+        <div class="toc">
+          <div class="toc-label">On this page</div>
+          <ol>
+            <li><a href="#two-users">Two kinds of users</a></li>
+            <li><a href="#shared">The shared workspace</a></li>
+            <li><a href="#equal">What "equal" actually means</a></li>
+            <li><a href="#why">Why this decision matters</a></li>
+            <li><a href="#stays">What stays the same</a></li>
+          </ol>
+        </div>
+
+        <h2 id="two-users">Two kinds of users</h2>
+        <p>
+          In a Houston app, the user isn't just the human. It's the human and
+          the AI, both.
+        </p>
+        <p>
+          They use the same app. They see the same data. They take the same
+          actions.
+        </p>
+        <p>
+          Neither has powers the other doesn't have.
+        </p>
+
+        <h2 id="shared">The shared workspace</h2>
+        <p>
+          Houston stores everything in files. A folder on the user's computer.
+          Not a hidden database. Not a server.
+        </p>
+
+        <div class="tree">
+<span class="dir">~/Documents/Houston/MyWorkspace/MyAgent/</span>
+  <span class="dir">.houston/</span>
+    clients/
+      jdoe.json            <span class="comment"># one file per client</span>
+      acme.json
+    invoices/
+      inv-2026-001.json
+    pages/
+      client-detail/
+        page.json          <span class="comment"># what the page looks like</span>
+        prompt.seed.md     <span class="comment"># how the AI should handle it</span>
+        prompt.local.md    <span class="comment"># learned rules</span>
+  CLAUDE.md                <span class="comment"># agent instructions</span></div>
+
+        <p>
+          Both the human and the AI can read these files. Both can write them.
+        </p>
+        <p>
+          When the human creates a client through a form, a file is written.
+          When the AI creates a client from a chat message, a file is written.
+        </p>
+        <p>
+          Same file. Same folder. Same format.
+        </p>
+
+        <div class="callout callout-info">
+          <div class="callout-label">Reactivity is built in</div>
+          <p>
+            When either side changes a file, the other side sees the change
+            instantly. Houston uses a file watcher that invalidates the UI and
+            re-renders. You don't have to wire sync yourself.
+          </p>
+        </div>
+
+        <h2 id="equal">What "equal" actually means</h2>
+        <p>
+          In traditional apps, the AI is a guest. It gets access through an
+          API. The app decides what it can see and what it can touch. The app
+          is the host, the AI is the visitor.
+        </p>
+        <p>
+          In Houston, there's no host-guest distinction. The AI and the human
+          both work on the same workspace at the same level.
+        </p>
+        <p>
+          The AI isn't calling your functions. It's operating your app.
+        </p>
+
+        <h2 id="why">Why this decision matters</h2>
+        <p>
+          This single decision — symmetric access to shared state — is what
+          makes everything else in Houston possible.
+        </p>
+        <p>Because of it:</p>
+        <ul>
+          <li>The AI can take any action the UI can take.</li>
+          <li>The UI reflects anything the AI does, in real time.</li>
+          <li>
+            There's no "sync" problem, because there's one source of truth.
+          </li>
+          <li>
+            The human can pick up where the AI left off, because they're
+            already working on the same files.
+          </li>
+        </ul>
+        <p>
+          Take this away and none of the rest is possible.
+        </p>
+
+        <h2 id="stays">What stays the same</h2>
+        <p>
+          You still write React. You still write TypeScript. You still write
+          Rust if you want a backend. Houston is built on the tools you
+          already know.
+        </p>
+        <p>
+          What changes is what you're designing.
+        </p>
+        <p>
+          You stop designing workflows. You start designing capabilities.
+        </p>
+        <p>
+          You stop asking "what screen does the user click through?" and start
+          asking "what files does my app care about, and what can the AI do
+          with them?"
+        </p>
+        <p>
+          Your app is a set of primitives. Your users' AI composes them.
+        </p>
+
+        <div class="pager">
+          <a href="01-the-shift.html">
+            <div class="pager-label">← Previous</div>
+            <div class="pager-title">The mental shift</div>
+          </a>
+          <a href="03-pages-and-components.html" class="next">
+            <div class="pager-label">Next →</div>
+            <div class="pager-title">Pages and components</div>
+          </a>
+        </div>
+      </main>
+    </div>
+  {% endblock %}
