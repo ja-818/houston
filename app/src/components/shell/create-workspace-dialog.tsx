@@ -89,9 +89,12 @@ export function CreateAgentDialog() {
     await installAgent(listing);
   };
 
-  const handleInstallFromGithub = async (url: string): Promise<string> => {
+  const handleImportFromGithub = async (url: string): Promise<string> => {
     const agentId = await tauriStore.installFromGithub(url);
     await useAgentCatalogStore.getState().loadConfigs();
+    // Auto-select the imported agent and go straight to naming
+    setSelectedConfigId(agentId);
+    setStep(2);
     return agentId;
   };
 
@@ -165,7 +168,7 @@ export function CreateAgentDialog() {
                 onInstall={handleInstall}
               />
             ) : (
-              <GithubImportView onInstall={handleInstallFromGithub} />
+              <GithubImportView onImport={handleImportFromGithub} />
             )}
           </>
         ) : (

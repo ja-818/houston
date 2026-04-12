@@ -168,7 +168,12 @@ async fn fetch_github_raw(
     let url = format!(
         "https://raw.githubusercontent.com/{owner}/{repo}/main/{filename}"
     );
-    let resp = reqwest::get(&url)
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(&url)
+        .header("Cache-Control", "no-cache")
+        .header("Pragma", "no-cache")
+        .send()
         .await
         .map_err(|e| format!("Failed to fetch {filename}: {e}"))?;
     if resp.status() == reqwest::StatusCode::NOT_FOUND {
