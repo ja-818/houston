@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Houston — Connecting to Slack</title>
+  <style>
+    body {
+      font-family: ui-sans-serif, -apple-system, system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #fafafa;
+      color: #0d0d0d;
+    }
+    .card {
+      text-align: center;
+      padding: 60px 40px;
+    }
+    h1 { font-size: 20px; font-weight: 500; margin: 0 0 8px; }
+    p { font-size: 14px; color: #666; margin: 0; }
+  </style>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    if (code) {
+      const local = "http://127.0.0.1:28957/slack/callback?code=" + encodeURIComponent(code) + (state ? "&state=" + encodeURIComponent(state) : "");
+      window.location.replace(local);
+    }
+  </script>
+</head>
+<body>
+  <div class="card">
+    <h1>Connecting to Houston...</h1>
+    <p>If you're not redirected automatically, make sure Houston is running on your computer.</p>
+  </div>
+</body>
+</html>

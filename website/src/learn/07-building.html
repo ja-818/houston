@@ -1,0 +1,211 @@
+---
+activeChapter: "07"
+rootPath: "../"
+learnPath: "index.html"
+visionPath: "../vision/index.html"
+permalink: "learn/07-building.html"
+---
+{% extends "base.njk" %}
+{% block title %}Building a Houston app — Learn Houston{% endblock %}
+{% block meta %}
+<meta name="description" content="The shape of a Houston project, and how to ship one.">
+{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="style.css?v=3">
+{% endblock %}
+{% block body %}
+    {% include "nav-docs.njk" %}
+
+    <div class="layout">
+      {% include "sidebar-learn.njk" %}
+
+      <main class="content">
+        <div class="content-label">Chapter 07</div>
+        <h1>Building a Houston app.</h1>
+        <p class="lead">
+          A practical look at what you actually write when you build a
+          Houston app: the project shape, custom components, and how your
+          own Claude Code can help you.
+        </p>
+
+        <div class="toc">
+          <div class="toc-label">On this page</div>
+          <ol>
+            <li><a href="#start">Start with scaffolding</a></li>
+            <li><a href="#shape">What a Houston app actually is</a></li>
+            <li><a href="#component">Writing a custom component</a></li>
+            <li><a href="#skill">The build-houston-component skill</a></li>
+            <li><a href="#ship">Shipping and updates</a></li>
+          </ol>
+        </div>
+
+        <h2 id="start">Start with scaffolding</h2>
+        <p>Create a new project with one command:</p>
+
+        <pre><code>pnpm create houston-agent my-app</code></pre>
+
+        <p>
+          This gives you a project that runs. It has a manifest, a couple of
+          seed pages, default prompts, and a few common components already
+          wired up.
+        </p>
+        <p>
+          You don't start with a blank folder. You start with something the
+          user can open and use.
+        </p>
+
+        <h2 id="shape">What a Houston app actually is</h2>
+        <p>
+          A Houston app isn't a compiled binary. It's an agent definition —
+          a folder you publish.
+        </p>
+
+        <div class="tree">
+<span class="dir">my-app/</span>
+  manifest.json      <span class="comment"># what the agent is, what tabs it has</span>
+  <span class="dir">pages/</span>
+    dashboard/
+      page.json
+      prompt.seed.md
+    clients/
+      page.json
+      prompt.seed.md
+  <span class="dir">components/</span>       <span class="comment"># your custom React components</span>
+    TaxSummary.tsx
+    TaxSummary.schema.ts
+  <span class="dir">scripts/</span>          <span class="comment"># defaults that the user's AI can edit</span>
+    export.py
+    rules.json
+  CLAUDE.md          <span class="comment"># agent-wide instructions</span></div>
+
+        <p>
+          Users install your agent into their Houston app. They get the
+          pages, the prompts, the components, and the scripts — all at
+          once. Everything under <code>scripts/</code> becomes the user's
+          starting point, which the user's AI can customize over time.
+        </p>
+
+        <h2 id="component">Writing a custom component</h2>
+        <p>
+          Houston ships with a base set of components (Table, Card, Form,
+          Chart, Kanban, Timeline, Split, Tabs). Most apps don't need more.
+        </p>
+        <p>
+          When you do need more, you write a normal React component. Three
+          things make it a Houston component:
+        </p>
+
+        <ol>
+          <li>
+            <strong>A React component.</strong> Normal TSX. Use any library
+            you like.
+          </li>
+          <li>
+            <strong>A schema.</strong> Declares what props it takes and
+            what data shape it expects.
+          </li>
+          <li>
+            <strong>A description.</strong> A one-line label for the AI's
+            index, plus a "when to use this" doc.
+          </li>
+        </ol>
+
+        <p>You register it with the framework:</p>
+
+        <pre><code>import { registerComponent } from "@houston-ai/core"
+import { TaxSummary } from "./TaxSummary"
+import schema from "./TaxSummary.schema"
+
+registerComponent("TaxSummary", {
+  component: TaxSummary,
+  schema,
+  description: "Annual tax breakdown for a client",
+  whenToUse: "Use when the user wants to see tax totals by year.",
+})</code></pre>
+
+        <p>
+          Once it's registered, your component is available to the AI the
+          same way the base ones are. It shows up in
+          <code>list_available_components()</code>. It can be referenced by
+          action chips. It self-reports its structure at render time.
+        </p>
+
+        <div class="callout callout-warning">
+          <div class="callout-label">The self-reporting contract</div>
+          <p>
+            Your component must report its data bindings and the stable
+            IDs of any items it renders. This is how the AI "sees" what the
+            user is looking at. The framework provides a hook for this;
+            chapter 06 explains why the IDs have to come from the data,
+            not from render position.
+          </p>
+        </div>
+
+        <h2 id="skill">The build-houston-component skill</h2>
+        <p>
+          Houston ships with a Claude Code skill called
+          <code>build-houston-component</code>. When you tell your own
+          Claude Code something like "add a component for rendering a tax
+          summary," the skill walks Claude through the convention.
+        </p>
+        <p>
+          Your AI writes the component. The skill makes sure the schema,
+          the description, the "when to use" doc, and the self-reporting
+          are all in place.
+        </p>
+        <p>This is fractal:</p>
+        <ul>
+          <li><strong>Your Claude Code</strong> builds components at build time.</li>
+          <li><strong>Your users' Claude Code</strong> composes pages out of them at runtime.</li>
+        </ul>
+        <p>
+          Both follow the same conventions. Both are guided by the same
+          contracts. Neither writes code that ends up in a place it
+          shouldn't.
+        </p>
+
+        <h2 id="ship">Shipping and updates</h2>
+        <p>
+          You ship v1 with a set of pages, components, prompts, and
+          scripts. Users install it.
+        </p>
+        <p>
+          Over time, users teach the app. Their
+          <code>prompt.local.md</code> files grow. Scripts get edited for
+          edge cases. Rules accumulate.
+        </p>
+        <p>
+          When you ship v2, your updated seed prompts, new components, and
+          updated script defaults come along.
+        </p>
+        <p>
+          The user's local customizations layer on top. Their teachings
+          don't get overwritten. Their script edits stay.
+        </p>
+        <p>
+          The user gets your updates <em>and</em> keeps what they've built
+          for themselves. Both matter, and the layering protects both.
+        </p>
+
+        <div class="callout callout-success">
+          <div class="callout-label">The rhythm of building</div>
+          <p>
+            Ship a small app. Watch users teach it. See what they ask for
+            repeatedly. Those repeated asks become your v2 defaults —
+            learned from real usage, not guessed at the whiteboard.
+          </p>
+        </div>
+
+        <div class="pager">
+          <a href="06-showing-the-user.html">
+            <div class="pager-label">← Previous</div>
+            <div class="pager-title">Showing, not driving</div>
+          </a>
+          <a href="08-what-this-is-not.html" class="next">
+            <div class="pager-label">Next →</div>
+            <div class="pager-title">What Houston isn't</div>
+          </a>
+        </div>
+      </main>
+    </div>
+  {% endblock %}
