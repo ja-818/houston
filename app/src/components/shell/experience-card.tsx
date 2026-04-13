@@ -3,7 +3,7 @@ import { Button } from "@houston-ai/core";
 import { Download, Check, Sparkles } from "lucide-react";
 import type { AgentConfig, StoreListing } from "../../lib/types";
 import { AgentAvatar } from "./agent-avatar";
-export { AgentAvatar, AgentMiniAvatar, getAgentIcon, getAgentIconColor, getHoustonLogo, isLightColor } from "./agent-avatar";
+export { AgentAvatar, AgentMiniAvatar, HoustonThinkingIndicator, getAgentIcon, getAgentIconColor, getHoustonLogo, isLightColor } from "./agent-avatar";
 
 interface AgentCardProps {
   config: AgentConfig;

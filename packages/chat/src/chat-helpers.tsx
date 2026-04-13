@@ -9,6 +9,7 @@
 import type { ReactNode } from "react";
 import type { ToolEntry } from "./feed-to-messages";
 import { ToolBlock } from "./ai-elements/tool-block";
+import { Shimmer } from "./ai-elements/shimmer";
 
 // Re-export types and conversion for convenient imports
 export type { ToolEntry, ChatMessage } from "./feed-to-messages";
@@ -45,6 +46,8 @@ export function ToolsAndCards({
   isSpecialTool,
   renderToolResult,
 }: ToolsAndCardsProps) {
+  const allDone = isStreaming && tools.length > 0 && tools.every((t) => t.result);
+
   return (
     <div className="space-y-2 mb-4">
       {tools.map((tool, i) => {
@@ -69,6 +72,11 @@ export function ToolsAndCards({
           />
         );
       })}
+      {allDone && (
+        <div className="text-sm text-muted-foreground">
+          <Shimmer duration={1.5}>Processing...</Shimmer>
+        </div>
+      )}
     </div>
   );
 }

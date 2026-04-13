@@ -21,10 +21,10 @@ import { tauriChat } from "../lib/tauri";
 import { useMissionControl } from "./use-mission-control";
 import { MissionControlNewDialog } from "./mission-control-new-dialog";
 import { useDetailPanelContainer } from "./shell/detail-panel-context";
-import { AgentMiniAvatar } from "./shell/experience-card";
+import { AgentMiniAvatar, HoustonThinkingIndicator } from "./shell/experience-card";
 
 const MC_COLUMNS: KanbanColumnConfig[] = [
-  { id: "running", label: "Running", statuses: ["running", "queue"] },
+  { id: "running", label: "Running", statuses: ["running"] },
   { id: "needs_you", label: "Needs you", statuses: ["needs_you"] },
   { id: "done", label: "Done", statuses: ["done", "cancelled"] },
 ];
@@ -191,16 +191,7 @@ export function Dashboard() {
               <img src={selectedLogo} alt="Houston" className="size-6 object-contain" />
             </span>
           }
-          thinkingIndicator={
-            <div className="py-2 flex items-center gap-2">
-              <span
-                className="size-6 rounded-full flex items-center justify-center animate-pulse"
-                style={{ backgroundColor: selectedColor ?? "#e5e5e5" }}
-              >
-                <img src={selectedLogo} alt="" className="size-3.5 object-contain" />
-              </span>
-            </div>
-          }
+          thinkingIndicator={<HoustonThinkingIndicator />}
         />
       </div>
 

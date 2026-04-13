@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanItem } from "@houston-ai/board";
 import type { FeedItem } from "@houston-ai/chat";
-import { Button } from "@houston-ai/core";
-import { Plus, Terminal } from "lucide-react";
+import { Terminal } from "lucide-react";
 
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
@@ -44,6 +43,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   const updateActivity = useUpdateActivity(path);
   const createActivity = useCreateActivity(path);
   const setOnStartMission = useUIStore((s) => s.setOnStartMission);
+  const setBoardActions = useUIStore((s) => s.setBoardActions);
   const setMissionPanelOpen = useUIStore((s) => s.setMissionPanelOpen);
   const missionPanelOpen = useUIStore((s) => s.missionPanelOpen);
   const addToast = useUIStore((s) => s.addToast);
@@ -85,14 +85,15 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   const openerRef = useRef<(() => void) | null>(null);
 
   const items: KanbanItem[] = (rawItems ?? []).map((t) => {
-    const modeName = agentModes?.find((m) => m.id === t.agent)?.name;
+    const mode = agentModes?.find((m) => m.id === t.agent);
     return {
       id: t.id,
       title: t.title,
-      subtitle: t.description,
+      description: t.description,
       status: t.status,
       updatedAt: t.updated_at ?? new Date().toISOString(),
-      group: modeName ?? (t.routine_id ? "routine" : undefined),
+      group: agent.name,
+      tags: mode ? [mode.name] : (t.routine_id ? ["Routine"] : undefined),
       metadata: {
         ...(t.session_key ? { sessionKey: t.session_key } : {}),
         ...(t.routine_id ? { routineId: t.routine_id } : {}),
@@ -145,15 +146,35 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   const handleOpenerReady = useCallback(
     (opener: () => void) => {
       openerRef.current = opener;
-      setOnStartMission(opener);
+      // Default "New mission" button — always registered
+      setOnStartMission(() => {
+        if (agentModes?.length) setPendingAgentMode(agentModes[0].id);
+        opener();
+      });
+      // Extra board actions for additional agent modes (skip the first — that's the default button)
+      if (agentModes && agentModes.length > 1) {
+        setBoardActions(
+          agentModes.slice(1).map((mode) => ({
+            id: mode.id,
+            label: mode.createLabel,
+            onClick: () => {
+              setPendingAgentMode(mode.id);
+              opener();
+            },
+          })),
+        );
+      }
     },
-    [setOnStartMission],
+    [setOnStartMission, setBoardActions, agentModes],
   );
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => setOnStartMission(null);
-  }, [setOnStartMission]);
+    return () => {
+      setOnStartMission(null);
+      setBoardActions([]);
+    };
+  }, [setOnStartMission, setBoardActions]);
 
   const loadHistory = useCallback(
     async (sessionKey: string) => {
@@ -296,25 +317,6 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {agentModes && agentModes.length > 0 && (
-        <div className="flex items-center gap-2 px-4 py-2.5 shrink-0">
-          {agentModes.map((mode) => (
-            <Button
-              key={mode.id}
-              variant="secondary"
-              size="sm"
-              className="rounded-full gap-1.5"
-              onClick={() => {
-                setPendingAgentMode(mode.id);
-                openerRef.current?.();
-              }}
-            >
-              <Plus className="size-3.5" />
-              {mode.createLabel}
-            </Button>
-          ))}
-        </div>
-      )}
     <AIBoard
       items={items}
       selectedId={selectedId}

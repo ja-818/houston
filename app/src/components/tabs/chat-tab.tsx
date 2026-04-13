@@ -17,7 +17,9 @@ import {
   ComposioLinkCard,
   parseComposioToolkitFromHref,
 } from "../composio-link-card";
+import { analytics } from "../../lib/analytics";
 import type { TabProps } from "../../lib/types";
+import { HoustonThinkingIndicator } from "../shell/experience-card";
 
 export default function ChatTab({ agent }: TabProps) {
   const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(agent.folderPath);
@@ -105,6 +107,7 @@ export default function ChatTab({ agent }: TabProps) {
         ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
         : text;
       pushFeedItem(agentPath, sessionKey, { feed_type: "user_message", data: visible });
+      analytics.track("chat_message_sent");
       // Clear composer immediately so the user sees the send.
       setComposerText("");
       setComposerFiles([]);
@@ -138,6 +141,7 @@ export default function ChatTab({ agent }: TabProps) {
         isSpecialTool={isSpecialTool}
         renderToolResult={renderToolResult}
         renderTurnSummary={renderTurnSummary}
+        thinkingIndicator={<HoustonThinkingIndicator />}
         placeholder="Ask anything..."
         value={composerText}
         onValueChange={setComposerText}

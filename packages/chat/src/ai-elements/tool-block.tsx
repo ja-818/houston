@@ -120,15 +120,15 @@ export const ToolBlock = memo(
         onOpenChange={handleOpenChange}
       >
         <CollapsibleTrigger
-          className="flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground"
+          className="flex w-full items-start gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground"
         >
-          <Icon className="size-4" />
+          <Icon className="size-4 mt-0.5 shrink-0" />
           {isActive ? (
             <Shimmer duration={1}>
               {`${getLabel(tool.name, false, toolLabels)}...`}
             </Shimmer>
           ) : (
-            <p>
+            <p className="min-w-0 truncate">
               {getLabel(tool.name, isDone, toolLabels)}
               {detail && (
                 <span className="text-muted-foreground/50"> — {detail}</span>
@@ -137,7 +137,7 @@ export const ToolBlock = memo(
           )}
           <ChevronDownIcon
             className={cn(
-              "size-4 transition-transform",
+              "size-4 mt-0.5 shrink-0 transition-transform",
               isOpen ? "rotate-180" : "rotate-0",
             )}
           />
