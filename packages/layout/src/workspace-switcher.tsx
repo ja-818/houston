@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Plus, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -14,8 +13,6 @@ export interface WorkspaceSwitcherProps {
   currentName: string;
   onSwitch: (workspaceId: string) => void;
   onCreate: () => void;
-  /** Optional trailing element (e.g., settings button) */
-  trailing?: ReactNode;
 }
 
 export function WorkspaceSwitcher({
@@ -24,7 +21,6 @@ export function WorkspaceSwitcher({
   currentName,
   onSwitch,
   onCreate,
-  trailing,
 }: WorkspaceSwitcherProps) {
   return (
     <div
@@ -55,8 +51,6 @@ export function WorkspaceSwitcher({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      {trailing}
     </div>
   );
 }

@@ -36,29 +36,29 @@
 
 /* Dark mode overrides — same vars, different values */
 [data-theme="dark"] {
-  --ht-background: #141414;
+  --ht-background: #1e1e1e;
   --ht-foreground: #e5e5e5;
-  --ht-card: #1e1e1e;
+  --ht-card: #282828;
   --ht-card-fg: #e5e5e5;
-  --ht-popover: #1e1e1e;
+  --ht-popover: #282828;
   --ht-popover-fg: #e5e5e5;
   --ht-primary: #e5e5e5;
-  --ht-primary-fg: #0a0a0a;
-  --ht-secondary: #1a1a1a;
+  --ht-primary-fg: #141414;
+  --ht-secondary: #252525;
   --ht-secondary-fg: #e5e5e5;
-  --ht-muted: #1a1a1a;
-  --ht-muted-fg: #8e8e8e;
+  --ht-muted: #252525;
+  --ht-muted-fg: #9a9a9a;
   --ht-accent: rgba(255, 255, 255, 0.08);
   --ht-accent-fg: #d4d4d4;
   --ht-destructive: #ef4444;
   --ht-destructive-fg: #ffffff;
-  --ht-border: rgba(255, 255, 255, 0.08);
-  --ht-input: #252525;
+  --ht-border: rgba(128, 128, 128, 0.10);
+  --ht-input: #383838;
   --ht-ring: #e5e5e5;
-  --ht-sidebar: #0a0a0a;
+  --ht-sidebar: #171717;
   --ht-sidebar-fg: #e5e5e5;
-  --ht-sidebar-border: rgba(255, 255, 255, 0.06);
-  --ht-sidebar-accent: rgba(255, 255, 255, 0.08);
+  --ht-sidebar-border: rgba(255, 255, 255, 0.08);
+  --ht-sidebar-accent: rgba(255, 255, 255, 0.10);
   --ht-sidebar-accent-fg: #e5e5e5;
   --ht-success: #22c55e;
   --ht-success-fg: #000000;

@@ -17,13 +17,6 @@
 @source "../../node_modules/@houston-ai/skills/src";
 @source "../../node_modules/@houston-ai/agent/src";
 
-/* Houston brand — near-black (default Houston theme) */
-@theme {
-  --color-primary: #0d0d0d;
-  --color-primary-foreground: #ffffff;
-  --color-ring: #0d0d0d;
-}
-
 body {
   margin: 0;
   overflow: hidden;

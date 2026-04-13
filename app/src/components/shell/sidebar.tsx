@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { LayoutDashboard, Blend, Settings } from "lucide-react";
-import { Button, ConfirmDialog } from "@houston-ai/core";
+import { ConfirmDialog } from "@houston-ai/core";
 import { AppSidebar, WorkspaceSwitcher } from "@houston-ai/layout";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useAgentStore } from "../../stores/agents";
@@ -53,6 +53,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
     setCreateWsOpen(true);
   };
 
+
   const handleSelectAgent = (agentId: string) => {
     const agent = agents.find((a) => a.id === agentId);
     if (!agent) return;
@@ -96,15 +97,6 @@ export function Sidebar({ children }: { children: ReactNode }) {
             currentName={currentWorkspace?.name ?? "Select workspace"}
             onSwitch={handleWorkspaceSwitch}
             onCreate={handleCreateWorkspace}
-            trailing={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 flex-shrink-0 rounded-lg"
-              >
-                <Settings className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            }
           />
         }
         navItems={[

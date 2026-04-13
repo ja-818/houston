@@ -41,17 +41,20 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_sentry::init(client));
     }
 
-    // Aptabase analytics — only if app key was provided
-    let aptabase_key = option_env!("APTABASE_APP_KEY").unwrap_or("");
-    if !aptabase_key.is_empty() {
-        builder = builder.plugin(tauri_plugin_aptabase::Builder::new(aptabase_key).build());
-    }
-
     builder
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
+            // Aptabase analytics — needs a Tokio runtime context on the main thread
+            // because the plugin creates an HTTP client (reqwest) during init.
+            // The runtime is leaked so it lives for the entire process lifetime.
+            let aptabase_key = option_env!("APTABASE_APP_KEY").unwrap_or("");
+            if !aptabase_key.is_empty() {
+                let rt = Box::leak(Box::new(tokio::runtime::Runtime::new().expect("aptabase runtime")));
+                let _guard = rt.enter();
+                app.handle().plugin(tauri_plugin_aptabase::Builder::new(aptabase_key).build())?;
+            }
             let houston = houston_tauri::houston_db::db::houston_dir();
             let db_path = houston.join("db").join("houston.db");
 

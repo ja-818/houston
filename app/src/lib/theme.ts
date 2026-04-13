@@ -5,11 +5,13 @@ export type Theme = "light" | "dark";
 const THEME_KEY = "theme";
 
 export function applyTheme(theme: Theme) {
+  const el = document.documentElement;
   if (theme === "dark") {
-    document.documentElement.setAttribute("data-theme", "dark");
+    el.setAttribute("data-theme", "dark");
   } else {
-    document.documentElement.removeAttribute("data-theme");
+    el.removeAttribute("data-theme");
   }
+
 }
 
 export async function loadTheme(): Promise<Theme> {
