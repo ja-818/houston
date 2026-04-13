@@ -1,4 +1,37 @@
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::str::FromStr;
+
+/// Which AI provider backend to use for a session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum Provider {
+    /// Anthropic Claude (via `claude` CLI)
+    #[default]
+    Anthropic,
+    /// OpenAI Codex (via `codex` CLI)
+    OpenAI,
+}
+
+impl fmt::Display for Provider {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Provider::Anthropic => write!(f, "anthropic"),
+            Provider::OpenAI => write!(f, "openai"),
+        }
+    }
+}
+
+impl FromStr for Provider {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "anthropic" | "claude" => Ok(Provider::Anthropic),
+            "openai" | "codex" => Ok(Provider::OpenAI),
+            other => Err(format!("Unknown provider: {other}")),
+        }
+    }
+}
 
 /// Events parsed from Claude's `--output-format stream-json` NDJSON output.
 #[derive(Debug, Clone, Serialize, Deserialize)]

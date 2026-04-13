@@ -121,6 +121,8 @@ pub async fn send_message(
             claude_session_id: None,
         }),
         None,
+        houston_tauri::houston_sessions::Provider::Anthropic,
+        None,
     );
 
     Ok(session_key)

@@ -52,12 +52,14 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
 
 export const tauriWorkspaces = {
   list: () => invoke<Workspace[]>("list_workspaces"),
-  create: (name: string) =>
-    invoke<Workspace>("create_workspace", { name }),
+  create: (name: string, provider?: string, model?: string) =>
+    invoke<Workspace>("create_workspace", { name, provider: provider ?? null, model: model ?? null }),
   delete: (id: string) =>
     invoke<void>("delete_workspace", { id }),
   rename: (id: string, newName: string) =>
     invoke<void>("rename_workspace", { id, new_name: newName }),
+  updateProvider: (id: string, provider: string, model?: string) =>
+    invoke<Workspace>("update_workspace_provider", { id, provider, model: model ?? null }),
 };
 
 export interface CreateAgentResult {
@@ -68,8 +70,10 @@ export interface CreateAgentResult {
 export const tauriAgents = {
   list: (workspaceId: string) =>
     invoke<Agent[]>("list_agents", { workspace_id: workspaceId }),
-  create: (workspaceId: string, name: string, configId: string, color?: string, claudeMd?: string, installedPath?: string, seeds?: Record<string, string>) =>
-    invoke<CreateAgentResult>("create_agent", { workspace_id: workspaceId, name, config_id: configId, color, claude_md: claudeMd, installed_path: installedPath, seeds }),
+  create: (workspaceId: string, name: string, configId: string, color?: string, claudeMd?: string, installedPath?: string, seeds?: Record<string, string>, existingPath?: string) =>
+    invoke<CreateAgentResult>("create_agent", { workspace_id: workspaceId, name, config_id: configId, color, claude_md: claudeMd, installed_path: installedPath, seeds, existing_path: existingPath ?? null }),
+  pickDirectory: () =>
+    invoke<string | null>("pick_directory"),
   delete: (workspaceId: string, id: string) =>
     invoke<void>("delete_agent", { workspace_id: workspaceId, id }),
   rename: (workspaceId: string, id: string, newName: string) =>
@@ -77,8 +81,19 @@ export const tauriAgents = {
 };
 
 export const tauriChat = {
-  send: (agentPath: string, prompt: string, sessionKey: string) =>
-    invoke<string>("send_message", { agent_path: agentPath, prompt, session_key: sessionKey }),
+  send: (
+    agentPath: string,
+    prompt: string,
+    sessionKey: string,
+    opts?: { promptFile?: string; workingDirOverride?: string },
+  ) =>
+    invoke<string>("send_message", {
+      agent_path: agentPath,
+      prompt,
+      session_key: sessionKey,
+      prompt_file: opts?.promptFile ?? null,
+      working_dir_override: opts?.workingDirOverride ?? null,
+    }),
   startOnboarding: (agentPath: string, sessionKey: string) =>
     invoke<void>("start_onboarding_session", { agent_path: agentPath, session_key: sessionKey }),
   stop: (agentPath: string, sessionKey: string) =>
@@ -375,22 +390,54 @@ export const tauriActivity = {
       description?: string;
       status: string;
       session_key?: string;
+      agent?: string;
+      worktree_path?: string;
       routine_id?: string;
       routine_run_id?: string;
       updated_at?: string;
     }>>("list_activity", { agent_path: agentPath }),
-  create: (agentPath: string, title: string, description?: string) =>
-    invoke<{ id: string; title: string; status: string }>(
+  create: (
+    agentPath: string,
+    title: string,
+    description?: string,
+    agent?: string,
+    worktreePath?: string,
+  ) =>
+    invoke<{ id: string; title: string; status: string; agent?: string; worktree_path?: string }>(
       "create_activity",
-      { agent_path: agentPath, title, description },
+      { agent_path: agentPath, title, description, agent, worktree_path: worktreePath },
     ),
   update: (
     agentPath: string,
     activityId: string,
-    update: { status?: string; title?: string; description?: string },
+    update: { status?: string; title?: string; description?: string; agent?: string; worktree_path?: string | null },
   ) => invoke<void>("update_activity", { agent_path: agentPath, activity_id: activityId, updates: update }),
   delete: (agentPath: string, activityId: string) =>
     invoke<void>("delete_activity", { agent_path: agentPath, activity_id: activityId }),
+};
+
+export const tauriWorktree = {
+  create: (repoPath: string, name: string, branch?: string) =>
+    invoke<{ path: string; branch: string; is_main: boolean }>(
+      "create_worktree",
+      { repo_path: repoPath, name, branch },
+    ),
+  remove: (repoPath: string, worktreePath: string) =>
+    invoke<void>("remove_worktree", { repo_path: repoPath, worktree_path: worktreePath }),
+  list: (repoPath: string) =>
+    invoke<Array<{ path: string; branch: string; is_main: boolean }>>(
+      "list_worktrees",
+      { repo_path: repoPath },
+    ),
+};
+
+export const tauriTerminal = {
+  open: (path: string, command?: string, terminalApp?: string) =>
+    invoke<void>("open_terminal", {
+      path,
+      command: command ?? null,
+      terminal_app: terminalApp ?? null,
+    }),
 };
 
 export const tauriConfig = {
@@ -405,6 +452,22 @@ export const tauriPreferences = {
     invoke<string | null>("get_preference", { key }),
   set: (key: string, value: string) =>
     invoke<void>("set_preference", { key, value }),
+};
+
+export interface ProviderStatus {
+  provider: string;
+  cli_installed: boolean;
+  authenticated: boolean;
+  cli_name: string;
+}
+
+export const tauriProvider = {
+  checkStatus: (provider: string) =>
+    invoke<ProviderStatus>("check_provider_status", { provider }),
+  getDefault: () =>
+    invoke<string>("get_default_provider"),
+  setDefault: (provider: string) =>
+    invoke<void>("set_default_provider", { provider }),
 };
 
 export const tauriSlack = {

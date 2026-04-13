@@ -12,6 +12,12 @@ pub struct Workspace {
     pub name: String,
     pub is_default: bool,
     pub created_at: String,
+    /// AI provider for this workspace ("anthropic" or "openai").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    /// Default model for this workspace (e.g. "sonnet", "gpt-5.4").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
 }
 
 // --- Helpers ---
@@ -70,6 +76,8 @@ pub fn list_workspaces(
 pub fn create_workspace(
     root: tauri::State<'_, WorkspaceRoot>,
     name: String,
+    provider: Option<String>,
+    model: Option<String>,
 ) -> Result<Workspace, String> {
     let mut workspaces = read_workspaces(&root.0)?;
 
@@ -83,6 +91,8 @@ pub fn create_workspace(
         name: name.clone(),
         is_default: false,
         created_at: now_iso(),
+        provider,
+        model,
     };
 
     // Create the workspace directory with .houston/connections.json
@@ -171,4 +181,25 @@ pub fn delete_workspace(
     }
 
     Ok(())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn update_workspace_provider(
+    root: tauri::State<'_, WorkspaceRoot>,
+    id: String,
+    provider: String,
+    model: Option<String>,
+) -> Result<Workspace, String> {
+    let mut workspaces = read_workspaces(&root.0)?;
+    let ws = workspaces
+        .iter_mut()
+        .find(|w| w.id == id)
+        .ok_or_else(|| format!("Workspace not found: {id}"))?;
+    ws.provider = Some(provider);
+    if let Some(m) = model {
+        ws.model = Some(m);
+    }
+    let updated = ws.clone();
+    write_workspaces(&root.0, &workspaces)?;
+    Ok(updated)
 }

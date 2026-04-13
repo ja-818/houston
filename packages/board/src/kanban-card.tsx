@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { cn, ConfirmDialog } from "@houston-ai/core"
-import { Trash2, CheckCircle } from "lucide-react"
+import { Trash2, CheckCircle, Pencil } from "lucide-react"
 import type { KanbanItem } from "./types"
 
 export interface KanbanCardProps {
@@ -8,6 +8,7 @@ export interface KanbanCardProps {
   onSelect: () => void
   onDelete?: () => void
   onApprove?: () => void
+  onRename?: (newTitle: string) => void
   runningStatuses?: string[]
   approveStatuses?: string[]
   actions?: React.ReactNode
@@ -19,6 +20,7 @@ export function KanbanCard({
   onSelect,
   onDelete,
   onApprove,
+  onRename,
   runningStatuses = ["running"],
   approveStatuses = ["needs_you"],
   actions,
@@ -27,6 +29,13 @@ export function KanbanCard({
   const isRunning = runningStatuses.includes(item.status)
   const isNeedsApproval = approveStatuses.includes(item.status)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState(item.title)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus()
+  }, [editing])
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -36,6 +45,20 @@ export function KanbanCard({
   const confirmDelete = () => {
     onDelete?.()
     setShowConfirm(false)
+  }
+
+  const handleRenameClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditValue(item.title)
+    setEditing(true)
+  }
+
+  const commitRename = () => {
+    const trimmed = editValue.trim()
+    if (trimmed && trimmed !== item.title) {
+      onRename?.(trimmed)
+    }
+    setEditing(false)
   }
 
   return (
@@ -49,25 +72,51 @@ export function KanbanCard({
             : "shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.08)]",
         )}
       >
-        {/* Delete button */}
-        {onDelete && (
-          <button
-            onClick={handleDeleteClick}
-            className="absolute top-2 right-2 p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors duration-200"
-            aria-label={`Delete ${item.title}`}
-          >
-            <Trash2 className="size-3" />
-          </button>
-        )}
+        {/* Action buttons */}
+        <div className="absolute top-2 right-2 flex items-center gap-0.5">
+          {onRename && (
+            <button
+              onClick={handleRenameClick}
+              className="p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-colors duration-200"
+              aria-label={`Rename ${item.title}`}
+            >
+              <Pencil className="size-3" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={handleDeleteClick}
+              className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors duration-200"
+              aria-label={`Delete ${item.title}`}
+            >
+              <Trash2 className="size-3" />
+            </button>
+          )}
+        </div>
 
         {item.group && (
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
             {item.group}
           </span>
         )}
-        <p className="text-sm text-foreground line-clamp-2 pr-5">
-          {item.title}
-        </p>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitRename()
+              if (e.key === "Escape") setEditing(false)
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="text-sm text-foreground bg-transparent border-b border-foreground/20 outline-none w-full pr-5"
+          />
+        ) : (
+          <p className="text-sm text-foreground line-clamp-2 pr-10">
+            {item.title}
+          </p>
+        )}
         {item.description && (
           <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
             {item.description}

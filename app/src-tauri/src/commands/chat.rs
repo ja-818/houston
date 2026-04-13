@@ -1,7 +1,9 @@
 use crate::agent;
 use houston_tauri::agent_sessions::AgentSessionMap;
+use houston_tauri::agent_store::AgentStore;
 use houston_tauri::events::HoustonEvent;
 use houston_tauri::houston_sessions;
+use houston_tauri::houston_sessions::Provider;
 use houston_tauri::paths::expand_tilde;
 use houston_tauri::session_pids::SessionPidMap;
 use houston_tauri::session_runner::PersistOptions;
@@ -13,6 +15,71 @@ use tauri::{Emitter, Manager, State};
 use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
 
+/// Resolved provider + model for a session.
+struct ResolvedProvider {
+    provider: Provider,
+    model: Option<String>,
+}
+
+/// Resolve the AI provider and model for an agent.
+/// Priority: agent config → workspace → defaults.
+fn resolve_provider(agent_dir: &std::path::Path) -> ResolvedProvider {
+    // 1. Check agent-level config
+    if let Ok(config) = AgentStore::new(agent_dir).read_config() {
+        if let Some(ref p) = config.provider {
+            if let Ok(provider) = p.parse::<Provider>() {
+                return ResolvedProvider {
+                    provider,
+                    model: config.model.clone(),
+                };
+            }
+        }
+        // Agent has a model override but no provider — still use it
+        if config.model.is_some() {
+            let ws = resolve_workspace(agent_dir);
+            return ResolvedProvider {
+                provider: ws.provider,
+                model: config.model.clone(),
+            };
+        }
+    }
+    // 2. Check workspace-level
+    let ws = resolve_workspace(agent_dir);
+    ResolvedProvider {
+        provider: ws.provider,
+        model: ws.model,
+    }
+}
+
+/// Read provider + model from the workspace that contains this agent dir.
+fn resolve_workspace(agent_dir: &std::path::Path) -> ResolvedProvider {
+    if let Some(workspace_dir) = agent_dir.parent() {
+        if let Some(workspaces_root) = workspace_dir.parent() {
+            if let Ok(workspaces) = super::workspaces::read_workspaces(workspaces_root) {
+                let ws_name = workspace_dir
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("");
+                if let Some(ws) = workspaces.iter().find(|w| w.name == ws_name) {
+                    let provider = ws
+                        .provider
+                        .as_ref()
+                        .and_then(|p| p.parse::<Provider>().ok())
+                        .unwrap_or(Provider::Anthropic);
+                    return ResolvedProvider {
+                        provider,
+                        model: ws.model.clone(),
+                    };
+                }
+            }
+        }
+    }
+    ResolvedProvider {
+        provider: Provider::Anthropic,
+        model: None,
+    }
+}
+
 #[tauri::command(rename_all = "snake_case")]
 pub async fn send_message(
     app_handle: tauri::AppHandle,
@@ -23,15 +90,26 @@ pub async fn send_message(
     prompt: String,
     session_key: Option<String>,
     source: Option<String>,
+    prompt_file: Option<String>,
+    working_dir_override: Option<String>,
 ) -> Result<String, String> {
-    let working_dir = expand_tilde(&PathBuf::from(&agent_path));
+    let agent_dir = expand_tilde(&PathBuf::from(&agent_path));
+    let working_dir = working_dir_override
+        .as_ref()
+        .map(|p| expand_tilde(&PathBuf::from(p)))
+        .unwrap_or_else(|| agent_dir.clone());
     tracing::info!("[houston:session] send_message agent_path={agent_path} working_dir={}", working_dir.display());
-    if !working_dir.exists() {
-        std::fs::create_dir_all(&working_dir)
+    if !agent_dir.exists() {
+        std::fs::create_dir_all(&agent_dir)
             .map_err(|e| format!("Failed to create agent directory: {e}"))?;
     }
-    agent::seed_agent(&working_dir)?;
-    let mut system_prompt = agent::build_system_prompt(&working_dir);
+    agent::seed_agent(&agent_dir)?;
+    let provider = resolve_provider(&agent_dir);
+    let mut system_prompt = agent::build_system_prompt(
+        &agent_dir,
+        working_dir_override.as_ref().map(|p| expand_tilde(&PathBuf::from(p))).as_deref(),
+        prompt_file.as_deref(),
+    );
 
     // Append Composio integration guidance to the system prompt.
     // Agents use the `composio` CLI (not MCP) to access integrations.
@@ -147,6 +225,8 @@ pub async fn send_message(
             claude_session_id: None,
         }),
         Some(pid_map.inner().clone()),
+        provider.provider,
+        provider.model.clone(),
     );
 
     Ok(session_key)
@@ -228,7 +308,7 @@ pub async fn start_onboarding_session(
 ) -> Result<(), String> {
     let working_dir = expand_tilde(&PathBuf::from(&agent_path));
     agent::seed_agent(&working_dir)?;
-    let mut system_prompt = agent::build_system_prompt(&working_dir);
+    let mut system_prompt = agent::build_system_prompt(&working_dir, None, None);
 
     system_prompt.push_str(
         "\n\n---\n\n# Onboarding\n\n\
@@ -261,6 +341,8 @@ pub async fn start_onboarding_session(
         .await;
     let resume_id = chat_state.get().await;
 
+    let provider = resolve_provider(&working_dir);
+
     houston_tauri::session_runner::spawn_and_monitor(
         &app_handle,
         agent_path.clone(),
@@ -277,6 +359,8 @@ pub async fn start_onboarding_session(
             claude_session_id: None,
         }),
         Some(pid_map.inner().clone()),
+        provider.provider,
+        provider.model,
     );
 
     Ok(())

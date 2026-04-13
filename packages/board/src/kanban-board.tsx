@@ -9,6 +9,7 @@ export interface KanbanBoardProps {
   onSelect?: (item: KanbanItem) => void
   onDelete?: (item: KanbanItem) => void
   onApprove?: (item: KanbanItem) => void
+  onRename?: (item: KanbanItem, newTitle: string) => void
   emptyState?: React.ReactNode
   renderCard?: (item: KanbanItem) => React.ReactNode
   runningStatuses?: string[]
@@ -23,6 +24,7 @@ export function KanbanBoard({
   onSelect,
   onDelete,
   onApprove,
+  onRename,
   emptyState,
   renderCard,
   runningStatuses,
@@ -62,6 +64,7 @@ export function KanbanBoard({
           onSelect={onSelect ?? (() => {})}
           onDelete={onDelete}
           onApprove={onApprove}
+          onRename={onRename}
           renderCard={renderCard}
           runningStatuses={runningStatuses}
           approveStatuses={approveStatuses}

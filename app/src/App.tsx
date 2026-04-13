@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  Input,
 } from "@houston-ai/core";
 import { TabBar } from "@houston-ai/layout";
 import { useHoustonInit } from "./hooks/use-houston-init";
@@ -32,9 +31,13 @@ import { useActivity, useConnections, useComposioApps } from "./hooks/queries";
 import { Sidebar } from "./components/shell/sidebar";
 import { CreateAgentDialog } from "./components/shell/create-workspace-dialog";
 import { AgentUpdateBanner } from "./components/shell/agent-update-banner";
+import { UpdateChecker } from "./components/shell/update-checker";
+import { analytics } from "./lib/analytics";
 import { AgentRenderer } from "./components/shell/experience-renderer";
 import { Dashboard } from "./components/dashboard";
 import { IntegrationsView } from "./components/tabs/integrations-view";
+import { SettingsView } from "./components/tabs/settings-view";
+import { WorkspaceSetupFlow } from "./components/shell/workspace-setup-flow";
 import { DetailPanelProvider } from "./components/shell/detail-panel-context";
 
 export default function App() {
@@ -44,6 +47,11 @@ export default function App() {
   // Prefetch Composio data on launch so the integrations tab opens instantly.
   useConnections();
   useComposioApps();
+
+  // Track app launch
+  useEffect(() => {
+    analytics.track("app_launched");
+  }, []);
 
   // Intercept all link clicks and open in system browser
   useEffect(() => {
@@ -92,7 +100,7 @@ export default function App() {
   const needsYouCount = (activities ?? []).filter((a) => a.status === "needs_you").length;
 
   // Auto-correct viewMode if it doesn't match any tab on the current agent
-  const isAgentView = viewMode !== "dashboard" && viewMode !== "connections";
+  const isAgentView = viewMode !== "dashboard" && viewMode !== "connections" && viewMode !== "settings";
   useEffect(() => {
     if (isAgentView && tabs.length > 0 && !tabs.some((t) => t.id === viewMode)) {
       setViewMode(agentDef?.config.defaultTab ?? tabs[0].id);
@@ -114,27 +122,29 @@ export default function App() {
     );
   }
 
-  // No workspaces yet — full screen welcome
+  // No workspaces yet — onboarding
   if (workspaces.length === 0) {
-    return <WelcomeScreen
-      onCreate={async (name) => {
-        try {
-          const ws = await createWorkspace(name);
-          setCurrentWorkspace(ws);
-          await loadAgents(ws.id);
-        } catch {
-          const reload = useWorkspaceStore.getState().loadWorkspaces;
-          await reload();
-          const reloaded = useWorkspaceStore.getState().workspaces;
-          if (reloaded.length > 0) {
-            setCurrentWorkspace(reloaded[0]);
-            await loadAgents(reloaded[0].id);
+    return (
+      <OnboardingFlow
+        onCreate={async (name, provider, model) => {
+          try {
+            const ws = await createWorkspace(name, provider, model);
+            setCurrentWorkspace(ws);
+            await loadAgents(ws.id);
+          } catch {
+            const reload = useWorkspaceStore.getState().loadWorkspaces;
+            await reload();
+            const reloaded = useWorkspaceStore.getState().workspaces;
+            if (reloaded.length > 0) {
+              setCurrentWorkspace(reloaded[0]);
+              await loadAgents(reloaded[0].id);
+            }
           }
-        }
-      }}
-      toasts={mappedToasts}
-      onDismissToast={dismissToast}
-    />;
+        }}
+        toasts={mappedToasts}
+        onDismissToast={dismissToast}
+      />
+    );
   }
 
   return (
@@ -147,6 +157,8 @@ export default function App() {
                 <Dashboard />
               ) : viewMode === "connections" ? (
                 <IntegrationsView title="Integrations" />
+              ) : viewMode === "settings" ? (
+                <SettingsView />
               ) : currentAgent && agentDef && tabs.length > 0 ? (
                 <>
                   <TabBar
@@ -226,6 +238,7 @@ export default function App() {
 
         <CreateAgentDialog />
         <AgentUpdateBanner />
+        <UpdateChecker />
         <ToastContainer toasts={mappedToasts} onDismiss={dismissToast} />
       </div>
     </DetailPanelProvider>
@@ -307,71 +320,66 @@ function SlackButton({ agentPath, agentName, agentColor }: { agentPath: string; 
   );
 }
 
-function WelcomeScreen({
+function OnboardingFlow({
   onCreate,
   toasts,
   onDismissToast,
 }: {
-  onCreate: (name: string) => Promise<void>;
+  onCreate: (name: string, provider: string, model: string) => Promise<void>;
   toasts: Toast[];
   onDismissToast: (id: string) => void;
 }) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [wsName, setWsName] = useState("Personal");
+  const [started, setStarted] = useState(false);
+
+  if (!started) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-background text-foreground">
+        <img src={houstonIcon} alt="Houston" className="h-10 w-auto mb-2" />
+        <h1 className="text-xl font-semibold mb-1">Welcome to Houston</h1>
+        <p className="text-sm text-muted-foreground mb-6">Ship the impossible.</p>
+        <Button className="rounded-full" onClick={() => setStarted(true)}>
+          Get started
+        </Button>
+        <ToastContainer toasts={toasts} onDismiss={onDismissToast} />
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col items-center justify-center bg-background text-foreground">
-      <Empty className="border-0">
-        <img src={houstonIcon} alt="Houston" className="h-12 w-auto mb-4 mx-auto" />
-        <EmptyHeader>
-          <EmptyTitle>Welcome to Houston</EmptyTitle>
-          <EmptyDescription>
-            Ship the impossible!
-          </EmptyDescription>
-        </EmptyHeader>
-        <Button
-          className="mt-4 rounded-full"
-          onClick={() => setDialogOpen(true)}
-        >
-          <Plus className="h-4 w-4" />
-          Create your first workspace
-        </Button>
-      </Empty>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Name your workspace</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (!wsName.trim()) return;
-              await onCreate(wsName.trim());
-              setDialogOpen(false);
-            }}
-            className="space-y-4 pt-2"
-          >
-            <Input
-              autoFocus
-              value={wsName}
-              onChange={(e) => setWsName(e.target.value)}
-              placeholder="e.g. Personal, Work, Acme Corp"
-            />
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                disabled={!wsName.trim()}
-                className="rounded-full"
-              >
-                Create workspace
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
+      <WorkspaceSetupFlow mode="page" onComplete={onCreate} />
       <ToastContainer toasts={toasts} onDismiss={onDismissToast} />
     </div>
+  );
+}
+
+export function CreateWorkspaceDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const createWorkspace = useWorkspaceStore((s) => s.create);
+  const setCurrentWorkspace = useWorkspaceStore((s) => s.setCurrent);
+  const loadAgents = useAgentStore((s) => s.loadAgents);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>New workspace</DialogTitle>
+        </DialogHeader>
+        <WorkspaceSetupFlow
+          mode="dialog"
+          onComplete={async (name, provider, model) => {
+            const ws = await createWorkspace(name, provider, model);
+            setCurrentWorkspace(ws);
+            await loadAgents(ws.id);
+            onOpenChange(false);
+          }}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -8,7 +8,8 @@ interface WorkspaceState {
   loading: boolean;
   loadWorkspaces: () => Promise<void>;
   setCurrent: (ws: Workspace) => void;
-  create: (name: string) => Promise<Workspace>;
+  create: (name: string, provider?: string, model?: string) => Promise<Workspace>;
+  updateProvider: (id: string, provider: string, model?: string) => Promise<void>;
   delete: (id: string) => Promise<void>;
   rename: (id: string, newName: string) => Promise<void>;
 }
@@ -36,12 +37,20 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
     tauriPreferences.set("last_workspace_id", ws.id);
   },
 
-  create: async (name) => {
-    const ws = await tauriWorkspaces.create(name);
+  create: async (name, provider, model) => {
+    const ws = await tauriWorkspaces.create(name, provider, model);
     set((s) => ({
       workspaces: [...s.workspaces, ws],
     }));
     return ws;
+  },
+
+  updateProvider: async (id, provider, model) => {
+    const updated = await tauriWorkspaces.updateProvider(id, provider, model);
+    set((s) => ({
+      workspaces: s.workspaces.map((w) => (w.id === id ? updated : w)),
+      current: s.current?.id === id ? updated : s.current,
+    }));
   },
 
   delete: async (id) => {

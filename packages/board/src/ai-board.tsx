@@ -61,6 +61,10 @@ export interface AIBoardProps {
   onOpenLink?: import("@houston-ai/chat").ChatPanelProps["onOpenLink"]
   /** Custom renderer for markdown links. Forwarded to ChatPanel. */
   renderLink?: import("@houston-ai/chat").ChatPanelProps["renderLink"]
+  /** Called when the user renames a card. */
+  onRename?: (item: KanbanItem, newTitle: string) => void
+  /** Render prop for extra action buttons on each card (e.g. "Run" button). */
+  actions?: (item: KanbanItem) => React.ReactNode
   /**
    * DOM element to portal the detail panel into. When provided, the panel
    * renders via createPortal into this element (for app-level layout).
@@ -100,6 +104,8 @@ export function AIBoard({
   panelAgentName,
   onPanelOpenChange,
   onStopSession,
+  onRename,
+  actions,
   panelContainer,
   isSpecialTool,
   renderToolResult,
@@ -243,7 +249,9 @@ export function AIBoard({
         onSelect={handleCardSelect}
         onDelete={onDelete ? handleDelete : undefined}
         onApprove={onApprove}
+        onRename={onRename}
         emptyState={emptyState}
+        actions={actions}
       />
     </div>
   )

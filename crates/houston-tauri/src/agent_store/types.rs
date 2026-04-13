@@ -15,6 +15,13 @@ pub struct Activity {
     /// When set (e.g. by a routine run), the board uses this instead of "activity-{id}".
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_key: Option<String>,
+    /// Which agent mode created this activity (e.g. "execution", "planning").
+    /// Determines which prompt file is used for the session.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent: Option<String>,
+    /// Absolute path to the git worktree for this activity, if worktree mode was used.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub worktree_path: Option<String>,
     /// If this activity was created by a routine run, the source routine ID.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub routine_id: Option<String>,
@@ -33,6 +40,8 @@ pub struct ActivityUpdate {
     pub status: Option<String>,
     pub claude_session_id: Option<Option<String>>,
     pub session_key: Option<String>,
+    pub agent: Option<String>,
+    pub worktree_path: Option<Option<String>>,
     pub routine_id: Option<String>,
     pub routine_run_id: Option<String>,
 }
@@ -229,7 +238,15 @@ pub struct LogEntry {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectConfig {
+    #[serde(default)]
     pub name: String,
-    pub claude_model: Option<String>,
-    pub claude_effort: Option<String>,
+    /// AI provider for this agent ("anthropic" or "openai"). Defaults to global preference.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    /// Model override (e.g. "sonnet", "gpt-5.4"). Provider-specific.
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "claude_model")]
+    pub model: Option<String>,
+    /// Effort level override (e.g. "low", "medium", "high"). Provider-specific.
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "claude_effort")]
+    pub effort: Option<String>,
 }

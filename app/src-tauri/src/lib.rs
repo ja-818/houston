@@ -18,8 +18,39 @@ pub fn run() {
     let houston = houston_tauri::houston_db::db::houston_dir();
     logging::init(&houston);
 
-    tauri::Builder::default()
+    // Sentry: initialize before the builder so it catches panics in plugin inits.
+    // The guard must live for the lifetime of the app to flush events on shutdown.
+    let sentry_dsn = option_env!("SENTRY_DSN").unwrap_or("");
+    let _sentry_client = if sentry_dsn.is_empty() {
+        None
+    } else {
+        Some(sentry::init((
+            sentry_dsn,
+            sentry::ClientOptions {
+                release: sentry::release_name!(),
+                auto_session_tracking: true,
+                ..Default::default()
+            },
+        )))
+    };
+
+    let mut builder = tauri::Builder::default();
+
+    // Sentry plugin — only if DSN was provided
+    if let Some(ref client) = _sentry_client {
+        builder = builder.plugin(tauri_plugin_sentry::init(client));
+    }
+
+    // Aptabase analytics — only if app key was provided
+    let aptabase_key = option_env!("APTABASE_APP_KEY").unwrap_or("");
+    if !aptabase_key.is_empty() {
+        builder = builder.plugin(tauri_plugin_aptabase::Builder::new(aptabase_key).build());
+    }
+
+    builder
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let houston = houston_tauri::houston_db::db::houston_dir();
             let db_path = houston.join("db").join("houston.db");
@@ -105,6 +136,7 @@ pub fn run() {
                             h.clone(), state, sessions, pids,
                             agent_path, text, Some(session_key),
                             Some("slack".to_string()),
+                            None, None,
                         ).await {
                             tracing::error!("[slack-inbound] send_message failed: {e}");
                         }
@@ -132,6 +164,7 @@ pub fn run() {
             commands::workspaces::create_workspace,
             commands::workspaces::rename_workspace,
             commands::workspaces::delete_workspace,
+            commands::workspaces::update_workspace_provider,
             // Agent CRUD (scoped to workspace, formerly "Workspace")
             commands::agents::list_agents,
             commands::agents::create_agent,
@@ -141,6 +174,10 @@ pub fn run() {
             // Preferences
             commands::preferences::get_preference,
             commands::preferences::set_preference,
+            // Provider management
+            commands::provider::check_provider_status,
+            commands::provider::get_default_provider,
+            commands::provider::set_default_provider,
             // Houston Store — installed agent configs
             commands::agent_configs::list_installed_configs,
             // Houston Store — remote registry
@@ -241,6 +278,12 @@ pub fn run() {
             houston_tauri::composio_commands::complete_composio_login,
             houston_tauri::composio_commands::is_composio_cli_installed,
             houston_tauri::composio_commands::install_composio_cli,
+            // Worktree + Terminal + Directory picker
+            commands::worktree::pick_directory,
+            commands::worktree::create_worktree,
+            commands::worktree::remove_worktree,
+            commands::worktree::list_worktrees,
+            commands::worktree::open_terminal,
             // Logging
             logging::write_frontend_log,
             logging::read_recent_logs,

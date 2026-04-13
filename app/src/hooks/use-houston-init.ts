@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { tauriPreferences, tauriSystem } from "../lib/tauri";
+import { tauriPreferences, tauriProvider } from "../lib/tauri";
 import { useAgentCatalogStore } from "../stores/agent-catalog";
 import { useWorkspaceStore } from "../stores/workspaces";
 import { useAgentStore } from "../stores/agents";
@@ -61,9 +61,16 @@ export function useHoustonInit() {
         console.error("[init] Failed to restore last agent:", e);
       }
 
+      // Check if the default provider's CLI is available
       try {
-        const available = await tauriSystem.checkClaudeCli();
-        setClaudeAvailable(available);
+        const defaultProv = await tauriProvider.getDefault();
+        if (defaultProv) {
+          const status = await tauriProvider.checkStatus(defaultProv);
+          setClaudeAvailable(status.cli_installed && status.authenticated);
+        } else {
+          // No provider configured — wizard will handle this
+          setClaudeAvailable(false);
+        }
       } catch {
         setClaudeAvailable(false);
       }

@@ -13,8 +13,9 @@ pub fn read(root: &Path) -> Result<ProjectConfig, String> {
     if !path.exists() {
         return Ok(ProjectConfig {
             name: String::new(),
-            claude_model: None,
-            claude_effort: None,
+            provider: None,
+            model: None,
+            effort: None,
         });
     }
     let contents =

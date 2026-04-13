@@ -7,12 +7,12 @@ import { useAgentStore } from "../../stores/agents";
 import { useAgentCatalogStore } from "../../stores/agent-catalog";
 import { useUIStore } from "../../stores/ui";
 import { AgentMiniAvatar } from "./experience-card";
+import { CreateWorkspaceDialog } from "../../App";
 
 export function Sidebar({ children }: { children: ReactNode }) {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const currentWorkspace = useWorkspaceStore((s) => s.current);
   const setCurrentWorkspace = useWorkspaceStore((s) => s.setCurrent);
-  const createWorkspace = useWorkspaceStore((s) => s.create);
 
   const agents = useAgentStore((s) => s.agents);
   const currentAgent = useAgentStore((s) => s.current);
@@ -21,6 +21,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
   const renameAgent = useAgentStore((s) => s.rename);
   const deleteAgent = useAgentStore((s) => s.delete);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [createWsOpen, setCreateWsOpen] = useState(false);
 
   const getById = useAgentCatalogStore((s) => s.getById);
   const viewMode = useUIStore((s) => s.viewMode);
@@ -38,7 +39,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
     name: a.name,
     icon: <AgentMiniAvatar color={a.color} />,
   }));
-  const isTopLevel = viewMode === "dashboard" || viewMode === "connections";
+  const isTopLevel = viewMode === "dashboard" || viewMode === "connections" || viewMode === "settings";
 
   const handleWorkspaceSwitch = async (wsId: string) => {
     if (wsId === currentWorkspace?.id) return;
@@ -48,12 +49,8 @@ export function Sidebar({ children }: { children: ReactNode }) {
     await loadAgents(ws.id);
   };
 
-  const handleCreateWorkspace = async () => {
-    const name = window.prompt("Workspace name");
-    if (!name?.trim()) return;
-    const ws = await createWorkspace(name.trim());
-    setCurrentWorkspace(ws);
-    await loadAgents(ws.id);
+  const handleCreateWorkspace = () => {
+    setCreateWsOpen(true);
   };
 
   const handleSelectAgent = (agentId: string) => {
@@ -89,6 +86,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
       confirmLabel="Delete"
       onConfirm={confirmDelete}
     />
+    <CreateWorkspaceDialog open={createWsOpen} onOpenChange={setCreateWsOpen} />
     <div className="flex h-full flex-1 min-w-0">
       <AppSidebar
         header={
@@ -121,6 +119,12 @@ export function Sidebar({ children }: { children: ReactNode }) {
             label: "Integrations",
             icon: <Blend className="h-4 w-4" />,
             onClick: () => setViewMode("connections"),
+          },
+          {
+            id: "settings",
+            label: "Settings",
+            icon: <Settings className="h-4 w-4" />,
+            onClick: () => setViewMode("settings"),
           },
         ]}
         activeNavId={isTopLevel ? viewMode : undefined}

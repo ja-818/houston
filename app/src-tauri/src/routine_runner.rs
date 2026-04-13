@@ -195,7 +195,7 @@ pub async fn run_routine(
 
     // Seed agent files and build system prompt
     agent::seed_agent(&working_dir)?;
-    let system_prompt = agent::build_system_prompt(&working_dir);
+    let system_prompt = agent::build_system_prompt(&working_dir, None, None);
 
     // Build the prompt with optional suppression instruction
     let prompt = if routine.suppress_when_silent {
@@ -233,6 +233,8 @@ pub async fn run_routine(
             user_message: Some(prompt),
             claude_session_id: None,
         }),
+        None,
+        houston_tauri::houston_sessions::Provider::Anthropic,
         None,
     );
 
@@ -276,7 +278,7 @@ pub async fn run_routine(
             routine.name,
             first_line(&response).unwrap_or("Needs attention")
         );
-        let activity = store.create_activity(&title, &routine.description)?;
+        let activity = store.create_activity(&title, &routine.description, None, None)?;
 
         // Set the activity fields to link back to the routine run
         store.update_activity(

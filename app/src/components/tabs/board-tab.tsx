@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanItem } from "@houston-ai/board";
 import type { FeedItem } from "@houston-ai/chat";
+import { Button } from "@houston-ai/core";
+import { Plus, Terminal } from "lucide-react";
 
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
@@ -13,7 +15,7 @@ import {
   useConnectedToolkits,
   useConnections,
 } from "../../hooks/queries";
-import { tauriActivity, tauriChat, tauriAttachments, tauriSystem, withAttachmentPaths } from "../../lib/tauri";
+import { tauriActivity, tauriChat, tauriAttachments, tauriSystem, tauriWorktree, tauriTerminal, tauriConfig, tauriPreferences, withAttachmentPaths } from "../../lib/tauri";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
 import { COMPOSIO_PROBE_SLUGS } from "../../lib/composio-catalog";
 import {
@@ -22,34 +24,20 @@ import {
 } from "../composio-link-card";
 import type { TabProps } from "../../lib/types";
 import { useDetailPanelContainer } from "../shell/detail-panel-context";
-import { getHoustonLogo } from "../shell/experience-card";
-
-// Module-level so it persists across component remounts (tab switches)
-const summarizedActivityIds = new Set<string>();
+import { getHoustonLogo, HoustonThinkingIndicator } from "../shell/experience-card";
 
 // Stable empty reference so the feed store selector doesn't return a new
 // object every render when this agent has no feeds yet (which would otherwise
 // trigger "getSnapshot should be cached" / infinite loop in React).
 const EMPTY_FEED_BUCKET: Record<string, never> = Object.freeze({});
 
-function ThinkingIndicator({ color }: { color?: string }) {
-  const logo = getHoustonLogo(color);
-  return (
-    <div className="py-2 flex items-center gap-2">
-      <span
-        className="size-6 rounded-full flex items-center justify-center animate-pulse"
-        style={{ backgroundColor: color ?? "#e5e5e5" }}
-      >
-        <img src={logo} alt="" className="size-3.5 object-contain" />
-      </span>
-    </div>
-  );
-}
 
 
-export default function BoardTab({ agent }: TabProps) {
+export default function BoardTab({ agent, agentDef }: TabProps) {
   const panelContainer = useDetailPanelContainer();
   const path = agent.folderPath;
+  const agentModes = agentDef.config.agents;
+  const [pendingAgentMode, setPendingAgentMode] = useState<string | null>(null);
   const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(path);
   const { data: rawItems } = useActivity(path);
   const deleteActivity = useDeleteActivity(path);
@@ -96,18 +84,23 @@ export default function BoardTab({ agent }: TabProps) {
   );
   const openerRef = useRef<(() => void) | null>(null);
 
-  const items: KanbanItem[] = (rawItems ?? []).map((t) => ({
-    id: t.id,
-    title: t.title,
-    subtitle: t.description,
-    status: t.status,
-    updatedAt: t.updated_at ?? new Date().toISOString(),
-    group: t.routine_id ? "routine" : undefined,
-    metadata: {
-      ...(t.session_key ? { sessionKey: t.session_key } : {}),
-      ...(t.routine_id ? { routineId: t.routine_id } : {}),
-    },
-  }));
+  const items: KanbanItem[] = (rawItems ?? []).map((t) => {
+    const modeName = agentModes?.find((m) => m.id === t.agent)?.name;
+    return {
+      id: t.id,
+      title: t.title,
+      subtitle: t.description,
+      status: t.status,
+      updatedAt: t.updated_at ?? new Date().toISOString(),
+      group: modeName ?? (t.routine_id ? "routine" : undefined),
+      metadata: {
+        ...(t.session_key ? { sessionKey: t.session_key } : {}),
+        ...(t.routine_id ? { routineId: t.routine_id } : {}),
+        ...(t.agent ? { agent: t.agent } : {}),
+        ...(t.worktree_path ? { worktreePath: t.worktree_path } : {}),
+      },
+    };
+  });
 
   // Read and consume pending selection from Mission Control
   const pendingId = useUIStore((s) => s.activityPanelId);
@@ -147,31 +140,6 @@ export default function BoardTab({ agent }: TabProps) {
     }
     return out;
   }, [loadingState, rawItems]);
-  // Call Haiku once per activity to generate a concise title + description.
-  // Skip if already summarized (title no longer matches the raw user message).
-  useEffect(() => {
-    if (!rawItems) return;
-    for (const activity of rawItems) {
-      if (activity.status !== "running") continue;
-      if (summarizedActivityIds.has(activity.id)) continue;
-
-      // The original title is the description truncated to 80 chars.
-      // If they diverge, Haiku already ran — skip.
-      const desc = activity.description ?? "";
-      const originalTitle = desc.length > 80 ? desc.slice(0, 77) + "..." : desc;
-      if (activity.title !== originalTitle) continue;
-
-      summarizedActivityIds.add(activity.id);
-      tauriChat
-        .summarize(desc)
-        .then(({ title, description }) => {
-          tauriActivity
-            .update(path, activity.id, { title, description })
-            .catch(console.error);
-        })
-        .catch(console.error);
-    }
-  }, [rawItems, path]);
 
   // Register the "Start a Mission" handler in the UI store for the TabBar
   const handleOpenerReady = useCallback(
@@ -212,21 +180,44 @@ export default function BoardTab({ agent }: TabProps) {
 
   const handleCreateConversation = useCallback(
     async (text: string, files: File[]) => {
+      const agentMode = pendingAgentMode ?? agentModes?.[0]?.id;
+      const mode = agentModes?.find((m) => m.id === agentMode);
+      setPendingAgentMode(null);
+
+      // Check if worktree mode is enabled
+      let worktreePath: string | undefined;
+      try {
+        const cfg = await tauriConfig.read(path);
+        if (cfg.worktreeMode) {
+          const slug = text.slice(0, 40).replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase()
+            || "mission";
+          const wt = await tauriWorktree.create(path, slug);
+          worktreePath = wt.path;
+        }
+      } catch { /* config may not exist yet */ }
+
       const title = text.length > 80 ? text.slice(0, 77) + "..." : text;
-      const item = await createActivity.mutateAsync({ title, description: text });
+      const item = await createActivity.mutateAsync({
+        title,
+        description: text,
+        agent: agentMode,
+        worktreePath,
+      });
       const sessionKey = `activity-${item.id}`;
       const visible = files.length > 0
         ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
         : text;
       pushFeedItem(path, sessionKey, { feed_type: "user_message", data: visible });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
-      await updateActivity.mutateAsync({ activityId: item.id, update: { status: "running" } });
       const paths = await tauriAttachments.save(`activity-${item.id}`, files);
       const prompt = withAttachmentPaths(text, paths);
-      tauriChat.send(path, prompt, sessionKey);
+      tauriChat.send(path, prompt, sessionKey, {
+        promptFile: mode?.promptFile,
+        workingDirOverride: worktreePath,
+      });
       return item.id;
     },
-    [path, pushFeedItem, createActivity, updateActivity],
+    [path, pushFeedItem, createActivity, pendingAgentMode, agentModes],
   );
 
   // Derive the session key for an activity, using custom key if set by routine runner
@@ -252,24 +243,78 @@ export default function BoardTab({ agent }: TabProps) {
         : text;
       pushFeedItem(path, sessionKey, { feed_type: "user_message", data: visible });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
-      // Find the activity ID from the session key to update its status
       const activity = (rawItems ?? []).find(
         (t) => (t.session_key ?? `activity-${t.id}`) === sessionKey,
       );
       if (activity) {
         tauriActivity.update(path, activity.id, { status: "running" }).catch(console.error);
       }
-      // Scope by activity id so attachments outlive vacations and are wiped
-      // when the activity (conversation) is deleted.
       const scopeId = activity ? `activity-${activity.id}` : sessionKey;
       const paths = await tauriAttachments.save(scopeId, files);
       const prompt = withAttachmentPaths(text, paths);
-      tauriChat.send(path, prompt, sessionKey);
+      const mode = agentModes?.find((m) => m.id === activity?.agent);
+      tauriChat.send(path, prompt, sessionKey, {
+        promptFile: mode?.promptFile,
+        workingDirOverride: activity?.worktree_path,
+      });
     },
-    [path, pushFeedItem, rawItems],
+    [path, pushFeedItem, rawItems, agentModes],
+  );
+
+  const handleRunInTerminal = useCallback(
+    async (item: KanbanItem) => {
+      const wtPath = item.metadata?.worktreePath as string | undefined;
+      if (!wtPath) return;
+      let devCmd: string | undefined;
+      try {
+        const cfg = await tauriConfig.read(path);
+        devCmd = cfg.devCommand as string | undefined;
+      } catch { /* ignore */ }
+      const terminal = await tauriPreferences.get("terminal") ?? undefined;
+      tauriTerminal.open(wtPath, devCmd, terminal).catch(console.error);
+    },
+    [path],
+  );
+
+  const cardActions = useCallback(
+    (item: KanbanItem) => {
+      const wtPath = item.metadata?.worktreePath as string | undefined;
+      if (!wtPath) return undefined;
+      return (
+        <button
+          onClick={(e) => { e.stopPropagation(); handleRunInTerminal(item); }}
+          className="flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-secondary text-foreground text-[10px] font-medium hover:bg-gray-200 transition-colors duration-200"
+          title="Open terminal in worktree"
+        >
+          <Terminal className="size-2.5" />
+          Run
+        </button>
+      );
+    },
+    [handleRunInTerminal],
   );
 
   return (
+    <div className="flex flex-col h-full">
+      {agentModes && agentModes.length > 0 && (
+        <div className="flex items-center gap-2 px-4 py-2.5 shrink-0">
+          {agentModes.map((mode) => (
+            <Button
+              key={mode.id}
+              variant="secondary"
+              size="sm"
+              className="rounded-full gap-1.5"
+              onClick={() => {
+                setPendingAgentMode(mode.id);
+                openerRef.current?.();
+              }}
+            >
+              <Plus className="size-3.5" />
+              {mode.createLabel}
+            </Button>
+          ))}
+        </div>
+      )}
     <AIBoard
       items={items}
       selectedId={selectedId}
@@ -280,6 +325,9 @@ export default function BoardTab({ agent }: TabProps) {
       sessionKeyFor={sessionKeyFor}
       onDelete={handleDelete}
       onApprove={handleApprove}
+      onRename={(item, newTitle) => {
+        tauriActivity.update(path, item.id, { title: newTitle }).catch(console.error);
+      }}
       onCreateConversation={handleCreateConversation}
       onSendMessage={handleSendMessage}
       onLoadHistory={loadHistory}
@@ -292,7 +340,8 @@ export default function BoardTab({ agent }: TabProps) {
       onNotice={handleNotice}
       onOpenLink={handleOpenLink}
       renderLink={renderLink}
-      thinkingIndicator={<ThinkingIndicator color={agent.color} />}
+      actions={agentModes ? cardActions : undefined}
+      thinkingIndicator={<HoustonThinkingIndicator />}
       panelAgentName={agent.name}
       panelAvatar={
         <span
@@ -303,5 +352,6 @@ export default function BoardTab({ agent }: TabProps) {
         </span>
       }
     />
+    </div>
   );
 }

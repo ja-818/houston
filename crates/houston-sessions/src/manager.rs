@@ -1,5 +1,5 @@
 use super::session_io;
-use super::types::{FeedItem, SessionStatus};
+use super::types::{FeedItem, Provider, SessionStatus};
 use std::process::Stdio;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
@@ -21,6 +21,7 @@ impl SessionManager {
     /// All sessions use --dangerously-skip-permissions because they're automated.
     /// Safety is controlled via system prompts and --disallowedTools / --tools flags.
     pub fn spawn_session(
+        provider: Provider,
         prompt: String,
         resume_session_id: Option<String>,
         working_dir: Option<std::path::PathBuf>,
@@ -36,164 +37,262 @@ impl SessionManager {
 
         let handle = tokio::spawn(async move {
             let _ = tx.send(SessionUpdate::Status(SessionStatus::Starting));
-            tracing::info!(
-                "[houston:session] spawning claude -p (resume={:?})",
-                resume_session_id
-            );
 
-            let mut cmd = Command::new("claude");
-            cmd.env("PATH", super::claude_path::shell_path());
-            cmd.arg("-p")
-                .arg("--output-format")
-                .arg("stream-json")
-                .arg("--verbose")
-                .arg("--include-partial-messages");
-
-            if disable_all_tools {
-                // Pure conversation mode: no tools, no permissions bypass.
-                cmd.arg("--allowedTools").arg("");
-            } else {
-                // Only grant full permissions when tools are enabled.
-                cmd.arg("--dangerously-skip-permissions");
-                if disable_builtin_tools {
-                    cmd.arg("--disallowedTools")
-                        .arg("Edit")
-                        .arg("Write")
-                        .arg("NotebookEdit");
+            match provider {
+                Provider::Anthropic => {
+                    spawn_claude(
+                        &tx, prompt, resume_session_id, working_dir, model, effort,
+                        system_prompt, mcp_config, disable_builtin_tools, disable_all_tools,
+                    ).await;
                 }
-            }
-
-            if let Some(ref m) = model {
-                cmd.arg("--model").arg(m);
-            }
-            if let Some(ref e) = effort {
-                cmd.arg("--effort").arg(e);
-            }
-            if let Some(ref sp) = system_prompt {
-                cmd.arg("--system-prompt").arg(sp);
-            }
-            if let Some(ref mcp) = mcp_config {
-                cmd.arg("--mcp-config").arg(mcp);
-            }
-            if let Some(ref session_id) = resume_session_id {
-                cmd.arg("--resume").arg(session_id);
-            }
-
-            // Prevent nested Claude Code session detection.
-            cmd.env_remove("CLAUDE_CODE_ENTRYPOINT");
-            cmd.env_remove("CLAUDECODE");
-
-            if let Some(ref dir) = working_dir {
-                if !dir.is_dir() {
-                    let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
-                        "Working directory not found: {}. Was it deleted?",
-                        dir.display()
-                    ))));
-                    return;
-                }
-                cmd.current_dir(dir);
-            }
-
-            cmd.stdout(Stdio::piped());
-            cmd.stderr(Stdio::piped());
-            cmd.stdin(Stdio::piped());
-
-            let mut child = match cmd.spawn() {
-                Ok(c) => c,
-                Err(e) => {
-                    let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
-                        "Failed to spawn claude: {e}"
-                    ))));
-                    return;
-                }
-            };
-
-            if let Some(mut stdin) = child.stdin.take() {
-                if let Err(e) = stdin.write_all(prompt.as_bytes()).await {
-                    let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
-                        "Failed to write prompt to stdin: {e}"
-                    ))));
-                    return;
-                }
-                drop(stdin);
-            }
-
-            if let Some(pid) = child.id() {
-                let _ = tx.send(SessionUpdate::ProcessPid(pid));
-            }
-            let _ = tx.send(SessionUpdate::Status(SessionStatus::Running));
-            tracing::info!("[houston:session] claude process started, reading output");
-
-            let stdout = child.stdout.take();
-            let stderr = child.stderr.take();
-
-            // Spawn stdout and stderr readers into a supervised JoinSet.
-            // `Option<Vec<String>>` is Some for stderr (collected lines) and None for stdout.
-            let mut io_set: JoinSet<Option<Vec<String>>> = JoinSet::new();
-
-            if let Some(stderr) = stderr {
-                let tx2 = tx.clone();
-                io_set.spawn(async move {
-                    Some(session_io::read_stderr_lines(stderr, tx2).await)
-                });
-            }
-            if let Some(stdout) = stdout {
-                let tx2 = tx.clone();
-                io_set.spawn(async move {
-                    session_io::read_stdout_events(stdout, tx2).await;
-                    None
-                });
-            }
-
-            // Drive I/O tasks; catch panics before they can corrupt shared state.
-            let mut stderr_lines = Vec::new();
-            while let Some(result) = io_set.join_next().await {
-                match result {
-                    Ok(Some(lines)) => stderr_lines = lines,
-                    Ok(None) => {}
-                    Err(e) => {
-                        let msg = format!("I/O reader panicked: {e:?}");
-                        tracing::info!("[houston:session] {msg}");
-                        let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(msg)));
-                        let _ = child.kill().await;
-                        return;
-                    }
-                }
-            }
-
-            tracing::info!("[houston:session] stdout closed, waiting for process exit");
-            match child.wait().await {
-                Ok(status) => {
-                    tracing::info!("[houston:session] process exited with {status}");
-                    // Exit 143 = SIGTERM (128+15) — expected when user stops session.
-                    let is_sigterm = status.code() == Some(143);
-                    if status.success() || is_sigterm {
-                        let _ = tx.send(SessionUpdate::Status(SessionStatus::Completed));
-                    } else {
-                        let stderr_summary = if stderr_lines.is_empty() {
-                            "no stderr output captured".to_string()
-                        } else {
-                            stderr_lines.join("\n")
-                        };
-                        let _ = tx.send(SessionUpdate::Feed(FeedItem::ToolResult {
-                            content: format!("Process stderr:\n{stderr_summary}"),
-                            is_error: true,
-                        }));
-                        let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
-                            "claude exited with {status}"
-                        ))));
-                    }
-                }
-                Err(e) => {
-                    let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
-                        "Failed to wait for claude: {e}"
-                    ))));
+                Provider::OpenAI => {
+                    spawn_codex(
+                        &tx, prompt, resume_session_id, working_dir, model,
+                        system_prompt,
+                    ).await;
                 }
             }
         });
 
         let session_handle = SessionHandle { _task: handle };
         (rx, session_handle)
+    }
+}
+
+/// Spawn a Claude CLI session (`claude -p --output-format stream-json`).
+async fn spawn_claude(
+    tx: &mpsc::UnboundedSender<SessionUpdate>,
+    prompt: String,
+    resume_session_id: Option<String>,
+    working_dir: Option<std::path::PathBuf>,
+    model: Option<String>,
+    effort: Option<String>,
+    system_prompt: Option<String>,
+    mcp_config: Option<std::path::PathBuf>,
+    disable_builtin_tools: bool,
+    disable_all_tools: bool,
+) {
+    tracing::info!(
+        "[houston:session] spawning claude -p (resume={:?})",
+        resume_session_id
+    );
+
+    let mut cmd = Command::new("claude");
+    cmd.env("PATH", super::claude_path::shell_path());
+    cmd.arg("-p")
+        .arg("--output-format")
+        .arg("stream-json")
+        .arg("--verbose")
+        .arg("--include-partial-messages");
+
+    if disable_all_tools {
+        cmd.arg("--allowedTools").arg("");
+    } else {
+        cmd.arg("--dangerously-skip-permissions");
+        if disable_builtin_tools {
+            cmd.arg("--disallowedTools")
+                .arg("Edit")
+                .arg("Write")
+                .arg("NotebookEdit");
+        }
+    }
+
+    if let Some(ref m) = model {
+        cmd.arg("--model").arg(m);
+    }
+    if let Some(ref e) = effort {
+        cmd.arg("--effort").arg(e);
+    }
+    if let Some(ref sp) = system_prompt {
+        cmd.arg("--system-prompt").arg(sp);
+    }
+    if let Some(ref mcp) = mcp_config {
+        cmd.arg("--mcp-config").arg(mcp);
+    }
+    if let Some(ref session_id) = resume_session_id {
+        cmd.arg("--resume").arg(session_id);
+    }
+
+    cmd.env_remove("CLAUDE_CODE_ENTRYPOINT");
+    cmd.env_remove("CLAUDECODE");
+
+    if let Some(ref dir) = working_dir {
+        if !dir.is_dir() {
+            let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
+                "Working directory not found: {}. Was it deleted?",
+                dir.display()
+            ))));
+            return;
+        }
+        cmd.current_dir(dir);
+    }
+
+    run_cli_process(tx, &mut cmd, &prompt, Provider::Anthropic).await;
+}
+
+/// Spawn a Codex CLI session (`codex exec --json --full-auto`).
+async fn spawn_codex(
+    tx: &mpsc::UnboundedSender<SessionUpdate>,
+    prompt: String,
+    resume_session_id: Option<String>,
+    working_dir: Option<std::path::PathBuf>,
+    model: Option<String>,
+    system_prompt: Option<String>,
+) {
+    tracing::info!(
+        "[houston:session] spawning codex exec --json (resume={:?})",
+        resume_session_id
+    );
+
+    // Write AGENTS.md for system prompt (Codex reads this instead of --system-prompt flag).
+    if let Some(ref sp) = system_prompt {
+        if let Some(ref dir) = working_dir {
+            let agents_md = dir.join("AGENTS.md");
+            if let Err(e) = std::fs::write(&agents_md, sp) {
+                tracing::warn!("[houston:session] failed to write AGENTS.md: {e}");
+            }
+        }
+    }
+
+    let mut cmd = Command::new("codex");
+    cmd.env("PATH", super::claude_path::shell_path());
+
+    let is_resume = resume_session_id.is_some();
+
+    if let Some(ref session_id) = resume_session_id {
+        cmd.arg("exec").arg("resume").arg(session_id);
+    } else {
+        cmd.arg("exec");
+    }
+
+    cmd.arg("--json").arg("--full-auto").arg("--skip-git-repo-check");
+
+    if let Some(ref m) = model {
+        cmd.arg("--model").arg(m);
+    }
+
+    if let Some(ref dir) = working_dir {
+        if !dir.is_dir() {
+            let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
+                "Working directory not found: {}. Was it deleted?",
+                dir.display()
+            ))));
+            return;
+        }
+        // --cd is only valid for `codex exec`, not `codex exec resume`
+        if is_resume {
+            cmd.current_dir(dir);
+        } else {
+            cmd.arg("--cd").arg(dir);
+        }
+    }
+
+    run_cli_process(tx, &mut cmd, &prompt, Provider::OpenAI).await;
+}
+
+/// Shared subprocess lifecycle: spawn, write prompt to stdin, read stdout/stderr, wait.
+async fn run_cli_process(
+    tx: &mpsc::UnboundedSender<SessionUpdate>,
+    cmd: &mut Command,
+    prompt: &str,
+    provider: Provider,
+) {
+    let cli_name = match provider {
+        Provider::Anthropic => "claude",
+        Provider::OpenAI => "codex",
+    };
+
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::piped());
+    cmd.stdin(Stdio::piped());
+
+    let mut child = match cmd.spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
+                "Failed to spawn {cli_name}: {e}"
+            ))));
+            return;
+        }
+    };
+
+    if let Some(mut stdin) = child.stdin.take() {
+        if let Err(e) = stdin.write_all(prompt.as_bytes()).await {
+            let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
+                "Failed to write prompt to stdin: {e}"
+            ))));
+            return;
+        }
+        drop(stdin);
+    }
+
+    if let Some(pid) = child.id() {
+        let _ = tx.send(SessionUpdate::ProcessPid(pid));
+    }
+    let _ = tx.send(SessionUpdate::Status(SessionStatus::Running));
+    tracing::info!("[houston:session] {cli_name} process started, reading output");
+
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
+
+    let mut io_set: JoinSet<Option<Vec<String>>> = JoinSet::new();
+
+    if let Some(stderr) = stderr {
+        let tx2 = tx.clone();
+        io_set.spawn(async move {
+            Some(session_io::read_stderr_lines(stderr, tx2).await)
+        });
+    }
+    if let Some(stdout) = stdout {
+        let tx2 = tx.clone();
+        io_set.spawn(async move {
+            session_io::read_stdout_events(stdout, tx2, provider).await;
+            None
+        });
+    }
+
+    let mut stderr_lines = Vec::new();
+    while let Some(result) = io_set.join_next().await {
+        match result {
+            Ok(Some(lines)) => stderr_lines = lines,
+            Ok(None) => {}
+            Err(e) => {
+                let msg = format!("I/O reader panicked: {e:?}");
+                tracing::info!("[houston:session] {msg}");
+                let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(msg)));
+                let _ = child.kill().await;
+                return;
+            }
+        }
+    }
+
+    tracing::info!("[houston:session] stdout closed, waiting for process exit");
+    match child.wait().await {
+        Ok(status) => {
+            tracing::info!("[houston:session] process exited with {status}");
+            let is_sigterm = status.code() == Some(143);
+            if status.success() || is_sigterm {
+                let _ = tx.send(SessionUpdate::Status(SessionStatus::Completed));
+            } else {
+                let stderr_summary = if stderr_lines.is_empty() {
+                    "no stderr output captured".to_string()
+                } else {
+                    stderr_lines.join("\n")
+                };
+                let _ = tx.send(SessionUpdate::Feed(FeedItem::ToolResult {
+                    content: format!("Process stderr:\n{stderr_summary}"),
+                    is_error: true,
+                }));
+                let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
+                    "{cli_name} exited with {status}"
+                ))));
+            }
+        }
+        Err(e) => {
+            let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
+                "Failed to wait for {cli_name}: {e}"
+            ))));
+        }
     }
 }
 
