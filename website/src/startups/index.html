@@ -4,20 +4,239 @@ learnPath: "../learn/index.html"
 visionPath: "../vision/index.html"
 ---
 {% extends "base.njk" %}
-{% block title %}Houston for Startups — Build your vertical AI product{% endblock %}
+{% block title %}Houston for Startups — Ship the Claude Code for your industry{% endblock %}
 {% block meta %}
-<meta name="description" content="Build your B2B product on Houston. 11 React packages, 8 Rust crates, MIT licensed. Ship your vertical in a weekend, not 6 months.">
+<meta name="description" content="Build your AI-native product in an evening, not 6 months. Houston is the open source platform for vertical AI products. Define your agents, we handle the rest.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gethouston.ai/startups/">
+<meta property="og:title" content="Houston for Startups — Ship the Claude Code for your industry">
+<meta property="og:description" content="Build your AI-native product in an evening, not 6 months. Define your agents, we handle the rest.">
+<meta name="twitter:card" content="summary_large_image">
 {% endblock %}
 {% block favicon %}<link rel="icon" type="image/svg+xml" href="../favicon.svg">{% endblock %}
-{% block stylesheets %}
-<link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../learn/style.css?v=3">
-{% endblock %}
 {% block inlineStyles %}
 <style>
-  /* Sections */
-  section {
+  :root {
+    --background: #ffffff;
+    --foreground: #0d0d0d;
+    --secondary: #f9f9f9;
+    --muted-foreground: #5d5d5d;
+    --border: #e5e5e5;
+    --gray-50: #f9f9f9;
+    --gray-100: #ececec;
+    --gray-200: #e3e3e3;
+    --gray-300: #cdcdcd;
+    --gray-400: #b4b4b4;
+    --gray-500: #9b9b9b;
+    --gray-600: #676767;
+    --gray-700: #424242;
+    --gray-950: #0d0d0d;
+    --success: #00a240;
+    --border-light: rgba(13,13,13,0.05);
+    --border-medium: rgba(0,0,0,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--foreground);
+    background: var(--background);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── Animations ── */
+
+  @keyframes float-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+
+  /* ── Nav ── */
+
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 16px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: transparent;
+    transition: background 0.3s ease, backdrop-filter 0.3s ease;
+  }
+
+  nav.scrolled {
+    background: rgba(13,13,13,0.92);
+    backdrop-filter: blur(20px);
+  }
+
+  .nav-logo {
+    font-family: 'General Sans', sans-serif;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: white;
+    text-decoration: none;
+  }
+
+  .nav-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+
+  .nav-center a {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-center a:hover { color: white; }
+
+  .nav-right {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .nav-right a:not(.btn) {
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s;
+  }
+
+  .nav-right a:not(.btn):hover { color: white; }
+  .nav-right a:not(.btn) svg { fill: rgba(255,255,255,0.6); transition: fill 0.2s; }
+  .nav-right a:not(.btn):hover svg { fill: white; }
+
+  .nav-burger {
+    display: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .nav-burger:hover { background: rgba(255,255,255,0.08); }
+  .nav-burger svg { width: 20px; height: 20px; }
+
+  .nav-dropdown {
+    display: none;
+    position: fixed;
+    top: 52px;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    background: rgba(13,13,13,0.97);
+    backdrop-filter: blur(20px);
+    padding: 8px 20px 16px;
+    flex-direction: column;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .nav-dropdown.open { display: flex; }
+
+  .nav-dropdown a {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    padding: 10px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-dropdown a:last-child { border-bottom: none; }
+  .nav-dropdown a:hover { color: white; }
+  .nav-dropdown a svg { width: 16px; height: 16px; opacity: 0.5; fill: rgba(255,255,255,0.6); }
+
+  .skip-link {
+    position: absolute;
+    top: -100px;
+    left: 16px;
+    z-index: 200;
+    background: white;
+    color: var(--gray-950);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .skip-link:focus { top: 16px; }
+
+  /* ── Buttons ── */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    gap: 8px;
+  }
+
+  .btn-primary { background: white; color: var(--gray-950); }
+  .btn-primary:hover { background: var(--gray-200); }
+  .btn-secondary { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.25); }
+  .btn-secondary:hover { background: rgba(255,255,255,0.08); }
+  .btn-dark { background: var(--gray-950); color: white; }
+  .btn-dark:hover { background: var(--gray-700); }
+  .btn-outline { background: white; color: var(--gray-950); border: 1px solid var(--border-medium); }
+  .btn-outline:hover { background: var(--gray-50); }
+  .btn-lg { height: 48px; padding: 0 28px; font-size: 16px; }
+  .btn-short-text { display: none; }
+
+  /* ── Sections ── */
+
+  .section-light {
     padding: 120px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-dark {
+    background: var(--gray-950);
+    color: white;
+    padding: 120px 40px;
+  }
+
+  .section-dark-inner {
     max-width: 1200px;
     margin: 0 auto;
   }
@@ -26,16 +245,31 @@ visionPath: "../vision/index.html"
     font-size: 12px;
     font-weight: 500;
     color: var(--gray-500);
-    letter-spacing: 0;
+    margin-bottom: 16px;
+  }
+
+  .section-label-light {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.4);
     margin-bottom: 16px;
   }
 
   .section-title {
-    font-size: 48px;
+    font-size: clamp(36px, 4vw, 56px);
     font-weight: 600;
     letter-spacing: -0.03em;
-    line-height: 1.1;
+    line-height: 1.08;
     color: var(--gray-950);
+    margin-bottom: 20px;
+  }
+
+  .section-title-light {
+    font-size: clamp(36px, 4vw, 56px);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.08;
+    color: white;
     margin-bottom: 20px;
   }
 
@@ -43,26 +277,385 @@ visionPath: "../vision/index.html"
     font-size: 20px;
     color: var(--muted-foreground);
     line-height: 1.5;
-    max-width: 640px;
+    max-width: 600px;
   }
 
-  /* Reveal */
-  .reveal {
+  .section-subtitle-light {
+    font-size: 20px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.5;
+    max-width: 600px;
+  }
+
+  /* ── Hero (dark) ── */
+
+  .hero {
+    background: var(--gray-950);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 180px 40px 140px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-glow {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 0%, rgba(59,130,246,0.15), transparent),
+      radial-gradient(ellipse 50% 40% at 80% 70%, rgba(249,115,22,0.08), transparent),
+      radial-gradient(ellipse 50% 40% at 20% 80%, rgba(129,140,248,0.06), transparent);
+    pointer-events: none;
+  }
+
+  .hero h1 {
+    font-size: clamp(36px, 5.5vw, 72px);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+    color: white;
+    margin-bottom: 32px;
+    animation: float-up 0.6s ease 0.1s both;
+    position: relative;
+    max-width: 900px;
+  }
+
+  .hero p {
+    font-size: 20px;
+    color: rgba(255,255,255,0.55);
+    max-width: 560px;
+    line-height: 1.5;
+    margin-bottom: 48px;
+    animation: float-up 0.6s ease 0.15s both;
+    position: relative;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    animation: float-up 0.6s ease 0.2s both;
+    position: relative;
+  }
+
+  /* Cycling word */
+
+  .hero-cycling-word {
+    display: inline;
+    position: relative;
+    vertical-align: bottom;
+  }
+
+  .hero-cycling-word .cycling-word {
+    display: inline-block;
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .hero-cycling-word .cycling-word.is-exiting {
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+  }
+
+  .hero-cycling-word .cycling-letter {
+    display: inline-block;
     opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    filter: blur(12px);
+    transform: translateY(6px);
+    transition: opacity 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
+                filter 0.35s cubic-bezier(0.25,0.46,0.45,0.94),
+                transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+    will-change: opacity, filter, transform;
   }
 
-  .reveal.visible {
+  .hero-cycling-word .cycling-letter.is-visible {
     opacity: 1;
+    filter: blur(0);
     transform: translateY(0);
   }
 
-  .reveal-delay-1 { transition-delay: 0.1s; }
-  .reveal-delay-2 { transition-delay: 0.2s; }
-  .reveal-delay-3 { transition-delay: 0.3s; }
+  .hero-cycling-word .cycling-letter.is-exiting {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(-16px) scale(1.08);
+    transition: opacity 0.22s cubic-bezier(0.55,0.085,0.68,0.53),
+                filter 0.28s cubic-bezier(0.55,0.085,0.68,0.53),
+                transform 0.28s cubic-bezier(0.55,0.085,0.68,0.53);
+  }
 
-  /* Steps grid */
+  /* ── Concept strip ── */
+
+  .concept-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .concept-step {
+    padding: 32px;
+    border-right: 1px solid var(--border-light);
+  }
+
+  .concept-step:last-child { border-right: none; }
+
+  .concept-num {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--gray-200);
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+    line-height: 1;
+  }
+
+  .concept-step h3 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--gray-950);
+    margin-bottom: 8px;
+  }
+
+  .concept-step p {
+    font-size: 14px;
+    color: var(--muted-foreground);
+    line-height: 1.55;
+  }
+
+  /* ── Comparison grid ── */
+
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 48px;
+  }
+
+  .compare-col { padding: 40px; }
+
+  .compare-col--before {
+    background: var(--gray-50);
+    border: 1px solid var(--border-light);
+    border-right: none;
+    border-radius: 16px 0 0 16px;
+  }
+
+  .compare-col--after {
+    background: var(--gray-950);
+    border-radius: 0 16px 16px 0;
+  }
+
+  .compare-col-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .compare-col--after .compare-col-header { border-bottom-color: rgba(255,255,255,0.1); }
+
+  .compare-col-label { font-size: 12px; font-weight: 500; color: var(--gray-500); }
+  .compare-col--after .compare-col-label { color: var(--gray-400); }
+
+  .compare-col-name { font-size: 20px; font-weight: 500; color: var(--gray-950); }
+  .compare-col--after .compare-col-name { color: white; }
+
+  .compare-step-count { font-size: 32px; font-weight: 500; color: var(--gray-300); letter-spacing: -0.02em; }
+  .compare-col--after .compare-step-count { color: rgba(255,255,255,0.25); }
+
+  .compare-steps { list-style: none; padding: 0; counter-reset: step; }
+
+  .compare-steps li {
+    counter-increment: step;
+    font-size: 14px;
+    color: var(--gray-700);
+    line-height: 1.55;
+    padding: 8px 0;
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+  }
+
+  .compare-col--after .compare-steps li { color: rgba(255,255,255,0.7); }
+
+  .compare-steps li::before {
+    content: counter(step);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-400);
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--gray-100);
+    flex-shrink: 0;
+  }
+
+  .compare-col--after .compare-steps li::before {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* ── Scenarios ── */
+
+  .scenarios { margin-top: 32px; display: flex; flex-direction: column; gap: 16px; }
+
+  .scenario {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .scenario-header {
+    grid-column: 1 / -1;
+    padding: 14px 32px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-950);
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .scenario-col { padding: 20px 32px; font-size: 14px; color: var(--gray-700); line-height: 1.55; }
+  .scenario-col + .scenario-col { border-left: 1px solid var(--border-light); }
+  .scenario-col-label { font-size: 12px; font-weight: 500; color: var(--gray-500); margin-bottom: 4px; }
+
+  /* ── Statement sections ── */
+
+  .statement {
+    padding: 80px 40px;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .statement p {
+    font-size: 24px;
+    line-height: 1.5;
+    color: var(--gray-700);
+    letter-spacing: -0.01em;
+  }
+
+  .statement strong { color: var(--gray-950); font-weight: 600; }
+
+  /* ── Platform pillars ── */
+
+  .pillar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 64px;
+  }
+
+  .pillar {
+    padding: 48px 36px;
+    background: var(--gray-950);
+  }
+
+  .pillar-number {
+    font-size: 48px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.12);
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+  }
+
+  .pillar h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  .pillar p {
+    font-size: 15px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+  }
+
+  /* ── Proof ── */
+
+  .proof {
+    padding: 120px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .proof-card {
+    background: var(--gray-950);
+    border-radius: 24px;
+    padding: 80px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 80px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .proof-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 50% 60% at 0% 50%, rgba(59,130,246,0.1), transparent),
+      radial-gradient(ellipse 40% 50% at 100% 80%, rgba(249,115,22,0.06), transparent);
+    pointer-events: none;
+  }
+
+  .proof-card > * { position: relative; }
+
+  .proof-stat {
+    font-size: 120px;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    color: white;
+    line-height: 1;
+  }
+
+  .proof-stat-label {
+    font-size: 20px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 4px;
+  }
+
+  .proof-text h3 {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: white;
+    margin-bottom: 20px;
+  }
+
+  .proof-text p {
+    font-size: 17px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+  }
+
+  .proof-text p + p { margin-top: 12px; }
+
+  /* ── Steps ── */
+
   .steps-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -71,10 +664,9 @@ visionPath: "../vision/index.html"
   }
 
   .step-card {
-    padding: 40px 32px;
+    padding: 48px 32px;
     border-radius: 16px;
     border: 1px solid var(--border-light);
-    text-align: center;
     transition: all 0.3s;
   }
 
@@ -84,372 +676,104 @@ visionPath: "../vision/index.html"
   }
 
   .step-number {
-    font-size: 40px;
+    font-size: 56px;
     font-weight: 700;
     color: var(--gray-200);
-    margin-bottom: 16px;
-  }
-
-  .step-card h3 {
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    margin-bottom: 8px;
-  }
-
-  .step-card p {
-    font-size: 14px;
-    color: var(--muted-foreground);
-    line-height: 1.6;
-  }
-
-  /* Framework cards */
-  .framework-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    margin-top: 64px;
-  }
-
-  .framework-card {
-    position: relative;
-    padding: 36px;
-    border-radius: 20px;
-    border: 1px solid var(--border-light);
-    background: white;
-    overflow: hidden;
-    transition: all 0.3s ease;
-  }
-
-  .framework-card:hover {
-    border-color: var(--border-medium);
-    box-shadow: 0 12px 60px rgba(0,0,0,0.05);
-  }
-
-  .framework-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.5;
-  }
-
-  .framework-card.card-ui::before {
-    background: radial-gradient(ellipse 100% 60% at 100% 0%, rgba(59,130,246,0.06), transparent);
-  }
-
-  .framework-card.card-engine::before {
-    background: radial-gradient(ellipse 100% 60% at 100% 0%, rgba(249,115,22,0.05), transparent);
-  }
-
-  .framework-card > * { position: relative; z-index: 1; }
-
-  .framework-card-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    gap: 16px;
-  }
-
-  .framework-card-title {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--gray-700);
-    letter-spacing: -0.01em;
-  }
-
-  .framework-card.card-ui .framework-card-title { color: #2964aa; }
-  .framework-card.card-engine .framework-card-title { color: #c2410c; }
-
-  .framework-card-count {
-    font-size: 32px;
-    font-weight: 700;
     letter-spacing: -0.03em;
-    color: var(--gray-950);
+    margin-bottom: 20px;
     line-height: 1;
   }
 
-  .framework-card-count .unit {
-    display: block;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--gray-500);
-    margin-top: 4px;
-    letter-spacing: 0;
-  }
-
-  .framework-card h3 {
-    font-size: 22px;
+  .step-card h3 {
+    font-size: 20px;
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: var(--gray-950);
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
 
-  .framework-card-desc {
-    font-size: 14px;
-    color: var(--muted-foreground);
-    line-height: 1.6;
-    margin-bottom: 24px;
-    max-width: 90%;
-  }
-
-  .framework-pill-list {
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 0;
-    padding: 0;
-  }
-
-  .framework-pill-list li {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-    font-size: 12px;
-    padding: 5px 12px;
-    border-radius: 9999px;
-    border: 1px solid var(--border-light);
-    background: var(--gray-50);
-    color: var(--gray-700);
-  }
-
-  .framework-card.card-ui .framework-pill-list li {
-    background: rgba(59,130,246,0.06);
-    border-color: rgba(59,130,246,0.15);
-    color: #2964aa;
-  }
-
-  .framework-card.card-engine .framework-pill-list li {
-    background: rgba(249,115,22,0.06);
-    border-color: rgba(249,115,22,0.15);
-    color: #c2410c;
-  }
-
-  .framework-platform {
-    margin-top: 28px;
-    padding: 20px 28px;
-    border-radius: 16px;
-    background: var(--gray-950);
-    color: var(--gray-300);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    font-size: 13px;
-  }
-
-  .framework-platform .label {
-    color: var(--gray-500);
-    font-weight: 500;
-  }
-
-  .framework-platform .platform-pill {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-    font-size: 12px;
-    padding: 4px 12px;
-    border-radius: 9999px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: var(--gray-200);
-  }
-
-  /* Learn card */
-  .learn-card {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 40px;
-    align-items: center;
-    padding: 40px 48px;
-    border-radius: 20px;
-    background: var(--gray-950);
-    color: white;
-    margin-top: 48px;
-  }
-
-  .learn-card .eyebrow {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--gray-400);
-    letter-spacing: 0;
-    margin-bottom: 10px;
-  }
-
-  .learn-card h3 {
-    font-size: 28px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.15;
-    color: white;
-    margin-bottom: 10px;
-  }
-
-  .learn-card p {
+  .step-card p {
     font-size: 15px;
-    color: rgba(255,255,255,0.65);
-    line-height: 1.55;
-    max-width: 520px;
-  }
-
-  .learn-card .btn {
-    background: white;
-    color: var(--gray-950);
-    white-space: nowrap;
-  }
-
-  .learn-card .btn:hover { background: var(--gray-100); }
-
-  /* Founders */
-  .founders-grid {
-    display: grid;
-    grid-template-columns: 1.1fr 0.9fr;
-    gap: 64px;
-    align-items: center;
-    margin-top: 64px;
-  }
-
-  .founders-bullets {
-    list-style: none;
-    margin: 0 0 28px;
-    padding: 0;
-  }
-
-  .founders-bullets li {
-    font-size: 14px;
-    color: var(--gray-700);
-    padding: 6px 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .founders-bullets .check {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: rgba(13,13,13,0.06);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .founders-bullets .check svg { width: 12px; height: 12px; }
-
-  .founders-actions {
-    display: flex;
-    gap: 12px;
-  }
-
-  .founders-visual {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 28px;
-    border-radius: 20px;
-    background: var(--gray-50);
-    border: 1px solid var(--border-light);
-  }
-
-  .founders-stat {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    padding: 16px 20px;
-    background: white;
-    border-radius: 12px;
-    border: 1px solid var(--border-light);
-  }
-
-  .founders-stat .label {
-    font-size: 13px;
     color: var(--muted-foreground);
-  }
-
-  .founders-stat .value {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--gray-950);
-    letter-spacing: -0.01em;
-  }
-
-  /* CTA */
-  .cta-section {
-    text-align: center;
-    padding: 120px 40px 160px;
-    position: relative;
-  }
-
-  .cta-section .cta-bg {
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 60% 50% at 50% 100%, rgba(59,130,246,0.07), transparent),
-      radial-gradient(ellipse 50% 40% at 30% 80%, rgba(249,115,22,0.05), transparent),
-      radial-gradient(ellipse 50% 40% at 70% 20%, rgba(129,140,248,0.04), transparent);
-    pointer-events: none;
-  }
-
-  .cta-section h2 {
-    font-size: 48px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    margin-bottom: 20px;
-    position: relative;
-  }
-
-  .cta-section p {
-    font-size: 18px;
-    color: var(--muted-foreground);
-    max-width: 480px;
-    margin: 0 auto 40px;
     line-height: 1.6;
-    position: relative;
   }
 
-  .final-cta-dual {
-    max-width: 880px;
-    margin: 0 auto;
+  /* ── Pricing ── */
+
+  .pricing-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-top: 64px;
+    max-width: 880px;
+    margin-left: auto;
+    margin-right: auto;
     border-radius: 20px;
-    border: 1px solid var(--border-light);
     overflow: hidden;
-    background: white;
-    text-align: left;
+    border: 1px solid var(--border-light);
   }
 
-  .final-cta-card {
-    padding: 48px 40px;
+  .pricing-card {
+    padding: 56px 48px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    gap: 24px;
   }
 
-  .final-cta-card + .final-cta-card {
-    border-left: 1px solid var(--border-light);
-    background: var(--gray-50);
+  .pricing-card--light { background: white; }
+
+  .pricing-card--dark {
+    background: var(--gray-950);
+    border-left: none;
   }
 
-  .final-cta-card h3 {
-    font-size: 24px;
+  .pricing-card--dark .tier-label { color: var(--gray-400); }
+  .pricing-card--dark h3 { color: white; }
+  .pricing-card--dark > p { color: rgba(255,255,255,0.55); }
+  .pricing-card--dark .check-list { color: rgba(255,255,255,0.7); }
+  .pricing-card--dark .check-list svg { stroke: rgba(255,255,255,0.4); }
+
+  .tier-label { font-size: 12px; font-weight: 500; color: var(--gray-600); }
+
+  .pricing-card h3 {
+    font-size: 28px;
     font-weight: 600;
     letter-spacing: -0.02em;
-    margin-bottom: 10px;
     color: var(--gray-950);
   }
 
-  .final-cta-card p {
-    font-size: 15px;
-    color: var(--muted-foreground);
-    line-height: 1.55;
-    margin-bottom: 24px;
-    max-width: 100%;
+  .pricing-card > p { font-size: 15px; color: var(--muted-foreground); line-height: 1.55; flex: 1; }
+
+  .check-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: var(--gray-700); }
+  .check-list li { display: flex; align-items: center; gap: 10px; }
+
+  /* ── Final CTA ── */
+
+  .final-section {
+    padding: 0 40px 120px;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
-  /* Footer */
+  .final-cta {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 48px;
+    align-items: center;
+    padding: 56px;
+    border-radius: 20px;
+    background: var(--gray-50);
+    border: 1px solid var(--border-light);
+  }
+
+  .final-cta .eyebrow { font-size: 12px; font-weight: 500; color: var(--gray-500); margin-bottom: 8px; }
+  .final-cta h3 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; color: var(--gray-950); margin-bottom: 8px; }
+  .final-cta p { font-size: 15px; color: var(--muted-foreground); line-height: 1.55; max-width: 520px; }
+
+  .final-cta-actions { display: flex; gap: 12px; }
+
+  /* ── Footer ── */
+
   footer {
     padding: 40px;
     border-top: 1px solid var(--border-light);
@@ -458,40 +782,65 @@ visionPath: "../vision/index.html"
     color: var(--gray-500);
   }
 
-  footer a {
-    color: var(--gray-500);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
+  footer a { color: var(--gray-500); text-decoration: none; transition: color 0.2s; }
   footer a:hover { color: var(--gray-950); }
 
-  /* Responsive */
+  /* ── Responsive ── */
+
   @media (max-width: 900px) {
-    .framework-grid { grid-template-columns: 1fr; }
+    .nav-center { display: none; }
+    .nav-burger { display: flex; }
+    .nav-right a:not(.btn) { display: none !important; }
+    .nav-right .btn .btn-full-text { display: none; }
+    .nav-right .btn .btn-short-text { display: inline; }
+    nav { padding: 16px 20px; }
+    .hero { padding: 140px 24px 100px; }
+    .section-light, .section-dark { padding: 80px 24px; }
+    .concept-strip { grid-template-columns: 1fr 1fr; }
+    .concept-step { border-right: none; border-bottom: 1px solid var(--border-light); }
+    .concept-step:nth-child(odd) { border-right: 1px solid var(--border-light); }
+    .concept-step:nth-last-child(-n+2) { border-bottom: none; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .compare-col--before { border-radius: 16px 16px 0 0; border-right: 1px solid var(--border-light); }
+    .compare-col--after { border-radius: 0 0 16px 16px; }
+    .scenario { grid-template-columns: 1fr; }
+    .scenario-col + .scenario-col { border-left: none; border-top: 1px solid var(--border-light); }
+    .pillar-grid { grid-template-columns: 1fr; }
+    .proof { padding: 48px 24px; }
+    .proof-card { grid-template-columns: 1fr; padding: 48px; gap: 32px; }
+    .proof-stat { font-size: 80px; }
     .steps-grid { grid-template-columns: 1fr; }
-    [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
-    section { padding: 80px 24px; }
-    .section-title { font-size: 36px; }
-    .learn-card { grid-template-columns: 1fr; padding: 32px; gap: 24px; }
-    .learn-card h3 { font-size: 22px; }
-    .founders-grid { grid-template-columns: 1fr; gap: 40px; }
-    .final-cta-dual { grid-template-columns: 1fr; }
-    .final-cta-card + .final-cta-card { border-left: none; border-top: 1px solid var(--border-light); }
-    .final-cta-card { padding: 36px 28px; }
+    .pricing-grid { grid-template-columns: 1fr; border-radius: 16px; }
+    .pricing-card--dark { border-left: none; border-top: 1px solid rgba(255,255,255,0.06); }
+    .pricing-card { padding: 40px 32px; }
+    .final-section { padding: 0 24px 80px; }
+    .final-cta { grid-template-columns: 1fr; padding: 40px; gap: 24px; }
+    .final-cta-actions { flex-direction: column; }
+    .statement { padding: 64px 24px; }
+    .statement p { font-size: 20px; }
   }
 
   @media (max-width: 600px) {
-    .section-title { font-size: 28px; }
-    .cta-section h2 { font-size: 28px; }
-    .cta-section { padding: 80px 24px 120px; }
+    .hero h1 { font-size: 32px; }
+    .hero p { font-size: 17px; }
+    .hero-actions { flex-direction: column; align-items: center; }
+    .section-title, .section-title-light { font-size: 28px; }
+    .concept-strip { grid-template-columns: 1fr; }
+    .concept-step:nth-child(odd) { border-right: none; }
+    .concept-step { border-bottom: 1px solid var(--border-light); }
+    .concept-step:last-child { border-bottom: none; }
+    .compare-col { padding: 24px; }
+    .scenario-header, .scenario-col { padding-left: 20px; padding-right: 20px; }
+    .pillar { padding: 32px 24px; }
+    .proof-card { padding: 32px; }
+    .proof-text h3 { font-size: 24px; }
+    .step-card { padding: 32px 24px; }
     footer { padding: 32px 24px; }
-    .framework-platform { font-size: 12px; padding: 16px 20px; }
-    .framework-platform .platform-pill { font-size: 11px; padding: 3px 10px; }
-    .founders-visual { padding: 20px; }
-    .founders-stat { padding: 12px 16px; }
-    .founders-stat .label { font-size: 12px; }
-    .founders-stat .value { font-size: 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    * { animation-duration: 0s !important; }
   }
 </style>
 {% endblock %}
@@ -499,263 +848,355 @@ visionPath: "../vision/index.html"
 
 {% include "nav-startups.njk" %}
 
-<!-- ═══════════════════════════════════════════
-     HERO — THE PITCH
-     ═══════════════════════════════════════════ -->
+<main id="main-content">
 
-<section style="padding-top: 100px; padding-bottom: 40px; text-align: center;">
-  <div class="reveal">
-    <div class="section-label">For startups</div>
-    <h2 class="section-title" style="font-size: 52px; max-width: 800px; margin: 0 auto 24px;">Your AI app has a ceiling.<br>Break it with Houston.</h2>
-    <p class="section-subtitle" style="max-width: 560px; margin: 0 auto 40px;">You added AI to your product. It generates text. But every edge case still needs a human. You're building a traditional app with a chat window bolted on.</p>
-    <div style="display: flex; gap: 12px; justify-content: center;">
-      <a href="mailto:hello@gethouston.ai" class="btn btn-primary btn-lg">Get in touch</a>
-      <a href="../vision/index.html" class="btn btn-secondary btn-lg">Read the thesis</a>
-    </div>
+<!-- ══════ HERO ══════ -->
+
+<div class="hero">
+  <div class="hero-glow"></div>
+
+  <h1>Ship the Claude Code for<br><span class="hero-cycling-word" id="hero-cycling"></span></h1>
+  <p>Claude Code changed how developers work. Every other industry is next. Houston is the platform where you build yours.</p>
+
+  <div class="hero-actions">
+    <a href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">Join the waitlist</a>
+    <a href="#problem" class="btn btn-secondary btn-lg">See how it works</a>
   </div>
-</section>
+</div>
 
-<!-- ═══════════════════════════════════════════
-     PROBLEM → SOLUTION (visual side-by-side)
-     ═══════════════════════════════════════════ -->
+<!-- ══════ THE CONCEPT ══════ -->
 
-<section id="problem" style="padding-top: 40px; padding-bottom: 60px;">
-  <div class="reveal" style="text-align: center; margin-bottom: 64px;">
-    <h2 class="section-title">Three problems. Three fixes.</h2>
-    <p class="section-subtitle" style="margin: 0 auto;">Every AI app hits the same walls. Houston breaks through all three.</p>
-  </div>
+<div class="section-light" id="problem">
+  <div class="section-label reveal">The shift</div>
+  <div class="section-title reveal" style="max-width: 800px;">Every AI product today hits the same ceiling.</div>
 
-  <!-- Problem/Solution 1 -->
-  <div class="reveal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
-    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: white;">
-      <div style="font-size: 11px; font-weight: 500; color: var(--gray-400); margin-bottom: 12px;">The problem</div>
-      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">Edge cases kill you</h3>
-      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">You code for the happy path. A weird input shows up. The AI can't handle it because you didn't write a rule for it. A human steps in. Every. Single. Time.</p>
-    </div>
-    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--gray-50);">
-      <div style="font-size: 11px; font-weight: 500; color: var(--gray-950); margin-bottom: 12px;">With Houston</div>
-      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">Edge cases handled at runtime</h3>
-      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">The AI reads context, makes judgment calls, handles the unexpected. You stop coding rules. The model reasons through them. Your product gets smarter, not bigger.</p>
-    </div>
-  </div>
-
-  <!-- Problem/Solution 2 -->
-  <div class="reveal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
-    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: white;">
-      <div style="font-size: 11px; font-weight: 500; color: var(--gray-400); margin-bottom: 12px;">The problem</div>
-      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">Integrations eat your time</h3>
-      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">Every customer wants Slack, then Salesforce, then QuickBooks. Each one is a new API, a new auth flow, a new thing to maintain. You become an integration company.</p>
-    </div>
-    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--gray-50);">
-      <div style="font-size: 11px; font-weight: 500; color: var(--gray-950); margin-bottom: 12px;">With Houston</div>
-      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">1000+ tools. Zero integration code.</h3>
-      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">Composio gives your agents Gmail, Slack, QuickBooks, Salesforce, and 1000+ more. The AI decides which tool to use and when. You never write another OAuth flow.</p>
-    </div>
-  </div>
-
-  <!-- Problem/Solution 3 -->
-  <div class="reveal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 48px;">
-    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: white;">
-      <div style="font-size: 11px; font-weight: 500; color: var(--gray-400); margin-bottom: 12px;">The problem</div>
-      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">Customization doesn't scale</h3>
-      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">Customer A wants the dashboard one way. Customer B wants different fields. You add feature flags, config panels, admin settings. The codebase bloats. Every customer is a fork in your head.</p>
-    </div>
-    <div style="padding: 32px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--gray-50);">
-      <div style="font-size: 11px; font-weight: 500; color: var(--gray-950); margin-bottom: 12px;">With Houston</div>
-      <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px;">One product. Infinite versions.</h3>
-      <p style="font-size: 14px; color: var(--muted-foreground); line-height: 1.6;">Each customer's AI adapts the workspace to their data, their language, their workflows. No forks. No feature flags. You ship one product. They each get theirs.</p>
-    </div>
-  </div>
-
-  <div class="learn-card reveal">
-    <div>
-      <div class="eyebrow">The full thesis</div>
-      <h3>Ship the impossible.</h3>
-      <p>An essay on why every workspace is about to be rebuilt, what AI-native actually means, and why the ceiling exists. The idea behind Houston.</p>
-    </div>
-    <a class="btn btn-lg" href="../vision/index.html">Read the essay</a>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════
-     WHAT YOU GET
-     ═══════════════════════════════════════════ -->
-
-<section style="padding-top: 60px; padding-bottom: 60px;">
-  <div class="founders-grid reveal" style="margin-top: 0;">
-    <div class="founders-copy">
-      <div class="section-label">What you get</div>
-      <h2 class="section-title" style="font-size: 36px;">A complete AI-native app. Build on it. Ship it as yours.</h2>
-      <ul class="founders-bullets">
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Desktop app with chat, kanban board, and file manager
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Agent runtime that executes tasks, not just generates text
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          1000+ integrations via Composio, no code required
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Memory, skills, scheduling, Slack sync built in
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          Your brand, your product, your customers, your moat
-        </li>
-        <li>
-          <span class="check"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg></span>
-          MIT licensed. Free forever. Hosting available when you scale
-        </li>
-      </ul>
-    </div>
-    <div class="founders-visual">
-      <div class="founders-stat">
-        <div class="label">Time to first working prototype</div>
-        <div class="value">A weekend</div>
-      </div>
-      <div class="founders-stat">
-        <div class="label">React packages ready to use</div>
-        <div class="value">11</div>
-      </div>
-      <div class="founders-stat">
-        <div class="label">Rust crates powering the engine</div>
-        <div class="value">8</div>
-      </div>
-      <div class="founders-stat">
-        <div class="label">Integrations out of the box</div>
-        <div class="value">1000+</div>
-      </div>
-      <div class="founders-stat">
-        <div class="label">License</div>
-        <div class="value">MIT</div>
+  <div class="concept-strip reveal" style="margin-top: 56px;">
+    <div class="concept-step">
+      <div class="concept-num">01</div>
+      <div>
+        <h3>The AI is caged</h3>
+        <p>Engineers hardcode workflows. The AI can only do what those workflows allow. Everything else is a feature request.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════
-     THE FRAMEWORK
-     ═══════════════════════════════════════════ -->
-
-<section id="framework" style="padding-top: 60px;">
-  <div class="reveal">
-    <div class="section-label">The framework</div>
-    <h2 class="section-title">11 React packages. 8 Rust crates.<br>One command to start.</h2>
-    <p class="section-subtitle">Everything you need to build an AI-native desktop app. The UI, the engine, and the agent runtime. Production-grade, MIT licensed.</p>
-  </div>
-
-  <div class="framework-grid reveal">
-    <div class="framework-card card-ui">
-      <div class="framework-card-head">
-        <div class="framework-card-title">@houston-ai/*</div>
-        <div class="framework-card-count">
-          11
-          <span class="unit">React packages</span>
-        </div>
+    <div class="concept-step">
+      <div class="concept-num">02</div>
+      <div>
+        <h3>Edge cases pile up</h3>
+        <p>Every user need the engineer didn't anticipate is a dead end. The AI is capable. The app won't let it help.</p>
       </div>
-      <h3>The UI library</h3>
-      <p class="framework-card-desc">Production-grade React components for chat, kanban, layout, skills, routines, memory and more. Matching design system out of the box.</p>
-      <ul class="framework-pill-list">
-        <li>core</li>
-        <li>chat</li>
-        <li>board</li>
-        <li>layout</li>
-        <li>connections</li>
-        <li>events</li>
-        <li>memory</li>
-        <li>routines</li>
-        <li>skills</li>
-        <li>review</li>
-        <li>agent</li>
-      </ul>
     </div>
-
-    <div class="framework-card card-engine">
-      <div class="framework-card-head">
-        <div class="framework-card-title">houston-*</div>
-        <div class="framework-card-count">
-          8
-          <span class="unit">Rust crates</span>
-        </div>
+    <div class="concept-step">
+      <div class="concept-num">03</div>
+      <div>
+        <h3>AI-native flips it</h3>
+        <p>The AI isn't a feature inside the app. It operates the app. It can do everything the user can, and things nobody coded for.</p>
       </div>
-      <h3>The engine</h3>
-      <p class="framework-card-desc">Rust crates that handle agent sessions, persistence, channel adapters, scheduling and the Tauri integration. The full runtime.</p>
-      <ul class="framework-pill-list">
-        <li>sessions</li>
-        <li>db</li>
-        <li>channels</li>
-        <li>scheduler</li>
-        <li>events</li>
-        <li>memory</li>
-        <li>tauri</li>
-        <li>cli</li>
-      </ul>
     </div>
-  </div>
-
-  <div class="framework-platform reveal" style="margin-top: 24px;">
-    <span class="label">Runs on</span>
-    <span class="platform-pill">Tauri 2</span>
-    <span class="platform-pill">Claude Code</span>
-    <span class="platform-pill">SQLite</span>
-    <span class="platform-pill">macOS</span>
-  </div>
-
-  <div class="learn-card reveal" style="margin-top: 48px;">
-    <div>
-      <div class="eyebrow">The guide</div>
-      <h3>Learn Houston in 8 chapters.</h3>
-      <p>The mental model, the project layout, and how to ship your first agent. Written for people who've built with AI before.</p>
-    </div>
-    <a class="btn btn-lg" href="../learn/index.html">Start reading</a>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════
-     CTA
-     ═══════════════════════════════════════════ -->
-
-<div class="cta-section">
-  <div class="cta-bg"></div>
-  <div class="reveal">
-    <h2>People want the impossible. Ship it.</h2>
-    <p>The framework is free. The opportunity is now. Let's talk about what you're building.</p>
-    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 40px;">
-      <a href="mailto:hello@gethouston.ai" class="btn btn-primary btn-lg">Get in touch</a>
-      <a href="https://github.com/ja-818/houston" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg">View on GitHub</a>
+    <div class="concept-step">
+      <div class="concept-num">04</div>
+      <div>
+        <h3>Claude Code made it real</h3>
+        <p>Claude answers questions. Claude Code reads files, writes code, runs commands. That's the architecture Houston is built on.</p>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- ══════ THE EXAMPLE ══════ -->
+
+<div class="section-light" style="padding-top: 0;">
+  <div class="section-label reveal">In practice</div>
+  <div class="section-title reveal" style="max-width: 800px;">Same job. Two different architectures.</div>
+  <div class="section-subtitle reveal">Turn bank statement PDFs into a clean Excel workbook.</div>
+
+  <div class="compare-grid reveal" style="margin-top: 56px;">
+    <div class="compare-col compare-col--before">
+      <div class="compare-col-header">
+        <div>
+          <div class="compare-col-label">AI as a feature</div>
+          <div class="compare-col-name">SimpleBooks</div>
+        </div>
+      </div>
+      <p style="font-size: 14px; color: var(--gray-600); line-height: 1.6;">User uploads a PDF. The app sends it to Claude via API. Claude extracts the transactions. The app runs Python to format a workbook. The user downloads the result.</p>
+      <p style="font-size: 14px; color: var(--gray-600); line-height: 1.6; margin-top: 16px;"><strong style="color: var(--gray-950);">Works great. Until:</strong></p>
+      <ul style="font-size: 14px; color: var(--gray-600); line-height: 1.7; padding-left: 18px; margin-top: 8px;">
+        <li>The user wants a new column</li>
+        <li>One client needs a different format</li>
+        <li>A bank changes their PDF layout</li>
+      </ul>
+      <p style="font-size: 14px; color: var(--gray-500); margin-top: 16px; font-style: italic;">Each one is a feature request. Each one waits for an engineer.</p>
+    </div>
+    <div class="compare-col compare-col--after">
+      <div class="compare-col-header">
+        <div>
+          <div class="compare-col-label">AI-native</div>
+          <div class="compare-col-name">SmartBooks</div>
+        </div>
+      </div>
+      <p style="font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.6;">User drops the PDF into a chat. Claude Code reads it, runs the app's Python scripts, and produces a workbook.</p>
+      <p style="font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.6; margin-top: 16px;"><strong style="color: white;">When something changes:</strong></p>
+      <ul style="font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.7; padding-left: 18px; margin-top: 8px;">
+        <li>New column? The user says so. Done.</li>
+        <li>Different format? Claude Code edits the script.</li>
+        <li>New PDF layout? The AI adapts on the spot.</li>
+      </ul>
+      <p style="font-size: 14px; color: rgba(255,255,255,0.45); margin-top: 16px; font-style: italic;">No feature request. No engineer. No wait.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════ THE PLATFORM (dark) ══════ -->
+
+<div class="section-dark" id="solution">
+  <div class="section-dark-inner">
+    <div class="section-label-light reveal">The platform</div>
+    <div class="section-title-light reveal">Houston is where you build<br>AI-native products.</div>
+    <div class="section-subtitle-light reveal">You bring the domain expertise. Houston handles everything else.</div>
+
+    <div class="pillar-grid reveal">
+      <div class="pillar">
+        <div class="pillar-number">01</div>
+        <h3>You define</h3>
+        <p>Your prompts, your workflows, your industry knowledge. The domain expertise that makes your product worth paying for. That's all you bring.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar-number">02</div>
+        <h3>Houston gives you</h3>
+        <p>Chat, board, memory, skills, files, connections. 1000+ integrations. The full AI-native workspace, built and tested. Ready to ship.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar-number">03</div>
+        <h3>Your customers get</h3>
+        <p>A branded product they interact with daily. An AI that adapts to their edge cases. An agent that gets better the more they use it.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PROOF ══════ -->
+
+<div class="proof">
+  <div class="proof-card reveal">
+    <div>
+      <div class="proof-stat">1</div>
+      <div class="proof-stat-label">evening</div>
+    </div>
+    <div class="proof-text">
+      <h3>We built a tax product on Houston.</h3>
+      <p>We had six months of traditional development. Hundreds of AI workflows and edge cases hardcoded into code.</p>
+      <p>One evening of rebuilding on Houston and we had what six months couldn't produce. Not because we wrote more code. Because the AI handled every edge case without anyone shipping a new button.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ HOW IT WORKS ══════ -->
+
+<div class="section-light">
+  <div class="section-label reveal">How it works</div>
+  <div class="section-title reveal">Three steps to a product.</div>
+  <div class="section-subtitle reveal">You don't need a full-stack team.<br>You need domain expertise and an afternoon.</div>
+
+  <div class="steps-grid">
+    <div class="step-card reveal">
+      <div class="step-number">1</div>
+      <h3>Define your agent</h3>
+      <p>Write a manifest and your prompts. Pick the tabs your users need. Chat, board, files, connections. Houston provides all of them.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-1">
+      <div class="step-number">2</div>
+      <h3>Test locally</h3>
+      <p>Import your agent into Houston. Use it yourself. Iterate on the prompts and workflows until the product feels right.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-2">
+      <div class="step-number">3</div>
+      <h3>Deploy to your customers</h3>
+      <p>Houston Cloud runs your product 24/7. Your brand, your domain. We handle hosting, infrastructure, and scaling.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PRICING ══════ -->
+
+<div class="section-light" id="pricing" style="padding-top: 0;">
+  <div class="section-label reveal" style="text-align: center;">Pricing</div>
+  <div class="section-title reveal" style="text-align: center; max-width: 100%;">Build free. Pay when you deploy.</div>
+
+  <div class="pricing-grid reveal">
+    <div class="pricing-card pricing-card--light">
+      <div class="tier-label">Open source</div>
+      <h3>Build and test locally</h3>
+      <p>The full platform. Define your agents, test them on your machine, iterate until they're right. Free forever.</p>
+      <ul class="check-list">
+        <li><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Desktop app with all features</li>
+        <li><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> 1000+ integrations</li>
+        <li><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Full source code on GitHub</li>
+      </ul>
+      <a href="https://github.com/ja-818/houston" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">View on GitHub</a>
+    </div>
+    <div class="pricing-card pricing-card--dark">
+      <div class="tier-label">Managed</div>
+      <h3>Houston Cloud</h3>
+      <p>Deploy your product to your customers. Your brand, your domain. We handle hosting, infrastructure, and scaling.</p>
+      <ul class="check-list">
+        <li><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Agents run 24/7</li>
+        <li><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Custom branding and domain</li>
+        <li><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Client management dashboard</li>
+        <li><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Scales to all your customers</li>
+      </ul>
+      <a href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">Join the waitlist</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ CLOSING CTA ══════ -->
+
+<div class="final-section">
+  <div class="final-cta reveal">
+    <div>
+      <div class="eyebrow">Go deeper</div>
+      <h3>The thesis behind AI-native workspaces.</h3>
+      <p>Read the essay on why every workspace is getting rebuilt and what Houston changes about it.</p>
+    </div>
+    <div class="final-cta-actions">
+      <a class="btn btn-dark btn-lg" href="/vision/">Read the essay</a>
+      <a class="btn btn-outline btn-lg" href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer">Join the waitlist</a>
+    </div>
+  </div>
+</div>
+
+</main>
+
 {% include "footer-startups.njk" %}
 
 <script>
-  // Scroll reveal
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-      }
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+  // Nav scroll
+  (function() {
+    var nav = document.querySelector('nav');
+    if (!nav) return;
+    function check() { nav.classList.toggle('scrolled', window.scrollY > 10); }
+    window.addEventListener('scroll', check, { passive: true });
+    check();
+  })();
 
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  // Hamburger
+  (function() {
+    var burger = document.getElementById('nav-burger');
+    var dropdown = document.getElementById('nav-dropdown');
+    var icon = document.getElementById('burger-icon');
+    if (!burger || !dropdown) return;
+    burger.addEventListener('click', function() {
+      var open = dropdown.classList.toggle('open');
+      burger.setAttribute('aria-expanded', String(open));
+      icon.innerHTML = open
+        ? '<path d="M18 6L6 18M6 6l12 12"/>'
+        : '<path d="M4 6h16M4 12h16M4 18h16"/>';
+    });
+    dropdown.querySelectorAll('a').forEach(function(a) {
+      a.addEventListener('click', function() {
+        dropdown.classList.remove('open');
+        burger.setAttribute('aria-expanded', 'false');
+        icon.innerHTML = '<path d="M4 6h16M4 12h16M4 18h16"/>';
+      });
+    });
+  })();
+
+  // Scroll reveal
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+  document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
 
   // Smooth scroll
-  document.querySelectorAll('a[href^="#"]').forEach(link => {
-    link.addEventListener('click', (e) => {
+  document.querySelectorAll('a[href^="#"]').forEach(function(link) {
+    link.addEventListener('click', function(e) {
       e.preventDefault();
-      const target = document.querySelector(link.getAttribute('href'));
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      var target = document.querySelector(link.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
-</script>
 
+  // Hero cycling words
+  (function() {
+    var words = ['your industry', 'taxes', 'legal', 'healthcare', 'real estate', 'accounting', 'insurance', 'logistics', 'recruiting'];
+    var container = document.getElementById('hero-cycling');
+    if (!container) return;
+
+    var currentIndex = 0;
+    var isAnimating = false;
+    var DISPLAY_DURATION = 2500;
+    var LETTER_STAGGER = 40;
+    var EXIT_STAGGER = 20;
+    var EXIT_DURATION = 250;
+    var ENTER_SETTLE = 100;
+
+    function createWordEl(word, cls) {
+      var span = document.createElement('span');
+      span.className = 'cycling-word' + (cls ? ' ' + cls : '');
+      for (var i = 0; i < word.length; i++) {
+        var letter = document.createElement('span');
+        letter.className = 'cycling-letter';
+        letter.textContent = word[i] === ' ' ? '\u00A0' : word[i];
+        span.appendChild(letter);
+      }
+      return span;
+    }
+
+    function revealLetters(wordEl, callback) {
+      var letters = wordEl.querySelectorAll('.cycling-letter');
+      var totalTime = 0;
+      for (var i = 0; i < letters.length; i++) {
+        (function(el, delay) {
+          setTimeout(function() { el.classList.add('is-visible'); }, delay);
+        })(letters[i], i * LETTER_STAGGER);
+        totalTime = i * LETTER_STAGGER;
+      }
+      if (callback) setTimeout(callback, totalTime + ENTER_SETTLE);
+    }
+
+    function exitLetters(wordEl, callback) {
+      var letters = wordEl.querySelectorAll('.cycling-letter');
+      for (var i = 0; i < letters.length; i++) {
+        (function(el, delay) {
+          setTimeout(function() {
+            el.classList.remove('is-visible');
+            el.classList.add('is-exiting');
+          }, delay);
+        })(letters[i], i * EXIT_STAGGER);
+      }
+      if (callback) setTimeout(callback, EXIT_DURATION);
+    }
+
+    function cycleToNext() {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      var oldWord = container.querySelector('.cycling-word:not(.is-exiting)');
+      var nextIndex = (currentIndex + 1) % words.length;
+
+      exitLetters(oldWord, function() {
+        if (oldWord && oldWord.parentNode) oldWord.parentNode.removeChild(oldWord);
+        var newWordEl = createWordEl(words[nextIndex]);
+        container.appendChild(newWordEl);
+        container.style.width = newWordEl.offsetWidth + 'px';
+
+        requestAnimationFrame(function() {
+          revealLetters(newWordEl, function() { isAnimating = false; });
+        });
+
+        currentIndex = nextIndex;
+      });
+    }
+
+    container.style.transition = 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+    container.style.display = 'inline-block';
+
+    var firstWord = createWordEl(words[0]);
+    container.appendChild(firstWord);
+    container.style.width = firstWord.offsetWidth + 'px';
+
+    requestAnimationFrame(function() { revealLetters(firstWord); });
+    setInterval(cycleToNext, DISPLAY_DURATION);
+  })();
+</script>
 {% endblock %}

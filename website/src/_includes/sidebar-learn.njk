@@ -1,5 +1,5 @@
 {# Learn sidebar navigation. Set `activeChapter` in front matter to highlight the current page.
-   Values: "overview", "01", "02", "03", "04", "05", "06", "07", "08" #}
+   Values: "overview", "01", "02", "03", "04", "05" #}
 <aside class="sidebar">
   <div class="sidebar-label">Learn</div>
   <ul class="sidebar-nav">
@@ -19,33 +19,18 @@
       </a>
     </li>
     <li>
-      <a href="03-pages-and-components.html"{% if activeChapter == "03" %} class="active"{% endif %}>
-        <span class="num">03</span>Pages and components
+      <a href="03-build-your-first-agent.html"{% if activeChapter == "03" %} class="active"{% endif %}>
+        <span class="num">03</span>Build your first agent
       </a>
     </li>
     <li>
-      <a href="04-teaching-the-app.html"{% if activeChapter == "04" %} class="active"{% endif %}>
-        <span class="num">04</span>Teaching, not configuring
+      <a href="04-custom-components.html"{% if activeChapter == "04" %} class="active"{% endif %}>
+        <span class="num">04</span>Custom components
       </a>
     </li>
     <li>
-      <a href="05-code-at-runtime.html"{% if activeChapter == "05" %} class="active"{% endif %}>
-        <span class="num">05</span>Edge cases at runtime
-      </a>
-    </li>
-    <li>
-      <a href="06-showing-the-user.html"{% if activeChapter == "06" %} class="active"{% endif %}>
-        <span class="num">06</span>Showing, not driving
-      </a>
-    </li>
-    <li>
-      <a href="07-building.html"{% if activeChapter == "07" %} class="active"{% endif %}>
-        <span class="num">07</span>Building a Houston app
-      </a>
-    </li>
-    <li>
-      <a href="08-what-this-is-not.html"{% if activeChapter == "08" %} class="active"{% endif %}>
-        <span class="num">08</span>What Houston isn't
+      <a href="05-workspace-templates.html"{% if activeChapter == "05" %} class="active"{% endif %}>
+        <span class="num">05</span>Workspace templates
       </a>
     </li>
   </ul>

@@ -11,6 +11,7 @@ import type {
   ChannelEntry,
   StoreListing,
   TrackedIntegration,
+  ImportedWorkspace,
 } from "./types";
 import { logger } from "./logger";
 
@@ -302,6 +303,9 @@ export const tauriStore = {
   /** Check all installed agents for updates from their GitHub source. Returns list of repos that were updated. */
   checkUpdates: () =>
     invoke<string[]>("check_agent_updates"),
+  /** Import a workspace template from GitHub. Creates workspace + all agent instances. */
+  installWorkspaceFromGithub: (githubUrl: string) =>
+    invoke<ImportedWorkspace>("install_workspace_from_github", { github_url: githubUrl }),
 };
 
 interface RawConversation {

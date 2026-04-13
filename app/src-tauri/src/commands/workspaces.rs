@@ -41,7 +41,7 @@ pub fn read_workspaces(root: &Path) -> Result<Vec<Workspace>, String> {
 }
 
 /// Atomic write: write to .tmp then rename.
-fn write_workspaces(root: &Path, workspaces: &[Workspace]) -> Result<(), String> {
+pub fn write_workspaces(root: &Path, workspaces: &[Workspace]) -> Result<(), String> {
     let target = workspaces_json_path(root);
     let tmp = root.join("workspaces.json.tmp");
     let json = serde_json::to_string_pretty(workspaces)

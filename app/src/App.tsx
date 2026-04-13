@@ -3,10 +3,9 @@ import { ToastContainer } from "@houston-ai/core";
 import type { Toast } from "@houston-ai/core";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Check, X, Plus } from "lucide-react";
-import houstonIconWhite from "./assets/houston-icon-white.svg";
-import houstonIcon from "./assets/houston-icon.svg";
+import { HoustonLogo } from "./components/shell/experience-card";
 
-import { tauriSlack, tauriSystem } from "./lib/tauri";
+import { tauriSlack, tauriSystem, tauriStore } from "./lib/tauri";
 import {
   Empty,
   EmptyHeader,
@@ -18,6 +17,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  cn,
 } from "@houston-ai/core";
 import { TabBar } from "@houston-ai/layout";
 import { useHoustonInit } from "./hooks/use-houston-init";
@@ -33,6 +33,7 @@ import { CreateAgentDialog } from "./components/shell/create-workspace-dialog";
 import { AgentUpdateBanner } from "./components/shell/agent-update-banner";
 import { UpdateChecker } from "./components/shell/update-checker";
 import { analytics } from "./lib/analytics";
+import { loadTheme } from "./lib/theme";
 import { AgentRenderer } from "./components/shell/experience-renderer";
 import { Dashboard } from "./components/dashboard";
 import { IntegrationsView } from "./components/tabs/integrations-view";
@@ -48,9 +49,10 @@ export default function App() {
   useConnections();
   useComposioApps();
 
-  // Track app launch
+  // Track app launch + load theme
   useEffect(() => {
     analytics.track("app_launched");
+    loadTheme();
   }, []);
 
   // Intercept all link clicks and open in system browser
@@ -90,6 +92,7 @@ export default function App() {
   const toasts = useUIStore((s) => s.toasts);
   const dismissToast = useUIStore((s) => s.dismissToast);
   const onStartMission = useUIStore((s) => s.onStartMission);
+  const boardActions = useUIStore((s) => s.boardActions);
   const missionPanelOpen = useUIStore((s) => s.missionPanelOpen);
   const setCreateAgentDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
   const [panelContainer, setPanelContainer] = useState<HTMLDivElement | null>(null);
@@ -190,10 +193,22 @@ export default function App() {
                               }, 50);
                             }}
                           >
-                            <img src={houstonIconWhite} alt="" className="size-4" />
+                            <HoustonLogo size={16} />
                             New mission
                           </Button>
                         )}
+                        {boardActions.map((action) => (
+                          <Button
+                            key={action.id}
+                            variant="secondary"
+                            onClick={() => {
+                              setViewMode("activity");
+                              setTimeout(() => action.onClick(), 50);
+                            }}
+                          >
+                            {action.label}
+                          </Button>
+                        ))}
                       </div>
                     }
                   />
@@ -334,7 +349,7 @@ function OnboardingFlow({
   if (!started) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-background text-foreground">
-        <img src={houstonIcon} alt="Houston" className="h-10 w-auto mb-2" />
+        <HoustonLogo size={40} className="mb-2" />
         <h1 className="text-xl font-semibold mb-1">Welcome to Houston</h1>
         <p className="text-sm text-muted-foreground mb-6">Ship the impossible.</p>
         <Button className="rounded-full" onClick={() => setStarted(true)}>
@@ -362,23 +377,115 @@ export function CreateWorkspaceDialog({
 }) {
   const createWorkspace = useWorkspaceStore((s) => s.create);
   const setCurrentWorkspace = useWorkspaceStore((s) => s.setCurrent);
+  const loadWorkspaces = useWorkspaceStore((s) => s.loadWorkspaces);
   const loadAgents = useAgentStore((s) => s.loadAgents);
+  const loadConfigs = useAgentCatalogStore((s) => s.loadConfigs);
+  const [tab, setTab] = useState<"new" | "github">("new");
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState("");
+  const [importUrl, setImportUrl] = useState("");
+
+  const handleClose = () => {
+    onOpenChange(false);
+    setTab("new");
+    setImporting(false);
+    setImportError("");
+    setImportUrl("");
+  };
+
+  const handleImportWorkspace = async () => {
+    const trimmed = importUrl.trim();
+    if (!trimmed) return;
+    setImportError("");
+    setImporting(true);
+    try {
+      const result = await tauriStore.installWorkspaceFromGithub(trimmed);
+      await loadConfigs();
+      await loadWorkspaces();
+      const allWs = useWorkspaceStore.getState().workspaces;
+      const imported = allWs.find((w) => w.id === result.workspaceId);
+      if (imported) {
+        setCurrentWorkspace(imported);
+        await loadAgents(imported.id);
+      }
+      handleClose();
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : String(e));
+      setImporting(false);
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New workspace</DialogTitle>
         </DialogHeader>
-        <WorkspaceSetupFlow
-          mode="dialog"
-          onComplete={async (name, provider, model) => {
-            const ws = await createWorkspace(name, provider, model);
-            setCurrentWorkspace(ws);
-            await loadAgents(ws.id);
-            onOpenChange(false);
-          }}
-        />
+
+        <div className="flex gap-1 pb-2">
+          {(["new", "github"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                "px-3 py-1.5 text-sm rounded-full transition-colors",
+                tab === t
+                  ? "bg-accent text-foreground font-medium"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              {t === "new" ? "Create new" : "Import from GitHub"}
+            </button>
+          ))}
+        </div>
+
+        {tab === "new" ? (
+          <WorkspaceSetupFlow
+            mode="dialog"
+            onComplete={async (name, provider, model) => {
+              const ws = await createWorkspace(name, provider, model);
+              setCurrentWorkspace(ws);
+              await loadAgents(ws.id);
+              handleClose();
+            }}
+          />
+        ) : (
+          <div className="space-y-3 pt-1">
+            <p className="text-sm text-muted-foreground">
+              Import a workspace template from GitHub. This creates a workspace with all its agents ready to use.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={importUrl}
+                onChange={(e) => { setImportUrl(e.target.value); setImportError(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && importUrl.trim() && !importing) handleImportWorkspace(); }}
+                placeholder="owner/repo"
+                disabled={importing}
+                autoFocus
+                className="flex-1 h-9 px-3 rounded-full border border-border bg-background text-sm
+                           placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring
+                           disabled:opacity-60 disabled:cursor-not-allowed"
+              />
+              <Button
+                onClick={handleImportWorkspace}
+                disabled={!importUrl.trim() || importing}
+                className="rounded-full shrink-0"
+              >
+                {importing ? <Spinner className="size-4" /> : "Import"}
+              </Button>
+            </div>
+            {importError && (
+              <p className="text-xs text-destructive">{importError}</p>
+            )}
+            {importing && (
+              <div className="flex flex-col items-center gap-2 py-4">
+                <Spinner className="size-5 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Importing workspace and agents...</p>
+              </div>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -1,4 +1,11 @@
 /** A workspace (top-level container, formerly "Space") */
+/** Result of importing a workspace template from GitHub. */
+export interface ImportedWorkspace {
+  workspaceId: string;
+  workspaceName: string;
+  agentIds: string[];
+}
+
 export interface Workspace {
   id: string;
   name: string;

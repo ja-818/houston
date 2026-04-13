@@ -1,0 +1,166 @@
+---
+activeChapter: "05"
+rootPath: "../"
+learnPath: "index.html"
+visionPath: "../vision/index.html"
+permalink: "learn/05-workspace-templates.html"
+---
+{% extends "base.njk" %}
+{% block title %}Workspace templates — Learn Houston{% endblock %}
+{% block meta %}
+<meta name="description" content="Share a complete workspace with multiple agents. One GitHub repo, one import, everything ready to use.">
+{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="style.css?v=3">
+{% endblock %}
+{% block body %}
+    {% include "nav-docs.njk" %}
+
+    <div class="layout">
+      {% include "sidebar-learn.njk" %}
+
+      <main class="content">
+        <div class="content-label">Chapter 05</div>
+        <h1>Workspace templates.</h1>
+        <p class="lead">
+          A workspace template is a group of agents you share as one.
+          Import from GitHub and everything is ready to use.
+        </p>
+
+        <div class="toc">
+          <div class="toc-label">On this page</div>
+          <ol>
+            <li><a href="#what">What this is</a></li>
+            <li><a href="#structure">Repo structure</a></li>
+            <li><a href="#manifest">The workspace.json</a></li>
+            <li><a href="#import">Importing a workspace</a></li>
+            <li><a href="#example">Full example</a></li>
+          </ol>
+        </div>
+
+        <h2 id="what">What this is</h2>
+        <p>
+          Chapter 3 covered building a single agent. But most real
+          products need several agents working together. A tax practice
+          needs a bookkeeper, a document reviewer, and a client
+          communicator. A sales team needs a lead researcher, an outreach
+          agent, and a CRM manager.
+        </p>
+        <p>
+          A workspace template bundles multiple agents into one GitHub
+          repo. When someone imports it, Houston creates a workspace with
+          all the agents ready to go. No setup. No picking agents one by
+          one.
+        </p>
+
+        <h2 id="structure">Repo structure</h2>
+        <p>
+          A workspace template repo has a <code>workspace.json</code> at
+          the root and an <code>agents/</code> folder with one subfolder
+          per agent.
+        </p>
+        <pre><code>my-workspace/
+├── workspace.json
+└── agents/
+    ├── bookkeeper/
+    │   ├── houston.json
+    │   ├── CLAUDE.md
+    │   └── icon.png
+    ├── document-reviewer/
+    │   ├── houston.json
+    │   └── CLAUDE.md
+    └── client-comms/
+        ├── houston.json
+        └── CLAUDE.md</code></pre>
+        <p>
+          Each agent subfolder follows the exact same format as a
+          standalone agent repo (Chapter 3). The only addition is the
+          <code>workspace.json</code> that ties them together.
+        </p>
+
+        <h2 id="manifest">The workspace.json</h2>
+        <pre><code>{
+  "name": "Tax Practice",
+  "description": "A complete workspace for tax professionals.",
+  "agents": ["bookkeeper", "document-reviewer", "client-comms"]
+}</code></pre>
+        <p>
+          Three fields. That's it.
+        </p>
+        <table class="fields-table">
+          <thead><tr><th>Field</th><th>Required</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>name</code></td><td>Yes</td><td>Name of the workspace that gets created.</td></tr>
+            <tr><td><code>description</code></td><td>No</td><td>Description for anyone browsing the repo.</td></tr>
+            <tr><td><code>agents</code></td><td>Yes</td><td>List of subfolder names under <code>agents/</code>. Order doesn't matter.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="import">Importing a workspace</h2>
+        <ol>
+          <li>In Houston, open the workspace switcher and click
+          <strong>New workspace</strong>.</li>
+          <li>Switch to the <strong>Import from GitHub</strong> tab.</li>
+          <li>Paste the repo URL or <code>owner/repo</code>.</li>
+          <li>Click <strong>Import</strong>.</li>
+        </ol>
+        <p>
+          Houston downloads the workspace template, installs every agent
+          definition, creates the workspace, and creates all agent
+          instances with their CLAUDE.md and seed files. When it's done,
+          you're looking at a workspace with every agent ready to chat.
+        </p>
+        <p>
+          If a workspace with the same name already exists, Houston
+          appends "(imported)" to avoid conflicts.
+        </p>
+
+        <h2 id="example">Full example</h2>
+        <p>
+          Here's a complete workspace template for a small accounting
+          firm. Three agents, each with its own prompt and tabs.
+        </p>
+        <h3>workspace.json</h3>
+        <pre><code>{
+  "name": "Accounting Firm",
+  "description": "Bookkeeping, tax prep, and client communication.",
+  "agents": ["bookkeeper", "tax-prep", "client-comms"]
+}</code></pre>
+        <h3>agents/bookkeeper/houston.json</h3>
+        <pre><code>{
+  "id": "acme-bookkeeper",
+  "name": "Bookkeeper",
+  "description": "Categorize expenses and reconcile accounts.",
+  "icon": "Calculator",
+  "category": "business",
+  "tabs": [
+    { "id": "board", "label": "Tasks", "builtIn": "board", "badge": "activity" },
+    { "id": "files", "label": "Files", "builtIn": "files" },
+    { "id": "job-description", "label": "Instructions", "builtIn": "job-description" }
+  ]
+}</code></pre>
+        <h3>agents/bookkeeper/CLAUDE.md</h3>
+        <pre><code># Bookkeeper
+
+You categorize transactions, reconcile accounts, and flag
+anomalies. Ask which period the user wants before starting.
+Round to two decimal places. When unsure about a category, ask.</code></pre>
+        <p>
+          The other two agents follow the same pattern. Push the repo to
+          GitHub. Anyone who imports it gets a workspace with three
+          agents, each with its own instructions and tabs, ready to work.
+        </p>
+
+        <div class="pager">
+          <a href="04-custom-components.html">
+            <div class="pager-label">← Previous</div>
+            <div class="pager-title">Custom components</div>
+          </a>
+          <a href="index.html" class="next">
+            <div class="pager-label">Back to</div>
+            <div class="pager-title">Overview</div>
+          </a>
+        </div>
+      </main>
+    </div>
+  {% endblock %}

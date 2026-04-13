@@ -326,6 +326,223 @@ pub async fn check_agent_updates() -> Result<Vec<String>, String> {
     Ok(updated)
 }
 
+/// Workspace template schema (workspace.json in a GitHub repo).
+#[derive(Deserialize)]
+struct WorkspaceTemplate {
+    name: String,
+    #[allow(dead_code)]
+    description: Option<String>,
+    agents: Vec<String>, // subfolder names under agents/
+}
+
+/// Result returned to the frontend after importing a workspace template.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportedWorkspace {
+    pub workspace_id: String,
+    pub workspace_name: String,
+    pub agent_ids: Vec<String>,
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub async fn install_workspace_from_github(
+    root: tauri::State<'_, super::agents::WorkspaceRoot>,
+    github_url: String,
+) -> Result<ImportedWorkspace, String> {
+    let (owner, repo) = parse_github_ref(&github_url)?;
+
+    // 1. Fetch workspace.json (required)
+    let ws_bytes = fetch_github_raw(&owner, &repo, "workspace.json")
+        .await?
+        .ok_or_else(|| format!("No workspace.json found in {owner}/{repo}"))?;
+
+    let template: WorkspaceTemplate = serde_json::from_slice(&ws_bytes)
+        .map_err(|e| format!("Invalid workspace.json: {e}"))?;
+
+    // 2. Create the workspace
+    let mut workspaces = super::workspaces::read_workspaces(&root.0)?;
+    let ws_name = if workspaces.iter().any(|w| w.name == template.name) {
+        format!("{} (imported)", template.name)
+    } else {
+        template.name.clone()
+    };
+
+    let ws = super::workspaces::Workspace {
+        id: uuid::Uuid::new_v4().to_string(),
+        name: ws_name.clone(),
+        is_default: false,
+        created_at: chrono::Utc::now().to_rfc3339(),
+        provider: None,
+        model: None,
+    };
+
+    let ws_dir = root.0.join(&ws_name);
+    fs::create_dir_all(ws_dir.join(".houston"))
+        .map_err(|e| format!("Failed to create workspace directory: {e}"))?;
+    let connections_path = ws_dir.join(".houston").join("connections.json");
+    if !connections_path.exists() {
+        let _ = fs::write(&connections_path, "[]");
+    }
+
+    workspaces.push(ws.clone());
+    super::workspaces::write_workspaces(&root.0, &workspaces)?;
+
+    // 3. For each agent subfolder, install the definition + create an instance
+    let mut created_agent_ids = Vec::new();
+
+    for agent_folder in &template.agents {
+        let prefix = format!("agents/{agent_folder}");
+
+        // Fetch houston.json for this agent (required)
+        let config_path = format!("{prefix}/houston.json");
+        let config_bytes = match fetch_github_raw(&owner, &repo, &config_path).await {
+            Ok(Some(bytes)) => bytes,
+            _ => {
+                tracing::warn!("[workspace-import] skipping {agent_folder}: no houston.json");
+                continue;
+            }
+        };
+
+        let config: serde_json::Value = match serde_json::from_slice(&config_bytes) {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::warn!("[workspace-import] skipping {agent_folder}: invalid JSON: {e}");
+                continue;
+            }
+        };
+
+        let agent_id = config["id"]
+            .as_str()
+            .unwrap_or(agent_folder.as_str())
+            .to_string();
+
+        // Install agent definition to ~/.houston/agents/{id}/
+        let def_dir = agents_dir().join(&agent_id);
+        fs::create_dir_all(&def_dir)
+            .map_err(|e| format!("Failed to create agent dir: {e}"))?;
+        fs::write(def_dir.join("houston.json"), &config_bytes)
+            .map_err(|e| format!("Failed to save houston.json: {e}"))?;
+
+        // Fetch optional files for the definition
+        let claude_path_gh = format!("{prefix}/CLAUDE.md");
+        let icon_path_gh = format!("{prefix}/icon.png");
+        let bundle_path_gh = format!("{prefix}/bundle.js");
+        let (claude_md, icon, bundle) = tokio::join!(
+            fetch_github_raw(&owner, &repo, &claude_path_gh),
+            fetch_github_raw(&owner, &repo, &icon_path_gh),
+            fetch_github_raw(&owner, &repo, &bundle_path_gh),
+        );
+
+        if let Ok(Some(bytes)) = claude_md {
+            let _ = fs::write(def_dir.join("CLAUDE.md"), &bytes);
+        }
+        if let Ok(Some(bytes)) = icon {
+            let _ = fs::write(def_dir.join("icon.png"), &bytes);
+        }
+        if let Ok(Some(bytes)) = bundle {
+            let _ = fs::write(def_dir.join("bundle.js"), &bytes);
+        }
+
+        // Save source info
+        let source = serde_json::json!({
+            "repo": format!("{owner}/{repo}"),
+            "subfolder": agent_folder,
+            "installed_at": chrono::Utc::now().to_rfc3339(),
+        });
+        let _ = fs::write(
+            def_dir.join(".source.json"),
+            serde_json::to_string_pretty(&source).unwrap_or_default(),
+        );
+
+        // Create an agent instance in the workspace
+        let agent_name = config["name"]
+            .as_str()
+            .unwrap_or(agent_folder.as_str())
+            .to_string();
+        let agent_color = config["color"].as_str().map(|s| s.to_string());
+        let agent_folder_path = ws_dir.join(&agent_name);
+
+        if agent_folder_path.exists() {
+            tracing::warn!("[workspace-import] agent folder already exists: {agent_name}, skipping instance");
+            continue;
+        }
+
+        fs::create_dir_all(agent_folder_path.join(".houston"))
+            .map_err(|e| format!("Failed to create agent instance dir: {e}"))?;
+        fs::create_dir_all(agent_folder_path.join(".agents/skills"))
+            .map_err(|e| format!("Failed to create .agents/skills: {e}"))?;
+
+        let meta = super::agents::AgentMeta {
+            id: uuid::Uuid::new_v4().to_string(),
+            config_id: agent_id.clone(),
+            color: agent_color,
+            created_at: chrono::Utc::now().to_rfc3339(),
+            last_opened_at: Some(chrono::Utc::now().to_rfc3339()),
+        };
+
+        let meta_json = serde_json::to_string_pretty(&meta)
+            .map_err(|e| format!("Failed to serialize agent meta: {e}"))?;
+        fs::write(agent_folder_path.join(".houston/agent.json"), &meta_json)
+            .map_err(|e| format!("Failed to write agent.json: {e}"))?;
+
+        // Seed CLAUDE.md from the definition
+        let claude_path = agent_folder_path.join("CLAUDE.md");
+        if !claude_path.exists() {
+            let content = fs::read_to_string(def_dir.join("CLAUDE.md"))
+                .or_else(|_| {
+                    config["claudeMd"]
+                        .as_str()
+                        .map(|s| s.to_string())
+                        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "no claudeMd"))
+                })
+                .unwrap_or_else(|_| "## Instructions\n\n## Learnings\n".to_string());
+            let _ = fs::write(&claude_path, &content);
+        }
+
+        // Seed agentSeeds files
+        if let Some(seeds) = config["agentSeeds"].as_object() {
+            for (path, content) in seeds {
+                if let Some(content_str) = content.as_str() {
+                    let target = agent_folder_path.join(path);
+                    if !target.exists() {
+                        if let Some(parent) = target.parent() {
+                            let _ = fs::create_dir_all(parent);
+                        }
+                        let _ = fs::write(&target, content_str);
+                    }
+                }
+            }
+        }
+
+        // Seed default data files
+        let houston = agent_folder_path.join(".houston");
+        if !houston.join("activity.json").exists() {
+            let _ = fs::write(houston.join("activity.json"), "[]");
+        }
+        if !houston.join("config.json").exists() {
+            let _ = fs::write(houston.join("config.json"), "{}");
+        }
+
+        // Seed prompt files via the shared helper
+        let _ = crate::agent::seed_agent(&agent_folder_path);
+
+        created_agent_ids.push(agent_id);
+        tracing::info!("[workspace-import] created agent instance: {agent_name}");
+    }
+
+    tracing::info!(
+        "[workspace-import] imported workspace '{}' from {owner}/{repo} with {} agents",
+        ws_name,
+        created_agent_ids.len()
+    );
+
+    Ok(ImportedWorkspace {
+        workspace_id: ws.id,
+        workspace_name: ws_name,
+        agent_ids: created_agent_ids,
+    })
+}
+
 /// Simple percent-encoding for query parameters.
 fn urlencoded(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
