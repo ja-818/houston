@@ -32,6 +32,5 @@ export const queryKeys = {
 
   // App-scoped (less reactive, loaded on init)
   connections: () => ["connections"] as const,
-  connectedToolkits: (slugs: readonly string[]) =>
-    ["connected-toolkits", ...slugs] as const,
+  connectedToolkits: () => ["connected-toolkits"] as const,
 };

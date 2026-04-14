@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { COMPOSIO_CATALOG, type ComposioApp } from "../../lib/composio-catalog";
 import { tauriConnections } from "../../lib/tauri";
 
 interface ConnectedAppsSectionProps {
@@ -11,29 +10,24 @@ interface ConnectedAppsSectionProps {
 export function ConnectedAppsSection({
   connectedToolkits,
 }: ConnectedAppsSectionProps) {
-  // Use the scraped catalog for name/logo/description lookups so Connected
-  // cards match the Browse grid visually. Falls back to the hardcoded
-  // catalog when the scrape hasn't loaded yet.
   const { data: apiApps } = useQuery({
     queryKey: ["composio-apps"],
     queryFn: () => tauriConnections.listApps(),
     staleTime: 1000 * 60 * 60,
   });
 
-  const catalog: ComposioApp[] = useMemo(() => {
-    if (apiApps && apiApps.length > 0) {
-      return apiApps.map((a) => ({
-        toolkit: a.toolkit,
-        name: a.name,
-        description: a.description,
-        logoUrl: a.logo_url || fallbackLogo(a.toolkit),
-      }));
-    }
-    return COMPOSIO_CATALOG;
-  }, [apiApps]);
-
   const connectedApps = useMemo(() => {
-    const byToolkit = new Map(catalog.map((a) => [a.toolkit, a]));
+    const byToolkit = new Map(
+      (apiApps ?? []).map((a) => [
+        a.toolkit,
+        {
+          toolkit: a.toolkit,
+          name: a.name,
+          description: a.description,
+          logoUrl: a.logo_url || fallbackLogo(a.toolkit),
+        },
+      ]),
+    );
     return Array.from(connectedToolkits)
       .map(
         (slug) =>
@@ -45,7 +39,7 @@ export function ConnectedAppsSection({
           },
       )
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [catalog, connectedToolkits]);
+  }, [apiApps, connectedToolkits]);
 
   if (connectedApps.length === 0) {
     return null;
@@ -69,7 +63,14 @@ export function ConnectedAppsSection({
   );
 }
 
-function ConnectedAppCard({ app }: { app: ComposioApp }) {
+interface AppInfo {
+  toolkit: string;
+  name: string;
+  description: string;
+  logoUrl: string;
+}
+
+function ConnectedAppCard({ app }: { app: AppInfo }) {
   const [imgError, setImgError] = useState(false);
   const initial = app.name.charAt(0).toUpperCase();
 

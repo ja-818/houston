@@ -218,6 +218,14 @@ pub async fn start_link(toolkit: &str) -> Result<StartLinkResponse, String> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout_trimmed = stdout.trim();
+
+    // The CLI returns empty stdout when the toolkit is already connected.
+    if stdout_trimmed.is_empty() {
+        return Err(format!(
+            "{toolkit} is already connected. Disconnect it first in the Composio dashboard if you want to re-link."
+        ));
+    }
 
     #[derive(Deserialize)]
     struct Payload {
@@ -226,10 +234,9 @@ pub async fn start_link(toolkit: &str) -> Result<StartLinkResponse, String> {
         toolkit: String,
     }
 
-    let payload: Payload = serde_json::from_str(stdout.trim()).map_err(|e| {
+    let payload: Payload = serde_json::from_str(stdout_trimmed).map_err(|e| {
         format!(
-            "Unexpected composio link --no-wait output: {e}\nstdout was: {}",
-            stdout.trim()
+            "Unexpected composio link --no-wait output: {e}\nstdout was: {stdout_trimmed}"
         )
     })?;
 
@@ -399,124 +406,86 @@ fn cli_binary() -> Result<PathBuf, String> {
     Ok(p)
 }
 
-// -- Connection probing --
+// -- Connected toolkits listing --
 //
-// We need to know "is toolkit X connected?" for each app in our catalog so
-// the Integrations tab can render a Connected section and dedupe the Browse
-// grid. The CLI has no dedicated "list consumer connected accounts" command
-// (`composio dev connected-accounts list` is developer-project-scoped and
-// does NOT see consumer/for-you connections), and the COMPOSIO_*
-// meta-tools are blocked from `composio execute` / `composio run`.
-//
-// The trick: `composio proxy https://invalid.invalid/ --toolkit <slug>`
-// reaches Composio's tool router, runs the auth check first, and then
-// runs the outbound URL through an SSRF guard. The two failure modes are
-// distinguishable by the `slug` field in the JSON response:
-//
-//   - NotConnected → `"slug": "ToolRouterV2_NoActiveConnection"`
-//   - Connected    → `"slug": "ExternalProxy_SSRFBlocked"`
-//
-// When connected, the SSRF guard fires BEFORE any outbound request to
-// the third-party API, so no real Gmail/Slack/etc. calls happen — just
-// a lightweight audit entry at Composio's tool router. When not
-// connected, the call short-circuits at the auth check. Exit code is
-// always 1 in both cases, so we key off the JSON slug.
+// Uses the Composio REST API to get active connected toolkits in the
+// consumer namespace. The CLI's `connections list` returns ALL statuses
+// (including hundreds of EXPIRED entries) and can truncate results due
+// to pagination limits. The REST endpoint returns only active toolkit
+// slugs, is fast, and never truncates.
 
-/// Probe whether a single toolkit is connected in the consumer
-/// ("Composio for You") namespace. Returns `Ok(true)` if connected,
-/// `Ok(false)` if definitively not connected, and `Err(_)` if the
-/// probe response was unrecognizable (network error, CLI crash, etc.).
-pub async fn probe_connected(toolkit: &str) -> Result<bool, String> {
-    if toolkit.is_empty() {
-        return Err("toolkit must not be empty".into());
-    }
-    // 10s timeout per probe — the CLI typically responds in ~500ms, but
-    // we give headroom for cold-start and network jitter.
-    let output = run_cli_with_timeout(
-        &["proxy", "https://invalid.invalid/", "--toolkit", toolkit],
-        std::time::Duration::from_secs(10),
-    )
-    .await?;
-
-    // Exit code is 1 in both the connected and not-connected cases
-    // (both are "failures" from the CLI's perspective), so we ignore it
-    // and parse stdout. The CLI prints clean JSON to stdout and pretty
-    // error decoration to stderr.
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stdout_trimmed = stdout.trim();
-    if stdout_trimmed.is_empty() {
-        return Err(format!(
-            "composio proxy returned empty stdout (stderr: {})",
-            String::from_utf8_lossy(&output.stderr).trim()
-        ));
-    }
-
-    #[derive(Deserialize)]
-    struct ProbeResponse {
-        slug: Option<String>,
-    }
-
-    let parsed: ProbeResponse = serde_json::from_str(stdout_trimmed).map_err(|e| {
-        format!("Unrecognized probe response for {toolkit}: {e}\nstdout: {stdout_trimmed}")
-    })?;
-
-    match parsed.slug.as_deref() {
-        Some("ToolRouterV2_NoActiveConnection") => Ok(false),
-        Some("ExternalProxy_SSRFBlocked") => Ok(true),
-        Some(other) => {
-            // Unexpected slug. Log and treat as not connected so we
-            // don't show misleading green states on unrelated errors.
-            tracing::warn!(
-                "[composio:cli] unexpected probe slug for {}: {}",
-                toolkit,
-                other
-            );
-            Ok(false)
+/// List all connected toolkit slugs in the consumer ("Composio for You")
+/// namespace. Returns a sorted `Vec<String>` of toolkit slugs.
+///
+/// Calls `GET /api/v3/org/consumer/connected_toolkits` after resolving
+/// the consumer user ID from `GET /api/v3/org/consumer/project/resolve`.
+pub async fn list_connected_toolkits() -> Vec<String> {
+    match list_connected_toolkits_inner().await {
+        Ok(mut slugs) => {
+            slugs.sort();
+            slugs
         }
-        None => Err(format!(
-            "probe response for {toolkit} missing `slug` field: {stdout_trimmed}"
-        )),
+        Err(e) => {
+            tracing::warn!("[composio] failed to list connected toolkits: {e}");
+            Vec::new()
+        }
     }
 }
 
-/// Probe many toolkits in parallel and return the subset that came
-/// back connected. Individual probe errors are logged and skipped —
-/// a single flaky toolkit should not blank the whole Connected list.
-///
-/// Parallelism is capped by a `JoinSet` with a semaphore-like bound
-/// so we don't spawn 45+ subprocesses at once on weaker machines.
-pub async fn probe_connected_many(toolkits: Vec<String>) -> Vec<String> {
-    use tokio::sync::Semaphore;
-    const MAX_CONCURRENT: usize = 10;
+async fn list_connected_toolkits_inner() -> Result<Vec<String>, String> {
+    let (api_key, base_url, org_id) = crate::composio_apps::read_user_config_full()?;
 
-    let sem = std::sync::Arc::new(Semaphore::new(MAX_CONCURRENT));
-    let mut set = tokio::task::JoinSet::new();
+    let client = reqwest::Client::new();
 
-    for toolkit in toolkits {
-        let sem = sem.clone();
-        set.spawn(async move {
-            let _permit = sem.acquire_owned().await.ok()?;
-            match probe_connected(&toolkit).await {
-                Ok(true) => Some(toolkit),
-                Ok(false) => None,
-                Err(e) => {
-                    tracing::warn!(
-                        "[composio:cli] probe failed for {}: {}",
-                        toolkit,
-                        e
-                    );
-                    None
-                }
-            }
-        });
+    // Step 1: resolve consumer project to get consumer_user_id
+    let resolve_resp = client
+        .post(format!("{base_url}/api/v3/org/consumer/project/resolve"))
+        .header("x-user-api-key", &api_key)
+        .header("x-org-id", &org_id)
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| format!("Consumer project resolve failed: {e}"))?;
+
+    if !resolve_resp.status().is_success() {
+        return Err(format!("Consumer project resolve returned {}", resolve_resp.status()));
     }
 
-    let mut connected = Vec::new();
-    while let Some(join_result) = set.join_next().await {
-        if let Ok(Some(toolkit)) = join_result {
-            connected.push(toolkit);
-        }
+    #[derive(Deserialize)]
+    struct ConsumerProject {
+        consumer_user_id: String,
     }
-    connected.sort();
-    connected
+
+    let project: ConsumerProject = resolve_resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse consumer project: {e}"))?;
+
+    // Step 2: get connected toolkits for this consumer user
+    let toolkits_resp = client
+        .get(format!("{base_url}/api/v3/org/consumer/connected_toolkits"))
+        .query(&[("user_id", &project.consumer_user_id)])
+        .header("x-user-api-key", &api_key)
+        .header("x-org-id", &org_id)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| format!("Connected toolkits request failed: {e}"))?;
+
+    if !toolkits_resp.status().is_success() {
+        return Err(format!("Connected toolkits returned {}", toolkits_resp.status()));
+    }
+
+    #[derive(Deserialize)]
+    struct ConnectedToolkits {
+        toolkits: Vec<String>,
+    }
+
+    let result: ConnectedToolkits = toolkits_resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse connected toolkits: {e}"))?;
+
+    Ok(result.toolkits)
 }

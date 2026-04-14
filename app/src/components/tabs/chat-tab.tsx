@@ -9,11 +9,11 @@ import {
 } from "@houston-ai/core";
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
+import { useWorkspaceStore } from "../../stores/workspaces";
 import { useDraftStore, useDraftText, useDraftFiles } from "../../stores/drafts";
-import { tauriChat, tauriAttachments, tauriSystem, withAttachmentPaths } from "../../lib/tauri";
+import { tauriChat, tauriAttachments, tauriSystem, tauriConfig, withAttachmentPaths } from "../../lib/tauri";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
 import { useConnectedToolkits, useConnections } from "../../hooks/queries";
-import { COMPOSIO_PROBE_SLUGS } from "../../lib/composio-catalog";
 import {
   ComposioLinkCard,
   parseComposioToolkitFromHref,
@@ -21,6 +21,8 @@ import {
 import { analytics } from "../../lib/analytics";
 import type { TabProps } from "../../lib/types";
 import { HoustonThinkingIndicator } from "../shell/experience-card";
+import { ChatModelSelector } from "../chat-model-selector";
+import { getDefaultModel } from "../../lib/providers";
 
 export default function ChatTab({ agent }: TabProps) {
   const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(agent.folderPath);
@@ -54,6 +56,39 @@ export default function ChatTab({ agent }: TabProps) {
   const sendingRef = useRef(false);
   const loadedRef = useRef<string | null>(null);
 
+  // --- Model selector: three-tier resolution ---
+  // Workspace default → agent config override → chat-level override (ephemeral)
+  const workspace = useWorkspaceStore((s) => s.current);
+  const wsProvider = workspace?.provider ?? "anthropic";
+  const wsModel = workspace?.model ?? getDefaultModel(wsProvider);
+
+  // Agent-level config (loaded once per agent)
+  const [agentProvider, setAgentProvider] = useState<string | null>(null);
+  const [agentModel, setAgentModel] = useState<string | null>(null);
+  useEffect(() => {
+    tauriConfig.read(agentPath).then((cfg) => {
+      setAgentProvider((cfg.provider as string) ?? null);
+      setAgentModel((cfg.model as string) ?? null);
+    }).catch(() => {});
+  }, [agentPath]);
+
+  // Chat-level override (ephemeral, resets per agent)
+  const [chatProvider, setChatProvider] = useState<string | null>(null);
+  const [chatModel, setChatModel] = useState<string | null>(null);
+  useEffect(() => {
+    setChatProvider(null);
+    setChatModel(null);
+  }, [agent.id]);
+
+  // Effective = chat override > agent config > workspace default
+  const effectiveProvider = chatProvider ?? agentProvider ?? wsProvider;
+  const effectiveModel = chatModel ?? agentModel ?? wsModel;
+
+  const handleModelSelect = useCallback((prov: string, mod: string) => {
+    setChatProvider(prov);
+    setChatModel(mod);
+  }, []);
+
   useEffect(() => {
     if (loadedRef.current === agent.id) return;
     loadedRef.current = agent.id;
@@ -71,14 +106,11 @@ export default function ChatTab({ agent }: TabProps) {
     tauriSystem.openUrl(url).catch(console.error);
   }, []);
 
-  // Connection state for inline Composio connect cards. Only probe
+  // Connection state for inline Composio connect cards. Only query
   // when the user is signed in — otherwise the CLI call will fail.
   const { data: composioStatus } = useConnections();
-  const probeSlugs = useMemo(
-    () => (composioStatus?.status === "ok" ? COMPOSIO_PROBE_SLUGS : []),
-    [composioStatus?.status],
-  );
-  const { data: connectedList } = useConnectedToolkits(probeSlugs);
+  const isSignedIn = composioStatus?.status === "ok";
+  const { data: connectedList } = useConnectedToolkits(isSignedIn);
   const connectedSet = useMemo(
     () => new Set(connectedList ?? []),
     [connectedList],
@@ -121,7 +153,10 @@ export default function ChatTab({ agent }: TabProps) {
       try {
         const paths = await tauriAttachments.save(attachmentScope, files);
         const prompt = withAttachmentPaths(text, paths);
-        await tauriChat.send(agentPath, prompt, sessionKey);
+        await tauriChat.send(agentPath, prompt, sessionKey, {
+          providerOverride: chatProvider ?? undefined,
+          modelOverride: chatModel ?? undefined,
+        });
       } catch (err) {
         pushFeedItem(agentPath, sessionKey, {
           feed_type: "system_message",
@@ -132,7 +167,7 @@ export default function ChatTab({ agent }: TabProps) {
         sendingRef.current = false;
       }
     },
-    [agentPath, sessionKey, attachmentScope, pushFeedItem, setComposerText, setComposerFiles],
+    [agentPath, sessionKey, attachmentScope, pushFeedItem, setComposerText, setComposerFiles, chatProvider, chatModel],
   );
 
   return (
@@ -155,6 +190,14 @@ export default function ChatTab({ agent }: TabProps) {
         attachments={composerFiles}
         onAttachmentsChange={setComposerFiles}
         onNotice={handleNotice}
+        footer={
+          <ChatModelSelector
+            provider={effectiveProvider}
+            model={effectiveModel}
+            onSelect={handleModelSelect}
+            lockedProvider={(feedItems ?? []).length > 0 ? effectiveProvider : null}
+          />
+        }
         emptyState={
           <Empty className="border-0">
             <EmptyHeader>

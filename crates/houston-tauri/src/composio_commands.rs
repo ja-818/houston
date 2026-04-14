@@ -2,10 +2,7 @@
 //!
 //! Houston's composio support is powered by the `composio` CLI. Each
 //! command here is a thin wrapper around `composio_cli::*` functions
-//! that shell out to the binary at `~/.composio/composio`. The old
-//! MCP-based `composio.rs` and OAuth flow in `composio_auth.rs` are
-//! kept in the tree as a safety fallback (CLAUDE-approved) but are
-//! no longer called from any command.
+//! that shell out to the binary at `~/.composio/composio`.
 
 use crate::composio_cli::{self, ComposioStatus, StartLinkResponse, StartLoginResponse};
 use crate::composio_install;
@@ -47,26 +44,21 @@ pub async fn complete_composio_login(cli_key: String) -> Result<(), String> {
 
 /// Start the flow to link an external app (Gmail, Slack, etc.) to the
 /// currently-signed-in composio account. Returns the URL the user
-/// should open in their browser to authorize. The frontend opens it
-/// with `tauriSystem.openUrl(...)`.
+/// should open in their browser to authorize.
 #[tauri::command(rename_all = "snake_case")]
 pub async fn connect_composio_app(toolkit: String) -> Result<StartLinkResponse, String> {
     composio_cli::start_link(&toolkit).await
 }
 
-/// List all available Composio apps (browse catalog). Unchanged —
-/// still served from the existing static/REST catalog, not via MCP.
+/// List all available Composio apps from the REST API.
 #[tauri::command(rename_all = "snake_case")]
 pub async fn list_composio_apps() -> Vec<crate::composio_apps::ComposioAppEntry> {
     crate::composio_apps::list_all_apps().await
 }
 
-/// Probe each toolkit in `toolkits` against the consumer ("Composio
-/// for You") namespace and return the subset that is currently
-/// connected. Uses `composio proxy` with a bogus URL to trigger the
-/// tool router's auth check without touching any third-party API.
-/// Safe to call with 40+ toolkits — parallelism is bounded internally.
+/// List all connected toolkit slugs in the consumer namespace.
+/// Uses `composio connections list` (CLI v0.2.23+).
 #[tauri::command(rename_all = "snake_case")]
-pub async fn list_composio_connected_toolkits(toolkits: Vec<String>) -> Vec<String> {
-    composio_cli::probe_connected_many(toolkits).await
+pub async fn list_composio_connected_toolkits() -> Vec<String> {
+    composio_cli::list_connected_toolkits().await
 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanItem } from "@houston-ai/board";
 import type { FeedItem } from "@houston-ai/chat";
-import { Terminal } from "lucide-react";
+import { Terminal, GitBranch } from "lucide-react";
 
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
@@ -15,9 +15,8 @@ import {
   useConnectedToolkits,
   useConnections,
 } from "../../hooks/queries";
-import { tauriActivity, tauriChat, tauriAttachments, tauriSystem, tauriWorktree, tauriTerminal, tauriConfig, tauriPreferences, withAttachmentPaths } from "../../lib/tauri";
+import { tauriActivity, tauriChat, tauriAttachments, tauriSystem, tauriWorktree, tauriShell, tauriTerminal, tauriConfig, tauriPreferences, withAttachmentPaths } from "../../lib/tauri";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
-import { COMPOSIO_PROBE_SLUGS } from "../../lib/composio-catalog";
 import {
   ComposioLinkCard,
   parseComposioToolkitFromHref,
@@ -26,6 +25,9 @@ import type { TabProps } from "../../lib/types";
 import { useDetailPanelContainer } from "../shell/detail-panel-context";
 import { HoustonHelmet, HoustonThinkingIndicator } from "../shell/experience-card";
 import { resolveAgentColor } from "../../lib/agent-colors";
+import { useWorkspaceStore } from "../../stores/workspaces";
+import { ChatModelSelector } from "../chat-model-selector";
+import { getDefaultModel } from "../../lib/providers";
 
 // Stable empty reference so the feed store selector doesn't return a new
 // object every render when this agent has no feeds yet (which would otherwise
@@ -74,15 +76,33 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     tauriSystem.openUrl(url).catch(console.error);
   }, []);
 
+  // --- Model selector: three-tier resolution ---
+  const workspace = useWorkspaceStore((s) => s.current);
+  const wsProvider = workspace?.provider ?? "anthropic";
+  const wsModel = workspace?.model ?? getDefaultModel(wsProvider);
+  const [agentProvider, setAgentProvider] = useState<string | null>(null);
+  const [agentModel, setAgentModel] = useState<string | null>(null);
+  useEffect(() => {
+    tauriConfig.read(path).then((cfg) => {
+      setAgentProvider((cfg.provider as string) ?? null);
+      setAgentModel((cfg.model as string) ?? null);
+    }).catch(() => {});
+  }, [path]);
+  const [chatProvider, setChatProvider] = useState<string | null>(null);
+  const [chatModel, setChatModel] = useState<string | null>(null);
+  const effectiveProvider = chatProvider ?? agentProvider ?? wsProvider;
+  const effectiveModel = chatModel ?? agentModel ?? wsModel;
+  const handleModelSelect = useCallback((prov: string, mod: string) => {
+    setChatProvider(prov);
+    setChatModel(mod);
+  }, []);
+
   // Connection state for inline Composio connect cards. Mirrors the
   // wiring in chat-tab.tsx — both surfaces read from the same shared
   // TanStack Query cache.
   const { data: composioStatus } = useConnections();
-  const probeSlugs = useMemo(
-    () => (composioStatus?.status === "ok" ? COMPOSIO_PROBE_SLUGS : []),
-    [composioStatus?.status],
-  );
-  const { data: connectedList } = useConnectedToolkits(probeSlugs);
+  const isSignedIn = composioStatus?.status === "ok";
+  const { data: connectedList } = useConnectedToolkits(isSignedIn);
   const connectedSet = useMemo(
     () => new Set(connectedList ?? []),
     [connectedList],
@@ -244,10 +264,14 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       try {
         const cfg = await tauriConfig.read(path);
         if (cfg.worktreeMode) {
-          const slug = text.slice(0, 40).replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase()
-            || "mission";
+          const slug = crypto.randomUUID().slice(0, 8);
           const wt = await tauriWorktree.create(path, slug);
           worktreePath = wt.path;
+          // Run install command in the new worktree
+          const installCmd = cfg.installCommand as string | undefined;
+          if (installCmd && worktreePath) {
+            tauriShell.run(worktreePath, installCmd).catch(console.error);
+          }
         }
       } catch { /* config may not exist yet */ }
 
@@ -269,10 +293,12 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       tauriChat.send(path, prompt, sessionKey, {
         promptFile: mode?.promptFile,
         workingDirOverride: worktreePath,
+        providerOverride: chatProvider ?? undefined,
+        modelOverride: chatModel ?? undefined,
       });
       return item.id;
     },
-    [path, pushFeedItem, createActivity, pendingAgentMode, agentModes],
+    [path, pushFeedItem, createActivity, pendingAgentMode, agentModes, chatProvider, chatModel],
   );
 
   // Derive the session key for an activity, using custom key if set by routine runner
@@ -311,9 +337,11 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       tauriChat.send(path, prompt, sessionKey, {
         promptFile: mode?.promptFile,
         workingDirOverride: activity?.worktree_path,
+        providerOverride: chatProvider ?? undefined,
+        modelOverride: chatModel ?? undefined,
       });
     },
-    [path, pushFeedItem, rawItems, agentModes],
+    [path, pushFeedItem, rawItems, agentModes, chatProvider, chatModel],
   );
 
   const handleRunInTerminal = useCallback(
@@ -349,6 +377,34 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     [handleRunInTerminal],
   );
 
+  const panelActions = useCallback(
+    (item: KanbanItem) => {
+      const wtPath = item.metadata?.worktreePath as string | undefined;
+      if (!wtPath) return undefined;
+      const label = wtPath.split("/").pop() ?? wtPath;
+      return (
+        <div className="flex items-center gap-1.5">
+          <span
+            className="flex items-center gap-1 h-5 px-1.5 rounded-full bg-secondary text-muted-foreground text-[10px] font-medium truncate max-w-[160px]"
+            title={wtPath}
+          >
+            <GitBranch className="size-2.5 shrink-0" />
+            {label}
+          </span>
+          <button
+            onClick={() => handleRunInTerminal(item)}
+            className="flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-secondary text-foreground text-[10px] font-medium hover:bg-accent transition-colors duration-200"
+            title="Open terminal in worktree"
+          >
+            <Terminal className="size-2.5" />
+            Run
+          </button>
+        </div>
+      );
+    },
+    [handleRunInTerminal],
+  );
+
   return (
     <div className="flex flex-col h-full">
     <AIBoard
@@ -379,8 +435,17 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       onOpenLink={handleOpenLink}
       renderLink={renderLink}
       actions={agentModes ? cardActions : undefined}
+      panelActions={panelActions}
       cardAvatar={<HoustonHelmet color={resolveAgentColor(agent.color)} size={14} />}
       thinkingIndicator={<HoustonThinkingIndicator />}
+      footer={({ hasMessages }) => (
+        <ChatModelSelector
+          provider={effectiveProvider}
+          model={effectiveModel}
+          onSelect={handleModelSelect}
+          lockedProvider={hasMessages ? effectiveProvider : null}
+        />
+      )}
       panelAgentName={agent.name}
       panelAvatar={
         <PanelAvatar

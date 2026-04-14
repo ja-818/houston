@@ -86,7 +86,12 @@ export const tauriChat = {
     agentPath: string,
     prompt: string,
     sessionKey: string,
-    opts?: { promptFile?: string; workingDirOverride?: string },
+    opts?: {
+      promptFile?: string;
+      workingDirOverride?: string;
+      providerOverride?: string;
+      modelOverride?: string;
+    },
   ) =>
     invoke<string>("send_message", {
       agent_path: agentPath,
@@ -94,6 +99,8 @@ export const tauriChat = {
       session_key: sessionKey,
       prompt_file: opts?.promptFile ?? null,
       working_dir_override: opts?.workingDirOverride ?? null,
+      provider_override: opts?.providerOverride ?? null,
+      model_override: opts?.modelOverride ?? null,
     }),
   startOnboarding: (agentPath: string, sessionKey: string) =>
     invoke<void>("start_onboarding_session", { agent_path: agentPath, session_key: sessionKey }),
@@ -208,6 +215,7 @@ export interface ComposioAppEntry {
   name: string;
   description: string;
   logo_url: string;
+  categories: string[];
 }
 
 /**
@@ -236,8 +244,8 @@ export interface StartLinkResponse {
 export const tauriConnections = {
   list: () => invoke<ComposioStatus>("list_composio_connections"),
   listApps: () => invoke<ComposioAppEntry[]>("list_composio_apps"),
-  listConnectedToolkits: (toolkits: string[]) =>
-    invoke<string[]>("list_composio_connected_toolkits", { toolkits }),
+  listConnectedToolkits: () =>
+    invoke<string[]>("list_composio_connected_toolkits"),
   connectApp: (toolkit: string) =>
     invoke<StartLinkResponse>("connect_composio_app", { toolkit }),
   startOAuth: () => invoke<StartLoginResponse>("start_composio_oauth"),
@@ -433,6 +441,11 @@ export const tauriWorktree = {
       "list_worktrees",
       { repo_path: repoPath },
     ),
+};
+
+export const tauriShell = {
+  run: (path: string, command: string) =>
+    invoke<string>("run_shell", { path, command }),
 };
 
 export const tauriTerminal = {

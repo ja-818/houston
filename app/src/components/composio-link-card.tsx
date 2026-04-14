@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, ExternalLink, Loader2 } from "lucide-react";
-import { COMPOSIO_CATALOG, type ComposioApp } from "../lib/composio-catalog";
 import { useComposioApps } from "../hooks/queries";
 import { useComposioRefetchOnReturn } from "../hooks/use-composio-refetch-on-return";
 
@@ -48,11 +47,7 @@ export function ComposioLinkCard({
     if (isConnected) setOpening(false);
   }, [isConnected]);
 
-  // Resolve display info — prefer the live scraped catalog so this
-  // matches the Integrations tab visually, fall back to the hardcoded
-  // curated catalog, and finally synthesize a minimal entry if the
-  // agent passed an exotic slug we've never seen.
-  const app: ComposioApp = (() => {
+  const app = (() => {
     const fromApi = apiApps?.find((a) => a.toolkit === toolkit);
     if (fromApi) {
       return {
@@ -62,8 +57,6 @@ export function ComposioLinkCard({
         logoUrl: fromApi.logo_url || fallbackLogo(fromApi.toolkit),
       };
     }
-    const fromCatalog = COMPOSIO_CATALOG.find((a) => a.toolkit === toolkit);
-    if (fromCatalog) return fromCatalog;
     return {
       toolkit,
       name: toolkit,
@@ -122,7 +115,7 @@ export function ComposioLinkCard({
   );
 }
 
-function AppLogo({ app }: { app: ComposioApp }) {
+function AppLogo({ app }: { app: { name: string; logoUrl: string } }) {
   const [imgError, setImgError] = useState(false);
   const initial = app.name.charAt(0).toUpperCase();
   if (imgError) {

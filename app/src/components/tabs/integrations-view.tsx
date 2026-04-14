@@ -9,7 +9,6 @@ import { useComposioAuth } from "../../hooks/use-composio-auth";
 import { ComposioAuthDialog } from "../composio-auth-dialog";
 import { BrowseAppsSection } from "./browse-apps-section";
 import { ConnectedAppsSection } from "./connected-apps-section";
-import { COMPOSIO_PROBE_SLUGS } from "../../lib/composio-catalog";
 import {
   LoadingState,
   NotInstalledState,
@@ -21,23 +20,9 @@ import {
 const COMPOSIO_DASHBOARD_URL = "https://dashboard.composio.dev";
 
 interface IntegrationsViewProps {
-  /**
-   * Optional heading rendered above the view. Used by the sidebar/workspace
-   * entry point ("Integrations"); the per-agent tab omits it because the
-   * surrounding TabBar already provides a title.
-   */
   title?: string;
 }
 
-/**
- * Shared Integrations view. Renders the Composio install/auth gate,
- * the Connected section, and the Browse-all catalog. Used both as a
- * per-agent tab (via `IntegrationsTab`) and as the workspace-level
- * sidebar entry (via `App.tsx` when `viewMode === "connections"`).
- *
- * Keep this the single implementation — both entry points must stay
- * identical so fixes here propagate to every surface.
- */
 export function IntegrationsView({ title }: IntegrationsViewProps) {
   const { data: result, isLoading: loading, refetch } = useConnections();
   const reset = useResetConnections();
@@ -45,13 +30,8 @@ export function IntegrationsView({ title }: IntegrationsViewProps) {
   const [installing, setInstalling] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
 
-  // Only probe when the user is signed in — otherwise the CLI call will
-  // fail or return garbage.
-  const probeSlugs = useMemo(
-    () => (result?.status === "ok" ? COMPOSIO_PROBE_SLUGS : []),
-    [result?.status],
-  );
-  const { data: connectedList } = useConnectedToolkits(probeSlugs);
+  const isSignedIn = result?.status === "ok";
+  const { data: connectedList } = useConnectedToolkits(isSignedIn);
   const connectedSet = useMemo(
     () => new Set(connectedList ?? []),
     [connectedList],

@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
-import { Search, Loader2, ExternalLink } from "lucide-react";
+import { Search, Loader2, ExternalLink, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { COMPOSIO_CATALOG, type ComposioApp } from "../../lib/composio-catalog";
 import { tauriConnections, tauriSystem } from "../../lib/tauri";
 import { useComposioRefetchOnReturn } from "../../hooks/use-composio-refetch-on-return";
 
@@ -13,6 +12,7 @@ const PAGE_SIZE = 100;
 
 export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps) {
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [connecting, setConnecting] = useState<string | null>(null);
   const markWaitingForAuth = useComposioRefetchOnReturn();
@@ -23,32 +23,49 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
     staleTime: 1000 * 60 * 60,
   });
 
-  const catalog: ComposioApp[] = useMemo(() => {
-    if (apiApps && apiApps.length > 0) {
-      return apiApps.map((a) => ({
-        toolkit: a.toolkit,
-        name: a.name,
-        description: a.description,
-        logoUrl: a.logo_url || fallbackLogo(a.toolkit),
-      }));
-    }
-    return COMPOSIO_CATALOG;
+  const catalog = useMemo(() => {
+    if (!apiApps || apiApps.length === 0) return [];
+    return apiApps.map((a) => ({
+      toolkit: a.toolkit,
+      name: a.name,
+      description: a.description,
+      logoUrl: a.logo_url || fallbackLogo(a.toolkit),
+      categories: a.categories ?? [],
+    }));
   }, [apiApps]);
 
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const app of catalog) {
+      for (const cat of app.categories) {
+        counts.set(cat, (counts.get(cat) ?? 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name]) => name);
+  }, [catalog]);
+
   const available = useMemo(() => {
-    const unconnected = catalog.filter(
+    let filtered = catalog.filter(
       (app) => !connectedToolkits.has(app.toolkit),
     );
-    if (!search.trim()) return unconnected;
-    const q = search.toLowerCase();
-    return unconnected.filter(
-      (app) =>
-        app.name.toLowerCase().includes(q) ||
-        app.description.toLowerCase().includes(q),
-    );
-  }, [catalog, connectedToolkits, search]);
+    if (category !== "all") {
+      filtered = filtered.filter((app) =>
+        app.categories.includes(category),
+      );
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(
+        (app) =>
+          app.name.toLowerCase().includes(q) ||
+          app.description.toLowerCase().includes(q),
+      );
+    }
+    return filtered;
+  }, [catalog, connectedToolkits, category, search]);
 
-  // When searching, show all matches. Otherwise paginate.
   const isSearching = search.trim().length > 0;
   const visibleApps = isSearching ? available : available.slice(0, visible);
   const hasMore = !isSearching && visible < available.length;
@@ -59,10 +76,6 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
       try {
         const { redirect_url } = await tauriConnections.connectApp(toolkit);
         tauriSystem.openUrl(redirect_url);
-        // Targeted polling for this slug — see useComposioRefetchOnReturn
-        // for the full rationale. Poll until Composio's backend flips
-        // the toolkit to connected, then invalidate the main query so
-        // this Browse grid and every other surface updates at once.
         markWaitingForAuth(toolkit);
       } catch {
         // Error already shown via invoke toast
@@ -84,16 +97,38 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
         </span>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search apps..."
-          className="w-full h-9 pl-9 pr-3 rounded-full border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-        />
+      {/* Search + Category filter */}
+      <div className="flex gap-2 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search apps..."
+            className="w-full h-9 pl-9 pr-3 rounded-full border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+          />
+        </div>
+        {categories.length > 0 && (
+          <div className="relative">
+            <select
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setVisible(PAGE_SIZE);
+              }}
+              className="h-9 pl-3 pr-8 rounded-full border border-border bg-background text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/20"
+            >
+              <option value="all">All categories</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, " ")}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+          </div>
+        )}
       </div>
 
       {/* Grid */}
@@ -130,12 +165,20 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
   );
 }
 
+interface AppInfo {
+  toolkit: string;
+  name: string;
+  description: string;
+  logoUrl: string;
+  categories: string[];
+}
+
 function AppCard({
   app,
   connecting,
   onConnect,
 }: {
-  app: ComposioApp;
+  app: AppInfo;
   connecting: boolean;
   onConnect: (toolkit: string) => void;
 }) {
