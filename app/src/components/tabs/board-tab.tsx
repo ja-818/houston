@@ -6,6 +6,7 @@ import { Terminal } from "lucide-react";
 
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
+import { useDraftStore } from "../../stores/drafts";
 import {
   useActivity,
   useDeleteActivity,
@@ -141,6 +142,21 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   // or React will loop.
   const feedBucket = useFeedStore((s) => s.items[path]);
   const feedItems = feedBucket ?? EMPTY_FEED_BUCKET;
+  // Draft persistence — extract text-only map for AIBoard
+  const rawDrafts = useDraftStore((s) => s.drafts);
+  const boardDrafts = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(rawDrafts)) {
+      if (v.text) out[k] = v.text;
+    }
+    return out;
+  }, [rawDrafts]);
+  const handleDraftChange = useCallback(
+    (sessionKey: string, text: string) => {
+      useDraftStore.getState().setDraftText(sessionKey, text);
+    },
+    [],
+  );
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
   const [loadingState, setLoading] = useState<Record<string, boolean>>({});
   // A session is "loading" from the user's perspective whenever its activity
@@ -354,6 +370,8 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       onNewPanelOpenerReady={handleOpenerReady}
       onPanelOpenChange={setMissionPanelOpen}
       onStopSession={handleStopSession}
+      drafts={boardDrafts}
+      onDraftChange={handleDraftChange}
       isSpecialTool={isSpecialTool}
       renderToolResult={renderToolResult}
       renderTurnSummary={renderTurnSummary}
