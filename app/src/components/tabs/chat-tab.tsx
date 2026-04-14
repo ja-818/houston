@@ -9,6 +9,7 @@ import {
 } from "@houston-ai/core";
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
+import { useDraftStore, useDraftText, useDraftFiles } from "../../stores/drafts";
 import { tauriChat, tauriAttachments, tauriSystem, withAttachmentPaths } from "../../lib/tauri";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
 import { useConnectedToolkits, useConnections } from "../../hooks/queries";
@@ -40,8 +41,16 @@ export default function ChatTab({ agent }: TabProps) {
     [addToast],
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [composerText, setComposerText] = useState("");
-  const [composerFiles, setComposerFiles] = useState<File[]>([]);
+  const composerText = useDraftText(sessionKey);
+  const composerFiles = useDraftFiles(sessionKey);
+  const setComposerText = useCallback(
+    (text: string) => useDraftStore.getState().setDraftText(sessionKey, text),
+    [sessionKey],
+  );
+  const setComposerFiles = useCallback(
+    (files: File[]) => useDraftStore.getState().setDraftFiles(sessionKey, files),
+    [sessionKey],
+  );
   const sendingRef = useRef(false);
   const loadedRef = useRef<string | null>(null);
 
@@ -49,8 +58,6 @@ export default function ChatTab({ agent }: TabProps) {
     if (loadedRef.current === agent.id) return;
     loadedRef.current = agent.id;
     clearFeed(agentPath, sessionKey);
-    setComposerText("");
-    setComposerFiles([]);
     tauriChat.loadHistory(agentPath, sessionKey).then((rows) => {
       if (rows.length > 0) setFeed(agentPath, sessionKey, rows as FeedItem[]);
     });
@@ -125,7 +132,7 @@ export default function ChatTab({ agent }: TabProps) {
         sendingRef.current = false;
       }
     },
-    [agentPath, sessionKey, attachmentScope, pushFeedItem],
+    [agentPath, sessionKey, attachmentScope, pushFeedItem, setComposerText, setComposerFiles],
   );
 
   return (

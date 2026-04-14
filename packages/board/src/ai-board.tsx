@@ -73,6 +73,14 @@ export interface AIBoardProps {
    * When not provided, falls back to SplitView within AIBoard.
    */
   panelContainer?: HTMLElement | null
+  /**
+   * Draft text keyed by session key. Used to persist composer text across
+   * navigation so users don't lose what they've typed. The key
+   * "new-conversation" is used for the new-mission panel.
+   */
+  drafts?: Record<string, string>
+  /** Called when the user types in the panel's chat input. */
+  onDraftChange?: (sessionKey: string, text: string) => void
 }
 
 const DEFAULT_COLUMNS: KanbanColumn[] = [
@@ -110,6 +118,8 @@ export function AIBoard({
   onRename,
   actions,
   panelContainer,
+  drafts,
+  onDraftChange,
   isSpecialTool,
   renderToolResult,
   toolLabels,
@@ -179,9 +189,16 @@ export function AIBoard({
     [setSelectedId],
   )
 
+  // Resolve which session key and feed to show (merge persisted history + live items)
+  const activeSessionKey = selectedItem ? sessionKeyFor(selectedItem.id) : null
+  // The session key currently visible in the detail panel's ChatPanel.
+  const activeDraftKey = activeSessionKey ?? "new-conversation"
+
   // Unified send handler: creates conversation on first message, sends follow-ups after
   const handleSend = useCallback(
     async (text: string, files: File[]) => {
+      // Clear draft immediately so the user sees the send
+      onDraftChange?.(activeDraftKey, "")
       if (selectedItem && onSendMessage) {
         await onSendMessage(sessionKeyFor(selectedItem.id), text, files)
       } else if (newPanelOpen && onCreateConversation) {
@@ -190,11 +207,8 @@ export function AIBoard({
         setSelectedId(activityId)
       }
     },
-    [selectedItem, onSendMessage, sessionKeyFor, newPanelOpen, onCreateConversation, setSelectedId],
+    [selectedItem, onSendMessage, sessionKeyFor, newPanelOpen, onCreateConversation, setSelectedId, onDraftChange, activeDraftKey],
   )
-
-  // Resolve which session key and feed to show (merge persisted history + live items)
-  const activeSessionKey = selectedItem ? sessionKeyFor(selectedItem.id) : null
   const liveFeed = activeSessionKey ? (feedItems[activeSessionKey] ?? []) : []
   const cachedFeed = activeSessionKey ? (historyCache[activeSessionKey] ?? []) : []
   const activeFeed = liveFeed.length > 0 ? liveFeed : cachedFeed
@@ -278,6 +292,8 @@ export function AIBoard({
           placeholder={selectedItem ? "Send a follow-up..." : "What should the agent work on?"}
           emptyState={activeFeed.length === 0 ? chatEmptyState : undefined}
           thinkingIndicator={thinkingIndicator}
+          value={drafts ? (drafts[activeDraftKey] ?? "") : undefined}
+          onValueChange={onDraftChange ? (text: string) => onDraftChange(activeDraftKey, text) : undefined}
           isSpecialTool={isSpecialTool}
           renderToolResult={renderToolResult}
           toolLabels={toolLabels}

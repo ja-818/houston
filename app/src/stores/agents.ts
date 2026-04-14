@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { tauriAgents, tauriAttachments, tauriPreferences, tauriRoutines, tauriWatcher } from "../lib/tauri";
 import { useFeedStore } from "./feeds";
+import { useDraftStore } from "./drafts";
 import { analytics } from "../lib/analytics";
 import type { Agent } from "../lib/types";
 
@@ -81,6 +82,8 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     if (agentPath) {
       useFeedStore.getState().clearAgent(agentPath);
     }
+    // Clear the free-form chat draft for this agent.
+    useDraftStore.getState().clearDraft(`chat-${id}`);
     set((s) => {
       const agents = s.agents.filter((a) => a.id !== id);
       const current =
