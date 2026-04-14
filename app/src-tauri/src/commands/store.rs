@@ -474,6 +474,7 @@ pub async fn install_workspace_from_github(
 
         let meta = super::agents::AgentMeta {
             id: uuid::Uuid::new_v4().to_string(),
+            name: None,
             config_id: agent_id.clone(),
             color: agent_color,
             created_at: chrono::Utc::now().to_rfc3339(),

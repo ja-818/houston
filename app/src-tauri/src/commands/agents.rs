@@ -10,6 +10,10 @@ use super::workspaces::workspace_folder;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AgentMeta {
     pub id: String,
+    /// User-assigned display name. Falls back to folder name if absent
+    /// (backward compat with pre-existing agent.json files).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     pub config_id: String,
     pub color: Option<String>,
     pub created_at: String,
@@ -75,14 +79,19 @@ fn write_agent_meta(folder: &Path, meta: &AgentMeta) -> Result<(), String> {
 }
 
 fn meta_to_agent(folder: &Path, meta: &AgentMeta) -> Agent {
-    let name = folder
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_default();
+    let name = meta.name.clone().unwrap_or_else(|| {
+        folder
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default()
+    });
+    // Resolve symlinks so the frontend gets the real path for file watchers
+    // and session management. Falls back to the original path if resolution fails.
+    let real_path = fs::canonicalize(folder).unwrap_or_else(|_| folder.to_path_buf());
     Agent {
         id: meta.id.clone(),
         name,
-        folder_path: folder.to_string_lossy().to_string(),
+        folder_path: real_path.to_string_lossy().to_string(),
         config_id: meta.config_id.clone(),
         color: meta.color.clone(),
         created_at: meta.created_at.clone(),
@@ -137,11 +146,17 @@ pub fn list_agents(
 
     for entry in entries.flatten() {
         let path = entry.path();
-        if !path.is_dir() {
-            continue;
-        }
         let name = entry.file_name().to_string_lossy().to_string();
         if name.starts_with('.') {
+            continue;
+        }
+        // Detect dangling symlinks (target directory was deleted).
+        if path.is_symlink() && !path.exists() {
+            tracing::warn!("[agents] removing dangling symlink: {name}");
+            let _ = fs::remove_file(&path);
+            continue;
+        }
+        if !path.is_dir() {
             continue;
         }
         if !agent_json_path(&path).exists() {
@@ -177,13 +192,24 @@ pub fn create_agent(
 ) -> Result<CreateAgentResult, String> {
     let ws_dir = resolve_ws_folder(&root.0, &workspace_id)?;
 
-    // If linking an existing project directory, use that path directly.
+    // If linking an existing project directory, use that path directly
+    // and create a symlink inside the workspace so list_agents discovers it.
     // Otherwise, create a new folder under the workspace.
+    let is_linked = existing_path.is_some();
     let folder = if let Some(ref ep) = existing_path {
         let p = houston_tauri::paths::expand_tilde(&PathBuf::from(ep));
         if !p.exists() {
             return Err(format!("Directory does not exist: {}", p.display()));
         }
+        let link_path = ws_dir.join(&name);
+        if link_path.exists() {
+            return Err(format!("An agent named \"{name}\" already exists"));
+        }
+        // Symlink: workspace/{name} → external path.
+        // list_agents scans workspace subdirs and follows symlinks transparently.
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&p, &link_path)
+            .map_err(|e| format!("Failed to link project directory: {e}"))?;
         p
     } else {
         let f = ws_dir.join(&name);
@@ -202,6 +228,7 @@ pub fn create_agent(
     let now = now_iso();
     let meta = AgentMeta {
         id: Uuid::new_v4().to_string(),
+        name: if is_linked { Some(name.clone()) } else { None },
         config_id,
         color,
         created_at: now.clone(),
@@ -278,8 +305,14 @@ pub fn delete_agent(
 ) -> Result<(), String> {
     let ws_dir = resolve_ws_folder(&root.0, &workspace_id)?;
     let folder = find_agent_by_id(&ws_dir, &id)?;
-    fs::remove_dir_all(&folder)
-        .map_err(|e| format!("Failed to delete agent: {e}"))?;
+    if folder.is_symlink() {
+        // Linked agent: remove only the symlink, not the external project.
+        fs::remove_file(&folder)
+            .map_err(|e| format!("Failed to unlink agent: {e}"))?;
+    } else {
+        fs::remove_dir_all(&folder)
+            .map_err(|e| format!("Failed to delete agent: {e}"))?;
+    }
     Ok(())
 }
 
@@ -292,19 +325,34 @@ pub fn rename_agent(
 ) -> Result<Agent, String> {
     let ws_dir = resolve_ws_folder(&root.0, &workspace_id)?;
     let old_folder = find_agent_by_id(&ws_dir, &id)?;
-    let new_folder = ws_dir.join(&new_name);
+    let new_link = ws_dir.join(&new_name);
 
-    if new_folder.exists() {
+    if new_link.exists() {
         return Err(format!(
             "An agent named \"{new_name}\" already exists"
         ));
     }
 
-    fs::rename(&old_folder, &new_folder)
-        .map_err(|e| format!("Failed to rename agent: {e}"))?;
-
-    let meta = read_agent_meta(&new_folder)?;
-    Ok(meta_to_agent(&new_folder, &meta))
+    if old_folder.is_symlink() {
+        // Linked agent: recreate symlink with new name, update meta.name.
+        let target = fs::read_link(&old_folder)
+            .map_err(|e| format!("Failed to read symlink: {e}"))?;
+        fs::remove_file(&old_folder)
+            .map_err(|e| format!("Failed to remove old symlink: {e}"))?;
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&target, &new_link)
+            .map_err(|e| format!("Failed to create new symlink: {e}"))?;
+        let mut meta = read_agent_meta(&new_link)?;
+        meta.name = Some(new_name);
+        write_agent_meta(&new_link, &meta)?;
+        Ok(meta_to_agent(&new_link, &meta))
+    } else {
+        // Regular agent: rename the folder.
+        fs::rename(&old_folder, &new_link)
+            .map_err(|e| format!("Failed to rename agent: {e}"))?;
+        let meta = read_agent_meta(&new_link)?;
+        Ok(meta_to_agent(&new_link, &meta))
+    }
 }
 
 #[tauri::command(rename_all = "snake_case")]
