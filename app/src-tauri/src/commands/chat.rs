@@ -89,6 +89,8 @@ pub async fn send_message(
     source: Option<String>,
     prompt_file: Option<String>,
     working_dir_override: Option<String>,
+    provider_override: Option<String>,
+    model_override: Option<String>,
 ) -> Result<String, String> {
     let agent_dir = expand_tilde(&PathBuf::from(&agent_path));
     let working_dir = working_dir_override
@@ -101,7 +103,17 @@ pub async fn send_message(
             .map_err(|e| format!("Failed to create agent directory: {e}"))?;
     }
     agent::seed_agent(&agent_dir)?;
-    let provider = resolve_provider(&agent_dir);
+    // Chat-level override takes priority over agent/workspace config.
+    let provider = if let Some(ref prov_str) = provider_override {
+        let p = prov_str.parse::<Provider>().map_err(|_| format!("Unknown provider: {prov_str}"))?;
+        ResolvedProvider { provider: p, model: model_override.clone() }
+    } else {
+        let mut resolved = resolve_provider(&agent_dir);
+        if let Some(ref m) = model_override {
+            resolved.model = Some(m.clone());
+        }
+        resolved
+    };
     let mut system_prompt = agent::build_system_prompt(
         &agent_dir,
         working_dir_override.as_ref().map(|p| expand_tilde(&PathBuf::from(p))).as_deref(),

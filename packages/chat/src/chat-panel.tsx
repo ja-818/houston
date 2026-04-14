@@ -42,6 +42,8 @@ export interface ChatPanelProps {
   /** Emitted when the library wants to surface a short notice to the user
    *  (e.g. a duplicate-file drop). The app decides how to display it. */
   onNotice?: (message: string) => void;
+  /** Optional content rendered in the composer footer (e.g. model selector). */
+  footer?: ReactNode;
   /** Override status derivation. If not provided, status is derived from feedItems. */
   status?: ChatStatus;
   /**
@@ -128,6 +130,7 @@ export function ChatPanel({
   attachments,
   onAttachmentsChange,
   onNotice,
+  footer,
 }: ChatPanelProps) {
   const status = statusProp ?? deriveStatus(feedItems, isLoading);
   const messages = useMemo(() => feedItemsToMessages(feedItems), [feedItems]);
@@ -210,6 +213,7 @@ export function ChatPanel({
         attachments={files}
         onAttachmentsChange={setFiles}
         onNotice={onNotice}
+        footer={footer}
       />
     </div>
   );

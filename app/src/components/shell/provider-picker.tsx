@@ -10,47 +10,7 @@ import {
   Button,
 } from "@houston-ai/core";
 import { tauriProvider, tauriSystem, type ProviderStatus } from "../../lib/tauri";
-
-interface ModelOption {
-  id: string;
-  label: string;
-  description: string;
-}
-
-const PROVIDERS = [
-  {
-    id: "openai",
-    name: "OpenAI",
-    subtitle: "Codex",
-    cliName: "codex",
-    installUrl: "https://github.com/openai/codex",
-    loginCommand: "codex login",
-    cost: "Your ChatGPT subscription",
-    models: [
-      { id: "gpt-5.4", label: "GPT-5.4", description: "Flagship. Best reasoning and tool use." },
-      { id: "gpt-5.4-mini", label: "GPT-5.4 Mini", description: "Faster and cheaper for lighter tasks." },
-      { id: "gpt-5.3-codex", label: "Codex", description: "Purpose-built for coding agents." },
-    ] satisfies ModelOption[],
-    defaultModel: "gpt-5.4",
-  },
-  {
-    id: "anthropic",
-    name: "Anthropic",
-    subtitle: "Claude Code",
-    cliName: "claude",
-    installUrl: "https://docs.anthropic.com/en/docs/claude-code/overview",
-    loginCommand: "claude login",
-    cost: "Your Claude subscription",
-    models: [
-      { id: "sonnet", label: "Sonnet", description: "Best balance of speed and quality." },
-      { id: "opus", label: "Opus", description: "Most capable. Slower, more tokens." },
-      { id: "haiku", label: "Haiku", description: "Fastest and cheapest for simple tasks." },
-    ] satisfies ModelOption[],
-    defaultModel: "sonnet",
-  },
-] as const;
-
-type ProviderInfo = (typeof PROVIDERS)[number];
+import { PROVIDERS, type ProviderInfo } from "../../lib/providers";
 
 interface Props {
   value: string | null;

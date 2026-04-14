@@ -63,10 +63,17 @@ export interface AIBoardProps {
   onOpenLink?: import("@houston-ai/chat").ChatPanelProps["onOpenLink"]
   /** Custom renderer for markdown links. Forwarded to ChatPanel. */
   renderLink?: import("@houston-ai/chat").ChatPanelProps["renderLink"]
+  /**
+   * Composer footer content. When a function, called with `{ hasMessages }` so
+   * the consumer can lock the provider for active conversations.
+   */
+  footer?: ReactNode | ((ctx: { hasMessages: boolean }) => ReactNode)
   /** Called when the user renames a card. */
   onRename?: (item: KanbanItem, newTitle: string) => void
   /** Render prop for extra action buttons on each card (e.g. "Run" button). */
   actions?: (item: KanbanItem) => React.ReactNode
+  /** Render prop for action buttons in the detail panel header (e.g. worktree info, run button). */
+  panelActions?: (item: KanbanItem) => React.ReactNode
   /**
    * DOM element to portal the detail panel into. When provided, the panel
    * renders via createPortal into this element (for app-level layout).
@@ -117,6 +124,7 @@ export function AIBoard({
   onStopSession,
   onRename,
   actions,
+  panelActions,
   panelContainer,
   drafts,
   onDraftChange,
@@ -127,6 +135,7 @@ export function AIBoard({
   onNotice,
   onOpenLink,
   renderLink,
+  footer,
 }: AIBoardProps) {
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [newPanelOpen, setNewPanelOpen] = useState(false)
@@ -249,6 +258,9 @@ export function AIBoard({
       if (!target) return
       if (boardRef.current?.contains(target)) return
       if (panelRef.current?.contains(target)) return
+      // Radix portals (dropdowns, popovers) render outside the panel DOM.
+      // Don't close the panel when interacting with them.
+      if (target instanceof Element && target.closest("[data-radix-popper-content-wrapper]")) return
       closePanel()
     }
     document.addEventListener("mousedown", handler)
@@ -281,6 +293,7 @@ export function AIBoard({
       onClose={closePanel}
       avatar={panelAvatar}
       agentName={panelAgentName ?? selectedItem?.group}
+      actions={selectedItem ? panelActions?.(selectedItem) : undefined}
     >
       <div className="flex-1 min-h-0 flex flex-col">
         <ChatPanel
@@ -301,6 +314,7 @@ export function AIBoard({
           onNotice={onNotice}
           onOpenLink={onOpenLink}
           renderLink={renderLink}
+          footer={typeof footer === "function" ? footer({ hasMessages: activeFeed.length > 0 }) : footer}
         />
       </div>
     </KanbanDetailPanel>

@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useRef } from "react";
+import type { ReactNode } from "react";
 import type { PromptInputMessage } from "./ai-elements/prompt-input";
 import {
   PromptInput,
@@ -46,6 +47,8 @@ export interface ChatInputProps {
   /** Emitted when the library wants to surface a short notice to the user
    *  (e.g. a duplicate-file drop). The app decides how to display it. */
   onNotice?: (message: string) => void;
+  /** Optional content rendered in the composer footer (e.g. model selector). */
+  footer?: ReactNode;
 }
 
 export function ChatInput({
@@ -58,6 +61,7 @@ export function ChatInput({
   status = "ready",
   placeholder = "Type a message...",
   onNotice,
+  footer,
 }: ChatInputProps) {
   const [text, setText] = useControllable(value, onValueChange, "");
   const [files, setFiles] = useControllable<File[]>(
@@ -190,6 +194,12 @@ export function ChatInput({
             onStop={onStop}
           />
         </PromptInput>
+
+        {footer && (
+          <div className="flex items-center px-1 pt-1">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

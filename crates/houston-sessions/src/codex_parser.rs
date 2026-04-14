@@ -46,6 +46,8 @@ pub struct CodexItem {
     pub tool: Option<String>,
     /// Web search query (web_search).
     pub query: Option<String>,
+    /// Error message (error items).
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -271,8 +273,18 @@ fn parse_item_completed(event: &CodexEvent, acc: &mut CodexAccumulator) -> Vec<F
             }]
         }
         "error" => {
-            let msg = item.text.as_deref().unwrap_or("Unknown error");
-            vec![FeedItem::SystemMessage(msg.to_string())]
+            let msg = item.message.as_deref()
+                .or(item.text.as_deref())
+                .unwrap_or("Unknown error");
+            // Codex emits a transient error when the model changes mid-session
+            // (e.g. "This session was created with model X"). The session
+            // recovers and continues, so suppress the noise.
+            if msg.starts_with("This session") {
+                tracing::debug!("[codex] suppressed model-change error: {msg}");
+                vec![]
+            } else {
+                vec![FeedItem::SystemMessage(msg.to_string())]
+            }
         }
         _ => vec![],
     }
