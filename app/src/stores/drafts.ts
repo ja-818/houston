@@ -16,6 +16,7 @@ interface DraftsState {
 }
 
 const EMPTY_DRAFT: DraftEntry = { text: "", files: [] };
+const EMPTY_FILES: File[] = [];
 
 export const useDraftStore = create<DraftsState>((set) => ({
   drafts: {},
@@ -60,5 +61,5 @@ export function useDraftText(key: string | null): string {
 
 /** Read-only selector for a single draft's files. Returns [] if no draft exists. */
 export function useDraftFiles(key: string | null): File[] {
-  return useDraftStore((s) => (key ? s.drafts[key]?.files ?? [] : []));
+  return useDraftStore((s) => (key ? s.drafts[key]?.files ?? EMPTY_FILES : EMPTY_FILES));
 }
