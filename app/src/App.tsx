@@ -173,7 +173,10 @@ export default function App() {
                       chip: t.chip,
                     }))}
                     activeTab={viewMode}
-                    onTabChange={setViewMode}
+                    onTabChange={(tab) => {
+                      analytics.track("tab_switched", { tab });
+                      setViewMode(tab);
+                    }}
                     actions={
                       <div className="flex items-center gap-2">
                         {onStartMission && (
@@ -324,6 +327,7 @@ export function CreateWorkspaceDialog({
         setCurrentWorkspace(imported);
         await loadAgents(imported.id);
       }
+      analytics.track("workspace_imported");
       handleClose();
     } catch (e) {
       setImportError(e instanceof Error ? e.message : String(e));

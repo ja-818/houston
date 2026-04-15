@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Check, CircleDashed, ExternalLink, Terminal, ChevronDown } from "lucide-react";
 import {
   Spinner,
@@ -11,6 +11,7 @@ import {
 } from "@houston-ai/core";
 import { tauriProvider, tauriSystem, type ProviderStatus } from "../../lib/tauri";
 import { PROVIDERS, type ProviderInfo } from "../../lib/providers";
+import { analytics } from "../../lib/analytics";
 
 interface Props {
   value: string | null;
@@ -29,18 +30,42 @@ export function ProviderPicker({ value, model: controlledModel, onSelect }: Prop
     return defaults;
   });
 
+  const prevStatuses = useRef<Record<string, ProviderStatus>>({});
   const loadStatuses = useCallback(async () => {
     const [openai, anthropic] = await Promise.all([
       tauriProvider.checkStatus("openai"),
       tauriProvider.checkStatus("anthropic"),
     ]);
-    setStatuses({ openai, anthropic });
+    const next: Record<string, ProviderStatus> = { openai, anthropic };
+    // Track when a provider transitions to connected
+    for (const id of ["openai", "anthropic"] as const) {
+      const wasConnected = prevStatuses.current[id]?.cli_installed && prevStatuses.current[id]?.authenticated;
+      const isConnected = next[id]?.cli_installed && next[id]?.authenticated;
+      if (!wasConnected && isConnected) {
+        analytics.track("provider_configured", { provider: id });
+      }
+    }
+    prevStatuses.current = next;
+    setStatuses(next);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     loadStatuses();
   }, [loadStatuses]);
+
+  // Auto-poll every 3s while a disconnected provider's guidance is visible
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    const shouldPoll =
+      expanded && !(statuses[expanded]?.cli_installed && statuses[expanded]?.authenticated);
+    if (shouldPoll) {
+      pollRef.current = setInterval(loadStatuses, 3000);
+    }
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [expanded, statuses, loadStatuses]);
 
   const handleRefresh = async () => {
     setLoading(true);
@@ -88,6 +113,7 @@ export function ProviderPicker({ value, model: controlledModel, onSelect }: Prop
         <SetupGuidance
           provider={PROVIDERS.find((p) => p.id === expanded)!}
           status={statuses[expanded]}
+          isSelected={value === expanded}
           onRefresh={handleRefresh}
         />
       )}
@@ -115,8 +141,8 @@ function ProviderCard({
   onExpand: () => void;
 }) {
   const handleClick = () => {
-    if (connected) onSelect();
-    else onExpand();
+    onSelect();
+    if (!connected) onExpand();
   };
 
   const selectedModelObj = provider.models.find((m) => m.id === selectedModel) ?? provider.models[0];
@@ -227,13 +253,26 @@ function ProviderCard({
 function SetupGuidance({
   provider,
   status,
+  isSelected,
   onRefresh,
 }: {
   provider: ProviderInfo;
   status: ProviderStatus | undefined;
+  isSelected: boolean;
   onRefresh: () => void;
 }) {
   const installed = status?.cli_installed ?? false;
+  const authenticated = status?.authenticated ?? false;
+  const [loginLaunched, setLoginLaunched] = useState(false);
+
+  const handleSignIn = async () => {
+    try {
+      await tauriProvider.launchLogin(provider.id);
+      setLoginLaunched(true);
+    } catch {
+      // CLI not installed — fall through to install guidance
+    }
+  };
 
   return (
     <div className="rounded-xl border border-black/[0.08] bg-secondary/50 p-4 space-y-3">
@@ -246,7 +285,7 @@ function SetupGuidance({
           notOkLabel={`${provider.cliName} CLI not found`}
         />
         <StatusRow
-          ok={status?.authenticated ?? false}
+          ok={authenticated}
           okLabel="Signed in"
           notOkLabel="Not signed in"
         />
@@ -268,25 +307,45 @@ function SetupGuidance({
         </div>
       )}
 
-      {installed && !(status?.authenticated ?? false) && (
-        <div className="flex items-start gap-2 text-sm">
-          <Terminal className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-          <div className="text-muted-foreground">
-            Open your terminal and run{" "}
-            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono font-medium text-foreground">
-              {provider.loginCommand}
-            </code>
-            . This opens your browser to sign in.
+      {installed && !authenticated && !loginLaunched && (
+        <Button
+          onClick={handleSignIn}
+          className="rounded-full"
+          size="sm"
+        >
+          Sign in with {provider.name}
+        </Button>
+      )}
+
+      {installed && !authenticated && loginLaunched && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Spinner className="h-3.5 w-3.5" />
+            <span>Waiting for browser sign-in...</span>
           </div>
+          <button
+            onClick={handleSignIn}
+            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+          >
+            Open browser again
+          </button>
         </div>
       )}
 
-      <button
-        onClick={onRefresh}
-        className="inline-flex items-center gap-1 h-7 px-3 rounded-full border border-border bg-background text-foreground text-xs font-medium hover:bg-secondary transition-colors"
-      >
-        I've done this — check again
-      </button>
+      {!installed && (
+        <button
+          onClick={onRefresh}
+          className="inline-flex items-center gap-1 h-7 px-3 rounded-full border border-border bg-background text-foreground text-xs font-medium hover:bg-secondary transition-colors"
+        >
+          I've installed it — check again
+        </button>
+      )}
+
+      {isSelected && (
+        <p className="text-xs text-muted-foreground">
+          You can continue without connecting — but you'll need the CLI set up before using agents.
+        </p>
+      )}
     </div>
   );
 }

@@ -44,6 +44,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   setCurrent: (agent) => {
     set({ current: agent });
     tauriPreferences.set("last_agent_id", agent.id);
+    analytics.track("agent_selected", { agent_id: agent.id, config_id: agent.configId });
     // Start file watcher for AI-native reactivity
     tauriWatcher.start(agent.folderPath).catch((e) =>
       console.error("[watcher] Failed to start:", e),

@@ -21,6 +21,7 @@ import {
   ComposioLinkCard,
   parseComposioToolkitFromHref,
 } from "../composio-link-card";
+import { analytics } from "../../lib/analytics";
 import type { TabProps } from "../../lib/types";
 import { useDetailPanelContainer } from "../shell/detail-panel-context";
 import { HoustonHelmet, HoustonThinkingIndicator } from "../shell/experience-card";
@@ -282,6 +283,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         agent: agentMode,
         worktreePath,
       });
+      analytics.track("mission_created", { agent_id: agent.id, agent_mode: agentMode ?? "default" });
       const sessionKey = `activity-${item.id}`;
       const visible = files.length > 0
         ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
@@ -291,7 +293,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       const paths = await tauriAttachments.save(`activity-${item.id}`, files);
       const prompt = withAttachmentPaths(text, paths);
       tauriChat.send(path, prompt, sessionKey, {
-        promptFile: mode?.promptFile,
+        mode: mode?.promptFile,
         workingDirOverride: worktreePath,
         providerOverride: chatProvider ?? undefined,
         modelOverride: chatModel ?? undefined,
@@ -335,7 +337,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       const prompt = withAttachmentPaths(text, paths);
       const mode = agentModes?.find((m) => m.id === activity?.agent);
       tauriChat.send(path, prompt, sessionKey, {
-        promptFile: mode?.promptFile,
+        mode: mode?.promptFile,
         workingDirOverride: activity?.worktree_path,
         providerOverride: chatProvider ?? undefined,
         modelOverride: chatModel ?? undefined,

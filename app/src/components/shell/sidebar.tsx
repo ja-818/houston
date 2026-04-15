@@ -6,8 +6,10 @@ import { useWorkspaceStore } from "../../stores/workspaces";
 import { useAgentStore } from "../../stores/agents";
 import { useAgentCatalogStore } from "../../stores/agent-catalog";
 import { useUIStore } from "../../stores/ui";
+import { analytics } from "../../lib/analytics";
 import { AgentMiniAvatar } from "./experience-card";
 import { UpdateChecker } from "./update-checker";
+import { MobileSyncButton } from "./mobile-sync";
 import { CreateWorkspaceDialog } from "../../App";
 
 export function Sidebar({ children }: { children: ReactNode }) {
@@ -60,7 +62,9 @@ export function Sidebar({ children }: { children: ReactNode }) {
     if (!agent) return;
     setCurrentAgent(agent);
     const def = getById(agent.configId);
-    setViewMode(def?.config.defaultTab ?? "chat");
+    const tab = def?.config.defaultTab ?? "chat";
+    analytics.track("tab_switched", { tab });
+    setViewMode(tab);
   };
 
   const handleRename = async (agentId: string, newName: string) => {
@@ -128,7 +132,12 @@ export function Sidebar({ children }: { children: ReactNode }) {
         onAdd={() => setDialogOpen(true)}
         onRename={handleRename}
         onDelete={handleDelete}
-        footer={<UpdateChecker />}
+        footer={
+          <>
+            <MobileSyncButton />
+            <UpdateChecker />
+          </>
+        }
       >
         <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col">
           {children}

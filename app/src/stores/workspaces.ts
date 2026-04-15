@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { tauriWorkspaces, tauriPreferences } from "../lib/tauri";
+import { analytics } from "../lib/analytics";
 import type { Workspace } from "../lib/types";
 
 interface WorkspaceState {
@@ -35,10 +36,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   setCurrent: (ws) => {
     set({ current: ws });
     tauriPreferences.set("last_workspace_id", ws.id);
+    analytics.track("workspace_opened", { workspace_id: ws.id });
   },
 
   create: async (name, provider, model) => {
     const ws = await tauriWorkspaces.create(name, provider, model);
+    analytics.track("workspace_created", { provider: provider ?? "none" });
     set((s) => ({
       workspaces: [...s.workspaces, ws],
     }));
