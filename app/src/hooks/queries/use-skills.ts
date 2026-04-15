@@ -47,7 +47,7 @@ export function useDeleteSkill(agentPath: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (name: string) => tauriSkills.delete(agentPath!, name),
-    onSuccess: () => {
+    onSettled: () => {
       if (agentPath) qc.invalidateQueries({ queryKey: queryKeys.skills(agentPath) });
     },
   });

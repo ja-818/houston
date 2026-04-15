@@ -122,6 +122,8 @@ pub async fn delete_skill(
 ) -> Result<(), String> {
     let dir = skills_dir(&workspace_path);
     houston_skills::delete_skill(&dir, &name).map_err(|e| e.to_string())?;
+    // Always clean up the symlink — the agent may have deleted the source
+    // but left the symlink, or vice versa.
     remove_claude_symlink(&workspace_path, &name);
     let _ = app_handle.emit("houston-event", HoustonEvent::SkillsChanged {
         agent_path: workspace_path.clone(),

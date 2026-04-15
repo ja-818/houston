@@ -219,11 +219,11 @@ pub fn edit_skill(skills_dir: &Path, name: &str, new_content: &str) -> Result<()
     Ok(())
 }
 
-/// Delete a skill (removes entire directory).
+/// Delete a skill (removes entire directory). Idempotent — returns Ok if already gone.
 pub fn delete_skill(skills_dir: &Path, name: &str) -> Result<(), SkillError> {
     let skill_dir = skills_dir.join(name);
     if !skill_dir.exists() {
-        return Err(SkillError::NotFound(name.to_string()));
+        return Ok(());
     }
     std::fs::remove_dir_all(&skill_dir).map_err(|e| SkillError::Io(e.to_string()))?;
     Ok(())
@@ -356,10 +356,10 @@ mod tests {
     }
 
     #[test]
-    fn delete_nonexistent_fails() {
+    fn delete_nonexistent_is_idempotent() {
         let tmp = TempDir::new().unwrap();
         let result = delete_skill(tmp.path(), "nope");
-        assert!(result.is_err());
+        assert!(result.is_ok());
     }
 
     #[test]
