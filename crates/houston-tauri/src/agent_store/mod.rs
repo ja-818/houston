@@ -10,7 +10,6 @@ pub mod config;
 pub mod conversations;
 pub mod goals;
 pub mod helpers;
-pub mod integrations;
 pub mod log;
 pub mod routine_runs;
 pub mod routines;
@@ -120,18 +119,6 @@ impl AgentStore {
     }
     pub fn remove_channel(&self, id: &str) -> Result<(), String> {
         channels::remove(&self.root, id)
-    }
-
-    // -- Integrations --
-    pub fn list_integrations(&self) -> Result<Vec<TrackedIntegration>, String> {
-        integrations::list(&self.root)
-    }
-    pub fn track_integration(&self, toolkit: &str) -> Result<TrackedIntegration, String> {
-        self.ensure_houston_dir()?;
-        integrations::track(&self.root, toolkit)
-    }
-    pub fn remove_integration(&self, toolkit: &str) -> Result<(), String> {
-        integrations::remove(&self.root, toolkit)
     }
 
     // -- Log --

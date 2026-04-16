@@ -23,9 +23,6 @@ export function useAgentInvalidation() {
           qc.invalidateQueries({ queryKey: queryKeys.activity(p.data.agent_path) });
           qc.invalidateQueries({ queryKey: ["all-conversations"] });
           break;
-        case "IntegrationsChanged":
-          qc.invalidateQueries({ queryKey: queryKeys.integrations(p.data.agent_path) });
-          break;
         case "SkillsChanged":
           qc.invalidateQueries({ queryKey: queryKeys.skills(p.data.agent_path) });
           break;
@@ -60,6 +57,10 @@ export function useAgentInvalidation() {
             qc.invalidateQueries({ queryKey: ["activity"] });
             qc.invalidateQueries({ queryKey: ["all-conversations"] });
           }
+          break;
+        // Composio CLI became available — refresh integrations state.
+        case "ComposioCliReady":
+          qc.invalidateQueries({ queryKey: queryKeys.connections() });
           break;
       }
     });

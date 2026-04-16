@@ -211,17 +211,6 @@ pub struct SlackThread {
     pub title: String,
 }
 
-// -- Integrations --
-
-/// A Composio toolkit that this agent has used.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TrackedIntegration {
-    pub toolkit: String,
-    pub first_used_at: String,
-    pub last_used_at: String,
-    pub use_count: u32,
-}
-
 // -- Log --
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

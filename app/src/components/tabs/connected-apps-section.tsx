@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { tauriConnections } from "../../lib/tauri";
+import { tauriConnections, tauriSystem } from "../../lib/tauri";
 
 interface ConnectedAppsSectionProps {
   connectedToolkits: Set<string>;
@@ -70,6 +70,10 @@ interface AppInfo {
   logoUrl: string;
 }
 
+function composioAppUrl(toolkit: string): string {
+  return `https://dashboard.composio.dev/~/connect/apps/${toolkit}`;
+}
+
 function ConnectedAppCard({ app }: { app: AppInfo }) {
   const [imgError, setImgError] = useState(false);
   const initial = app.name.charAt(0).toUpperCase();
@@ -98,10 +102,19 @@ function ConnectedAppCard({ app }: { app: AppInfo }) {
           {app.description}
         </p>
       </div>
-      <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium shrink-0">
-        <Check className="size-3" />
-        Connected
-      </span>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">
+          <Check className="size-3" />
+          Connected
+        </span>
+        <button
+          onClick={() => tauriSystem.openUrl(composioAppUrl(app.toolkit))}
+          className="inline-flex items-center justify-center size-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          title={`Manage ${app.name} on Composio`}
+        >
+          <ExternalLink className="size-3.5" />
+        </button>
+      </div>
     </div>
   );
 }

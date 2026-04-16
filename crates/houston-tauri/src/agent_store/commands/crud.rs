@@ -196,44 +196,6 @@ pub async fn delete_goal(
     AgentStore::new(&root).delete_goal(&goal_id)
 }
 
-// -- Integrations --
-
-#[tauri::command(rename_all = "snake_case")]
-pub async fn list_integrations(
-    agent_path: String,
-) -> Result<Vec<TrackedIntegration>, String> {
-    let root = resolve_agent_dir(&agent_path)?;
-    AgentStore::new(&root).list_integrations()
-}
-
-#[tauri::command(rename_all = "snake_case")]
-pub async fn track_integration(
-    app_handle: tauri::AppHandle,
-    agent_path: String,
-    toolkit: String,
-) -> Result<TrackedIntegration, String> {
-    let root = resolve_agent_dir(&agent_path)?;
-    let entry = AgentStore::new(&root).track_integration(&toolkit)?;
-    let _ = app_handle.emit("houston-event", HoustonEvent::IntegrationsChanged {
-        agent_path: agent_path.clone(),
-    });
-    Ok(entry)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-pub async fn remove_integration(
-    app_handle: tauri::AppHandle,
-    agent_path: String,
-    toolkit: String,
-) -> Result<(), String> {
-    let root = resolve_agent_dir(&agent_path)?;
-    AgentStore::new(&root).remove_integration(&toolkit)?;
-    let _ = app_handle.emit("houston-event", HoustonEvent::IntegrationsChanged {
-        agent_path: agent_path.clone(),
-    });
-    Ok(())
-}
-
 // -- Channels --
 
 #[tauri::command(rename_all = "snake_case")]

@@ -47,7 +47,7 @@ export type AgentCategory =
 export interface AgentMode {
   id: string;              // e.g. "execution", "planning"
   name: string;            // Display name, e.g. "Coder", "Planner"
-  promptFile: string;      // File in .houston/prompts/, e.g. "execution.md"
+  promptFile: string;      // Mode name → reads .houston/prompts/modes/{promptFile}.md
   createLabel: string;     // Button label, e.g. "New Mission"
 }
 
@@ -153,14 +153,6 @@ export interface LearningsData {
   entries: { index: number; text: string }[];
   chars: number;
   limit: number;
-}
-
-/** A tracked Composio integration for an agent */
-export interface TrackedIntegration {
-  toolkit: string;
-  first_used_at: string;
-  last_used_at: string;
-  use_count: number;
 }
 
 /** A channel entry from .houston/channels.json */
