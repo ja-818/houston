@@ -1574,6 +1574,103 @@ visionPath: "vision/index.html"
     .app-mockup .kanban-col:nth-child(3) { display: none; }
     .phone-mockup { display: none !important; }
   }
+
+  /* ═══════════════════════════════════════════
+     DOWNLOAD GATE MODAL
+     ═══════════════════════════════════════════ */
+
+  .dl-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .dl-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .dl-card {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 420px;
+    width: calc(100% - 48px);
+    text-align: center;
+    transform: translateY(12px) scale(0.97);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
+  }
+
+  .dl-overlay.open .dl-card {
+    transform: translateY(0) scale(1);
+  }
+
+  .dl-card h3 {
+    font-family: 'General Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .dl-card p {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  .dl-input {
+    width: 100%;
+    height: 44px;
+    border: 1px solid var(--border-medium);
+    border-radius: 12px;
+    padding: 0 16px;
+    font-size: 15px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    letter-spacing: 0.5px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .dl-input:focus {
+    border-color: var(--gray-950);
+  }
+
+  .dl-input.valid {
+    border-color: var(--success);
+  }
+
+  .dl-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .dl-actions .btn {
+    width: 100%;
+  }
+
+  .btn-disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .dl-divider {
+    font-size: 13px;
+    color: var(--gray-400);
+    margin-top: 4px;
+  }
 </style>
 {% endblock %}
 {% block body %}
@@ -1592,7 +1689,7 @@ visionPath: "vision/index.html"
   <p>One free desktop app that runs on your GPT subscription.<br>A workspace of pre-built AI agents that actually do the work.</p>
 
   <div class="hero-actions">
-    <a href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">Join the waiting list</a>
+    <button class="btn btn-primary btn-lg" data-dl-trigger><svg viewBox="0 0 384 512" fill="currentColor" width="16" height="16"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg> Download for Mac</button>
   </div>
 
   <div class="app-mockup" style="max-width: 1152px; width: 100%; margin-top: 64px; animation: float-up 0.6s ease 0.25s both;">
@@ -2002,7 +2099,7 @@ visionPath: "vision/index.html"
           <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> Phone companion app</li>
           <li style="display: flex; align-items: center; gap: 8px;"><svg viewBox="0 0 12 12" fill="none" stroke="var(--gray-950)" stroke-width="2" width="12" height="12"><path d="M2 6l3 3 5-5"/></svg> 1000+ integrations</li>
         </ul>
-        <a href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">Join the waiting list</a>
+        <button class="btn btn-primary btn-lg" data-dl-trigger><svg viewBox="0 0 384 512" fill="currentColor" width="16" height="16"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg> Download for Mac</button>
       </div>
       <div class="final-cta-card" style="border-left: 1px solid var(--border-light); display: flex; flex-direction: column; position: relative; overflow: hidden;">
         <div style="position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 20% 100%, rgba(59,130,246,0.08), transparent), radial-gradient(ellipse 60% 50% at 80% 0%, rgba(249,115,22,0.06), transparent); pointer-events: none;"></div>
@@ -2034,6 +2131,23 @@ visionPath: "vision/index.html"
 </div>
 
 {% include "footer-landing.njk" %}
+
+<!-- ═══════════════════════════════════════════
+     DOWNLOAD GATE MODAL
+     ═══════════════════════════════════════════ -->
+
+<div class="dl-overlay" id="dl-overlay">
+  <div class="dl-card">
+    <h3>We're on a closed beta</h3>
+    <p>If you were invited, paste your code and download the app.</p>
+    <input type="text" class="dl-input" id="dl-code" placeholder="Paste your invite code" autocomplete="off" spellcheck="false">
+    <div class="dl-actions">
+      <a id="dl-btn" class="btn btn-primary btn-lg btn-disabled" href="#" download><svg viewBox="0 0 384 512" fill="currentColor" width="16" height="16"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg> Download for Mac</a>
+      <span class="dl-divider">or join our waiting list to get access</span>
+      <a href="https://forms.gle/ac24qrKSufYvfudt8" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg">Join the waiting list</a>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════════════
      SCRIPTS
@@ -2311,6 +2425,66 @@ visionPath: "vision/index.html"
       }
     });
   });
+
+  // Download gate modal
+  (function() {
+    var CODE = '{{ env.downloadCode }}';
+    var overlay = document.getElementById('dl-overlay');
+    var input = document.getElementById('dl-code');
+    var btn = document.getElementById('dl-btn');
+    var dmgUrl = null;
+
+    // Fetch latest release DMG URL
+    fetch('https://api.github.com/repos/ja-818/houston/releases/latest')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var dmg = data.assets && data.assets.find(function(a) { return a.name.endsWith('.dmg'); });
+        if (dmg) dmgUrl = dmg.browser_download_url;
+      });
+
+    // Open modal
+    document.querySelectorAll('[data-dl-trigger]').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        e.preventDefault();
+        overlay.classList.add('open');
+        setTimeout(function() { input.focus(); }, 200);
+      });
+    });
+
+    // Close on backdrop click
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') overlay.classList.remove('open');
+    });
+
+    // Validate code on input
+    input.addEventListener('input', function() {
+      var match = input.value.trim() === CODE;
+      input.classList.toggle('valid', match);
+      if (match && dmgUrl) {
+        btn.href = dmgUrl;
+        btn.classList.remove('btn-disabled');
+      } else {
+        btn.href = '#';
+        btn.classList.add('btn-disabled');
+      }
+    });
+
+    // Prevent click when disabled
+    btn.addEventListener('click', function(e) {
+      if (btn.classList.contains('btn-disabled')) e.preventDefault();
+    });
+
+    // Auto-open if arriving via /#download
+    if (window.location.hash === '#download') {
+      overlay.classList.add('open');
+      setTimeout(function() { input.focus(); }, 200);
+    }
+  })();
 </script>
 
 {% endblock %}
