@@ -61,28 +61,40 @@ struct GitTreeEntry {
 // ── Public API ────────────────────────────────────────────────────
 
 /// Search the skills.sh community directory.
+///
+/// Retries once after a 1-second delay on HTTP 429 (rate limit).
 pub async fn search_skills(query: &str) -> Result<Vec<CommunitySkill>, SkillError> {
     let client = build_client()?;
-    let resp = client
-        .get("https://skills.sh/api/search")
-        .query(&[("q", query)])
-        .send()
-        .await
-        .map_err(|e| SkillError::Io(format!("Search failed: {e}")))?;
 
-    if !resp.status().is_success() {
-        return Err(SkillError::Io(format!(
-            "Skills search failed ({})",
-            resp.status()
-        )));
+    let mut attempts = 0;
+    loop {
+        let resp = client
+            .get("https://skills.sh/api/search")
+            .query(&[("q", query)])
+            .send()
+            .await
+            .map_err(|e| SkillError::Io(format!("Search failed: {e}")))?;
+
+        if resp.status().as_u16() == 429 && attempts == 0 {
+            attempts += 1;
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            continue;
+        }
+
+        if !resp.status().is_success() {
+            return Err(SkillError::Io(format!(
+                "Skills search failed ({})",
+                resp.status()
+            )));
+        }
+
+        let result: SearchResponse = resp
+            .json()
+            .await
+            .map_err(|e| SkillError::Io(format!("Failed to parse results: {e}")))?;
+
+        return Ok(result.skills);
     }
-
-    let result: SearchResponse = resp
-        .json()
-        .await
-        .map_err(|e| SkillError::Io(format!("Failed to parse results: {e}")))?;
-
-    Ok(result.skills)
 }
 
 /// Install a single community skill by fetching its SKILL.md from GitHub.
@@ -98,7 +110,33 @@ pub async fn install_skill(
         .map_err(|e| SkillError::Io(e.to_string()))?;
 
     let client = build_client()?;
-    let raw_md = fetch_skill_md_at_path(&client, source, &format!("skills/{skill_id}/SKILL.md")).await?;
+
+    // Try common path patterns first (cheap — no API call).
+    let candidates = [
+        format!("skills/{skill_id}/SKILL.md"),
+        format!("{skill_id}/SKILL.md"),
+        "SKILL.md".to_string(),
+    ];
+    let mut raw_md = None;
+    for candidate in &candidates {
+        if let Ok(md) = fetch_skill_md_at_path(&client, source, candidate).await {
+            raw_md = Some(md);
+            break;
+        }
+    }
+    // Fallback: scan the repo tree and match by directory name or frontmatter `name:`.
+    if raw_md.is_none() {
+        if let Ok(Some(path)) = find_skill_path_in_repo(&client, source, skill_id).await {
+            if let Ok(md) = fetch_skill_md_at_path(&client, source, &path).await {
+                raw_md = Some(md);
+            }
+        }
+    }
+    let raw_md = raw_md.ok_or_else(|| {
+        SkillError::Io(format!(
+            "Could not find '{skill_id}' in {source} — skill not found in repo"
+        ))
+    })?;
     let parsed = parse_skill_md(&raw_md, skill_id);
 
     let install_name = skill_id.to_string();
@@ -310,6 +348,86 @@ fn skill_id_from_path(path: &str, repo_name: &str) -> String {
         .to_string()
 }
 
+/// Use the GitHub Trees API to locate a SKILL.md matching `skill_id`.
+///
+/// Two-pass approach:
+/// 1. Exact match on derived directory name (cheap — no extra fetches)
+/// 2. For SKILL.md paths whose directory contains `skill_id`, peek at frontmatter
+///    `name:` field (the authoritative name used by skills.sh)
+async fn find_skill_path_in_repo(
+    client: &Client,
+    source: &str,
+    skill_id: &str,
+) -> Result<Option<String>, SkillError> {
+    let tree_url = format!(
+        "https://api.github.com/repos/{source}/git/trees/HEAD?recursive=1"
+    );
+    let resp = client
+        .get(&tree_url)
+        .send()
+        .await
+        .map_err(|e| SkillError::Io(format!("Network error: {e}")))?;
+
+    if !resp.status().is_success() {
+        return Ok(None);
+    }
+
+    let tree: GitTree = resp
+        .json()
+        .await
+        .map_err(|e| SkillError::Io(format!("Failed to parse repo tree: {e}")))?;
+
+    let repo_name = source.split('/').last().unwrap_or(source);
+    let mut fuzzy_candidates = Vec::new();
+
+    // Pass 1: exact directory-name match.
+    for entry in &tree.tree {
+        if entry.entry_type == "blob" && entry.path.ends_with("SKILL.md") {
+            let derived_id = skill_id_from_path(&entry.path, repo_name);
+            if derived_id == skill_id {
+                return Ok(Some(entry.path.clone()));
+            }
+            // Collect fuzzy candidates: path contains skill_id as substring.
+            if entry.path.contains(skill_id) {
+                fuzzy_candidates.push(entry.path.clone());
+            }
+        }
+    }
+
+    // Pass 2: peek at frontmatter `name:` for fuzzy candidates (cap at 10).
+    for path in fuzzy_candidates.iter().take(10) {
+        if let Ok(content) = fetch_skill_md_at_path(client, source, path).await {
+            if let Some(name) = extract_frontmatter_name(&content) {
+                if name == skill_id {
+                    return Ok(Some(path.clone()));
+                }
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+/// Extract the `name:` field from YAML frontmatter.
+fn extract_frontmatter_name(content: &str) -> Option<String> {
+    let mut in_frontmatter = false;
+    for line in content.lines() {
+        if line.trim() == "---" {
+            if in_frontmatter {
+                return None; // End of frontmatter, no name found
+            }
+            in_frontmatter = true;
+            continue;
+        }
+        if in_frontmatter {
+            if let Some(name) = line.strip_prefix("name:") {
+                return Some(name.trim().trim_matches('"').trim_matches('\'').to_string());
+            }
+        }
+    }
+    None
+}
+
 async fn fetch_skill_md_at_path(
     client: &Client,
     source: &str,
@@ -480,5 +598,29 @@ Some content without a heading.";
     fn kebab_to_title_basic() {
         assert_eq!(kebab_to_title("react-best-practices"), "React Best Practices");
         assert_eq!(kebab_to_title("single"), "Single");
+    }
+
+    #[test]
+    fn extract_name_from_frontmatter() {
+        let content = "---\nname: ai-sdk\ndescription: Some SDK\n---\n\n# AI SDK";
+        assert_eq!(extract_frontmatter_name(content), Some("ai-sdk".into()));
+    }
+
+    #[test]
+    fn extract_name_quoted() {
+        let content = "---\nname: \"my-skill\"\n---\n\nContent";
+        assert_eq!(extract_frontmatter_name(content), Some("my-skill".into()));
+    }
+
+    #[test]
+    fn extract_name_missing() {
+        let content = "---\ndescription: no name here\n---\n\n# Title";
+        assert_eq!(extract_frontmatter_name(content), None);
+    }
+
+    #[test]
+    fn extract_name_no_frontmatter() {
+        let content = "# Just a heading\n\nNo frontmatter.";
+        assert_eq!(extract_frontmatter_name(content), None);
     }
 }
