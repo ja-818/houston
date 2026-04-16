@@ -74,6 +74,7 @@ function composioAppUrl(toolkit: string): string {
   return `https://dashboard.composio.dev/~/connect/apps/${toolkit}`;
 }
 
+
 function ConnectedAppCard({ app }: { app: AppInfo }) {
   const [imgError, setImgError] = useState(false);
   const initial = app.name.charAt(0).toUpperCase();

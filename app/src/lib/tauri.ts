@@ -87,6 +87,7 @@ export const tauriChat = {
     sessionKey: string,
     opts?: {
       mode?: string;
+      promptFile?: string;
       workingDirOverride?: string;
       providerOverride?: string;
       modelOverride?: string;
