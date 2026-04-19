@@ -2463,6 +2463,7 @@ dependencies = [
  "houston-agents-conversations",
  "houston-composio",
  "houston-db",
+ "houston-engine-core",
  "houston-events",
  "houston-file-watcher",
  "houston-scheduler",

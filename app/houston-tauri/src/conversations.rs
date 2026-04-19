@@ -1,11 +1,11 @@
-//! Tauri commands for listing conversations across agents.
+//! Tauri proxy — delegates to `houston_engine_core::conversations`.
 //!
-//! Conversations are a derived view over activity.json — each activity row
-//! maps to one conversation, keyed by `activity-<id>`.
+//! The engine crate owns the canonical logic. This layer exists only to
+//! expose it as a `#[tauri::command]` until the frontend talks to the
+//! engine server directly (Phase 3).
 
-use crate::agent_store::conversations as store;
-use crate::agent_store::types::ConversationEntry;
 use crate::paths::expand_tilde;
+use houston_engine_core::conversations::{self, ConversationEntry};
 use std::path::PathBuf;
 
 fn resolve(agent_path: &str) -> PathBuf {
@@ -15,7 +15,7 @@ fn resolve(agent_path: &str) -> PathBuf {
 #[tauri::command(rename_all = "snake_case")]
 pub async fn list_conversations(agent_path: String) -> Result<Vec<ConversationEntry>, String> {
     let root = resolve(&agent_path);
-    store::list(&root)
+    conversations::list(&root).map_err(|e| e.to_string())
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -24,5 +24,5 @@ pub async fn list_all_conversations(
 ) -> Result<Vec<ConversationEntry>, String> {
     let roots: Vec<PathBuf> = agent_paths.iter().map(|p| resolve(p)).collect();
     let refs: Vec<&std::path::Path> = roots.iter().map(|p| p.as_path()).collect();
-    store::list_all(&refs)
+    conversations::list_all(&refs).map_err(|e| e.to_string())
 }

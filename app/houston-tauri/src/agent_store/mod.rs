@@ -5,7 +5,6 @@
 //! safe, atomic CRUD over those files.
 
 pub mod config;
-pub mod conversations;
 pub mod helpers;
 pub mod routine_runs;
 pub mod routines;
@@ -32,11 +31,6 @@ impl AgentStore {
 
     pub fn ensure_houston_dir(&self) -> Result<(), String> {
         helpers::ensure_houston_dir(&self.root)
-    }
-
-    // -- Conversations --
-    pub fn list_conversations(&self) -> Result<Vec<ConversationEntry>, String> {
-        conversations::list(&self.root)
     }
 
     // -- Activity --

@@ -46,30 +46,6 @@ pub struct ActivityUpdate {
     pub routine_run_id: Option<String>,
 }
 
-// -- Conversations --
-
-/// A conversation entry. Every conversation is an activity with a UUID-scoped session_key.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConversationEntry {
-    pub id: String,
-    pub title: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<String>,
-    /// Always `"activity"` now. Kept as a field for future extensibility.
-    #[serde(rename = "type")]
-    pub entry_type: String,
-    /// Session key used to address this conversation (e.g. `"activity-{id}"`).
-    pub session_key: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub updated_at: Option<String>,
-    /// Absolute path to the agent folder this conversation belongs to.
-    pub agent_path: String,
-    /// Human-readable agent name.
-    pub agent_name: String,
-}
-
 // -- Routines --
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
