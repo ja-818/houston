@@ -2,6 +2,20 @@
 
 use std::path::{Path, PathBuf};
 
+/// Expand a leading `~` to the user's home directory. Mirrors the Tauri-side
+/// helper so REST callers can submit `~/Documents/Houston/...` paths verbatim.
+pub fn expand_tilde(path: &Path) -> PathBuf {
+    if path.starts_with("~") {
+        if let Ok(home) = std::env::var("HOME") {
+            PathBuf::from(home).join(path.strip_prefix("~").unwrap_or(path))
+        } else {
+            path.to_path_buf()
+        }
+    } else {
+        path.to_path_buf()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct EnginePaths {
     /// Houston docs directory — holds workspaces (`~/Documents/Houston`).
