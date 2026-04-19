@@ -148,13 +148,6 @@ export interface FileEntry {
   size: number;
 }
 
-/** Learnings data returned by load_learnings */
-export interface LearningsData {
-  entries: { index: number; text: string }[];
-  chars: number;
-  limit: number;
-}
-
 /** A channel entry from .houston/channels.json */
 export interface ChannelEntry {
   id: string;

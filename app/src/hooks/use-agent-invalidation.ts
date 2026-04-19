@@ -26,9 +26,6 @@ export function useAgentInvalidation() {
         case "SkillsChanged":
           qc.invalidateQueries({ queryKey: queryKeys.skills(p.data.agent_path) });
           break;
-        case "LearningsChanged":
-          qc.invalidateQueries({ queryKey: queryKeys.learnings(p.data.agent_path) });
-          break;
         case "ChannelsConfigChanged":
           qc.invalidateQueries({ queryKey: queryKeys.channels(p.data.agent_path) });
           break;

@@ -1,5 +1,5 @@
 packages:
   - "packages/*"
-  - "create-app"
-  - "showcase"
   - "app"
+  - "mobile"
+  - "relay"

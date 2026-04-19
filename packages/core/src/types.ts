@@ -111,10 +111,6 @@ export type HoustonEvent =
       data: { agent_path: string };
     }
   | {
-      type: "LearningsChanged";
-      data: { agent_path: string };
-    }
-  | {
       type: "ChannelsConfigChanged";
       data: { agent_path: string };
     }

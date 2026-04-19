@@ -10,8 +10,6 @@
 //! the user needs the CLI. It's a one-time step per machine.
 
 use std::path::PathBuf;
-use std::process::Stdio;
-use tokio::process::Command;
 
 /// Absolute path to the composio binary the installer drops.
 pub fn cli_path() -> PathBuf {
@@ -55,38 +53,85 @@ pub fn is_installed() -> bool {
 /// the download/verify/extract logic — the upstream script handles
 /// platform detection (darwin-x64, darwin-aarch64, linux-*) and
 /// Rosetta 2 edge cases we'd otherwise have to maintain ourselves.
+///
+/// Uses `std::process::Command` (synchronous) via `spawn_blocking` with
+/// stdout/stderr redirected to temp files. This bypasses the
+/// `tokio::process::Command::output()` hang observed on macOS inside
+/// Tauri `.app` bundles — the same fix applied to `start_login()` in
+/// `composio_cli.rs`.
 pub async fn install() -> Result<PathBuf, String> {
     tracing::info!("[composio:install] running install script…");
 
-    // `curl | bash` is the documented install command on composio.dev.
-    // We shell out to `bash -c` so `set -euo pipefail` in the script
-    // still takes effect. stdin is closed so the script can't prompt.
-    let output = Command::new("bash")
-        .arg("-c")
-        .arg("curl -fsSL https://composio.dev/install | bash")
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(|e| format!("Failed to spawn install script: {e}"))?;
+    // Capture HOME and PATH before entering spawn_blocking — macOS
+    // `.app` bundles launched from Finder can have a stripped env where
+    // `curl` and `bash` aren't on PATH.
+    let home = std::env::var("HOME").unwrap_or_default();
+    let path = std::env::var("PATH").unwrap_or_default();
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    tracing::debug!("[composio:install] stdout: {}", stdout);
-    tracing::debug!("[composio:install] stderr: {}", stderr);
+    let result = tokio::time::timeout(
+        std::time::Duration::from_secs(180),
+        tokio::task::spawn_blocking(move || {
+            let tmp_out = std::env::temp_dir().join("houston-composio-install-stdout.log");
+            let tmp_err = std::env::temp_dir().join("houston-composio-install-stderr.log");
 
-    if !output.status.success() {
-        return Err(format!(
-            "Composio install script failed (exit {}): {}",
-            output.status,
-            stderr.trim()
-        ));
-    }
+            let stdout_file = std::fs::File::create(&tmp_out)
+                .map_err(|e| format!("Failed to create temp file: {e}"))?;
+            let stderr_file = std::fs::File::create(&tmp_err)
+                .map_err(|e| format!("Failed to create temp file: {e}"))?;
+
+            // `curl | bash` is the documented install command on composio.dev.
+            // We shell out to `bash -c` so `set -euo pipefail` in the script
+            // still takes effect. stdin is closed so the script can't prompt.
+            let status = std::process::Command::new("bash")
+                .arg("-c")
+                .arg("curl -fsSL https://composio.dev/install | bash")
+                .env("HOME", &home)
+                .env("PATH", &path)
+                .stdin(std::process::Stdio::null())
+                .stdout(stdout_file)
+                .stderr(stderr_file)
+                .status()
+                .map_err(|e| format!("Failed to spawn install script: {e}"))?;
+
+            let stdout = std::fs::read_to_string(&tmp_out).unwrap_or_default();
+            let stderr = std::fs::read_to_string(&tmp_err).unwrap_or_default();
+            let _ = std::fs::remove_file(&tmp_out);
+            let _ = std::fs::remove_file(&tmp_err);
+
+            tracing::debug!("[composio:install] stdout: {}", stdout.trim());
+            tracing::debug!("[composio:install] stderr: {}", stderr.trim());
+
+            if !status.success() {
+                let msg = stderr.trim();
+                let hint = if msg.contains("curl") || msg.contains("not found") {
+                    " — curl may not be installed or not on PATH"
+                } else if msg.contains("network") || msg.contains("Could not resolve") {
+                    " — check your internet connection"
+                } else {
+                    ""
+                };
+                return Err(format!(
+                    "Composio install failed (exit {status}): {msg}{hint}"
+                ));
+            }
+
+            Ok(())
+        }),
+    )
+    .await
+    .map_err(|_| {
+        "Composio install timed out after 3 minutes — check your internet connection \
+         and try again"
+            .to_string()
+    })?
+    .map_err(|e| format!("Install thread failed: {e}"))?;
+
+    result?;
 
     if !is_installed() {
         return Err(format!(
-            "Install script completed but no binary at {}",
+            "Install script completed but no binary at {} — the download may have \
+             been interrupted",
             cli_path().display()
         ));
     }

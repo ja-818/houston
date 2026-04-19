@@ -22,7 +22,6 @@ export default defineConfig({
       "@houston-ai/layout",
       "@houston-ai/connections",
       "@houston-ai/events",
-      "@houston-ai/memory",
       "@houston-ai/routines",
       "@houston-ai/skills",
       "@houston-ai/review",

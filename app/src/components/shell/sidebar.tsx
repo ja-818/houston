@@ -9,6 +9,8 @@ import { useUIStore } from "../../stores/ui";
 import { analytics } from "../../lib/analytics";
 import { AgentMiniAvatar } from "./experience-card";
 import { UpdateChecker } from "./update-checker";
+import { MobileSyncButton } from "./mobile-sync";
+import { useSyncResponder } from "../../hooks/use-sync-responder";
 import { CreateWorkspaceDialog } from "../../App";
 
 export function Sidebar({ children }: { children: ReactNode }) {
@@ -29,6 +31,9 @@ export function Sidebar({ children }: { children: ReactNode }) {
   const viewMode = useUIStore((s) => s.viewMode);
   const setViewMode = useUIStore((s) => s.setViewMode);
   const setDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
+
+  // Sync responder — always active regardless of view
+  useSyncResponder();
 
   const sorted = [...agents].sort((a, b) => {
     const aTime = a.lastOpenedAt ?? a.createdAt;
@@ -133,6 +138,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
         onDelete={handleDelete}
         footer={
           <>
+            <MobileSyncButton />
             <UpdateChecker />
           </>
         }

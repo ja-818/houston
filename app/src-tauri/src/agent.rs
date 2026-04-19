@@ -96,16 +96,7 @@ pub fn build_system_prompt(
     // 4. Self-improvement guidance (always — use latest hardcoded version)
     parts.push(houston_tauri::self_improvement::SELF_IMPROVEMENT_GUIDANCE.to_string());
 
-    // 5. Learnings snapshot
-    let memory_dir = dir.join(".houston/memory");
-    let config = houston_memory::LearningsConfig::default();
-    if let Ok(prompt) = houston_memory::build_learnings_prompt(&memory_dir, &config) {
-        if !prompt.is_empty() {
-            parts.push(prompt);
-        }
-    }
-
-    // 6. Skills index (read from .agents/skills — skill.sh convention)
+    // 5. Skills index (read from .agents/skills — skill.sh convention)
     let skills_dir = dir.join(".agents/skills");
     if let Ok(index) = houston_skills::build_skills_index(&skills_dir) {
         if !index.is_empty() {

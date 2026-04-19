@@ -54,24 +54,30 @@ export function resolveTabComponent(
   if (tab.customComponent && agentDef.path) {
     const cacheKey = `${agentDef.path}:${tab.customComponent}`;
     if (!bundleCache.has(cacheKey)) {
+      const componentName = tab.customComponent;
       const component = lazy(async () => {
-        const { invoke } = await import("@tauri-apps/api/core");
-        const code = await invoke<string>("read_agent_file", {
-          agent_path: agentDef.path,
-          name: "bundle.js",
-        });
-        // Evaluate the IIFE — it assigns exports to window.__houston_bundle__
-        const script = document.createElement("script");
-        script.textContent = code;
-        document.head.appendChild(script);
-        document.head.removeChild(script);
-        // Read and clean up the global
-        const exports = (window as any).__houston_bundle__;
-        (window as any).__houston_bundle__ = undefined;
-        if (!exports) throw new Error("Bundle did not register exports");
-        const Component = exports[tab.customComponent!];
-        if (!Component) throw new Error(`Bundle does not export "${tab.customComponent}"`);
-        return { default: Component };
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          const code = await invoke<string>("read_agent_file", {
+            agent_path: agentDef.path,
+            name: "bundle.js",
+          });
+          // Evaluate the IIFE — it assigns exports to window.__houston_bundle__
+          const script = document.createElement("script");
+          script.textContent = code;
+          document.head.appendChild(script);
+          document.head.removeChild(script);
+          // Read and clean up the global
+          const exports = (window as any).__houston_bundle__;
+          (window as any).__houston_bundle__ = undefined;
+          if (!exports) throw new Error("Bundle did not register exports");
+          const Component = exports[componentName];
+          if (!Component) throw new Error(`Bundle does not export "${componentName}"`);
+          return { default: Component };
+        } catch (err) {
+          console.error(`[tab-resolver] Failed to load custom tab "${componentName}":`, err);
+          return { default: BundleError as ComponentType<any> };
+        }
       });
       bundleCache.set(cacheKey, component);
     }
@@ -80,4 +86,21 @@ export function resolveTabComponent(
 
   // Fallback
   return BUILTIN_TABS.chat;
+}
+
+/** Shown when a custom tab's bundle.js is missing or fails to load. */
+function BundleError() {
+  return React.createElement("div", {
+    style: {
+      display: "flex", flexDirection: "column" as const, alignItems: "center",
+      justifyContent: "center", height: "100%", gap: 8, padding: 32,
+    },
+  },
+    React.createElement("p", {
+      style: { fontSize: 20, fontWeight: 600, color: "#0d0d0d" },
+    }, "Custom tab unavailable"),
+    React.createElement("p", {
+      style: { fontSize: 14, color: "#676767", textAlign: "center" as const, maxWidth: 400 },
+    }, "This agent has a custom component but its bundle.js is missing or failed to load. Reinstall the agent or check the agent repo."),
+  );
 }

@@ -41,6 +41,12 @@ export interface ChatMessagesProps {
   renderToolResult?: ToolsAndCardsProps["renderToolResult"];
   renderMessageAvatar?: (msg: ChatMessage) => ReactNode | undefined;
   renderTurnSummary?: (tools: ToolEntry[]) => ReactNode;
+  /** Custom renderer for system messages. Return a node to replace the default,
+   *  or undefined to use the default italic text. */
+  renderSystemMessage?: (msg: ChatMessage) => ReactNode | undefined;
+  /** Node rendered after the last message (inside the scroll container).
+   *  Useful for inline end-of-feed cards like auth reconnect prompts. */
+  afterMessages?: ReactNode;
   onOpenLink?: (url: string) => void;
   /** Custom renderer for markdown links. See `RenderLinkProps`. */
   renderLink?: (props: RenderLinkProps) => ReactNode;
@@ -83,6 +89,8 @@ export function ChatMessages({
   renderToolResult,
   renderMessageAvatar,
   renderTurnSummary,
+  renderSystemMessage,
+  afterMessages,
   onOpenLink,
   renderLink,
 }: ChatMessagesProps) {
@@ -96,6 +104,8 @@ export function ChatMessages({
       <ConversationContent className="max-w-3xl mx-auto">
         {messages.map((msg, idx) => {
           if (msg.from === "system") {
+            const custom = renderSystemMessage?.(msg);
+            if (custom !== undefined) return <div key={msg.key}>{custom}</div>;
             return (
               <div key={msg.key} className="flex justify-center py-2">
                 <span className="text-xs text-muted-foreground/60 italic">
@@ -164,6 +174,7 @@ export function ChatMessages({
             </MessageContent>
           </Message>
         )}
+        {afterMessages}
       </ConversationContent>
       <ConversationScrollButton />
     </Conversation>

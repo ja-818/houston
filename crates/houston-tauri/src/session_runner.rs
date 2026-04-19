@@ -80,6 +80,8 @@ pub fn spawn_and_monitor(
         let mut response_text: Option<String> = None;
         let mut claude_session_id: Option<String> = None;
         let mut error: Option<String> = None;
+        let mut saw_auth_error = false;
+        let mut sent_auth_checking = false;
 
         while let Some(update) = rx.recv().await {
             match update {
@@ -92,6 +94,53 @@ pub fn spawn_and_monitor(
                 SessionUpdate::Feed(ref item) => {
                     if let FeedItem::AssistantText(text) = item {
                         response_text = Some(text.clone());
+                    }
+                    // Collapse ALL auth-flavored system messages into a single
+                    // "Checking connection..." banner. Covers three shapes we've
+                    // seen in the wild:
+                    //   1. `__auth_retry__` — synthetic marker from codex_parser
+                    //      when the Codex retry banner ("Reconnecting... N/5 ...")
+                    //      is detected.
+                    //   2. Bare `Error: unexpected status 401 Unauthorized ...` —
+                    //      what Codex emits on the initial failure, before its
+                    //      retry loop prints "Reconnecting...".
+                    //   3. `not authenticated` / stderr-dumped auth errors.
+                    //
+                    // All three are auth noise, not user-visible content. We
+                    // suppress the raw message, track `saw_auth_error` so the
+                    // Status branch knows to emit AuthRequired + the reconnect
+                    // card marker, and emit "Checking connection..." exactly once.
+                    if let FeedItem::SystemMessage(msg) = item {
+                        let lower = msg.to_lowercase();
+                        let is_auth_noise = msg == "__auth_retry__"
+                            || lower.contains("401")
+                            || lower.contains("unauthorized")
+                            || lower.contains("not authenticated");
+                        if is_auth_noise {
+                            saw_auth_error = true;
+                            if !sent_auth_checking {
+                                sent_auth_checking = true;
+                                tracing::info!(
+                                    "[session_runner] auth issue detected ({msg:?}) — emitting Checking connection..."
+                                );
+                                let _ = handle.emit(
+                                    "houston-event",
+                                    HoustonEvent::FeedItem {
+                                        agent_path: agent_path_for_events.clone(),
+                                        session_key: key.clone(),
+                                        item: FeedItem::SystemMessage(
+                                            "Checking connection...".to_string(),
+                                        ),
+                                    },
+                                );
+                            } else {
+                                tracing::debug!(
+                                    "[session_runner] additional auth noise suppressed: {msg:?}"
+                                );
+                            }
+                            // Skip persisting and emitting the raw message.
+                            continue;
+                        }
                     }
                     let _ = handle.emit(
                         "houston-event",
@@ -160,18 +209,27 @@ pub fn spawn_and_monitor(
                         }
                     };
 
-                    // Detect auth failures and emit a dedicated event
-                    // so the frontend shows a branded reconnect banner.
+                    // Detect auth failures and emit AuthRequired so the frontend
+                    // knows to render the inline reconnect card (which reads
+                    // authRequired from the UI store and renders itself at the
+                    // end of the message list via ChatPanel's `afterMessages`
+                    // slot). No feed marker needed — the card is anchored to
+                    // store state, not to a specific FeedItem.
                     if let SessionStatus::Error(ref e) = status {
                         let lower = e.to_lowercase();
-                        let is_auth_error = lower.contains("401")
+                        let is_auth_error = saw_auth_error
+                            || lower.contains("401")
                             || lower.contains("unauthorized")
                             || lower.contains("authentication")
                             || lower.contains("api key")
                             || lower.contains("invalid_api_key")
                             || lower.contains("not authenticated")
                             || lower.contains("expired");
+                        tracing::info!(
+                            "[session_runner] session error: {e:?} | saw_auth_error={saw_auth_error} | is_auth_error={is_auth_error} | provider={provider_str}"
+                        );
                         if is_auth_error {
+                            tracing::info!("[session_runner] emitting AuthRequired for provider={provider_str}");
                             let _ = handle.emit(
                                 "houston-event",
                                 HoustonEvent::AuthRequired {

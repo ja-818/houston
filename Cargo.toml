@@ -7,12 +7,9 @@ members = [
     "crates/houston-events",
     "crates/houston-scheduler",
     "crates/houston-channels",
-    "crates/houston-memory",
     "crates/houston-skills",
+    "crates/houston-sync",
     "app/src-tauri",
-]
-exclude = [
-    "create-app/template",
 ]
 
 [workspace.dependencies]
@@ -32,5 +29,5 @@ houston-tauri = { version = "0.3.2", path = "crates/houston-tauri" }
 houston-events = { version = "0.3.2", path = "crates/houston-events" }
 houston-scheduler = { version = "0.3.2", path = "crates/houston-scheduler" }
 houston-channels = { version = "0.3.2", path = "crates/houston-channels" }
-houston-memory = { version = "0.3.2", path = "crates/houston-memory" }
 houston-skills = { version = "0.3.2", path = "crates/houston-skills" }
+houston-sync = { version = "0.3.2", path = "crates/houston-sync" }

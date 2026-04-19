@@ -143,7 +143,19 @@ pub fn parse_codex_event(line: &str, acc: &mut CodexAccumulator) -> Vec<FeedItem
                 .message
                 .or_else(|| event.error.and_then(|e| e.message))
                 .unwrap_or_else(|| "Unknown error".into());
-            vec![FeedItem::SystemMessage(format!("Error: {msg}"))]
+            tracing::info!("[codex] error/turn.failed: {msg}");
+            // Auth retry noise (e.g. "Reconnecting... 1/5 (unexpected status 401 Unauthorized...)")
+            // Show a single friendly "Checking connection..." instead of raw retries.
+            let lower = msg.to_lowercase();
+            let is_auth_retry = (lower.contains("401") || lower.contains("unauthorized") || lower.contains("not authenticated"))
+                && (lower.contains("reconnecting") || lower.contains("retrying"));
+            if is_auth_retry {
+                tracing::info!("[codex] auth retry detected — suppressing raw error");
+                // Return a marker so session_runner can track it, but don't show raw noise.
+                vec![FeedItem::SystemMessage("__auth_retry__".to_string())]
+            } else {
+                vec![FeedItem::SystemMessage(format!("Error: {msg}"))]
+            }
         }
 
         _ => {
@@ -424,6 +436,14 @@ mod tests {
         let items = parse_codex_event(line, &mut acc());
         assert_eq!(items.len(), 1);
         assert!(matches!(&items[0], FeedItem::SystemMessage(m) if m.contains("Rate limit")));
+    }
+
+    #[test]
+    fn parse_auth_retry_returns_marker() {
+        let line = r#"{"type":"error","message":"Reconnecting... 1/5 (unexpected status 401 Unauthorized: Missing bearer)"}"#;
+        let items = parse_codex_event(line, &mut acc());
+        assert_eq!(items.len(), 1);
+        assert!(matches!(&items[0], FeedItem::SystemMessage(m) if m == "__auth_retry__"));
     }
 
     #[test]

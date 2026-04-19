@@ -123,10 +123,21 @@ export function useSessionEvents() {
         case "SessionStatus": {
           const { status, error, session_key, agent_path } = payload.data;
           if (status === "error" && error) {
-            h.pushFeedItem(agent_path, session_key, {
-              feed_type: "system_message",
-              data: `Session error: ${error}`,
-            } as FeedItem);
+            // When auth is required, the backend has emitted AuthRequired and
+            // the inline reconnect card renders from the authRequired store
+            // state. Suppress the generic "Session error: ..." system message
+            // so the feed doesn't show a raw error *and* the card.
+            const isAuth = useUIStore.getState().authRequired !== null;
+            if (!isAuth) {
+              h.pushFeedItem(agent_path, session_key, {
+                feed_type: "system_message",
+                data: `Session error: ${error}`,
+              } as FeedItem);
+            } else {
+              logger.info(
+                `[auth] suppressing Session error system_message for ${agent_path}/${session_key} — card handles it`,
+              );
+            }
           }
           if (status === "completed") {
             const workspace = h.getWorkspace();
@@ -163,6 +174,7 @@ export function useSessionEvents() {
           });
           break;
         case "AuthRequired":
+          logger.info(`[auth] AuthRequired received: provider=${payload.data.provider}`);
           h.setAuthRequired(payload.data.provider);
           break;
       }

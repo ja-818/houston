@@ -71,6 +71,7 @@ pub fn run() {
             app.manage(WorkspaceRoot(root.clone()));
             app.manage(houston_tauri::agent_watcher::WatcherState::default());
             app.manage(routine_runner::RoutineSchedulerState::default());
+            app.manage(commands::sync::SyncState::default());
 
             // Warm the Composio catalog cache in the background so the integrations
             // tab loads instantly when the user opens it.
@@ -136,11 +137,6 @@ pub fn run() {
             // app cache dir scoped by activity/agent id, paths handed to Claude.
             commands::attachments::save_attachments,
             commands::attachments::delete_attachments,
-            // Learnings
-            commands::memory::load_learnings,
-            commands::memory::add_learning,
-            commands::memory::replace_learning,
-            commands::memory::remove_learning,
             // Skills
             commands::skills::list_skills,
             commands::skills::load_skill,
@@ -218,6 +214,11 @@ pub fn run() {
             // Logging
             logging::write_frontend_log,
             logging::read_recent_logs,
+            // Mobile sync
+            commands::sync::start_sync,
+            commands::sync::stop_sync,
+            commands::sync::get_sync_status,
+            commands::sync::send_sync_message,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

@@ -11,7 +11,6 @@ export const queryKeys = {
   skills: (agentPath: string) => ["skills", agentPath] as const,
   skillDetail: (agentPath: string, name: string) =>
     ["skill-detail", agentPath, name] as const,
-  learnings: (agentPath: string) => ["learnings", agentPath] as const,
   channels: (agentPath: string) => ["channels", agentPath] as const,
   files: (agentPath: string) => ["files", agentPath] as const,
   instructions: (agentPath: string) =>

@@ -57,11 +57,6 @@ fn classify_change(agent_path: &str, relative: &Path) -> Option<HoustonEvent> {
                 agent_path: agent_path.to_string(),
             });
         }
-        if inner.starts_with("memory") {
-            return Some(HoustonEvent::LearningsChanged {
-                agent_path: agent_path.to_string(),
-            });
-        }
         if inner == "channels.json" {
             return Some(HoustonEvent::ChannelsConfigChanged {
                 agent_path: agent_path.to_string(),

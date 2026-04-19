@@ -12,12 +12,21 @@ pub async fn read_stderr_lines(
     tx: mpsc::UnboundedSender<SessionUpdate>,
 ) -> Vec<String> {
     let mut lines = Vec::new();
+    let mut sent_auth_checking = false;
     let reader = BufReader::new(stderr);
     let mut reader_lines = reader.lines();
     while let Ok(Some(line)) = reader_lines.next_line().await {
         tracing::debug!("cli stderr: {line}");
-        // Only surface actual errors to the UI, not progress/info noise.
-        if is_meaningful_stderr(&line) {
+        if is_auth_retry_noise(&line) {
+            // Show a single friendly message on the first auth retry;
+            // suppress subsequent retry lines entirely.
+            if !sent_auth_checking {
+                sent_auth_checking = true;
+                let _ = tx.send(SessionUpdate::Feed(FeedItem::SystemMessage(
+                    "Checking connection...".to_string(),
+                )));
+            }
+        } else if is_meaningful_stderr(&line) {
             let _ = tx.send(SessionUpdate::Feed(FeedItem::SystemMessage(format!(
                 "stderr: {line}",
             ))));
@@ -41,7 +50,19 @@ fn is_meaningful_stderr(line: &str) -> bool {
     if trimmed.starts_with("Downloading") || trimmed.starts_with("Loading") {
         return false;
     }
+    // Auth retry noise (e.g. "Error: Reconnecting... 1/5 (unexpected status 401 Unauthorized...)")
+    // These are internal retries — the session runner handles the auth failure at exit.
+    if is_auth_retry_noise(trimmed) {
+        return false;
+    }
     true
+}
+
+/// Detect auth retry lines that should not be surfaced to the user.
+fn is_auth_retry_noise(line: &str) -> bool {
+    let lower = line.to_lowercase();
+    (lower.contains("401") || lower.contains("unauthorized") || lower.contains("not authenticated"))
+        && (lower.contains("reconnecting") || lower.contains("retrying"))
 }
 
 /// Read all stdout lines, parsing each as NDJSON and sending parsed feed items

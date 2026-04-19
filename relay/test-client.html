@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Houston Relay Test Client</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; padding: 20px; }
+    h1 { text-align: center; margin-bottom: 20px; color: #0d0d0d; }
+    .container { display: flex; gap: 20px; max-width: 1200px; margin: 0 auto; }
+    .panel {
+      flex: 1; background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .panel h2 { margin-bottom: 12px; font-size: 18px; }
+    .panel.desktop h2 { color: #2964aa; }
+    .panel.mobile h2 { color: #00a240; }
+    .controls { display: flex; gap: 8px; margin-bottom: 12px; }
+    .controls input {
+      flex: 1; padding: 8px 12px; border: 1px solid #e3e3e3;
+      border-radius: 8px; font-size: 14px;
+    }
+    button {
+      padding: 8px 16px; border: none; border-radius: 20px;
+      font-size: 14px; font-weight: 500; cursor: pointer; color: #fff;
+    }
+    button.connect { background: #0d0d0d; }
+    button.connect:hover { background: #424242; }
+    button.disconnect { background: #e02e2a; }
+    button.disconnect:hover { background: #c42522; }
+    button.send { background: #0d0d0d; }
+    button.send:hover { background: #424242; }
+    button:disabled { opacity: 0.4; cursor: default; }
+    .status {
+      padding: 6px 12px; border-radius: 6px; font-size: 13px;
+      margin-bottom: 12px; background: #f9f9f9; color: #676767;
+    }
+    .status.connected { background: #e6f4ea; color: #00a240; }
+    .status.error { background: #fde8e8; color: #e02e2a; }
+    .log {
+      height: 300px; overflow-y: auto; border: 1px solid #e3e3e3;
+      border-radius: 8px; padding: 12px; font-family: ui-monospace, monospace;
+      font-size: 12px; line-height: 1.6; background: #fafafa;
+    }
+    .log .sent { color: #2964aa; }
+    .log .received { color: #00a240; }
+    .log .relay { color: #9b9b9b; font-style: italic; }
+    .log .err { color: #e02e2a; }
+    .send-row { display: flex; gap: 8px; margin-top: 12px; }
+    .send-row input { flex: 1; padding: 8px 12px; border: 1px solid #e3e3e3; border-radius: 8px; font-size: 14px; }
+    .token-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; max-width: 1200px; margin: 0 auto 16px; }
+    .token-row label { font-size: 14px; font-weight: 500; white-space: nowrap; }
+    .token-row input { flex: 1; padding: 8px 12px; border: 1px solid #e3e3e3; border-radius: 8px; font-size: 14px; }
+    .token-row button { background: #676767; }
+  </style>
+</head>
+<body>
+  <h1>Houston Relay Test Client</h1>
+
+  <div class="token-row">
+    <label>Pairing Token:</label>
+    <input type="text" id="token" placeholder="Enter a token or generate one">
+    <button onclick="generateToken()">Random</button>
+  </div>
+
+  <div class="container">
+    <!-- Desktop Panel -->
+    <div class="panel desktop">
+      <h2>Desktop</h2>
+      <div class="controls">
+        <button class="connect" id="desktop-connect" onclick="connect('desktop')">Connect</button>
+        <button class="disconnect" id="desktop-disconnect" onclick="disconnect('desktop')" disabled>Disconnect</button>
+      </div>
+      <div class="status" id="desktop-status">Disconnected</div>
+      <div class="log" id="desktop-log"></div>
+      <div class="send-row">
+        <input type="text" id="desktop-msg" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMsg('desktop')">
+        <button class="send" id="desktop-send" onclick="sendMsg('desktop')" disabled>Send</button>
+      </div>
+    </div>
+
+    <!-- Mobile Panel -->
+    <div class="panel mobile">
+      <h2>Mobile</h2>
+      <div class="controls">
+        <button class="connect" id="mobile-connect" onclick="connect('mobile')">Connect</button>
+        <button class="disconnect" id="mobile-disconnect" onclick="disconnect('mobile')" disabled>Disconnect</button>
+      </div>
+      <div class="status" id="mobile-status">Disconnected</div>
+      <div class="log" id="mobile-log"></div>
+      <div class="send-row">
+        <input type="text" id="mobile-msg" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMsg('mobile')">
+        <button class="send" id="mobile-send" onclick="sendMsg('mobile')" disabled>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WS_BASE = "ws://localhost:8787";
+    const sockets = { desktop: null, mobile: null };
+
+    function generateToken() {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      document.getElementById("token").value = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    // Generate a token on load
+    generateToken();
+
+    function log(role, text, cls) {
+      const el = document.getElementById(`${role}-log`);
+      const line = document.createElement("div");
+      line.className = cls || "";
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+      el.appendChild(line);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function setStatus(role, text, cls) {
+      const el = document.getElementById(`${role}-status`);
+      el.textContent = text;
+      el.className = `status ${cls || ""}`;
+    }
+
+    function setButtons(role, connected) {
+      document.getElementById(`${role}-connect`).disabled = connected;
+      document.getElementById(`${role}-disconnect`).disabled = !connected;
+      document.getElementById(`${role}-send`).disabled = !connected;
+    }
+
+    function connect(role) {
+      const token = document.getElementById("token").value.trim();
+      if (!token) { alert("Enter a pairing token first"); return; }
+
+      const url = `${WS_BASE}/sync/${token}?role=${role}`;
+      log(role, `Connecting to ${url}...`, "relay");
+      const ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        sockets[role] = ws;
+        setStatus(role, "Connected", "connected");
+        setButtons(role, true);
+        log(role, "WebSocket opened", "relay");
+      };
+
+      ws.onmessage = (event) => {
+        let parsed;
+        try { parsed = JSON.parse(event.data); } catch {
+          log(role, `Raw: ${event.data}`, "received");
+          return;
+        }
+        const from = parsed.from || "unknown";
+        const cls = from === "relay" ? "relay" : "received";
+        log(role, `[${from}] ${parsed.type}: ${JSON.stringify(parsed.payload)}`, cls);
+      };
+
+      ws.onclose = (event) => {
+        sockets[role] = null;
+        setStatus(role, `Disconnected (code: ${event.code})`, "");
+        setButtons(role, false);
+        log(role, `WebSocket closed: ${event.code} ${event.reason}`, "relay");
+      };
+
+      ws.onerror = () => {
+        setStatus(role, "Error", "error");
+        log(role, "WebSocket error", "err");
+      };
+    }
+
+    function disconnect(role) {
+      if (sockets[role]) {
+        sockets[role].close();
+        sockets[role] = null;
+      }
+    }
+
+    function sendMsg(role) {
+      const input = document.getElementById(`${role}-msg`);
+      const text = input.value.trim();
+      if (!text || !sockets[role]) return;
+
+      const msg = {
+        type: "chat_message",
+        from: role,
+        ts: new Date().toISOString(),
+        payload: { text },
+      };
+      sockets[role].send(JSON.stringify(msg));
+      log(role, `[you] chat_message: ${JSON.stringify(msg.payload)}`, "sent");
+      input.value = "";
+    }
+  </script>
+</body>
+</html>

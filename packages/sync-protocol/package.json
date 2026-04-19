@@ -1,0 +1,17 @@
+{
+  "name": "@houston-ai/sync-protocol",
+  "version": "0.3.3",
+  "description": "Houston desktop <-> mobile WebSocket sync protocol types",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

@@ -2176,8 +2176,8 @@ dependencies = [
  "cron",
  "dirs 5.0.1",
  "houston-channels",
- "houston-memory",
  "houston-skills",
+ "houston-sync",
  "houston-tauri",
  "open",
  "reqwest 0.12.28",
@@ -2209,7 +2209,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "tokio-tungstenite",
+ "tokio-tungstenite 0.26.2",
  "tracing",
  "url",
  "uuid",
@@ -2239,14 +2239,6 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
-]
-
-[[package]]
-name = "houston-memory"
-version = "0.3.2"
-dependencies = [
- "tempfile",
- "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -2288,6 +2280,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "houston-sync"
+version = "0.3.3"
+dependencies = [
+ "chrono",
+ "futures-util",
+ "hex",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite 0.24.0",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "houston-tauri"
 version = "0.3.2"
 dependencies = [
@@ -2296,9 +2304,9 @@ dependencies = [
  "houston-channels",
  "houston-db",
  "houston-events",
- "houston-memory",
  "houston-scheduler",
  "houston-sessions",
+ "houston-sync",
  "libsql",
  "notify",
  "notify-debouncer-mini",
@@ -6512,6 +6520,22 @@ dependencies = [
 
 [[package]]
 name = "tokio-tungstenite"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edc5f74e248dc973e0dbb7b74c7e0d6fcc301c694ff50049504004ef4d0cdcd9"
+dependencies = [
+ "futures-util",
+ "log",
+ "rustls 0.23.37",
+ "rustls-pki-types",
+ "tokio",
+ "tokio-rustls 0.26.4",
+ "tungstenite 0.24.0",
+ "webpki-roots 0.26.11",
+]
+
+[[package]]
+name = "tokio-tungstenite"
 version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a9daff607c6d2bf6c16fd681ccb7eecc83e4e2cdc1ca067ffaadfca5de7f084"
@@ -6521,7 +6545,7 @@ dependencies = [
  "native-tls",
  "tokio",
  "tokio-native-tls",
- "tungstenite",
+ "tungstenite 0.26.2",
 ]
 
 [[package]]
@@ -6875,6 +6899,26 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
+
+[[package]]
+name = "tungstenite"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18e5b8366ee7a95b16d32197d0b2604b43a0be89dc5fac9f8e96ccafbaedda8a"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "data-encoding",
+ "http 1.4.0",
+ "httparse",
+ "log",
+ "rand 0.8.5",
+ "rustls 0.23.37",
+ "rustls-pki-types",
+ "sha1",
+ "thiserror 1.0.69",
+ "utf-8",
+]
 
 [[package]]
 name = "tungstenite"

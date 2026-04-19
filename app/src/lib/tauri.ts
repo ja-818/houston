@@ -7,7 +7,6 @@ import type {
   CommunitySkillResult,
   RepoSkill,
   FileEntry,
-  LearningsData,
   ChannelEntry,
   StoreListing,
   ImportedWorkspace,
@@ -197,17 +196,6 @@ export const tauriSkills = {
     invoke<CommunitySkillResult[]>("search_community_skills", { query }),
   installCommunity: (agentPath: string, source: string, skillId: string) =>
     invoke<string>("install_community_skill", { workspace_path: agentPath, source, skill_id: skillId }),
-};
-
-export const tauriLearnings = {
-  load: (agentPath: string) =>
-    invoke<LearningsData>("load_learnings", { workspace_path: agentPath }),
-  add: (agentPath: string, text: string) =>
-    invoke<void>("add_learning", { workspace_path: agentPath, text }),
-  replace: (agentPath: string, index: number, text: string) =>
-    invoke<void>("replace_learning", { workspace_path: agentPath, index, text }),
-  remove: (agentPath: string, index: number) =>
-    invoke<void>("remove_learning", { workspace_path: agentPath, index }),
 };
 
 export interface ComposioAppEntry {
@@ -494,6 +482,8 @@ export const tauriSync = {
   start: () => invoke<SyncInfo>("start_sync"),
   stop: () => invoke<void>("stop_sync"),
   status: () => invoke<SyncInfo | null>("get_sync_status"),
+  send: (message: { type: string; from: string; ts: string; payload: unknown }) =>
+    invoke<void>("send_sync_message", { message }),
 };
 
 export const tauriWatcher = {

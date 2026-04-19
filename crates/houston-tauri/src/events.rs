@@ -107,10 +107,6 @@ pub enum HoustonEvent {
     SkillsChanged {
         agent_path: String,
     },
-    /// Learnings changed (.houston/memory/).
-    LearningsChanged {
-        agent_path: String,
-    },
     /// Channel config changed (.houston/channels.json).
     ChannelsConfigChanged {
         agent_path: String,

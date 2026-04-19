@@ -66,6 +66,12 @@ export interface ChatPanelProps {
   renderToolResult?: ToolsAndCardsProps["renderToolResult"];
   /** Optional callback to render an avatar for a message (e.g., channel logo). */
   renderMessageAvatar?: (msg: import("./feed-to-messages").ChatMessage) => ReactNode | undefined;
+  /** Custom renderer for system messages. Return a node to replace the default,
+   *  or undefined to use the default italic text. */
+  renderSystemMessage?: (msg: import("./feed-to-messages").ChatMessage) => ReactNode | undefined;
+  /** Node rendered after the last message (inside the scroll container).
+   *  Useful for inline end-of-feed cards like auth reconnect prompts. */
+  afterMessages?: ReactNode;
   /**
    * Optional render prop called once per *completed* assistant turn, on the
    * last assistant message of that turn. Receives all tools from every
@@ -122,6 +128,8 @@ export function ChatPanel({
   isSpecialTool,
   renderToolResult,
   renderMessageAvatar,
+  renderSystemMessage,
+  afterMessages,
   renderTurnSummary,
   onOpenLink,
   renderLink,
@@ -193,6 +201,8 @@ export function ChatPanel({
           isSpecialTool={isSpecialTool}
           renderToolResult={renderToolResult}
           renderMessageAvatar={renderMessageAvatar}
+          renderSystemMessage={renderSystemMessage}
+          afterMessages={afterMessages}
           renderTurnSummary={renderTurnSummary}
           onOpenLink={onOpenLink}
           renderLink={renderLink}
