@@ -1,15 +1,17 @@
-//! Event types emitted from the Rust backend to the UI via Tauri's event bus.
+//! Event types emitted from the Rust backend to the UI.
 //!
 //! Every variant is a message the frontend reacts to (feed updates, status
 //! changes, toasts, file-change notifications for query invalidation, etc.).
-//! Emit via `app_handle.emit("houston-event", HoustonEvent::...)`.
 //!
-//! This crate is intentionally a tiny leaf — no Tauri dep, just the wire
-//! contract — so any backend crate can construct events without pulling in
-//! the full Tauri framework.
+//! This crate is transport-neutral. Producers construct `HoustonEvent`
+//! variants and hand them to an `EventSink` — the concrete sink (Tauri
+//! emit, broadcast channel for the HTTP server, no-op for tests) is
+//! injected at the top of the app. No Tauri dep here by design.
 
 use houston_terminal_manager::FeedItem;
 use serde::Serialize;
+use std::sync::Arc;
+use tokio::sync::broadcast;
 
 #[derive(Clone, Serialize)]
 #[serde(tag = "type", content = "data")]
@@ -125,4 +127,142 @@ pub enum HoustonEvent {
     ComposioCliReady,
     /// Composio CLI install or upgrade failed.
     ComposioCliFailed { message: String },
+}
+
+// ---------------------------------------------------------------------------
+// EventSink — transport-neutral event output.
+//
+// Fire-and-forget. All concrete sinks (Tauri emit, broadcast channel for the
+// HTTP server, no-op for tests) implement this. Producers hold
+// `Arc<dyn EventSink>` and never know which transport is wired behind it.
+// ---------------------------------------------------------------------------
+
+pub trait EventSink: Send + Sync + 'static {
+    /// Emit an event. Implementations should not block.
+    fn emit(&self, event: HoustonEvent);
+}
+
+/// Convenience alias — what producers hold.
+pub type DynEventSink = Arc<dyn EventSink>;
+
+/// No-op sink. Drops every event. Useful for tests and contexts where
+/// no frontend is listening.
+#[derive(Default, Clone)]
+pub struct NoopEventSink;
+
+impl EventSink for NoopEventSink {
+    fn emit(&self, _event: HoustonEvent) {}
+}
+
+/// Broadcast sink — multi-consumer channel. Every connected client
+/// (WebSocket subscriber, mobile bridge, etc.) gets its own `Receiver`.
+/// Slow consumers that lag past the channel capacity lose events silently
+/// (Tokio's broadcast semantics); sinks for hot sessions should use
+/// per-connection bounded queues downstream.
+#[derive(Clone)]
+pub struct BroadcastEventSink {
+    tx: broadcast::Sender<HoustonEvent>,
+}
+
+impl BroadcastEventSink {
+    pub fn new(capacity: usize) -> Self {
+        let (tx, _) = broadcast::channel(capacity);
+        Self { tx }
+    }
+
+    /// Subscribe a new receiver. Each client calls this on connect.
+    pub fn subscribe(&self) -> broadcast::Receiver<HoustonEvent> {
+        self.tx.subscribe()
+    }
+
+    /// Current subscriber count. Used for metrics/observability.
+    pub fn subscriber_count(&self) -> usize {
+        self.tx.receiver_count()
+    }
+}
+
+impl EventSink for BroadcastEventSink {
+    fn emit(&self, event: HoustonEvent) {
+        // `send` errors only when there are no subscribers — not a failure.
+        let _ = self.tx.send(event);
+    }
+}
+
+/// Fanout sink — emits to every inner sink. Used during transition
+/// when we want both Tauri emit AND broadcast to run in parallel
+/// (e.g., desktop shipping with the new WS path behind a feature flag).
+pub struct FanoutEventSink {
+    sinks: Vec<Arc<dyn EventSink>>,
+}
+
+impl FanoutEventSink {
+    pub fn new(sinks: Vec<Arc<dyn EventSink>>) -> Self {
+        Self { sinks }
+    }
+}
+
+impl EventSink for FanoutEventSink {
+    fn emit(&self, event: HoustonEvent) {
+        for sink in &self.sinks {
+            sink.emit(event.clone());
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn noop_sink_drops_events() {
+        let sink = NoopEventSink;
+        sink.emit(HoustonEvent::Toast {
+            message: "hi".into(),
+            variant: "info".into(),
+        });
+        // No assertions — just ensure no panic / compile errors.
+    }
+
+    #[tokio::test]
+    async fn broadcast_sink_delivers_to_subscribers() {
+        let sink = BroadcastEventSink::new(16);
+        let mut rx1 = sink.subscribe();
+        let mut rx2 = sink.subscribe();
+
+        sink.emit(HoustonEvent::Toast {
+            message: "hello".into(),
+            variant: "info".into(),
+        });
+
+        let e1 = rx1.recv().await.expect("rx1 receives");
+        let e2 = rx2.recv().await.expect("rx2 receives");
+        matches!(e1, HoustonEvent::Toast { .. });
+        matches!(e2, HoustonEvent::Toast { .. });
+    }
+
+    #[test]
+    fn broadcast_sink_no_subscribers_is_fine() {
+        let sink = BroadcastEventSink::new(16);
+        sink.emit(HoustonEvent::Toast {
+            message: "into the void".into(),
+            variant: "info".into(),
+        });
+    }
+
+    #[tokio::test]
+    async fn fanout_emits_to_all_inner_sinks() {
+        let a = Arc::new(BroadcastEventSink::new(16));
+        let b = Arc::new(BroadcastEventSink::new(16));
+        let mut rx_a = a.subscribe();
+        let mut rx_b = b.subscribe();
+
+        let fanout = FanoutEventSink::new(vec![a.clone(), b.clone()]);
+        fanout.emit(HoustonEvent::Toast {
+            message: "to all".into(),
+            variant: "info".into(),
+        });
+
+        rx_a.recv().await.expect("a receives");
+        rx_b.recv().await.expect("b receives");
+    }
 }

@@ -9,7 +9,6 @@ repository = "https://github.com/ja-818/houston"
 [dependencies]
 notify = "7"
 notify-debouncer-mini = "0.5"
-tauri = { version = "2", features = [] }
 tokio = { workspace = true }
 tracing = { workspace = true }
 houston-ui-events = { workspace = true }

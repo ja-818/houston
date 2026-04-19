@@ -1,8 +1,8 @@
 //! houston-composio — Composio integration for Houston.
 //!
 //! Wraps the `composio` CLI (`~/.composio/composio`) with install/upgrade
-//! lifecycle, OAuth flow, app catalog, and Tauri commands consumed by the
-//! frontend integrations tab.
+//! lifecycle, OAuth flow, and app catalog. Transport-neutral — Tauri
+//! decorators live in the adapter crate (`houston-tauri`).
 
 pub mod apps;
 pub mod auth;

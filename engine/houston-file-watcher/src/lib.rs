@@ -8,12 +8,11 @@
 //! Uses `notify` with 500ms debouncing to avoid flooding events during
 //! rapid writes (e.g., an agent streaming output to a file).
 
-use houston_ui_events::HoustonEvent;
+use houston_ui_events::{DynEventSink, HoustonEvent};
 use notify_debouncer_mini::{new_debouncer, DebouncedEventKind};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::Emitter;
 use tokio::sync::Mutex;
 
 /// Active watcher handle. Drop to stop watching.
@@ -21,7 +20,8 @@ pub struct AgentWatcher {
     _debouncer: notify_debouncer_mini::Debouncer<notify::RecommendedWatcher>,
 }
 
-/// State managed by Tauri for the active agent watcher.
+/// Transport-neutral handle for the active agent watcher. Wrap in whatever
+/// state container the host app uses (Tauri `State`, axum `State`, ...).
 pub struct WatcherState(pub Arc<Mutex<Option<AgentWatcher>>>);
 
 impl Default for WatcherState {
@@ -94,14 +94,13 @@ fn classify_change(agent_path: &str, relative: &Path) -> Option<HoustonEvent> {
     })
 }
 
-/// Start watching a agent directory for file changes.
-/// Emits `HoustonEvent` variants via the Tauri event system.
+/// Start watching an agent directory for file changes. Emits `HoustonEvent`
+/// variants into the injected sink.
 pub fn start_watching(
-    app_handle: &tauri::AppHandle,
+    sink: DynEventSink,
     agent_path: String,
 ) -> Result<AgentWatcher, String> {
     let ws_path = agent_path.clone();
-    let handle = app_handle.clone();
     let root = PathBuf::from(&agent_path);
 
     let mut debouncer = new_debouncer(
@@ -136,7 +135,7 @@ pub fn start_watching(
                     let key = format!("{:?}", std::mem::discriminant(&houston_event));
                     if emitted.insert(key.clone()) {
                         tracing::debug!("[watcher] emit: {key} for {}", relative.display());
-                        let _ = handle.emit("houston-event", houston_event);
+                        sink.emit(houston_event);
                     }
                 }
             }
@@ -157,6 +156,3 @@ pub fn start_watching(
         _debouncer: debouncer,
     })
 }
-
-pub mod commands;
-pub use commands::{start_agent_watcher, stop_agent_watcher};

@@ -15,6 +15,8 @@ houston-sync = { workspace = true }
 houston-agent-files = { workspace = true }
 houston-ui-events = { workspace = true }
 houston-agents-conversations = { workspace = true }
+houston-file-watcher = { workspace = true }
+houston-composio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

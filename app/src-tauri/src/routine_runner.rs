@@ -219,7 +219,7 @@ pub async fn run_routine(
 
     // Spawn session and wait for completion
     let join_handle = session_runner::spawn_and_monitor(
-        app_handle,
+        houston_tauri::tauri_sink(app_handle),
         agent_path.to_string(),
         run.session_key.clone(),
         prompt.clone(),

@@ -13,6 +13,12 @@ pub mod agent_commands;
 pub mod agent_files;
 pub mod agent_store;
 pub mod conversations;
+pub mod composio_commands;
+pub mod event_sink;
+pub mod watcher_commands;
+
+pub use event_sink::{tauri_sink, TauriEventSink};
+pub use watcher_commands::{start_agent_watcher, stop_agent_watcher};
 
 // Re-export sub-crates for convenience.
 pub use houston_agent_files;

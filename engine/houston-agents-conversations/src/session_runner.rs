@@ -7,9 +7,8 @@ use crate::session_id_tracker::SessionIdHandle;
 use crate::session_pids::SessionPidMap;
 use houston_db::Database;
 use houston_terminal_manager::{FeedItem, Provider, SessionManager, SessionStatus, SessionUpdate};
-use houston_ui_events::HoustonEvent;
+use houston_ui_events::{DynEventSink, HoustonEvent};
 use std::path::PathBuf;
-use tauri::Emitter;
 
 /// Result of a completed session.
 pub struct SessionResult {
@@ -37,7 +36,7 @@ pub struct PersistOptions {
 /// Automatically calls `claude_path::init()` (idempotent via `OnceLock`)
 /// so apps don't need to remember to initialize PATH resolution.
 pub fn spawn_and_monitor(
-    app_handle: &tauri::AppHandle,
+    sink: DynEventSink,
     agent_path: String,
     session_key: String,
     prompt: String,
@@ -69,7 +68,7 @@ pub fn spawn_and_monitor(
         false, // disable_all_tools
     );
 
-    let handle = app_handle.clone();
+    let sink = sink;
     let key = session_key;
     let agent_path_for_events = agent_path;
     let mut persist = persist;
@@ -120,16 +119,13 @@ pub fn spawn_and_monitor(
                                 tracing::info!(
                                     "[session_runner] auth issue detected ({msg:?}) — emitting Checking connection..."
                                 );
-                                let _ = handle.emit(
-                                    "houston-event",
-                                    HoustonEvent::FeedItem {
-                                        agent_path: agent_path_for_events.clone(),
-                                        session_key: key.clone(),
-                                        item: FeedItem::SystemMessage(
-                                            "Checking connection...".to_string(),
-                                        ),
-                                    },
-                                );
+                                sink.emit(HoustonEvent::FeedItem {
+                                    agent_path: agent_path_for_events.clone(),
+                                    session_key: key.clone(),
+                                    item: FeedItem::SystemMessage(
+                                        "Checking connection...".to_string(),
+                                    ),
+                                });
                             } else {
                                 tracing::debug!(
                                     "[session_runner] additional auth noise suppressed: {msg:?}"
@@ -139,14 +135,11 @@ pub fn spawn_and_monitor(
                             continue;
                         }
                     }
-                    let _ = handle.emit(
-                        "houston-event",
-                        HoustonEvent::FeedItem {
-                            agent_path: agent_path_for_events.clone(),
-                            session_key: key.clone(),
-                            item: item.clone(),
-                        },
-                    );
+                    sink.emit(HoustonEvent::FeedItem {
+                        agent_path: agent_path_for_events.clone(),
+                        session_key: key.clone(),
+                        item: item.clone(),
+                    });
                     // Persist non-streaming items once the Claude session id is known.
                     if let Some(ref opts) = persist {
                         if let (Some(sid), Some((ft, dj))) =
@@ -223,25 +216,19 @@ pub fn spawn_and_monitor(
                         );
                         if is_auth_error {
                             tracing::info!("[session_runner] emitting AuthRequired for provider={provider_str}");
-                            let _ = handle.emit(
-                                "houston-event",
-                                HoustonEvent::AuthRequired {
-                                    provider: provider_str.clone(),
-                                    message: e.clone(),
-                                },
-                            );
+                            sink.emit(HoustonEvent::AuthRequired {
+                                provider: provider_str.clone(),
+                                message: e.clone(),
+                            });
                         }
                     }
 
-                    let _ = handle.emit(
-                        "houston-event",
-                        HoustonEvent::SessionStatus {
-                            agent_path: agent_path_for_events.clone(),
-                            session_key: key.clone(),
-                            status: status_str,
-                            error: err,
-                        },
-                    );
+                    sink.emit(HoustonEvent::SessionStatus {
+                        agent_path: agent_path_for_events.clone(),
+                        session_key: key.clone(),
+                        status: status_str,
+                        error: err,
+                    });
                 }
             }
         }

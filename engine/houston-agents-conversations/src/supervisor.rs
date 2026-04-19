@@ -1,14 +1,14 @@
-use houston_ui_events::HoustonEvent;
-use tauri::Emitter;
+use houston_ui_events::{DynEventSink, HoustonEvent};
 use tokio::task::JoinSet;
 
 /// Generic session supervisor -- holds the semaphore permit, runs any monitor future,
 /// and catches panics.
 ///
-/// On panic, emits an error toast with the provided `context` string.
-/// Used for sessions where the monitor has its own status handling.
+/// On panic, emits an error toast via the injected sink with the provided
+/// `context` string. Used for sessions where the monitor has its own status
+/// handling.
 pub async fn supervise_monitor(
-    app_handle: tauri::AppHandle,
+    sink: DynEventSink,
     permit: tokio::sync::SemaphorePermit<'static>,
     monitor: impl std::future::Future<Output = ()> + Send + 'static,
     context: &'static str,
@@ -22,13 +22,10 @@ pub async fn supervise_monitor(
                 "[houston:supervisor] {context} monitor failed (panic={}): {join_err:?}",
                 join_err.is_panic()
             );
-            let _ = app_handle.emit(
-                "houston-event",
-                HoustonEvent::Toast {
-                    message: format!("{context} failed unexpectedly"),
-                    variant: "error".into(),
-                },
-            );
+            sink.emit(HoustonEvent::Toast {
+                message: format!("{context} failed unexpectedly"),
+                variant: "error".into(),
+            });
         }
     }
 }

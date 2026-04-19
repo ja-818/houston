@@ -165,7 +165,7 @@ pub async fn send_message(
     );
 
     session_runner::spawn_and_monitor(
-        &app_handle,
+        houston_tauri::tauri_sink(&app_handle),
         agent_path.clone(),
         session_key.clone(),
         prompt.clone(),
@@ -271,7 +271,7 @@ pub async fn start_onboarding_session(
     let provider = resolve_provider(&working_dir);
 
     session_runner::spawn_and_monitor(
-        &app_handle,
+        houston_tauri::tauri_sink(&app_handle),
         agent_path.clone(),
         session_key.clone(),
         ".".to_string(),

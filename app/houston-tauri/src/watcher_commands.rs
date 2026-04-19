@@ -1,6 +1,11 @@
-//! Tauri commands exposed to the frontend.
+//! Tauri command wrappers around `houston-file-watcher`.
+//!
+//! The engine crate is transport-neutral — it takes an `EventSink` and
+//! returns a raw `AgentWatcher` handle. These thin `#[tauri::command]`
+//! wrappers translate between that and Tauri-managed state + event bus.
 
-use crate::{start_watching, WatcherState};
+use crate::event_sink::tauri_sink;
+use houston_file_watcher::{start_watching, WatcherState};
 
 /// Start watching the current agent for file changes.
 #[tauri::command(rename_all = "snake_case")]
@@ -10,10 +15,9 @@ pub async fn start_agent_watcher(
     agent_path: String,
 ) -> Result<(), String> {
     let mut guard = state.0.lock().await;
-    // Stop any existing watcher
+    // Stop any existing watcher first.
     *guard = None;
-    // Start new watcher
-    let watcher = start_watching(&app_handle, agent_path)?;
+    let watcher = start_watching(tauri_sink(&app_handle), agent_path)?;
     *guard = Some(watcher);
     Ok(())
 }

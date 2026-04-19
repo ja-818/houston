@@ -8,9 +8,8 @@
 //! invalidate the connections query and update the integrations tab.
 
 use crate::install;
-use houston_ui_events::HoustonEvent;
+use houston_ui_events::{DynEventSink, HoustonEvent};
 use houston_db::db::Database;
-use tauri::{AppHandle, Emitter};
 
 /// Preferences key storing the Houston version that last ensured the CLI.
 const PREF_CLI_VERSION: &str = "composio_cli_houston_version";
@@ -20,7 +19,7 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Run the full lifecycle check: install if missing, upgrade if Houston
 /// version changed. Emits events so the frontend reacts.
-pub async fn ensure_and_upgrade(app: AppHandle, db: Database) {
+pub async fn ensure_and_upgrade(sink: DynEventSink, db: Database) {
     let installed = install::is_installed();
 
     if !installed {
@@ -34,10 +33,7 @@ pub async fn ensure_and_upgrade(app: AppHandle, db: Database) {
             }
             Err(e) => {
                 tracing::error!("[composio:lifecycle] auto-install failed: {e}");
-                let _ = app.emit(
-                    "houston-event",
-                    HoustonEvent::ComposioCliFailed { message: e },
-                );
+                sink.emit(HoustonEvent::ComposioCliFailed { message: e });
                 return;
             }
         }
@@ -73,7 +69,7 @@ pub async fn ensure_and_upgrade(app: AppHandle, db: Database) {
         }
     }
 
-    let _ = app.emit("houston-event", HoustonEvent::ComposioCliReady);
+    sink.emit(HoustonEvent::ComposioCliReady);
 }
 
 /// Run `composio upgrade` via the same sync-Command + spawn_blocking

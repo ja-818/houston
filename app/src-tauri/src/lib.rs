@@ -171,8 +171,8 @@ pub fn run() {
             houston_tauri::agent_commands::list_recent_sessions,
             houston_tauri::agent_commands::load_session_feed,
             // Agent file watcher (AI-native reactivity)
-            houston_file_watcher::start_agent_watcher,
-            houston_file_watcher::stop_agent_watcher,
+            houston_tauri::start_agent_watcher,
+            houston_tauri::stop_agent_watcher,
             // Routine scheduler
             routine_runner::run_routine_now,
             routine_runner::start_routine_scheduler,
@@ -181,14 +181,14 @@ pub fn run() {
             // System
             commands::system::check_claude_cli,
             // Composio integrations (CLI-backed)
-            houston_composio::commands::list_composio_connections,
-            houston_composio::commands::list_composio_apps,
-            houston_composio::commands::list_composio_connected_toolkits,
-            houston_composio::commands::connect_composio_app,
-            houston_composio::commands::start_composio_oauth,
-            houston_composio::commands::complete_composio_login,
-            houston_composio::commands::is_composio_cli_installed,
-            houston_composio::commands::install_composio_cli,
+            houston_tauri::composio_commands::list_composio_connections,
+            houston_tauri::composio_commands::list_composio_apps,
+            houston_tauri::composio_commands::list_composio_connected_toolkits,
+            houston_tauri::composio_commands::connect_composio_app,
+            houston_tauri::composio_commands::start_composio_oauth,
+            houston_tauri::composio_commands::complete_composio_login,
+            houston_tauri::composio_commands::is_composio_cli_installed,
+            houston_tauri::composio_commands::install_composio_cli,
             // Worktree + Terminal + Directory picker
             commands::worktree::pick_directory,
             commands::worktree::create_worktree,
