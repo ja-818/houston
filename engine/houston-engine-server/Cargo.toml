@@ -29,9 +29,11 @@ houston-engine-protocol = { version = "0.4.0", path = "../houston-engine-protoco
 houston-engine-core = { version = "0.4.0", path = "../houston-engine-core" }
 houston-db = { workspace = true }
 houston-ui-events = { workspace = true }
+houston-terminal-manager = { workspace = true }
 anyhow = { workspace = true }
 
 [dev-dependencies]
 reqwest = { version = "0.12", features = ["json"] }
 tokio-tungstenite = "0.24"
 tempfile = "3"
+urlencoding = "2"
