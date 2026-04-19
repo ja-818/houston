@@ -230,33 +230,57 @@ Every Houston app project stores agent-visible data in a `.houston/` folder alon
 
 ### File structure
 
+Data types live in per-type folders, each with a co-located JSON Schema so agents
+can discover the expected shape without consulting external docs.
+
 ```
-~/.houston/workspaces/{WorkspaceName}/{AgentName}/
+~/Documents/Houston/{WorkspaceName}/{AgentName}/
   .houston/
-    agent.json          -- AgentMeta (id, manifest_id, created_at, last_opened_at)
-    activity.json       -- Activity[] (id, title, description, status, claude_session_id, updated_at?)
-    routines.json       -- Routine[] (id, name, description, trigger_type, trigger_config, status, approval_mode, claude_session_id)
-    channels.json       -- ChannelEntry[] (id, channel_type, name, token)
-    goals.json          -- Goal[] (id, title, status)
-    prompts/            -- Editable system prompt components
-      system.md         -- Base system prompt
-      self-improvement.md -- Self-improvement guidance
-    log.jsonl           -- Append-only session audit trail (session_id, activity_id, status, duration_ms, cost_usd, timestamp)
-    config.json         -- ProjectConfig (name, claude_model, claude_effort)
-  .agents/
-    skills/             -- One directory per skill (skill.sh / Claude Code convention)
-      research/
-        SKILL.md        -- YAML frontmatter (name, description, version, tags) + body
-      writing/
-        SKILL.md
-  .claude/
-    skills/             -- Symlinks to ../../.agents/skills/<name> so Claude Code discovers skills natively
-      research -> ../../.agents/skills/research
-      writing -> ../../.agents/skills/writing
-  CLAUDE.md             -- Agent instructions (agent root)
+    agent.json                     -- AgentMeta (id, manifest_id, created_at, last_opened_at)
+    activity/
+      activity.json                -- Activity[]
+      activity.schema.json         -- JSON Schema for Activity[]
+    routines/
+      routines.json                -- Routine[]
+      routines.schema.json
+    routine_runs/
+      routine_runs.json            -- RoutineRun[]
+      routine_runs.schema.json
+    config/
+      config.json                  -- ProjectConfig
+      config.schema.json
+    learnings/
+      learnings.json               -- Learning[] ({ id, text, created_at })
+      learnings.schema.json
+    prompts/                       -- Editable system prompt components
+      system.md
+      self-improvement.md
     sessions/
-      {session_key}.sid -- One file per conversation, stores its Claude session id for --resume
+      {session_key}.sid            -- One file per conversation (Claude session id for --resume)
+  .agents/
+    skills/                        -- One directory per skill (skill.sh / Claude Code convention)
+      <name>/SKILL.md              -- YAML frontmatter + body
+  .claude/
+    skills/<name>                  -- Symlink into ../../.agents/skills/<name>
+  CLAUDE.md                        -- Agent instructions (agent root)
 ```
+
+**The two commands.** All agent file I/O from the frontend goes through two
+generic Tauri commands:
+
+- `read_agent_file(agent_path, rel_path) -> string` — atomic read, returns `""` if missing
+- `write_agent_file(agent_path, rel_path, content) -> ()` — atomic temp+rename, emits the matching `HoustonEvent`
+
+Schemas are authoritative. The `houston-agent-files` crate embeds the five
+JSON Schemas from `packages/agent-schemas/src/*.schema.json` via `include_str!`
+and seeds them into every agent's `.houston/<type>/<type>.schema.json` on
+first launch. Agent prompts instruct the model to read the schema before
+writing the matching data file.
+
+**Migration from the legacy flat layout** (`.houston/activity.json` etc.) is
+handled by `houston_agent_files::migrate_agent_data()`, which runs on every
+`seed_agent()` call. It's idempotent and leaves the old files in place as a
+rollback safety net.
 
 **Skills format & discovery:** Skills live at `.agents/skills/<name>/SKILL.md` — the skill.sh convention, also what Claude Code looks for. Houston mirrors each skill as a symlink under `.claude/skills/<name>` so Claude Code picks them up natively. Flat `.md` files dropped directly under `.agents/skills/` are auto-migrated into `<name>/SKILL.md` directory layout on the next `list_skills` call.
 
@@ -264,9 +288,10 @@ Every Houston app project stores agent-visible data in a `.houston/` folder alon
 `"queue"`, `"running"`, `"needs_you"`, `"done"`, `"cancelled"`
 
 ### Key design decisions
-- **Agents read/write files directly** — no CLI intermediary. Apps use `agent_store` Tauri commands.
-- **Runtime state stays in memory** — channel connection status, message counts are not persisted to `.houston/`.
-- **All write operations use atomic temp-file + rename** to prevent corruption.
+- **Two generic commands, not typed CRUD.** The frontend calls `read_agent_file`/`write_agent_file` with a relative path. Per-type folder + schema handles type safety in TS.
+- **JSON Schema, not Zod.** Schemas are agent-readable (a plain `.schema.json` file the model can open) and embedded into the Rust binary via `include_str!`.
+- **Agents read/write files directly** — no CLI intermediary. Same path, same schema, same atomic writes as the app.
+- **All writes are atomic** (temp-file + rename) and path-traversal-safe (guarded by `houston-agent-files::safe_relative`).
 - **SQLite is minimal** — only `chat_feed` (conversation replay) and `preferences` (app settings) remain as permanent tables.
 
 ### AI-Native Reactivity

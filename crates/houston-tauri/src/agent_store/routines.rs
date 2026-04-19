@@ -6,7 +6,7 @@ use chrono::Utc;
 use std::path::Path;
 use uuid::Uuid;
 
-const FILE: &str = "routines.json";
+const FILE: &str = "routines";
 
 pub fn list(root: &Path) -> Result<Vec<Routine>, String> {
     read_json::<Vec<Routine>>(root, FILE)

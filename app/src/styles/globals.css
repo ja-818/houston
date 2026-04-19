@@ -7,7 +7,6 @@
 @source "../";
 @source "../../node_modules/@houston-ai/board/src";
 @source "../../node_modules/@houston-ai/chat/src";
-@source "../../node_modules/@houston-ai/connections/src";
 @source "../../node_modules/@houston-ai/core/src";
 @source "../../node_modules/@houston-ai/events/src";
 @source "../../node_modules/@houston-ai/layout/src";

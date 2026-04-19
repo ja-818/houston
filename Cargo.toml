@@ -6,9 +6,9 @@ members = [
     "crates/houston-tauri",
     "crates/houston-events",
     "crates/houston-scheduler",
-    "crates/houston-channels",
     "crates/houston-skills",
     "crates/houston-sync",
+    "crates/houston-agent-files",
     "app/src-tauri",
 ]
 
@@ -28,6 +28,6 @@ houston-db = { version = "0.3.2", path = "crates/houston-db" }
 houston-tauri = { version = "0.3.2", path = "crates/houston-tauri" }
 houston-events = { version = "0.3.2", path = "crates/houston-events" }
 houston-scheduler = { version = "0.3.2", path = "crates/houston-scheduler" }
-houston-channels = { version = "0.3.2", path = "crates/houston-channels" }
 houston-skills = { version = "0.3.2", path = "crates/houston-skills" }
 houston-sync = { version = "0.3.2", path = "crates/houston-sync" }
+houston-agent-files = { version = "0.3.2", path = "crates/houston-agent-files" }

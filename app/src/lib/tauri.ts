@@ -7,7 +7,6 @@ import type {
   CommunitySkillResult,
   RepoSkill,
   FileEntry,
-  ChannelEntry,
   StoreListing,
   ImportedWorkspace,
 } from "./types";
@@ -167,10 +166,14 @@ export function withAttachmentPaths(text: string, paths: string[]): string {
 }
 
 export const tauriAgent = {
-  readFile: (agentPath: string, name: string) =>
-    invoke<string>("read_agent_file", { agent_path: agentPath, name }),
-  writeFile: (agentPath: string, name: string, content: string) =>
-    invoke<void>("write_agent_file", { agent_path: agentPath, name, content }),
+  readFile: (agentPath: string, relPath: string) =>
+    invoke<string>("read_agent_file", { agent_path: agentPath, rel_path: relPath }),
+  writeFile: (agentPath: string, relPath: string, content: string) =>
+    invoke<void>("write_agent_file", { agent_path: agentPath, rel_path: relPath, content }),
+  seedSchemas: (agentPath: string) =>
+    invoke<void>("seed_agent_schemas", { agent_path: agentPath }),
+  migrateFiles: (agentPath: string) =>
+    invoke<void>("migrate_agent_files", { agent_path: agentPath }),
 };
 
 export const tauriSkills = {
@@ -243,17 +246,6 @@ export const tauriConnections = {
   installCli: () => invoke<void>("install_composio_cli"),
 };
 
-export const tauriChannels = {
-  list: (agentPath: string) =>
-    invoke<ChannelEntry[]>("list_channels_config", { agent_path: agentPath }),
-  add: (
-    agentPath: string,
-    input: { channel_type: string; name: string; token: string },
-  ) => invoke<ChannelEntry>("add_channel_config", { agent_path: agentPath, input }),
-  remove: (agentPath: string, channelId: string) =>
-    invoke<void>("remove_channel_config", { agent_path: agentPath, channel_id: channelId }),
-};
-
 export const tauriFiles = {
   list: (agentPath: string) =>
     invoke<FileEntry[]>("list_project_files", { agent_path: agentPath }),
@@ -314,55 +306,21 @@ export const tauriConversations = {
     invoke<RawConversation[]>("list_all_conversations", { agent_paths: agentPaths }),
 };
 
+import * as activityData from "../data/activity";
+import * as routinesData from "../data/routines";
+import * as routineRunsData from "../data/routine-runs";
+import * as configData from "../data/config";
+
 export const tauriRoutines = {
-  list: (agentPath: string) =>
-    invoke<Array<{
-      id: string;
-      name: string;
-      description: string;
-      prompt: string;
-      schedule: string;
-      enabled: boolean;
-      suppress_when_silent: boolean;
-      created_at: string;
-      updated_at: string;
-    }>>("list_routines", { agent_path: agentPath }),
-  create: (
-    agentPath: string,
-    input: {
-      name: string;
-      description?: string;
-      prompt: string;
-      schedule: string;
-      enabled?: boolean;
-      suppress_when_silent?: boolean;
-    },
-  ) => invoke<{ id: string }>("create_routine", { agent_path: agentPath, input }),
-  update: (
-    agentPath: string,
-    routineId: string,
-    updates: {
-      name?: string;
-      description?: string;
-      prompt?: string;
-      schedule?: string;
-      enabled?: boolean;
-      suppress_when_silent?: boolean;
-    },
-  ) => invoke<void>("update_routine", { agent_path: agentPath, routine_id: routineId, updates }),
+  list: (agentPath: string) => routinesData.list(agentPath),
+  create: (agentPath: string, input: routinesData.NewRoutine) =>
+    routinesData.create(agentPath, input),
+  update: (agentPath: string, routineId: string, updates: routinesData.RoutineUpdate) =>
+    routinesData.update(agentPath, routineId, updates),
   delete: (agentPath: string, routineId: string) =>
-    invoke<void>("delete_routine", { agent_path: agentPath, routine_id: routineId }),
+    routinesData.remove(agentPath, routineId),
   listRuns: (agentPath: string, routineId?: string) =>
-    invoke<Array<{
-      id: string;
-      routine_id: string;
-      status: "running" | "silent" | "surfaced" | "error";
-      session_key: string;
-      activity_id?: string;
-      summary?: string;
-      started_at: string;
-      completed_at?: string;
-    }>>("list_routine_runs", { agent_path: agentPath, routine_id: routineId }),
+    routineRunsData.list(agentPath, routineId),
   runNow: (agentPath: string, routineId: string) =>
     invoke<void>("run_routine_now", { agent_path: agentPath, routine_id: routineId }),
   startScheduler: (agentPath: string) =>
@@ -374,37 +332,21 @@ export const tauriRoutines = {
 };
 
 export const tauriActivity = {
-  list: (agentPath: string) =>
-    invoke<Array<{
-      id: string;
-      title: string;
-      description?: string;
-      status: string;
-      session_key?: string;
-      agent?: string;
-      worktree_path?: string;
-      routine_id?: string;
-      routine_run_id?: string;
-      updated_at?: string;
-    }>>("list_activity", { agent_path: agentPath }),
+  list: (agentPath: string) => activityData.list(agentPath),
   create: (
     agentPath: string,
     title: string,
     description?: string,
     agent?: string,
     worktreePath?: string,
-  ) =>
-    invoke<{ id: string; title: string; status: string; agent?: string; worktree_path?: string }>(
-      "create_activity",
-      { agent_path: agentPath, title, description, agent, worktree_path: worktreePath },
-    ),
+  ) => activityData.create(agentPath, title, description ?? "", agent, worktreePath),
   update: (
     agentPath: string,
     activityId: string,
-    update: { status?: string; title?: string; description?: string; agent?: string; worktree_path?: string | null },
-  ) => invoke<void>("update_activity", { agent_path: agentPath, activity_id: activityId, updates: update }),
+    update: activityData.ActivityUpdate,
+  ) => activityData.update(agentPath, activityId, update).then(() => undefined),
   delete: (agentPath: string, activityId: string) =>
-    invoke<void>("delete_activity", { agent_path: agentPath, activity_id: activityId }),
+    activityData.remove(agentPath, activityId),
 };
 
 export const tauriWorktree = {
@@ -437,10 +379,9 @@ export const tauriTerminal = {
 };
 
 export const tauriConfig = {
-  read: (agentPath: string) =>
-    invoke<Record<string, unknown>>("read_config", { agent_path: agentPath }),
-  write: (agentPath: string, config: Record<string, unknown>) =>
-    invoke<void>("write_config", { agent_path: agentPath, config }),
+  read: (agentPath: string) => configData.read(agentPath),
+  write: (agentPath: string, config: configData.Config) =>
+    configData.write(agentPath, config),
 };
 
 export const tauriPreferences = {

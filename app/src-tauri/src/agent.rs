@@ -31,6 +31,12 @@ pub fn seed_agent(dir: &Path) -> Result<(), String> {
         houston_tauri::self_improvement::SELF_IMPROVEMENT_GUIDANCE,
     )?;
 
+    // Run one-shot migration from legacy flat layout and seed embedded JSON schemas.
+    // Both are idempotent.
+    if let Err(e) = houston_agent_files::migrate_agent_data(dir) {
+        tracing::warn!("[agent] migration failed for {}: {e}", dir.display());
+    }
+
     Ok(())
 }
 
@@ -145,7 +151,15 @@ pub fn build_system_prompt(
 const DEFAULT_SYSTEM_PROMPT: &str = "\
 You are an AI assistant running inside Houston, \
 a native desktop app. Your workspace files are injected below. Follow them.\n\n\
-Never use emojis unless being asked to.";
+Never use emojis unless being asked to.\n\n\
+# Agent Data Files\n\n\
+Your persistent data lives under `.houston/<type>/<type>.json` — e.g. the board \
+is at `.houston/activity/activity.json`, routines at `.houston/routines/routines.json`. \
+Every data folder has a co-located `<type>.schema.json` (JSON Schema draft-07). \
+**Before writing any of these files, read the matching schema in the same folder \
+and conform to it exactly.** Missing required fields or wrong enum values will \
+break the UI. If you need a new data shape, propose it as a schema change rather \
+than writing ad-hoc JSON.";
 
 const DEFAULT_CLAUDE_MD: &str = r#"# Houston Agent
 

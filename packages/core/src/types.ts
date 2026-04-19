@@ -73,24 +73,6 @@ export type HoustonEvent =
       data: { job_id: string; job_name: string; prompt: string };
     }
   | {
-      type: "ChannelMessageReceived";
-      data: {
-        channel_type: string;
-        channel_id: string;
-        sender_name: string;
-        text: string;
-      };
-    }
-  | {
-      type: "ChannelStatusChanged";
-      data: {
-        channel_id: string;
-        channel_type: string;
-        status: string;
-        error: string | null;
-      };
-    }
-  | {
       type: "RoutinesChanged";
       data: { agent_path: string };
     }
@@ -111,10 +93,6 @@ export type HoustonEvent =
       data: { agent_path: string };
     }
   | {
-      type: "ChannelsConfigChanged";
-      data: { agent_path: string };
-    }
-  | {
       type: "FilesChanged";
       data: { agent_path: string };
     }
@@ -127,22 +105,14 @@ export type HoustonEvent =
       data: { agent_path: string };
     }
   | {
+      type: "LearningsChanged";
+      data: { agent_path: string };
+    }
+  | {
       type: "ComposioCliReady";
       data: Record<string, never>;
     }
   | {
       type: "ComposioCliFailed";
       data: { message: string };
-    }
-  | {
-      type: "SlackSyncStarted";
-      data: { agent_path: string; slack_channel_name: string };
-    }
-  | {
-      type: "SlackSyncStopped";
-      data: { agent_path: string };
-    }
-  | {
-      type: "SlackThreadCreated";
-      data: { agent_path: string; session_key: string; thread_ts: string };
     };

@@ -11,8 +11,8 @@ houston-sessions = { workspace = true }
 houston-db = { workspace = true }
 houston-events = { workspace = true }
 houston-scheduler = { workspace = true }
-houston-channels = { workspace = true }
 houston-sync = { workspace = true }
+houston-agent-files = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

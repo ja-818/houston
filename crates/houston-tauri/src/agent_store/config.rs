@@ -1,16 +1,17 @@
-//! Read/write operations for `.houston/config.json`.
+//! Read/write operations for `.houston/config/config.json`.
 
-use super::helpers::{houston_dir, write_json};
+use super::helpers::write_json;
 use super::types::ProjectConfig;
-use std::fs;
+use houston_agent_files as files;
 use std::path::Path;
 
-const FILE: &str = "config.json";
+const FILE: &str = "config";
+const REL: &str = ".houston/config/config.json";
 
 /// Read the project config. Returns a default if the file doesn't exist.
 pub fn read(root: &Path) -> Result<ProjectConfig, String> {
-    let path = houston_dir(root).join(FILE);
-    if !path.exists() {
+    let contents = files::read_file(root, REL).map_err(|e| format!("Failed to read config: {e}"))?;
+    if contents.is_empty() {
         return Ok(ProjectConfig {
             name: String::new(),
             provider: None,
@@ -19,8 +20,6 @@ pub fn read(root: &Path) -> Result<ProjectConfig, String> {
             extra: serde_json::Map::new(),
         });
     }
-    let contents =
-        fs::read_to_string(&path).map_err(|e| format!("Failed to read config: {e}"))?;
     serde_json::from_str(&contents).map_err(|e| format!("Failed to parse config: {e}"))
 }
 

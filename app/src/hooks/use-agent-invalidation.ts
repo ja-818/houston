@@ -26,9 +26,6 @@ export function useAgentInvalidation() {
         case "SkillsChanged":
           qc.invalidateQueries({ queryKey: queryKeys.skills(p.data.agent_path) });
           break;
-        case "ChannelsConfigChanged":
-          qc.invalidateQueries({ queryKey: queryKeys.channels(p.data.agent_path) });
-          break;
         case "FilesChanged":
           qc.invalidateQueries({ queryKey: queryKeys.files(p.data.agent_path) });
           break;
@@ -47,6 +44,9 @@ export function useAgentInvalidation() {
           break;
         case "RoutineRunsChanged":
           qc.invalidateQueries({ queryKey: ["routine-runs", p.data.agent_path] });
+          break;
+        case "LearningsChanged":
+          qc.invalidateQueries({ queryKey: queryKeys.learnings(p.data.agent_path) });
           break;
         // SessionStatus triggers activity invalidation (agent finished → status changed)
         case "SessionStatus":

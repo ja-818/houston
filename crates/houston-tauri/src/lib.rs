@@ -3,9 +3,7 @@
 //! Provides generic AppState, event types, and a session supervisor
 //! for Tauri 2 desktop apps built with the Houston framework.
 
-pub mod agent_sessions;
-pub mod channel_manager;
-pub mod chat_session;
+pub mod session_id_tracker;
 pub mod composio;
 pub mod composio_apps;
 pub mod composio_auth;
@@ -23,13 +21,14 @@ pub mod supervisor;
 pub mod tray;
 pub mod agent;
 pub mod agent_commands;
+pub mod agent_files;
 pub mod agent_store;
 pub mod agent_watcher;
-pub mod slack_sync;
+pub mod conversations;
 
 // Re-export sub-crates for convenience.
+pub use houston_agent_files;
 pub use houston_db;
 pub use houston_sessions;
 pub use houston_events;
 pub use houston_scheduler;
-pub use houston_channels;

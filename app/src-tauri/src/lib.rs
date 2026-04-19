@@ -4,7 +4,7 @@ mod logging;
 mod routine_runner;
 
 use commands::agents::WorkspaceRoot;
-use houston_tauri::agent_sessions::AgentSessionMap;
+use houston_tauri::session_id_tracker::SessionIdTracker;
 use houston_tauri::houston_db::Database;
 use houston_tauri::state::AppState;
 use tauri::{Emitter, Manager};
@@ -66,7 +66,7 @@ pub fn run() {
                 event_queue: None,
                 scheduler: None,
             });
-            app.manage(AgentSessionMap::default());
+            app.manage(SessionIdTracker::default());
             app.manage(houston_tauri::session_pids::SessionPidMap::default());
             app.manage(WorkspaceRoot(root.clone()));
             app.manage(houston_tauri::agent_watcher::WatcherState::default());
@@ -130,8 +130,6 @@ pub fn run() {
             commands::chat::start_onboarding_session,
             commands::chat::stop_session,
             commands::chat::load_chat_history,
-            commands::chat::read_agent_file,
-            commands::chat::write_agent_file,
             commands::chat::summarize_activity,
             // Chat composer attachments — persist user-attached files in the
             // app cache dir scoped by activity/agent id, paths handed to Claude.
@@ -147,29 +145,15 @@ pub fn run() {
             commands::skills::install_skills_from_repo,
             commands::skills::search_community_skills,
             commands::skills::install_community_skill,
-            // Agent store — conversations, activity, routines, goals, channels, log, config
-            houston_tauri::agent_store::commands::list_conversations,
-            houston_tauri::agent_store::commands::list_all_conversations,
-            houston_tauri::agent_store::commands::list_activity,
-            houston_tauri::agent_store::commands::create_activity,
-            houston_tauri::agent_store::commands::update_activity,
-            houston_tauri::agent_store::commands::delete_activity,
-            houston_tauri::agent_store::commands::list_routines,
-            houston_tauri::agent_store::commands::create_routine,
-            houston_tauri::agent_store::commands::update_routine,
-            houston_tauri::agent_store::commands::delete_routine,
-            houston_tauri::agent_store::commands::list_routine_runs,
-            houston_tauri::agent_store::commands::list_goals,
-            houston_tauri::agent_store::commands::create_goal,
-            houston_tauri::agent_store::commands::update_goal,
-            houston_tauri::agent_store::commands::delete_goal,
-            houston_tauri::agent_store::commands::list_channels_config,
-            houston_tauri::agent_store::commands::add_channel_config,
-            houston_tauri::agent_store::commands::remove_channel_config,
-            houston_tauri::agent_store::commands::append_log,
-            houston_tauri::agent_store::commands::read_log,
-            houston_tauri::agent_store::commands::read_config,
-            houston_tauri::agent_store::commands::write_config,
+            // Generic agent-file I/O — replaces the legacy typed CRUD commands.
+            // Frontend reads/writes .houston/<type>/<type>.json via these + JSON Schema validation.
+            houston_tauri::agent_files::read_agent_file,
+            houston_tauri::agent_files::write_agent_file,
+            houston_tauri::agent_files::seed_agent_schemas,
+            houston_tauri::agent_files::migrate_agent_files,
+            // Conversation listing (derived view over activity.json)
+            houston_tauri::conversations::list_conversations,
+            houston_tauri::conversations::list_all_conversations,
             // Agent file operations
             houston_tauri::agent_commands::list_project_files,
             houston_tauri::agent_commands::open_file,

@@ -1,5 +1,5 @@
 use crate::agent;
-use houston_tauri::agent_sessions::AgentSessionMap;
+use houston_tauri::session_id_tracker::SessionIdTracker;
 use houston_tauri::agent_store::AgentStore;
 use houston_tauri::events::HoustonEvent;
 use houston_tauri::houston_sessions;
@@ -81,7 +81,7 @@ fn resolve_workspace(agent_dir: &std::path::Path) -> ResolvedProvider {
 pub async fn send_message(
     app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
-    agent_sessions: State<'_, AgentSessionMap>,
+    session_ids: State<'_, SessionIdTracker>,
     pid_map: State<'_, SessionPidMap>,
     agent_path: String,
     prompt: String,
@@ -155,10 +155,10 @@ pub async fn send_message(
     let source = source.unwrap_or_else(|| "desktop".to_string());
     let session_key = session_key.ok_or_else(|| "session_key is required".to_string())?;
     let agent_key = format!("{}:{}", working_dir.to_string_lossy(), session_key);
-    let chat_state = agent_sessions
+    let sid_handle = session_ids
         .get_for_session(&agent_key, &agent_path, &session_key)
         .await;
-    let resume_id = chat_state.get().await;
+    let resume_id = sid_handle.get().await;
     tracing::debug!(
         "[houston:session] resume_id={:?} for key={}",
         resume_id, agent_key
@@ -172,7 +172,7 @@ pub async fn send_message(
         resume_id,
         working_dir,
         Some(system_prompt),
-        Some(chat_state),
+        Some(sid_handle),
         Some(PersistOptions {
             db: state.db.clone(),
             source: source.clone(),
@@ -194,7 +194,7 @@ pub async fn load_chat_history(
     session_key: String,
 ) -> Result<Vec<serde_json::Value>, String> {
     let working_dir = expand_tilde(&PathBuf::from(&agent_path));
-    let sid_path = houston_tauri::agent_sessions::session_id_path(&working_dir, &session_key);
+    let sid_path = houston_tauri::session_id_tracker::session_id_path(&working_dir, &session_key);
 
     let Some(claude_session_id) = std::fs::read_to_string(&sid_path)
         .ok()
@@ -225,38 +225,10 @@ pub async fn load_chat_history(
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub async fn read_agent_file(
-    agent_path: String,
-    name: String,
-) -> Result<String, String> {
-    let dir = expand_tilde(&PathBuf::from(&agent_path));
-    let path = dir.join(&name);
-    std::fs::read_to_string(&path).map_err(|e| format!("Failed to read {name}: {e}"))
-}
-
-#[tauri::command(rename_all = "snake_case")]
-pub async fn write_agent_file(
-    app_handle: tauri::AppHandle,
-    agent_path: String,
-    name: String,
-    content: String,
-) -> Result<(), String> {
-    let dir = expand_tilde(&PathBuf::from(&agent_path));
-    let path = dir.join(&name);
-    std::fs::write(&path, &content).map_err(|e| format!("Failed to write {name}: {e}"))?;
-    if name == "CLAUDE.md" || name.starts_with(".houston/prompts/") {
-        let _ = app_handle.emit("houston-event", houston_tauri::events::HoustonEvent::ContextChanged {
-            agent_path: agent_path.clone(),
-        });
-    }
-    Ok(())
-}
-
-#[tauri::command(rename_all = "snake_case")]
 pub async fn start_onboarding_session(
     app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
-    agent_sessions: State<'_, AgentSessionMap>,
+    session_ids: State<'_, SessionIdTracker>,
     pid_map: State<'_, SessionPidMap>,
     agent_path: String,
     session_key: String,
@@ -291,10 +263,10 @@ pub async fn start_onboarding_session(
     );
 
     let agent_key = format!("{}:{}", working_dir.to_string_lossy(), session_key);
-    let chat_state = agent_sessions
+    let sid_handle = session_ids
         .get_for_session(&agent_key, &agent_path, &session_key)
         .await;
-    let resume_id = chat_state.get().await;
+    let resume_id = sid_handle.get().await;
 
     let provider = resolve_provider(&working_dir);
 
@@ -306,7 +278,7 @@ pub async fn start_onboarding_session(
         resume_id,
         working_dir,
         Some(system_prompt),
-        Some(chat_state),
+        Some(sid_handle),
         Some(PersistOptions {
             db: state.db.clone(),
             source: "desktop".to_string(),

@@ -7,7 +7,7 @@
 use crate::agent;
 use chrono::Utc;
 use cron::Schedule;
-use houston_tauri::agent_sessions::AgentSessionMap;
+use houston_tauri::session_id_tracker::SessionIdTracker;
 use houston_tauri::agent_store::types::{ActivityUpdate, RoutineRunUpdate};
 use houston_tauri::agent_store::AgentStore;
 use houston_tauri::events::HoustonEvent;
@@ -204,18 +204,18 @@ pub async fn run_routine(
         routine.prompt.clone()
     };
 
-    // Get session state for --resume
-    let agent_sessions = app_handle.state::<AgentSessionMap>();
+    // Get session id handle for --resume
+    let session_ids = app_handle.state::<SessionIdTracker>();
     let state = app_handle.state::<AppState>();
     let agent_key = format!(
         "{}:{}",
         working_dir.to_string_lossy(),
         run.session_key
     );
-    let chat_state = agent_sessions
+    let sid_handle = session_ids
         .get_for_session(&agent_key, agent_path, &run.session_key)
         .await;
-    let resume_id = chat_state.get().await;
+    let resume_id = sid_handle.get().await;
 
     // Spawn session and wait for completion
     let join_handle = houston_tauri::session_runner::spawn_and_monitor(
@@ -226,7 +226,7 @@ pub async fn run_routine(
         resume_id,
         working_dir.clone(),
         Some(system_prompt),
-        Some(chat_state),
+        Some(sid_handle),
         Some(PersistOptions {
             db: state.db.clone(),
             source: "routine".into(),

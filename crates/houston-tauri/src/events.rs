@@ -67,23 +67,6 @@ pub enum HoustonEvent {
         prompt: String,
     },
 
-    // ----- Channels (houston-channels) -----
-
-    /// A message arrived from an external channel (Slack, Telegram, etc.).
-    ChannelMessageReceived {
-        channel_type: String,
-        channel_id: String,
-        sender_name: String,
-        text: String,
-    },
-    /// A channel's connection status changed.
-    ChannelStatusChanged {
-        channel_id: String,
-        channel_type: String,
-        status: String,
-        error: Option<String>,
-    },
-
     // ----- Routines -----
 
     /// Routines list changed (.houston/routines.json).
@@ -107,10 +90,6 @@ pub enum HoustonEvent {
     SkillsChanged {
         agent_path: String,
     },
-    /// Channel config changed (.houston/channels.json).
-    ChannelsConfigChanged {
-        agent_path: String,
-    },
     /// Agent files changed (non-.houston files).
     FilesChanged {
         agent_path: String,
@@ -128,6 +107,10 @@ pub enum HoustonEvent {
         project_id: String,
         agent_path: String,
     },
+    /// Learnings changed (.houston/learnings/learnings.json).
+    LearningsChanged {
+        agent_path: String,
+    },
 
     // ----- Composio CLI lifecycle -----
 
@@ -136,22 +119,4 @@ pub enum HoustonEvent {
     ComposioCliReady,
     /// Composio CLI install or upgrade failed.
     ComposioCliFailed { message: String },
-
-    // ----- Slack Sync -----
-
-    /// Slack sync started for an agent.
-    SlackSyncStarted {
-        agent_path: String,
-        slack_channel_name: String,
-    },
-    /// Slack sync stopped for an agent.
-    SlackSyncStopped {
-        agent_path: String,
-    },
-    /// A new Slack thread was created for a conversation.
-    SlackThreadCreated {
-        agent_path: String,
-        session_key: String,
-        thread_ts: String,
-    },
 }

@@ -345,7 +345,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       const mode = agentModes?.find((m) => m.id === activity?.agent);
       tauriChat.send(path, prompt, sessionKey, {
         mode: mode?.promptFile,
-        workingDirOverride: activity?.worktree_path,
+        workingDirOverride: activity?.worktree_path ?? undefined,
         providerOverride: chatProvider ?? undefined,
         modelOverride: chatModel ?? undefined,
       });

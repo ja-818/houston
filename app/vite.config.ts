@@ -20,7 +20,6 @@ export default defineConfig({
       "@houston-ai/core",
       "@houston-ai/board",
       "@houston-ai/layout",
-      "@houston-ai/connections",
       "@houston-ai/events",
       "@houston-ai/routines",
       "@houston-ai/skills",

@@ -256,9 +256,9 @@ Before ANY edit, ask: "Would this pass code review?"
 - **NEVER** say "You're absolutely right!" if there's a better approach
 - Tell the user when something is wrong
 
-### No Backward Compatibility
-- If you need to change something, change it
-- Don't preserve old behavior "just in case"
+### No Backward Compatibility (for internal code)
+- Internal code (types, APIs, Rust modules, TS functions): if you need to change it, change it. Don't keep old behavior "just in case."
+- **User data is different.** Files under `~/Documents/Houston/**` and `~/.houston/**` already exist on users' machines. If you change the shape, layout, or location of persisted files, ship an **idempotent migration** that runs on upgrade (see `houston-agent-files::migrate_agent_data`). Never leave existing users with broken data.
 
 ### Testing Is Mandatory
 - Every feature gets tests. No exceptions.

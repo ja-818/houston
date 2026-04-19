@@ -27,8 +27,8 @@ tauri-plugin-process = "2"
 tauri-plugin-sentry = "0.5"
 sentry = "0.42"
 open = "5"
-houston-channels = { path = "../../crates/houston-channels" }
 houston-sync = { path = "../../crates/houston-sync" }
+houston-agent-files = { path = "../../crates/houston-agent-files" }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

@@ -48,7 +48,7 @@ fn classify_change(agent_path: &str, relative: &Path) -> Option<HoustonEvent> {
         });
     }
 
-    // .houston/ internal files
+    // .houston/ internal files — per-type folder layout: .houston/<type>/<type>.json
     if rel_str.starts_with(".houston/") {
         let inner = &rel_str[".houston/".len()..];
 
@@ -57,42 +57,27 @@ fn classify_change(agent_path: &str, relative: &Path) -> Option<HoustonEvent> {
                 agent_path: agent_path.to_string(),
             });
         }
-        if inner == "channels.json" {
-            return Some(HoustonEvent::ChannelsConfigChanged {
-                agent_path: agent_path.to_string(),
-            });
-        }
-        if inner == "config.json" {
-            return Some(HoustonEvent::ConfigChanged {
-                agent_path: agent_path.to_string(),
-            });
-        }
         if inner.starts_with("prompts") {
             return Some(HoustonEvent::ContextChanged {
                 agent_path: agent_path.to_string(),
             });
         }
-        if inner == "activity.json" {
-            return Some(HoustonEvent::ActivityChanged {
-                agent_path: agent_path.to_string(),
-            });
-        }
-        if inner == "routines.json" {
-            return Some(HoustonEvent::RoutinesChanged {
-                agent_path: agent_path.to_string(),
-            });
-        }
-        if inner == "routine_runs.json" {
-            return Some(HoustonEvent::RoutineRunsChanged {
-                agent_path: agent_path.to_string(),
-            });
-        }
-        if inner == "goals.json" {
-            // No specific event for goals yet — skip
+        // Schema files are never user-data changes.
+        if inner.ends_with(".schema.json") {
             return None;
         }
-        // Other .houston files — skip
-        return None;
+
+        // First path component is the data type name.
+        let first = inner.split('/').next().unwrap_or("");
+        let agent_path = agent_path.to_string();
+        return match first {
+            "activity" => Some(HoustonEvent::ActivityChanged { agent_path }),
+            "routines" => Some(HoustonEvent::RoutinesChanged { agent_path }),
+            "routine_runs" => Some(HoustonEvent::RoutineRunsChanged { agent_path }),
+            "config" => Some(HoustonEvent::ConfigChanged { agent_path }),
+            "learnings" => Some(HoustonEvent::LearningsChanged { agent_path }),
+            _ => None,
+        };
     }
 
     // CLAUDE.md at workspace root

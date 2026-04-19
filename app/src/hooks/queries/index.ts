@@ -10,7 +10,6 @@ export {
   useInstallCommunitySkill,
   useSearchCommunitySkills,
 } from "./use-skills";
-export { useChannels, useAddChannel, useRemoveChannel } from "./use-channels";
 export { useFiles, useDeleteFile, useRenameFile, useCreateFolder } from "./use-files";
 export { useInstructions, useSaveInstructions } from "./use-instructions";
 export { useConversations, useAllConversations, useChatHistory } from "./use-conversations";
@@ -23,3 +22,4 @@ export {
   useDeleteRoutine,
   useRunRoutineNow,
 } from "./use-routines";
+export { useLearnings, useAddLearning, useRemoveLearning } from "./use-learnings";

@@ -3,8 +3,8 @@
 //! Replaces the duplicated "spawn + tokio::spawn + match update" pattern
 //! that apps previously implemented manually.
 
-use crate::chat_session::ChatSessionState;
 use crate::events::HoustonEvent;
+use crate::session_id_tracker::SessionIdHandle;
 use crate::session_pids::SessionPidMap;
 use houston_db::Database;
 use houston_sessions::{FeedItem, Provider, SessionManager, SessionStatus, SessionUpdate};
@@ -44,7 +44,7 @@ pub fn spawn_and_monitor(
     resume_id: Option<String>,
     working_dir: PathBuf,
     system_prompt: Option<String>,
-    chat_state: Option<ChatSessionState>,
+    session_id_handle: Option<SessionIdHandle>,
     persist: Option<PersistOptions>,
     pid_map: Option<SessionPidMap>,
     provider: Provider,
@@ -54,8 +54,6 @@ pub fn spawn_and_monitor(
     // OnceLock inside init() makes this a no-op after the first call.
     houston_sessions::claude_path::init();
 
-    // Clone working_dir — needed for per-session .sid persistence after spawn_session consumes one copy.
-    let persist_dir = working_dir.clone();
     let provider_str = provider.to_string();
 
     let (mut rx, _handle) = SessionManager::spawn_session(
@@ -74,7 +72,6 @@ pub fn spawn_and_monitor(
     let handle = app_handle.clone();
     let key = session_key;
     let agent_path_for_events = agent_path;
-    let working_dir = persist_dir;
     let mut persist = persist;
     tokio::spawn(async move {
         let mut response_text: Option<String> = None;
@@ -168,8 +165,10 @@ pub fn spawn_and_monitor(
                 }
                 SessionUpdate::SessionId(sid) => {
                     claude_session_id = Some(sid.clone());
-                    if let Some(ref state) = chat_state {
-                        state.set(sid.clone()).await;
+                    // SessionIdHandle owns disk persistence — .sid file is written
+                    // here so --resume survives app restarts.
+                    if let Some(ref h) = session_id_handle {
+                        h.set(sid.clone()).await;
                     }
                     // Track the session ID and persist the pending user message.
                     if let Some(ref mut opts) = persist {
@@ -191,12 +190,6 @@ pub fn spawn_and_monitor(
                             });
                         }
                     }
-                    // Persist session id to disk so --resume survives app restarts.
-                    // Every session is scoped by session_key — no shared file.
-                    let sessions_dir = working_dir.join(".houston").join("sessions");
-                    std::fs::create_dir_all(&sessions_dir).ok();
-                    let sid_file = sessions_dir.join(format!("{key}.sid"));
-                    std::fs::write(&sid_file, &sid).ok();
                 }
                 SessionUpdate::Status(ref status) => {
                     let (status_str, err) = match status {

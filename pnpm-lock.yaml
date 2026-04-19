@@ -29,15 +29,15 @@ importers:
       '@houston-ai/agent':
         specifier: workspace:*
         version: link:../packages/agent
+      '@houston-ai/agent-schemas':
+        specifier: workspace:*
+        version: link:../packages/agent-schemas
       '@houston-ai/board':
         specifier: workspace:*
         version: link:../packages/board
       '@houston-ai/chat':
         specifier: workspace:*
         version: link:../packages/chat
-      '@houston-ai/connections':
-        specifier: workspace:*
-        version: link:../packages/connections
       '@houston-ai/core':
         specifier: workspace:*
         version: link:../packages/core
@@ -47,9 +47,6 @@ importers:
       '@houston-ai/layout':
         specifier: workspace:*
         version: link:../packages/layout
-      '@houston-ai/memory':
-        specifier: workspace:*
-        version: link:../packages/memory
       '@houston-ai/review':
         specifier: workspace:*
         version: link:../packages/review
@@ -77,6 +74,9 @@ importers:
       '@tauri-apps/plugin-updater':
         specifier: ^2.10.0
         version: 2.10.1
+      ajv:
+        specifier: ^8.17.1
+        version: 8.18.0
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.2.4)
@@ -117,8 +117,6 @@ importers:
       vite:
         specifier: ^6.3.5
         version: 6.4.1(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)
-
-  create-app: {}
 
   mobile:
     dependencies:
@@ -195,6 +193,8 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.4(react@19.2.4)
+
+  packages/agent-schemas: {}
 
   packages/board:
     dependencies:
@@ -273,21 +273,6 @@ importers:
       use-stick-to-bottom:
         specifier: ^1.1.3
         version: 1.1.3(react@19.2.4)
-
-  packages/connections:
-    dependencies:
-      '@houston-ai/core':
-        specifier: workspace:*
-        version: link:../core
-      lucide-react:
-        specifier: ^0.577.0
-        version: 0.577.0(react@19.2.4)
-      react:
-        specifier: ^19.0.0
-        version: 19.2.4
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.4(react@19.2.4)
 
   packages/core:
     dependencies:
@@ -370,21 +355,6 @@ importers:
         specifier: ^4.7.3
         version: 4.7.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/memory:
-    dependencies:
-      '@houston-ai/core':
-        specifier: workspace:*
-        version: link:../core
-      lucide-react:
-        specifier: ^0.577.0
-        version: 0.577.0(react@19.2.4)
-      react:
-        specifier: ^19.0.0
-        version: 19.2.4
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.4(react@19.2.4)
-
   packages/review:
     dependencies:
       '@houston-ai/core':
@@ -453,76 +423,6 @@ importers:
       wrangler:
         specifier: ^3.99.0
         version: 3.114.17(@cloudflare/workers-types@4.20260415.1)
-
-  showcase:
-    dependencies:
-      '@houston-ai/agent':
-        specifier: link:../packages/agent
-        version: link:../packages/agent
-      '@houston-ai/board':
-        specifier: link:../packages/board
-        version: link:../packages/board
-      '@houston-ai/chat':
-        specifier: link:../packages/chat
-        version: link:../packages/chat
-      '@houston-ai/connections':
-        specifier: link:../packages/connections
-        version: link:../packages/connections
-      '@houston-ai/core':
-        specifier: link:../packages/core
-        version: link:../packages/core
-      '@houston-ai/events':
-        specifier: link:../packages/events
-        version: link:../packages/events
-      '@houston-ai/layout':
-        specifier: link:../packages/layout
-        version: link:../packages/layout
-      '@houston-ai/memory':
-        specifier: link:../packages/memory
-        version: link:../packages/memory
-      '@houston-ai/review':
-        specifier: link:../packages/review
-        version: link:../packages/review
-      '@houston-ai/routines':
-        specifier: link:../packages/routines
-        version: link:../packages/routines
-      '@houston-ai/skills':
-        specifier: link:../packages/skills
-        version: link:../packages/skills
-      lucide-react:
-        specifier: ^0.577.0
-        version: 0.577.0(react@19.2.4)
-      react:
-        specifier: ^19.1.0
-        version: 19.2.4
-      react-dom:
-        specifier: ^19.1.0
-        version: 19.2.4(react@19.2.4)
-      shiki:
-        specifier: ^4.0.2
-        version: 4.0.2
-    devDependencies:
-      '@tailwindcss/vite':
-        specifier: ^4.1.8
-        version: 4.2.2(vite@6.4.1(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0))
-      '@types/react':
-        specifier: ^19.2.14
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.14)
-      '@vitejs/plugin-react':
-        specifier: ^4.5.2
-        version: 4.7.0(vite@6.4.1(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0))
-      tailwindcss:
-        specifier: ^4.1.8
-        version: 4.2.2
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
-      vite:
-        specifier: ^6.3.5
-        version: 6.4.1(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)
 
 packages:
 
@@ -2499,6 +2399,9 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  ajv@8.18.0:
+    resolution: {integrity: sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A==}
+
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
     engines: {node: '>=8'}
@@ -2935,6 +2838,12 @@ packages:
   extend@3.0.2:
     resolution: {integrity: sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==}
 
+  fast-deep-equal@3.1.3:
+    resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
+
+  fast-uri@3.1.0:
+    resolution: {integrity: sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA==}
+
   fd-slicer@1.1.0:
     resolution: {integrity: sha512-cE1qsB/VwyQozZ+q1dGxR8LBYNZeofhEdUNGSMbQD3Gw2lAzX9Zb3uIU6Ebc/Fmyjo9AWWfnn0AUCHqtevs/8g==}
 
@@ -3135,6 +3044,9 @@ packages:
     resolution: {integrity: sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==}
     engines: {node: '>=6'}
     hasBin: true
+
+  json-schema-traverse@1.0.0:
+    resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
 
   json-schema@0.4.0:
     resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
@@ -3777,6 +3689,10 @@ packages:
 
   remend@1.3.0:
     resolution: {integrity: sha512-iIhggPkhW3hFImKtB10w0dz4EZbs28mV/dmbcYVonWEJ6UGHHpP+bFZnTh6GNWJONg5m+U56JrL+8IxZRdgWjw==}
+
+  require-from-string@2.0.2:
+    resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
+    engines: {node: '>=0.10.0'}
 
   rimraf@4.4.1:
     resolution: {integrity: sha512-Gk8NlF062+T9CqNGn6h4tls3k6T1+/nXdOcSZVikNVtlRdYpA7wRJJMoXmuvOnLW844rPjdQ7JgXCYM6PPC/og==}
@@ -6143,6 +6059,13 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       zod: 4.3.6
 
+  ajv@8.18.0:
+    dependencies:
+      fast-deep-equal: 3.1.3
+      fast-uri: 3.1.0
+      json-schema-traverse: 1.0.0
+      require-from-string: 2.0.2
+
   ansi-regex@5.0.1: {}
 
   ansi-styles@4.3.0:
@@ -6606,6 +6529,10 @@ snapshots:
 
   extend@3.0.2: {}
 
+  fast-deep-equal@3.1.3: {}
+
+  fast-uri@3.1.0: {}
+
   fd-slicer@1.1.0:
     dependencies:
       pend: 1.2.0
@@ -6847,6 +6774,8 @@ snapshots:
   js-tokens@4.0.0: {}
 
   jsesc@3.1.0: {}
+
+  json-schema-traverse@1.0.0: {}
 
   json-schema@0.4.0: {}
 
@@ -7811,6 +7740,8 @@ snapshots:
       unified: 11.0.5
 
   remend@1.3.0: {}
+
+  require-from-string@2.0.2: {}
 
   rimraf@4.4.1:
     dependencies:

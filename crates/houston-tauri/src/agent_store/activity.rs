@@ -6,7 +6,7 @@ use chrono::Utc;
 use std::path::Path;
 use uuid::Uuid;
 
-const FILE: &str = "activity.json";
+const FILE: &str = "activity";
 
 pub fn list(root: &Path) -> Result<Vec<Activity>, String> {
     read_json::<Vec<Activity>>(root, FILE)

@@ -148,14 +148,6 @@ export interface FileEntry {
   size: number;
 }
 
-/** A channel entry from .houston/channels.json */
-export interface ChannelEntry {
-  id: string;
-  channel_type: string;
-  name: string;
-  token: string;
-}
-
 /** A listing from the Houston Store registry */
 export interface StoreListing {
   id: string;

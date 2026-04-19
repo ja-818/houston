@@ -8,7 +8,7 @@ use chrono::Utc;
 use std::path::Path;
 use uuid::Uuid;
 
-const FILE: &str = "routine_runs.json";
+const FILE: &str = "routine_runs";
 const MAX_RUNS_PER_ROUTINE: usize = 50;
 
 pub fn list(root: &Path) -> Result<Vec<RoutineRun>, String> {

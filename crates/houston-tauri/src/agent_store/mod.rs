@@ -4,13 +4,9 @@
 //! alongside the project root. This module provides [`AgentStore`] for
 //! safe, atomic CRUD over those files.
 
-pub mod channels;
-pub mod commands;
 pub mod config;
 pub mod conversations;
-pub mod goals;
 pub mod helpers;
-pub mod log;
 pub mod routine_runs;
 pub mod routines;
 pub mod activity;
@@ -92,41 +88,6 @@ impl AgentStore {
     }
     pub fn update_routine_run(&self, id: &str, updates: RoutineRunUpdate) -> Result<RoutineRun, String> {
         routine_runs::update(&self.root, id, updates)
-    }
-
-    // -- Goals --
-    pub fn list_goals(&self) -> Result<Vec<Goal>, String> {
-        goals::list(&self.root)
-    }
-    pub fn create_goal(&self, title: &str) -> Result<Goal, String> {
-        self.ensure_houston_dir()?;
-        goals::create(&self.root, title)
-    }
-    pub fn update_goal(&self, id: &str, updates: GoalUpdate) -> Result<Goal, String> {
-        goals::update(&self.root, id, updates)
-    }
-    pub fn delete_goal(&self, id: &str) -> Result<(), String> {
-        goals::delete(&self.root, id)
-    }
-
-    // -- Channels --
-    pub fn list_channels(&self) -> Result<Vec<ChannelEntry>, String> {
-        channels::list(&self.root)
-    }
-    pub fn add_channel(&self, input: NewChannel) -> Result<ChannelEntry, String> {
-        self.ensure_houston_dir()?;
-        channels::add(&self.root, input)
-    }
-    pub fn remove_channel(&self, id: &str) -> Result<(), String> {
-        channels::remove(&self.root, id)
-    }
-
-    // -- Log --
-    pub fn append_log(&self, entry: &LogEntry) -> Result<(), String> {
-        log::append(&self.root, entry)
-    }
-    pub fn read_log(&self) -> Result<Vec<LogEntry>, String> {
-        log::read(&self.root)
     }
 
     // -- Config --
