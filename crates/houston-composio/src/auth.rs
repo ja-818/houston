@@ -358,7 +358,7 @@ fn read_composio_field(field: &str) -> Option<String> {
 /// 2. GET the `resource_metadata` URL → read `authorization_servers[0]`.
 /// 3. GET `{auth_server}/.well-known/oauth-authorization-server` (RFC 8414).
 async fn discover_oauth_metadata() -> Result<DiscoveryInfo, String> {
-    let mcp_url = crate::composio::read_composio_url()
+    let mcp_url = crate::mcp::read_composio_url()
         .ok_or("Composio MCP server not configured in ~/.claude.json")?;
 
     let client = reqwest::Client::new();

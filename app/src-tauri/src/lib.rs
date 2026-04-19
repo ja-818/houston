@@ -77,7 +77,7 @@ pub fn run() {
             // Warm the Composio catalog cache in the background so the integrations
             // tab loads instantly when the user opens it.
             tauri::async_runtime::spawn(async {
-                let apps = houston_tauri::composio_apps::list_all_apps().await;
+                let apps = houston_composio::apps::list_all_apps().await;
                 tracing::info!("[composio] Pre-warmed catalog: {} apps", apps.len());
             });
 
@@ -181,14 +181,14 @@ pub fn run() {
             // System
             commands::system::check_claude_cli,
             // Composio integrations (CLI-backed)
-            houston_tauri::composio_commands::list_composio_connections,
-            houston_tauri::composio_commands::list_composio_apps,
-            houston_tauri::composio_commands::list_composio_connected_toolkits,
-            houston_tauri::composio_commands::connect_composio_app,
-            houston_tauri::composio_commands::start_composio_oauth,
-            houston_tauri::composio_commands::complete_composio_login,
-            houston_tauri::composio_commands::is_composio_cli_installed,
-            houston_tauri::composio_commands::install_composio_cli,
+            houston_composio::commands::list_composio_connections,
+            houston_composio::commands::list_composio_apps,
+            houston_composio::commands::list_composio_connected_toolkits,
+            houston_composio::commands::connect_composio_app,
+            houston_composio::commands::start_composio_oauth,
+            houston_composio::commands::complete_composio_login,
+            houston_composio::commands::is_composio_cli_installed,
+            houston_composio::commands::install_composio_cli,
             // Worktree + Terminal + Directory picker
             commands::worktree::pick_directory,
             commands::worktree::create_worktree,

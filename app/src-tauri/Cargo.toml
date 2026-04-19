@@ -32,6 +32,7 @@ houston-agent-files = { path = "../../crates/houston-agent-files" }
 houston-ui-events = { path = "../../crates/houston-ui-events" }
 houston-agents-conversations = { path = "../../crates/houston-agents-conversations" }
 houston-file-watcher = { path = "../../crates/houston-file-watcher" }
+houston-composio = { path = "../../crates/houston-composio" }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

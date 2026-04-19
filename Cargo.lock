@@ -2205,6 +2205,7 @@ dependencies = [
  "dirs 5.0.1",
  "houston-agent-files",
  "houston-agents-conversations",
+ "houston-composio",
  "houston-file-watcher",
  "houston-skills",
  "houston-sync",
@@ -2225,6 +2226,23 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "houston-composio"
+version = "0.3.2"
+dependencies = [
+ "base64 0.22.1",
+ "houston-db",
+ "houston-ui-events",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tokio",
+ "tracing",
  "uuid",
 ]
 
@@ -2335,10 +2353,8 @@ dependencies = [
  "houston-sync",
  "houston-ui-events",
  "libsql",
- "reqwest 0.12.28",
  "serde",
  "serde_json",
- "sha2",
  "tauri",
  "tokio",
  "tracing",

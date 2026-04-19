@@ -20,7 +20,7 @@ use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::process::Command;
 
-use crate::composio_install;
+use crate::install;
 
 // -- Public types (shared shape with the legacy `composio.rs` to keep
 //    the frontend types stable while the backend is swapped). --
@@ -71,7 +71,7 @@ pub struct StartLinkResponse {
 
 /// Report Houston's current composio state.
 pub async fn status() -> ComposioStatus {
-    if !composio_install::is_installed() {
+    if !install::is_installed() {
         return ComposioStatus::NotInstalled;
     }
 
@@ -396,7 +396,7 @@ async fn run_cli_with_timeout(
 }
 
 fn cli_binary() -> Result<PathBuf, String> {
-    let p = composio_install::cli_path();
+    let p = install::cli_path();
     if !p.exists() {
         return Err(format!(
             "composio CLI not installed at {} — call install_composio_cli first",
@@ -433,7 +433,7 @@ pub async fn list_connected_toolkits() -> Vec<String> {
 }
 
 async fn list_connected_toolkits_inner() -> Result<Vec<String>, String> {
-    let (api_key, base_url, org_id) = crate::composio_apps::read_user_config_full()?;
+    let (api_key, base_url, org_id) = crate::apps::read_user_config_full()?;
 
     let client = reqwest::Client::new();
 

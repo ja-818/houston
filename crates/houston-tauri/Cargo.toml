@@ -23,6 +23,4 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 libsql = "0.6"
 base64 = "0.22"
-reqwest = { version = "0.12", features = ["json"] }
-sha2 = "0.10"
 tracing = { workspace = true }

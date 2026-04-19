@@ -7,7 +7,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::composio_apps::ComposioAppEntry;
+use crate::apps::ComposioAppEntry;
 
 // -- Public types --
 
@@ -55,7 +55,7 @@ pub async fn list_active_connections() -> ComposioResult {
     // If fetch failed, try one refresh + retry before giving up
     if matches!(result, ComposioResult::Error { .. }) {
         tracing::warn!("[composio] Fetch failed, attempting token refresh and retry");
-        if let Ok(new_token) = crate::composio_auth::refresh_access_token().await {
+        if let Ok(new_token) = crate::auth::refresh_access_token().await {
             return fetch_connections(&url, &new_token).await;
         }
     }
@@ -106,7 +106,7 @@ pub(crate) async fn get_valid_token() -> Option<String> {
 
     // Token expired — try silent refresh
     tracing::warn!("[composio] Token expired, attempting silent refresh");
-    match crate::composio_auth::refresh_access_token().await {
+    match crate::auth::refresh_access_token().await {
         Ok(new_token) => Some(new_token),
         Err(e) => {
             tracing::error!("[composio] Silent refresh failed: {e}");
@@ -259,7 +259,7 @@ async fn fetch_connections(url: &str, token: &str) -> ComposioResult {
     // permanent — they expire quickly — so we just ignore the `initiated` entries
     // and only keep `active` ones. Heavy caching (prewarm on launch + TanStack
     // Query 1h staleTime) means this expensive call only runs once per session.
-    let catalog = crate::composio_apps::list_all_apps().await;
+    let catalog = crate::apps::list_all_apps().await;
     // Fall back to a minimal list if the catalog fetch failed (network issue, etc.)
     // so the user still sees their most common connections instead of an error.
     let toolkits: Vec<String> = if catalog.is_empty() {

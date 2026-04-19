@@ -4,13 +4,6 @@
 //! Heavier concerns live in sibling crates: event types in `houston-ui-events`,
 //! conversation orchestration in `houston-agents-conversations`, etc.
 
-pub mod composio;
-pub mod composio_apps;
-pub mod composio_auth;
-pub mod composio_cli;
-pub mod composio_commands;
-pub mod composio_install;
-pub mod composio_lifecycle;
 pub mod paths;
 pub mod self_improvement;
 pub mod state;

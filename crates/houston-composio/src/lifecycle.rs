@@ -7,7 +7,7 @@
 //! Emits `HoustonEvent::ComposioCliReady` on success so the frontend can
 //! invalidate the connections query and update the integrations tab.
 
-use crate::composio_install;
+use crate::install;
 use houston_ui_events::HoustonEvent;
 use houston_db::db::Database;
 use tauri::{AppHandle, Emitter};
@@ -21,11 +21,11 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Run the full lifecycle check: install if missing, upgrade if Houston
 /// version changed. Emits events so the frontend reacts.
 pub async fn ensure_and_upgrade(app: AppHandle, db: Database) {
-    let installed = composio_install::is_installed();
+    let installed = install::is_installed();
 
     if !installed {
         tracing::info!("[composio:lifecycle] CLI not found — auto-installing");
-        match composio_install::install().await {
+        match install::install().await {
             Ok(path) => {
                 tracing::info!(
                     "[composio:lifecycle] auto-install succeeded: {}",
@@ -51,7 +51,7 @@ pub async fn ensure_and_upgrade(app: AppHandle, db: Database) {
         .flatten()
         .unwrap_or_default();
 
-    if last_version != APP_VERSION && composio_install::is_installed() {
+    if last_version != APP_VERSION && install::is_installed() {
         tracing::info!(
             "[composio:lifecycle] Houston version changed ({} → {}) — upgrading CLI",
             if last_version.is_empty() { "none" } else { &last_version },
@@ -79,7 +79,7 @@ pub async fn ensure_and_upgrade(app: AppHandle, db: Database) {
 /// Run `composio upgrade` via the same sync-Command + spawn_blocking
 /// pattern used by the install function.
 async fn run_upgrade() -> Result<(), String> {
-    let bin = composio_install::cli_path();
+    let bin = install::cli_path();
     let home = std::env::var("HOME").unwrap_or_default();
     let path = std::env::var("PATH").unwrap_or_default();
 
