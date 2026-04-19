@@ -14,6 +14,7 @@
 
 pub mod activity;
 pub mod config;
+pub mod files;
 pub mod routine_runs;
 pub mod routines;
 pub mod store;

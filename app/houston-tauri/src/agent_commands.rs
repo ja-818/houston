@@ -16,65 +16,32 @@
 //! ])
 //! ```
 //!
-//! These pair with `@houston-ai/agent`'s `FilesBrowser` component on the frontend.
+//! Pure FS ops are thin proxies over `houston_engine_core::agents::files`.
+//! OS-native ops (`open_file`, `reveal_file`, `reveal_agent`, `open_url`) and
+//! DB-bound session queries stay in this adapter — they have no meaning when
+//! the engine runs remotely.
 
+use houston_engine_core::agents::files;
 use houston_ui_events::HoustonEvent;
 
 use crate::paths::expand_tilde;
 use crate::state::AppState;
-use crate::agent;
-use serde::Serialize;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tauri::{Emitter, State};
 
-/// User-facing file extensions shown in the browser.
-/// Technical files (json, py, md) are excluded — they confuse non-technical users.
-const USER_EXTENSIONS: &[&str] = &[
-    "docx", "doc", "xlsx", "xls", "pptx", "ppt", "pdf", "png", "jpg", "jpeg",
-    "svg", "gif", "txt", "rtf", "csv",
-];
-
-/// Directories to skip when scanning.
-fn should_skip_dir(name: &str) -> bool {
-    matches!(
-        name,
-        ".git" | "node_modules" | "__pycache__" | ".venv" | "venv"
-            | ".env" | ".cache" | "target" | "dist" | "build" | "skills" | "scripts"
-    ) || name.starts_with('.')
-}
-
-/// A file entry matching `@houston-ai/agent`'s `FileEntry` type.
-#[derive(Serialize, Clone)]
-pub struct ProjectFile {
-    pub path: String,
-    pub name: String,
-    pub extension: String,
-    pub size: u64,
-    pub is_directory: bool,
-}
+pub use files::ProjectFile;
 
 /// List all user-facing files in an agent folder.
 #[tauri::command(rename_all = "snake_case")]
-pub async fn list_project_files(
-    agent_path: String,
-) -> Result<Vec<ProjectFile>, String> {
+pub async fn list_project_files(agent_path: String) -> Result<Vec<ProjectFile>, String> {
     let root = expand_tilde(&PathBuf::from(&agent_path));
-    if !root.is_dir() {
-        return Ok(Vec::new());
-    }
-    let mut files = Vec::new();
-    collect_files(&root, &root, &mut files);
-    files.sort_by(|a, b| a.path.cmp(&b.path));
-    Ok(files)
+    files::list_project_files(&root).map_err(|e| e.to_string())
 }
 
 /// Open a file with the system default application.
 #[tauri::command(rename_all = "snake_case")]
-pub async fn open_file(
-    agent_path: String,
-    relative_path: String,
-) -> Result<(), String> {
-    let full_path = resolve_file(&agent_path, &relative_path)?;
+pub async fn open_file(agent_path: String, relative_path: String) -> Result<(), String> {
+    let full_path = resolve_existing(&agent_path, &relative_path)?;
     std::process::Command::new("open")
         .arg(&full_path)
         .spawn()
@@ -84,11 +51,8 @@ pub async fn open_file(
 
 /// Show a file in the OS file manager (Finder on macOS).
 #[tauri::command(rename_all = "snake_case")]
-pub async fn reveal_file(
-    agent_path: String,
-    relative_path: String,
-) -> Result<(), String> {
-    let full_path = resolve_file(&agent_path, &relative_path)?;
+pub async fn reveal_file(agent_path: String, relative_path: String) -> Result<(), String> {
+    let full_path = resolve_existing(&agent_path, &relative_path)?;
     std::process::Command::new("open")
         .arg("-R")
         .arg(&full_path)
@@ -97,7 +61,6 @@ pub async fn reveal_file(
     Ok(())
 }
 
-/// Rename a file or folder in the agent.
 #[tauri::command(rename_all = "snake_case")]
 pub async fn rename_file(
     app_handle: tauri::AppHandle,
@@ -105,35 +68,36 @@ pub async fn rename_file(
     relative_path: String,
     new_name: String,
 ) -> Result<(), String> {
-    let full_path = resolve_file(&agent_path, &relative_path)?;
-    let parent = full_path.parent().ok_or("Invalid file path")?;
-    let new_path = parent.join(&new_name);
-    std::fs::rename(&full_path, &new_path)
-        .map_err(|e| format!("Failed to rename: {e}"))?;
-    let _ = app_handle.emit("houston-event", HoustonEvent::FilesChanged {
-        agent_path: agent_path.clone(),
-    });
+    let root = expand_tilde(&PathBuf::from(&agent_path));
+    files::rename_file(&root, &relative_path, &new_name).map_err(|e| e.to_string())?;
+    let _ = app_handle.emit(
+        "houston-event",
+        HoustonEvent::FilesChanged {
+            agent_path: agent_path.clone(),
+        },
+    );
     Ok(())
 }
 
-/// Delete a file from the agent.
 #[tauri::command(rename_all = "snake_case")]
 pub async fn delete_file(
     app_handle: tauri::AppHandle,
     agent_path: String,
     relative_path: String,
 ) -> Result<(), String> {
-    let full_path = resolve_file(&agent_path, &relative_path)?;
-    std::fs::remove_file(&full_path).map_err(|e| format!("Failed to delete: {e}"))?;
-    let _ = app_handle.emit("houston-event", HoustonEvent::FilesChanged {
-        agent_path: agent_path.clone(),
-    });
+    let root = expand_tilde(&PathBuf::from(&agent_path));
+    files::delete_file(&root, &relative_path).map_err(|e| e.to_string())?;
+    let _ = app_handle.emit(
+        "houston-event",
+        HoustonEvent::FilesChanged {
+            agent_path: agent_path.clone(),
+        },
+    );
     Ok(())
 }
 
-/// Import files from absolute paths into the agent.
-/// Uses `agent::copy_file_to_dir` which auto-deduplicates names.
-/// Returns the list of imported files for immediate UI refresh.
+/// Import files from absolute paths into the agent. Returns the imported
+/// metadata for immediate UI refresh.
 #[tauri::command(rename_all = "snake_case")]
 pub async fn import_files(
     app_handle: tauri::AppHandle,
@@ -142,52 +106,19 @@ pub async fn import_files(
     target_folder: Option<String>,
 ) -> Result<Vec<ProjectFile>, String> {
     let root = expand_tilde(&PathBuf::from(&agent_path));
-    let dest_dir = match &target_folder {
-        Some(folder) => {
-            let d = root.join(folder);
-            std::fs::create_dir_all(&d)
-                .map_err(|e| format!("Failed to create directory: {e}"))?;
-            d
-        }
-        None => root.clone(),
-    };
-
-    let mut imported = Vec::new();
-    for src_str in &file_paths {
-        let src = PathBuf::from(src_str);
-        match agent::copy_file_to_dir(&dest_dir, &src) {
-            Ok(final_name) => {
-                let dest = dest_dir.join(&final_name);
-                let ext = dest
-                    .extension()
-                    .map(|e| e.to_string_lossy().to_lowercase())
-                    .unwrap_or_default();
-                let size = dest.metadata().map(|m| m.len()).unwrap_or(0);
-                let relative = dest
-                    .strip_prefix(&root)
-                    .unwrap_or(&dest)
-                    .to_string_lossy()
-                    .to_string();
-                imported.push(ProjectFile {
-                    path: relative,
-                    name: final_name,
-                    extension: ext,
-                    size,
-                    is_directory: false,
-                });
-            }
-            Err(e) => tracing::error!("[agent] import failed for {src_str}: {e}"),
-        }
-    }
+    let imported = files::import_files(&root, &file_paths, target_folder.as_deref())
+        .map_err(|e| e.to_string())?;
     if !imported.is_empty() {
-        let _ = app_handle.emit("houston-event", HoustonEvent::FilesChanged {
-            agent_path: agent_path.clone(),
-        });
+        let _ = app_handle.emit(
+            "houston-event",
+            HoustonEvent::FilesChanged {
+                agent_path: agent_path.clone(),
+            },
+        );
     }
     Ok(imported)
 }
 
-/// Create a folder inside the agent.
 #[tauri::command(rename_all = "snake_case")]
 pub async fn create_agent_folder(
     app_handle: tauri::AppHandle,
@@ -195,18 +126,19 @@ pub async fn create_agent_folder(
     folder_name: String,
 ) -> Result<String, String> {
     let root = expand_tilde(&PathBuf::from(&agent_path));
-    let result = agent::create_folder(&root, &folder_name)?;
-    let _ = app_handle.emit("houston-event", HoustonEvent::FilesChanged {
-        agent_path: agent_path.clone(),
-    });
+    let result = files::create_folder(&root, &folder_name).map_err(|e| e.to_string())?;
+    let _ = app_handle.emit(
+        "houston-event",
+        HoustonEvent::FilesChanged {
+            agent_path: agent_path.clone(),
+        },
+    );
     Ok(result)
 }
 
 /// Open the agent folder in the OS file manager.
 #[tauri::command(rename_all = "snake_case")]
-pub async fn reveal_agent(
-    agent_path: String,
-) -> Result<(), String> {
+pub async fn reveal_agent(agent_path: String) -> Result<(), String> {
     let root = expand_tilde(&PathBuf::from(&agent_path));
     std::process::Command::new("open")
         .arg(&root)
@@ -239,38 +171,27 @@ pub async fn write_file_bytes(
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(&data_base64)
         .map_err(|e| format!("Invalid base64: {e}"))?;
-    let final_name = agent::import_file(&root, &file_name, &bytes)?;
-    let dest = root.join(&final_name);
-    let ext = dest
-        .extension()
-        .map(|e| e.to_string_lossy().to_lowercase())
-        .unwrap_or_default();
-    let size = dest.metadata().map(|m| m.len()).unwrap_or(0);
-    let _ = app_handle.emit("houston-event", HoustonEvent::FilesChanged {
-        agent_path: agent_path.clone(),
-    });
-    Ok(ProjectFile {
-        path: final_name.clone(),
-        name: final_name,
-        extension: ext,
-        size,
-        is_directory: false,
-    })
+    let pf = files::write_file_bytes(&root, &file_name, &bytes).map_err(|e| e.to_string())?;
+    let _ = app_handle.emit(
+        "houston-event",
+        HoustonEvent::FilesChanged {
+            agent_path: agent_path.clone(),
+        },
+    );
+    Ok(pf)
 }
 
-/// Read a text file from the agent by relative path.
 #[tauri::command(rename_all = "snake_case")]
 pub async fn read_project_file(
     agent_path: String,
     relative_path: String,
 ) -> Result<String, String> {
-    let full_path = resolve_file(&agent_path, &relative_path)?;
-    std::fs::read_to_string(&full_path)
-        .map_err(|e| format!("Failed to read {relative_path}: {e}"))
+    let root = expand_tilde(&PathBuf::from(&agent_path));
+    files::read_project_file(&root, &relative_path).map_err(|e| e.to_string())
 }
 
 /// Full-text search across chat sessions.
-/// Returns sessions grouped by claude_session_id with highlighted snippets.
+/// Stays in the Tauri adapter until the engine exposes a sessions REST surface.
 #[tauri::command(rename_all = "snake_case")]
 pub async fn search_sessions(
     state: State<'_, AppState>,
@@ -309,11 +230,9 @@ pub async fn load_session_feed(
         .list_chat_feed_by_session(&claude_session_id)
         .await
         .map_err(|e| e.to_string())?;
-
     Ok(feed_rows_to_json(rows))
 }
 
-/// Convert ChatFeedRows to JSON values for the frontend.
 fn feed_rows_to_json(rows: Vec<houston_db::ChatFeedRow>) -> Vec<serde_json::Value> {
     rows.into_iter()
         .map(|row| {
@@ -326,66 +245,11 @@ fn feed_rows_to_json(rows: Vec<houston_db::ChatFeedRow>) -> Vec<serde_json::Valu
         .collect()
 }
 
-// -- Helpers --
-
-fn resolve_file(
-    agent_path: &str,
-    relative_path: &str,
-) -> Result<PathBuf, String> {
+fn resolve_existing(agent_path: &str, relative_path: &str) -> Result<PathBuf, String> {
     let root = expand_tilde(&PathBuf::from(agent_path));
     let full = root.join(relative_path);
     if !full.exists() {
         return Err(format!("File not found: {relative_path}"));
     }
     Ok(full)
-}
-
-fn collect_files(root: &Path, dir: &Path, out: &mut Vec<ProjectFile>) {
-    let entries = match std::fs::read_dir(dir) {
-        Ok(e) => e,
-        Err(_) => return,
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().to_string();
-        if path.is_dir() {
-            if should_skip_dir(&name) {
-                continue;
-            }
-            let relative = path
-                .strip_prefix(root)
-                .unwrap_or(&path)
-                .to_string_lossy()
-                .to_string();
-            out.push(ProjectFile {
-                path: relative,
-                name,
-                extension: String::new(),
-                size: 0,
-                is_directory: true,
-            });
-            collect_files(root, &path, out);
-            continue;
-        }
-        let ext = path
-            .extension()
-            .map(|e| e.to_string_lossy().to_lowercase())
-            .unwrap_or_default();
-        if !USER_EXTENSIONS.contains(&ext.as_str()) {
-            continue;
-        }
-        let relative = path
-            .strip_prefix(root)
-            .unwrap_or(&path)
-            .to_string_lossy()
-            .to_string();
-        let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
-        out.push(ProjectFile {
-            path: relative,
-            name,
-            extension: ext,
-            size,
-            is_directory: false,
-        });
-    }
 }

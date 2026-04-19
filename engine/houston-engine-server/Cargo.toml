@@ -35,3 +35,4 @@ anyhow = { workspace = true }
 reqwest = { version = "0.12", features = ["json"] }
 tokio-tungstenite = "0.24"
 tempfile = "3"
+base64 = "0.22"
