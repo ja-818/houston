@@ -2186,7 +2186,7 @@ name = "houston-agents-conversations"
 version = "0.3.2"
 dependencies = [
  "houston-db",
- "houston-sessions",
+ "houston-terminal-manager",
  "houston-ui-events",
  "serde",
  "serde_json",
@@ -2299,16 +2299,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "houston-sessions"
-version = "0.3.2"
-dependencies = [
- "serde",
- "serde_json",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "houston-skills"
 version = "0.3.2"
 dependencies = [
@@ -2349,8 +2339,8 @@ dependencies = [
  "houston-db",
  "houston-events",
  "houston-scheduler",
- "houston-sessions",
  "houston-sync",
+ "houston-terminal-manager",
  "houston-ui-events",
  "libsql",
  "serde",
@@ -2362,10 +2352,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "houston-terminal-manager"
+version = "0.3.2"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "houston-ui-events"
 version = "0.3.2"
 dependencies = [
- "houston-sessions",
+ "houston-terminal-manager",
  "serde",
 ]
 

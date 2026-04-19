@@ -20,5 +20,5 @@ pub use houston_agents_conversations;
 pub use houston_db;
 pub use houston_events;
 pub use houston_scheduler;
-pub use houston_sessions;
+pub use houston_terminal_manager;
 pub use houston_ui_events;

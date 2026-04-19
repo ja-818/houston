@@ -1,6 +1,6 @@
 # houston-tauri
 
-Tauri 2 integration layer wrapping houston-sessions and houston-db. Provides app state, event types, session lifecycle, workspace persistence, and channel management for Tauri desktop apps.
+Tauri 2 integration layer wrapping houston-terminal-manager and houston-db. Provides app state, event types, session lifecycle, workspace persistence, and channel management for Tauri desktop apps.
 
 ## Install
 
@@ -25,7 +25,7 @@ fn main() {
         .expect("error running app");
 }
 
-// The supervisor bridges houston-sessions events to Tauri event emission
+// The supervisor bridges houston-terminal-manager events to Tauri event emission
 supervisor::start(&app_handle, &state).await;
 ```
 
@@ -40,7 +40,7 @@ supervisor::start(&app_handle, &state).await;
 This crate re-exports all sub-crates for convenience:
 
 ```rust
-use houston_tauri::houston_sessions;
+use houston_tauri::houston_terminal_manager;
 use houston_tauri::houston_db;
 ```
 

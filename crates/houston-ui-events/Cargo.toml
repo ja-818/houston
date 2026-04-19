@@ -8,4 +8,4 @@ repository = "https://github.com/ja-818/houston"
 
 [dependencies]
 serde = { workspace = true }
-houston-sessions = { workspace = true }
+houston-terminal-manager = { workspace = true }

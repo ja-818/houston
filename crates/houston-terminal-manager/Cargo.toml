@@ -1,8 +1,8 @@
 [package]
-name = "houston-sessions"
+name = "houston-terminal-manager"
 version = "0.3.2"
 edition = "2021"
-description = "Claude/Codex CLI process management for AI agent desktop apps"
+description = "Terminal/CLI subprocess manager for Claude, Codex, and other CLI-based AI agents"
 license = "MIT"
 repository = "https://github.com/ja-818/houston"
 

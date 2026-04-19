@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/houston-sessions",
+    "crates/houston-terminal-manager",
     "crates/houston-db",
     "crates/houston-tauri",
     "crates/houston-events",
@@ -27,7 +27,7 @@ async-trait = "0.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2"
-houston-sessions = { version = "0.3.2", path = "crates/houston-sessions" }
+houston-terminal-manager = { version = "0.3.2", path = "crates/houston-terminal-manager" }
 houston-db = { version = "0.3.2", path = "crates/houston-db" }
 houston-tauri = { version = "0.3.2", path = "crates/houston-tauri" }
 houston-events = { version = "0.3.2", path = "crates/houston-events" }

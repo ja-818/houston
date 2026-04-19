@@ -234,7 +234,7 @@ pub async fn run_routine(
             claude_session_id: None,
         }),
         None,
-        houston_tauri::houston_sessions::Provider::Anthropic,
+        houston_tauri::houston_terminal_manager::Provider::Anthropic,
         None,
     );
 

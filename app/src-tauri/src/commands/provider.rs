@@ -1,7 +1,7 @@
 //! Tauri commands for AI provider management.
 
-use houston_tauri::houston_sessions::claude_path;
-use houston_tauri::houston_sessions::Provider;
+use houston_tauri::houston_terminal_manager::claude_path;
+use houston_tauri::houston_terminal_manager::Provider;
 use houston_tauri::state::AppState;
 use std::time::Duration;
 use tauri::State;

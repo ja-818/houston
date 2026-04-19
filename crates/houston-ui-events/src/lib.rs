@@ -8,7 +8,7 @@
 //! contract — so any backend crate can construct events without pulling in
 //! the full Tauri framework.
 
-use houston_sessions::FeedItem;
+use houston_terminal_manager::FeedItem;
 use serde::Serialize;
 
 #[derive(Clone, Serialize)]

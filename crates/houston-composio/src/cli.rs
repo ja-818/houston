@@ -12,7 +12,7 @@
 //!   to the user, and dispatch shell commands.
 //!
 //! Agents spawned by Houston (`claude` subprocesses) pick up the CLI
-//! automatically because `crates/houston-sessions/src/claude_path.rs`
+//! automatically because `crates/houston-terminal-manager/src/claude_path.rs`
 //! appends `~/.composio` to the PATH it sets on those subprocesses.
 
 use serde::{Deserialize, Serialize};

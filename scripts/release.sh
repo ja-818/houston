@@ -35,7 +35,7 @@ done
 
 # 7. Publish Rust crates (in dependency order)
 echo "Publishing Rust crates..."
-for crate in houston-db houston-events houston-sessions houston-scheduler houston-channels houston-memory houston-skills; do
+for crate in houston-db houston-events houston-terminal-manager houston-scheduler houston-channels houston-memory houston-skills; do
   (cd "crates/$crate" && cargo publish)
   sleep 15  # crates.io rate limit
 done

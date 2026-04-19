@@ -179,7 +179,7 @@ pub async fn run_shell(
     let output = Command::new("sh")
         .args(["-c", &command])
         .current_dir(&dir)
-        .env("PATH", houston_tauri::houston_sessions::claude_path::shell_path())
+        .env("PATH", houston_tauri::houston_terminal_manager::claude_path::shell_path())
         .output()
         .await
         .map_err(|e| format!("Failed to run command: {e}"))?;

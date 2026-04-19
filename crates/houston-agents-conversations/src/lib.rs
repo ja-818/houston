@@ -1,6 +1,6 @@
 //! Orchestrates multi-session conversation lifecycle for Houston agents.
 //!
-//! Sits ABOVE `houston-sessions` (raw CLI subprocess) and BELOW the Tauri
+//! Sits ABOVE `houston-terminal-manager` (raw CLI subprocess) and BELOW the Tauri
 //! command layer. Responsibilities:
 //!
 //! - `session_runner` — spawn a CLI session, stream updates, emit UI events,

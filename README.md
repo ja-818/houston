@@ -160,7 +160,7 @@ houston/
 │   ├── review/         Review queue
 │   └── agent/          File browser
 ├── crates/             houston-* — Rust crates
-│   ├── houston-sessions/   Claude CLI session management
+│   ├── houston-terminal-manager/   Claude/Codex CLI process manager
 │   ├── houston-db/         SQLite (chat feed + preferences)
 │   ├── houston-tauri/      Tauri integration layer
 │   ├── houston-channels/   Slack, Telegram adapters

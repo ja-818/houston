@@ -1,4 +1,4 @@
-//! houston-sessions — Claude/Codex CLI process management.
+//! houston-terminal-manager — Claude/Codex CLI process management.
 //!
 //! Provides session spawning, NDJSON stream parsing, event pumping,
 //! concurrency control, and PATH resolution for AI CLI tools.

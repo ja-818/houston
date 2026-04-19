@@ -3,8 +3,8 @@ use houston_agents_conversations::session_id_tracker::SessionIdTracker;
 use houston_agents_conversations::session_pids::SessionPidMap;
 use houston_agents_conversations::session_runner::{self, PersistOptions};
 use houston_tauri::agent_store::AgentStore;
-use houston_tauri::houston_sessions;
-use houston_tauri::houston_sessions::Provider;
+use houston_tauri::houston_terminal_manager;
+use houston_tauri::houston_terminal_manager::Provider;
 use houston_tauri::paths::expand_tilde;
 use houston_tauri::state::AppState;
 use houston_ui_events::HoustonEvent;
@@ -315,7 +315,7 @@ pub async fn stop_session(
             HoustonEvent::FeedItem {
                 agent_path: agent_path.clone(),
                 session_key: session_key.clone(),
-                item: houston_sessions::FeedItem::SystemMessage(
+                item: houston_terminal_manager::FeedItem::SystemMessage(
                     "Stopped by user".into(),
                 ),
             },
@@ -351,7 +351,7 @@ pub async fn summarize_activity(message: String) -> Result<SummarizeResult, Stri
     );
 
     let mut cmd = tokio::process::Command::new("claude");
-    cmd.env("PATH", houston_sessions::claude_path::shell_path());
+    cmd.env("PATH", houston_terminal_manager::claude_path::shell_path());
     cmd.env_remove("CLAUDE_CODE_ENTRYPOINT");
     cmd.env_remove("CLAUDECODE");
     cmd.arg("-p")

@@ -48,7 +48,7 @@ pub fn run() {
         .setup(|app| {
             // Resolve the user's shell PATH early so provider checks work
             // in release builds (macOS .app bundles get a minimal PATH).
-            houston_tauri::houston_sessions::claude_path::init();
+            houston_tauri::houston_terminal_manager::claude_path::init();
 
             let houston = houston_tauri::houston_db::db::houston_dir();
             let db_path = houston.join("db").join("houston.db");

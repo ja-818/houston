@@ -20,7 +20,7 @@ pub fn init(data_dir: &Path) {
     let _ = GUARD.set(guard);
 
     let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info,houston_sessions=debug,houston_tauri=debug,houston_app=debug"));
+        .unwrap_or_else(|_| EnvFilter::new("info,houston_terminal_manager=debug,houston_tauri=debug,houston_app=debug"));
 
     fmt()
         .with_env_filter(filter)

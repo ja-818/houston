@@ -6,7 +6,7 @@
 use crate::session_id_tracker::SessionIdHandle;
 use crate::session_pids::SessionPidMap;
 use houston_db::Database;
-use houston_sessions::{FeedItem, Provider, SessionManager, SessionStatus, SessionUpdate};
+use houston_terminal_manager::{FeedItem, Provider, SessionManager, SessionStatus, SessionUpdate};
 use houston_ui_events::HoustonEvent;
 use std::path::PathBuf;
 use tauri::Emitter;
@@ -52,7 +52,7 @@ pub fn spawn_and_monitor(
 ) -> tokio::task::JoinHandle<SessionResult> {
     // Ensure the user's shell PATH is resolved before spawning.
     // OnceLock inside init() makes this a no-op after the first call.
-    houston_sessions::claude_path::init();
+    houston_terminal_manager::claude_path::init();
 
     let provider_str = provider.to_string();
 

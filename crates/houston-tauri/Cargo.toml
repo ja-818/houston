@@ -2,12 +2,12 @@
 name = "houston-tauri"
 version = "0.3.2"
 edition = "2021"
-description = "Tauri plugin wrapping houston-sessions and houston-db for AI agent desktop apps"
+description = "Tauri plugin wrapping houston-terminal-manager and houston-db for AI agent desktop apps"
 license = "MIT"
 repository = "https://github.com/ja-818/houston"
 
 [dependencies]
-houston-sessions = { workspace = true }
+houston-terminal-manager = { workspace = true }
 houston-db = { workspace = true }
 houston-events = { workspace = true }
 houston-scheduler = { workspace = true }

@@ -1,4 +1,4 @@
-# houston-sessions
+# houston-terminal-manager
 
 Claude/Codex CLI process management. Spawn sessions, parse NDJSON streams, pump events, and control concurrency.
 
@@ -6,13 +6,13 @@ Claude/Codex CLI process management. Spawn sessions, parse NDJSON streams, pump 
 
 ```toml
 [dependencies]
-houston-sessions = "0.1"
+houston-terminal-manager = "0.1"
 ```
 
 ## Usage
 
 ```rust
-use houston_sessions::{SessionManager, SessionUpdate, ClaudeEvent};
+use houston_terminal_manager::{SessionManager, SessionUpdate, ClaudeEvent};
 
 let manager = SessionManager::new();
 

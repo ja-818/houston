@@ -36,7 +36,7 @@ houston/
 |   +-- houston-events/    houston-events       -- Event queue for hooks, webhooks, lifecycle events
 |   +-- houston-memory/    houston-memory       -- Agent memory store (evaluating for removal)
 |   +-- houston-scheduler/ houston-scheduler    -- Cron jobs and heartbeat timer scheduling
-|   +-- houston-sessions/  houston-sessions     -- Claude CLI session management, parser, streaming
+|   +-- houston-terminal-manager/  houston-terminal-manager  -- Claude/Codex CLI process manager, parser, streaming
 |   +-- houston-tauri/     houston-tauri        -- Tauri integration: state, events, session runner, agent_store, channel manager
 +-- packages/
 |   +-- core/           @houston-ai/core     -- Design system, shadcn/ui, event hooks, utilities
@@ -515,8 +515,8 @@ Database layer (libsql/SQLite). Minimal — most persistence lives in file-based
 
 **Re-exports:** `Database`, `ChatFeedRow`, `SearchResult`, `SessionMetadata`, `SessionSearchResult`, `sanitize_fts_query`.
 
-### houston-sessions
-Claude CLI session management. Spawns `claude -p --output-format stream-json`, parses NDJSON output, manages concurrency.
+### houston-terminal-manager
+Claude/Codex CLI process manager. Spawns `claude -p --output-format stream-json`, parses NDJSON output, manages concurrency.
 
 **Provides:** `SessionManager`, `ClaudeEvent`, `FeedItem`, `StreamAccumulator`, `claude_path`, concurrency semaphores.
 
@@ -549,7 +549,7 @@ Skills: `list_skills`, `read_skill`, `write_skill`, `delete_skill`
 Log: `append_log`, `read_log`
 Config: `read_config`, `write_config`
 
-**Re-exports:** `houston_db`, `houston_sessions`, `houston_events`, `houston_scheduler`, `houston_channels`, `houston_memory` — apps can import everything through `houston_tauri`.
+**Re-exports:** `houston_db`, `houston_terminal_manager`, `houston_events`, `houston_scheduler`, `houston_channels`, `houston_memory` — apps can import everything through `houston_tauri`.
 
 ### houston-channels
 Channel adapters for messaging platforms. Each adapter implements the `Channel` trait.
@@ -715,7 +715,7 @@ All logging writes to files at `~/.houston/logs/`:
 | `backend.log` | `tracing` (Rust) | Session I/O, agent store, channels, watcher, scheduler, Composio |
 | `frontend.log` | `logger.ts` (TS) | console.error/warn, React crashes, Tauri command errors |
 
-**Rust:** Uses `tracing` macros (`tracing::info!`, `tracing::error!`, etc.) everywhere. Initialized in `app/src-tauri/src/logging.rs` with `tracing-subscriber` + daily rolling file appender. Default filter: `info` globally, `debug` for `houston_sessions` and `houston_tauri`. Override with `RUST_LOG` env var.
+**Rust:** Uses `tracing` macros (`tracing::info!`, `tracing::error!`, etc.) everywhere. Initialized in `app/src-tauri/src/logging.rs` with `tracing-subscriber` + daily rolling file appender. Default filter: `info` globally, `debug` for `houston_terminal_manager` and `houston_tauri`. Override with `RUST_LOG` env var.
 
 **Frontend:** `logger` from `app/src/lib/logger.ts` — `logger.error()`, `logger.warn()`, `logger.info()`, `logger.debug()`. `console.error` and `console.warn` are monkey-patched at startup to also write to `frontend.log`.
 
