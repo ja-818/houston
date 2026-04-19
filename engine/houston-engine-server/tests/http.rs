@@ -15,7 +15,7 @@ async fn spawn_test_server() -> (SocketAddr, String) {
     };
     let listener = TcpListener::bind(cfg.bind).await.unwrap();
     let addr = listener.local_addr().unwrap();
-    let state = Arc::new(ServerState::new(cfg));
+    let state = Arc::new(ServerState::new_in_memory(cfg).await.unwrap());
     let app = build_router(state);
     tokio::spawn(async move {
         axum::serve(listener, app).await.unwrap();
@@ -84,7 +84,7 @@ async fn ws_receives_broadcast_events() {
     };
     let listener = TcpListener::bind(cfg.bind).await.unwrap();
     let addr = listener.local_addr().unwrap();
-    let state = Arc::new(ServerState::new(cfg));
+    let state = Arc::new(ServerState::new_in_memory(cfg).await.unwrap());
     let events_sink = state.events.clone();
     let app = build_router(state);
     tokio::spawn(async move {

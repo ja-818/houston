@@ -6,6 +6,7 @@
 
 pub mod error;
 pub mod paths;
+pub mod preferences;
 pub mod state;
 pub mod workspaces;
 

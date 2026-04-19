@@ -29,6 +29,7 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
         .route("/version", get(routes::health::version))
         .route("/ws", get(ws::ws_upgrade))
         .merge(routes::workspaces::router())
+        .merge(routes::preferences::router())
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth::require_bearer,

@@ -41,7 +41,11 @@ async fn main() {
         actual
     );
 
-    let state = Arc::new(ServerState::new(cfg));
+    let state = Arc::new(
+        ServerState::new(cfg)
+            .await
+            .expect("engine state init failed"),
+    );
     let app = build_router(state);
 
     if let Err(err) = axum::serve(listener, app).await {

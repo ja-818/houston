@@ -33,6 +33,7 @@ houston-ui-events = { path = "../../engine/houston-ui-events" }
 houston-agents-conversations = { path = "../../engine/houston-agents-conversations" }
 houston-file-watcher = { path = "../../engine/houston-file-watcher" }
 houston-composio = { path = "../../engine/houston-composio" }
+houston-engine-core = { workspace = true }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

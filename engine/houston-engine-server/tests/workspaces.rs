@@ -17,7 +17,7 @@ async fn spawn() -> (SocketAddr, String, tempfile::TempDir) {
     };
     let listener = TcpListener::bind(cfg.bind).await.unwrap();
     let addr = listener.local_addr().unwrap();
-    let state = Arc::new(ServerState::new(cfg));
+    let state = Arc::new(ServerState::new_in_memory(cfg).await.unwrap());
     let app = build_router(state);
     tokio::spawn(async move {
         axum::serve(listener, app).await.unwrap();
