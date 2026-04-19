@@ -1,5 +1,6 @@
 //! REST routes.
 
+pub mod attachments;
 pub mod conversations;
 pub mod error;
 pub mod health;
