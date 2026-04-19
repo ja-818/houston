@@ -147,7 +147,7 @@ houston/
 ├── app/                Houston app (Tauri 2)
 │   ├── src/            React frontend
 │   └── src-tauri/      Rust backend
-├── packages/           @houston-ai/* — 11 React packages
+├── ui/                 @houston-ai/* — 11 React packages
 │   ├── core/           Design system, 38 components
 │   ├── chat/           Chat panel, streaming, tool activity
 │   ├── board/          Kanban board with animated cards

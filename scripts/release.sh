@@ -30,7 +30,7 @@ git push origin main --tags
 # 6. Publish npm packages
 echo "Publishing npm packages..."
 for pkg in core chat board layout workspace skills connections events routines review memory; do
-  (cd "packages/$pkg" && npm publish --access public)
+  (cd "ui/$pkg" && npm publish --access public)
 done
 
 # 7. Publish Rust crates (in dependency order)

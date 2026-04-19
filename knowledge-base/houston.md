@@ -5,7 +5,7 @@
 An open source platform for AI-native products. Three layers:
 - **Houston App** (`app/`) — the platform's desktop client (Tauri 2). Individual users use it directly; founders build agents that run on it.
 - **Houston Engine** (Rust crates in `engine/`) — terminal manager, database, agent persistence, Tauri integration
-- **Houston UI** (React packages in `packages/`) — internal React components powering the platform UI
+- **Houston UI** (React packages in `ui/`) — internal React components powering the platform UI
 
 **Architecture:** Library components are genericized and props-driven. No Zustand store dependencies, no app-specific logic in the library. All visual styling follows the Houston design system. The app wires stores to library component props.
 
@@ -38,7 +38,7 @@ houston/
 |   +-- houston-scheduler/ houston-scheduler    -- Cron jobs and heartbeat timer scheduling
 |   +-- houston-terminal-manager/  houston-terminal-manager  -- Claude/Codex CLI process manager, parser, streaming
 |   +-- houston-tauri/     houston-tauri        -- Tauri integration: state, events, session runner, agent_store, channel manager
-+-- packages/
++-- ui/
 |   +-- core/           @houston-ai/core     -- Design system, shadcn/ui, event hooks, utilities
 |   +-- chat/           @houston-ai/chat     -- Chat panel, AI Elements, streaming, progress, channel avatars
 |   +-- board/          @houston-ai/board    -- Kanban board, cards, animations
@@ -272,7 +272,7 @@ generic Tauri commands:
 - `write_agent_file(agent_path, rel_path, content) -> ()` — atomic temp+rename, emits the matching `HoustonEvent`
 
 Schemas are authoritative. The `houston-agent-files` crate embeds the five
-JSON Schemas from `packages/agent-schemas/src/*.schema.json` via `include_str!`
+JSON Schemas from `ui/agent-schemas/src/*.schema.json` via `include_str!`
 and seeds them into every agent's `.houston/<type>/<type>.schema.json` on
 first launch. Agent prompts instruct the model to read the schema before
 writing the matching data file.
@@ -612,7 +612,7 @@ Between packages, use **package imports**: `import { cn, Button } from "@houston
 - `cn()` utility for class composition
 - Radix UI primitives as headless base
 - CVA (class-variance-authority) for variant management
-- Adding new: check Houston first, then `npx shadcn@latest add <component>`, copy to `packages/core/src/components/`, fix imports, export from index
+- Adding new: check Houston first, then `npx shadcn@latest add <component>`, copy to `ui/core/src/components/`, fix imports, export from index
 
 ### Tailwind CSS 4
 - Uses `@tailwindcss/vite` plugin, NOT PostCSS
@@ -748,5 +748,5 @@ All logging writes to files at `~/.houston/logs/`:
 pnpm install               # Install all workspace dependencies
 pnpm typecheck             # TypeScript check all packages
 cargo test --workspace     # Rust tests
-npx tsc --noEmit -p packages/core/tsconfig.json  # Check one package
+npx tsc --noEmit -p ui/core/tsconfig.json  # Check one package
 ```

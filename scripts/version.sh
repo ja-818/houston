@@ -7,7 +7,7 @@ echo "Bumping all packages to v$VERSION..."
 
 # NPM packages
 for pkg in core chat board layout workspace skills connections events routines review memory; do
-  jq --arg v "$VERSION" '.version = $v' "packages/$pkg/package.json" > tmp.json && mv tmp.json "packages/$pkg/package.json"
+  jq --arg v "$VERSION" '.version = $v' "ui/$pkg/package.json" > tmp.json && mv tmp.json "ui/$pkg/package.json"
 done
 
 # Root, app, create-app

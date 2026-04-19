@@ -28,37 +28,37 @@ importers:
         version: 0.5.0
       '@houston-ai/agent':
         specifier: workspace:*
-        version: link:../packages/agent
+        version: link:../ui/agent
       '@houston-ai/agent-schemas':
         specifier: workspace:*
-        version: link:../packages/agent-schemas
+        version: link:../ui/agent-schemas
       '@houston-ai/board':
         specifier: workspace:*
-        version: link:../packages/board
+        version: link:../ui/board
       '@houston-ai/chat':
         specifier: workspace:*
-        version: link:../packages/chat
+        version: link:../ui/chat
       '@houston-ai/core':
         specifier: workspace:*
-        version: link:../packages/core
+        version: link:../ui/core
       '@houston-ai/events':
         specifier: workspace:*
-        version: link:../packages/events
+        version: link:../ui/events
       '@houston-ai/layout':
         specifier: workspace:*
-        version: link:../packages/layout
+        version: link:../ui/layout
       '@houston-ai/review':
         specifier: workspace:*
-        version: link:../packages/review
+        version: link:../ui/review
       '@houston-ai/routines':
         specifier: workspace:*
-        version: link:../packages/routines
+        version: link:../ui/routines
       '@houston-ai/skills':
         specifier: workspace:*
-        version: link:../packages/skills
+        version: link:../ui/skills
       '@houston-ai/sync-protocol':
         specifier: workspace:*
-        version: link:../packages/sync-protocol
+        version: link:../ui/sync-protocol
       '@tanstack/react-query':
         specifier: ^5.96.2
         version: 5.96.2(react@19.2.4)
@@ -125,16 +125,16 @@ importers:
         version: 6.2.1
       '@houston-ai/board':
         specifier: workspace:*
-        version: link:../packages/board
+        version: link:../ui/board
       '@houston-ai/chat':
         specifier: workspace:*
-        version: link:../packages/chat
+        version: link:../ui/chat
       '@houston-ai/core':
         specifier: workspace:*
-        version: link:../packages/core
+        version: link:../ui/core
       '@houston-ai/sync-protocol':
         specifier: workspace:*
-        version: link:../packages/sync-protocol
+        version: link:../ui/sync-protocol
       framer-motion:
         specifier: ^11.15.0
         version: 11.18.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -179,7 +179,19 @@ importers:
         specifier: ^6.0.0
         version: 6.4.1(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)
 
-  packages/agent:
+  relay:
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20241205.0
+        version: 4.20260415.1
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      wrangler:
+        specifier: ^3.99.0
+        version: 3.114.17(@cloudflare/workers-types@4.20260415.1)
+
+  ui/agent:
     dependencies:
       '@houston-ai/core':
         specifier: workspace:*
@@ -194,9 +206,9 @@ importers:
         specifier: ^19.0.0
         version: 19.2.4(react@19.2.4)
 
-  packages/agent-schemas: {}
+  ui/agent-schemas: {}
 
-  packages/board:
+  ui/board:
     dependencies:
       '@houston-ai/chat':
         specifier: workspace:*
@@ -220,7 +232,7 @@ importers:
         specifier: ^19.0.0
         version: 19.2.4(react@19.2.4)
 
-  packages/chat:
+  ui/chat:
     dependencies:
       '@houston-ai/core':
         specifier: workspace:*
@@ -274,7 +286,7 @@ importers:
         specifier: ^1.1.3
         version: 1.1.3(react@19.2.4)
 
-  packages/core:
+  ui/core:
     dependencies:
       class-variance-authority:
         specifier: ^0.7.1
@@ -319,7 +331,7 @@ importers:
         specifier: ^4.0.0
         version: 4.2.2
 
-  packages/events:
+  ui/events:
     dependencies:
       '@houston-ai/core':
         specifier: workspace:*
@@ -337,7 +349,7 @@ importers:
         specifier: ^19.0.0
         version: 19.2.4(react@19.2.4)
 
-  packages/layout:
+  ui/layout:
     dependencies:
       '@houston-ai/core':
         specifier: workspace:*
@@ -355,7 +367,7 @@ importers:
         specifier: ^4.7.3
         version: 4.7.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/review:
+  ui/review:
     dependencies:
       '@houston-ai/core':
         specifier: workspace:*
@@ -373,7 +385,7 @@ importers:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.14)(react@19.2.4)
 
-  packages/routines:
+  ui/routines:
     dependencies:
       '@houston-ai/core':
         specifier: workspace:*
@@ -391,7 +403,7 @@ importers:
         specifier: ^19.0.0
         version: 19.2.4(react@19.2.4)
 
-  packages/skills:
+  ui/skills:
     dependencies:
       '@houston-ai/core':
         specifier: workspace:*
@@ -406,23 +418,11 @@ importers:
         specifier: ^19.0.0
         version: 19.2.4(react@19.2.4)
 
-  packages/sync-protocol:
+  ui/sync-protocol:
     devDependencies:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
-
-  relay:
-    devDependencies:
-      '@cloudflare/workers-types':
-        specifier: ^4.20241205.0
-        version: 4.20260415.1
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-      wrangler:
-        specifier: ^3.99.0
-        version: 3.114.17(@cloudflare/workers-types@4.20260415.1)
 
 packages:
 

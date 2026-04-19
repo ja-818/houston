@@ -36,7 +36,7 @@ You are a coding execution agent inside Houston. The user delegates coding missi
 2. Infer which parts of the repo are involved from the mission description (or ask)
 3. **Always read these two** (they're the foundation for everything):
    - `knowledge-base/design.md` — design system
-   - `knowledge-base/houston.md` — library architecture, packages, crates, patterns
+   - `knowledge-base/houston.md` — library architecture, ui, engine, patterns
 4. Briefly acknowledge what you loaded and which areas are in scope
 5. Then proceed to Phase 2
 
@@ -77,11 +77,11 @@ You are a coding execution agent inside Houston. The user delegates coding missi
 
 1. Print "PHASE 5: Refactor"
 2. Reflect on the implementation:
-   - **Library boundary:** Did any app-specific logic leak into packages/crates? Did any generic logic stay in app/?
+   - **Library boundary:** Did any app-specific logic leak into ui/engine? Did any generic logic stay in app/?
    - **API cleanliness:** Are component props generic? No store imports, no app types?
    - **Right place:** Is the code in the right file/module, not just the convenient place?
    - **File sizes:** Does any file exceed 200 lines? (CSS: 500 lines.) Extract if so.
-   - **Duplication:** Did we duplicate something between app/ and packages/ that should live in one place?
+   - **Duplication:** Did we duplicate something between app/ and ui/ that should live in one place?
 3. If refactor needed: Propose specific improvements and do them after user approval
 4. If not: Say "No refactor needed"
 
@@ -92,7 +92,7 @@ You are a coding execution agent inside Houston. The user delegates coding missi
 1. Print "PHASE 6: Cleanup"
 2. Check for:
    - Unused imports, dead code, debug artifacts
-   - **packages/:** No `@/` path aliases, no Zustand imports, no Tauri imports, no app-specific types
+   - **ui/:** No `@/` path aliases, no Zustand imports, no Tauri imports, no app-specific types
    - **app/:** No duplicated logic that should be in the library
 3. Clean up or say "No cleanup needed"
 
@@ -279,13 +279,13 @@ Houston is an open source **platform** for AI-native products. Not a framework, 
 
 | Directory | What |
 |-----------|------|
-| `packages/` | React UI packages (`@houston-ai/*`) — internal components powering the platform |
+| `ui/` | React UI packages (`@houston-ai/*`) — internal components powering the platform |
 | `engine/` | Rust crates (`houston-*`) — terminal manager, database, agent persistence, Tauri integration |
 | `app/` | The Houston app — the platform's desktop client (Tauri 2) |
 | `website/` | gethouston.ai — landing, startups page, vision essay, learn guide |
 | `create-app/` | Scaffolding templates for custom agent React bundles |
 
-**Key distinction:** `packages/` and `engine/` are internal infrastructure, not the developer-facing product. External developers build agents by writing `houston.json` + `CLAUDE.md`, not by importing React components. The components exist to power the platform.
+**Key distinction:** `ui/` and `engine/` are internal infrastructure, not the developer-facing product. External developers build agents by writing `houston.json` + `CLAUDE.md`, not by importing React components. The components exist to power the platform.
 
 ---
 
@@ -297,7 +297,7 @@ Houston is an open source **platform** for AI-native products. Not a framework, 
 2. Infer which parts of the repo are involved from the request (or ask)
 3. **Always read these two** (they're the foundation for everything):
    - `knowledge-base/design.md` — design system
-   - `knowledge-base/houston.md` — library architecture, packages, crates, patterns
+   - `knowledge-base/houston.md` — library architecture, ui, engine, patterns
 4. Briefly acknowledge what you loaded and which areas are in scope
 5. Then proceed to Phase 2
 
@@ -308,9 +308,9 @@ Houston is an open source **platform** for AI-native products. Not a framework, 
 1. Print "PHASE 2: Understand the Request"
 2. Read any files the user references
 3. Identify the **direction of work**:
-   - **Library-first:** New capability in packages/ or engine/, then consumed by app/
+   - **Library-first:** New capability in ui/ or engine/, then consumed by app/
    - **App-first:** Feature needed in app/ that should be extracted to the library
-   - **Single-layer:** Work only touches one area (just packages/, just engine/, just app/)
+   - **Single-layer:** Work only touches one area (just ui/, just engine/, just app/)
 4. Ask clarifying questions if ANYTHING is unclear
 5. **STOP AND WAIT:** If you asked clarifying questions, end your turn immediately. Do NOT proceed to Phase 3 until the user answers.
 
@@ -320,7 +320,7 @@ Houston is an open source **platform** for AI-native products. Not a framework, 
 
 1. Print "PHASE 3: Challenge"
 2. Before planning any implementation, critically evaluate the request:
-   - **Does this belong in the library or the app?** Only reusable, generic components go in packages/crates. App-specific logic stays in app/. If unsure, start in the app — extract to the library when reuse is needed.
+   - **Does this belong in the library or the app?** Only reusable, generic components go in ui/engine. App-specific logic stays in app/. If unsure, start in the app — extract to the library when reuse is needed.
    - **Which package?** core, chat, board, layout, connections, events, memory, routines, skills, review — or a new package?
    - **Is there an existing @houston-ai component?** Search before building. Check the showcase.
    - **Is the API generic enough?** Components must be props-driven, no store dependencies, no app-specific types.
@@ -337,7 +337,7 @@ Houston is an open source **platform** for AI-native products. Not a framework, 
 1. Print "PHASE 4: Plan"
 2. Use the knowledge base context loaded in Phase 1
 3. Create a numbered plan with specific steps
-4. **Clearly mark which area each step targets** — e.g., "[packages/board] Add BoardItem.priority field" or "[app] Wire priority to KanbanCard"
+4. **Clearly mark which area each step targets** — e.g., "[ui/board] Add BoardItem.priority field" or "[app] Wire priority to KanbanCard"
 5. Group steps into "testable chunks" — steps that can be tested together
 6. Order chunks so library changes come first, then app
 7. If it's a small/simple change, mention: "This is small enough to do all at once"
@@ -381,11 +381,11 @@ Houston is an open source **platform** for AI-native products. Not a framework, 
 
 1. Print "PHASE 8: Refactor"
 2. Reflect on the implementation:
-   - **Library boundary:** Did any app-specific logic leak into packages/crates? Did any generic logic stay in app/?
+   - **Library boundary:** Did any app-specific logic leak into ui/engine? Did any generic logic stay in app/?
    - **API cleanliness:** Are component props generic? No store imports, no app types?
    - **Right place:** Is the code in the right file/module, not just the convenient place?
    - **File sizes:** Does any file exceed 200 lines? (CSS: 500 lines.) Extract if so.
-   - **Duplication:** Did we duplicate something between app/ and packages/ that should live in one place?
+   - **Duplication:** Did we duplicate something between app/ and ui/ that should live in one place?
 3. If refactor needed: Propose specific improvements and do them after user approval
 4. If not: Say "No refactor needed"
 
@@ -396,7 +396,7 @@ Houston is an open source **platform** for AI-native products. Not a framework, 
 1. Print "PHASE 9: Cleanup"
 2. Check for:
    - Unused imports, dead code, debug artifacts
-   - **packages/:** No `@/` path aliases, no Zustand imports, no Tauri imports, no app-specific types
+   - **ui/:** No `@/` path aliases, no Zustand imports, no Tauri imports, no app-specific types
    - **app/:** No duplicated logic that should be in the library
 3. Clean up or say "No cleanup needed"
 
@@ -442,7 +442,7 @@ Houston is an open source **platform** for AI-native products. Not a framework, 
 
 | Area | TypeScript | Rust | Full Build |
 |------|-----------|------|------------|
-| packages/ | `pnpm typecheck` | — | — |
+| ui/ | `pnpm typecheck` | — | — |
 | engine/ | — | `cargo test --workspace` | `cargo build --workspace` |
 | app/ | `cd app && pnpm tsc --noEmit` | `cd app/src-tauri && cargo check` | `cd app && pnpm tauri build` |
 | showcase/ | `cd showcase && pnpm tsc --noEmit` | — | `cd showcase && pnpm build` |
@@ -454,16 +454,16 @@ Houston is an open source **platform** for AI-native products. Not a framework, 
 ## Library vs App Rules
 
 ### Library boundary matters
-- Generic, reusable components go in packages/crates. App-specific wiring stays in app/.
+- Generic, reusable components go in ui/engine. App-specific wiring stays in app/.
 - If you're not sure, it probably belongs in the app first. Extract to the library when reuse is needed.
 
-### Props over stores — ALWAYS (in packages/)
-Components in packages/ must NEVER import from Zustand, Redux, or any state management library. All data comes via props. All actions are callbacks. The app is responsible for connecting stores to component props.
+### Props over stores — ALWAYS (in ui/)
+Components in ui/ must NEVER import from Zustand, Redux, or any state management library. All data comes via props. All actions are callbacks. The app is responsible for connecting stores to component props.
 
-### No app-specific imports (in packages/)
-Never import app/ types into packages/. Use generic types (BoardItem, FeedItem, ChatMessage). The app maps its domain types to library types.
+### No app-specific imports (in ui/)
+Never import app/ types into ui/. Use generic types (BoardItem, FeedItem, ChatMessage). The app maps its domain types to library types.
 
-### No `@/` path aliases (in packages/)
+### No `@/` path aliases (in ui/)
 Use relative imports within a package. Use package imports (`@houston-ai/core`) between packages. Path aliases break in published libraries.
 
 ## AI-Native Reactivity (MANDATORY)
@@ -642,7 +642,7 @@ analytics.track("event_name", { key: "value" });
 ```
 Props must be `Record<string, string | number>` (no booleans). Tracking is fire-and-forget — it never throws or blocks. If Aptabase isn't configured, calls silently no-op.
 
-**Analytics tracking goes in `app/` only** — never in `packages/`. The library boundary rule applies: packages are generic, analytics is app-specific.
+**Analytics tracking goes in `app/` only** — never in `ui/`. The library boundary rule applies: packages are generic, analytics is app-specific.
 
 ## Crash Reporting (`sentry` + `tauri-plugin-sentry`)
 

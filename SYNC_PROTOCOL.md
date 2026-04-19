@@ -4,7 +4,7 @@ This document is the authoritative contract for the WebSocket sync channel
 between the Houston desktop app and the Houston mobile companion, brokered by
 the Cloudflare Worker relay (`relay/`).
 
-The canonical TypeScript types live in `packages/sync-protocol/` and are
+The canonical TypeScript types live in `ui/sync-protocol/` and are
 consumed by both `app/` (desktop renderer) and `mobile/`. The Rust crate
 `engine/houston-sync` only models the message envelope — it treats payloads
 as opaque JSON and never interprets them.

@@ -32,7 +32,7 @@ cargo test --workspace
 
 ## Structure
 
-- `packages/` — React packages (@houston-ai/*)
+- `ui/` — React packages (@houston-ai/*)
 - `engine/` — Rust crates (houston-*)
 - `app/` — The Houston desktop app
 - `showcase/` — Component showcase
