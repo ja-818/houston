@@ -2407,6 +2407,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "futures-util",
+ "houston-composio",
  "houston-db",
  "houston-engine-core",
  "houston-engine-protocol",
