@@ -2335,6 +2335,7 @@ dependencies = [
  "houston-agent-files",
  "houston-db",
  "houston-engine-protocol",
+ "houston-terminal-manager",
  "houston-ui-events",
  "serde",
  "serde_json",

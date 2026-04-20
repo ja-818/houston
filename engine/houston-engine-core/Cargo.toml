@@ -15,6 +15,7 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 thiserror = "1"
 houston-db = { workspace = true }
+houston-terminal-manager = { workspace = true }
 houston-ui-events = { workspace = true }
 houston-agent-files = { workspace = true }
 houston-engine-protocol = { workspace = true }
