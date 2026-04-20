@@ -124,6 +124,15 @@ pub fn run() {
 
             // Inject bootstrap so `app/src/lib/engine.ts::resolveConfig`
             // picks it up before any HoustonClient call fires.
+            //
+            // Two delivery paths because the webview + React may mount
+            // BEFORE `setup()` finishes waiting on /v1/health:
+            //   1. `window.eval` — fastest path, wins if the webview hasn't
+            //      loaded the JS bundle yet.
+            //   2. `houston-engine-ready` Tauri event — the frontend's
+            //      `EngineGate` awaits this before rendering the app, so a
+            //      slow health check simply shows a splash instead of
+            //      crashing the React tree.
             let init_script = format!(
                 "window.__HOUSTON_ENGINE__ = {{ baseUrl: \"{}\", token: \"{}\" }};",
                 handshake.base_url(),
@@ -133,6 +142,13 @@ pub fn run() {
                 if let Err(e) = window.eval(&init_script) {
                     tracing::error!("[engine] failed to inject bootstrap: {e}");
                 }
+            }
+            let ready_payload = serde_json::json!({
+                "baseUrl": handshake.base_url(),
+                "token": handshake.token,
+            });
+            if let Err(e) = app.emit("houston-engine-ready", ready_payload) {
+                tracing::error!("[engine] failed to emit ready event: {e}");
             }
 
             // Size window to 80% of the screen so it looks good on any display

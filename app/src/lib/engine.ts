@@ -36,15 +36,49 @@ function resolveConfig(): { baseUrl: string; token: string } | null {
 }
 
 let _client: HoustonClient | null = null;
+let _resolveReady: (() => void) | null = null;
+const _ready: Promise<void> = new Promise((resolve) => {
+  _resolveReady = resolve;
+});
+
+function applyConfig(config: { baseUrl: string; token: string }) {
+  window.__HOUSTON_ENGINE__ = config;
+  _client = new HoustonClient(config);
+  if (_resolveReady) {
+    _resolveReady();
+    _resolveReady = null;
+  }
+}
+
+// Initial attempt — config may already be injected via window.eval before
+// this module loads. If so, resolve immediately.
 const initial = resolveConfig();
 if (initial) {
-  _client = new HoustonClient(initial);
+  applyConfig(initial);
+}
+
+/**
+ * Resolves when the engine handshake has been received.
+ *
+ * The Tauri supervisor spawns houston-engine and emits
+ * `houston-engine-ready` with `{ baseUrl, token }` after /v1/health passes.
+ * Wrap the app root in `<EngineGate>` (see main.tsx) to await this before
+ * rendering — otherwise hooks that call `getEngine()` in their first
+ * `useEffect` will throw.
+ */
+export function whenEngineReady(): Promise<void> {
+  return _ready;
+}
+
+export function isEngineReady(): boolean {
+  return _client !== null;
 }
 
 export function getEngine(): HoustonClient {
   if (!_client) {
     throw new Error(
-      "[engine] not bootstrapped. window.__HOUSTON_ENGINE__ missing.",
+      "[engine] not bootstrapped. window.__HOUSTON_ENGINE__ missing. " +
+      "Did you forget to wrap the app in <EngineGate>?",
     );
   }
   return _client;
@@ -60,16 +94,30 @@ export function getEngineWs(): EngineWebSocket {
   return _ws;
 }
 
-// --- Auto-reconnect on engine restart --------------------------------
+// --- Tauri event wiring ----------------------------------------------
 //
-// The Tauri supervisor restarts `houston-engine` with a fresh port + token
-// on crash and emits `houston-engine-restarted` with the new handshake.
-// Rebuild the client + WS so in-flight hooks pick up the new transport.
+// `houston-engine-ready` fires ONCE after initial /v1/health passes. This
+// is how the frontend learns the port+token when `window.eval` injection
+// lost the race against React mount.
+//
+// `houston-engine-restarted` fires when the supervisor respawns the
+// engine after a crash — rebuild the client + WS so in-flight hooks pick
+// up the new transport.
+listen<{ baseUrl: string; token: string }>(
+  "houston-engine-ready",
+  (ev) => {
+    if (!_client) {
+      applyConfig(ev.payload);
+    }
+  },
+).catch(() => {
+  // Non-Tauri environment (tests, mobile web) — no-op.
+});
+
 listen<{ baseUrl: string; token: string }>(
   "houston-engine-restarted",
   (ev) => {
-    window.__HOUSTON_ENGINE__ = ev.payload;
-    _client = new HoustonClient(ev.payload);
+    applyConfig(ev.payload);
     if (_ws) {
       try {
         _ws.disconnect();
@@ -80,5 +128,5 @@ listen<{ baseUrl: string; token: string }>(
     }
   },
 ).catch(() => {
-  // Non-Tauri environment (tests, mobile web) — no-op.
+  /* non-Tauri env */
 });

@@ -1,4 +1,10 @@
-import { StrictMode, Component, type ReactNode } from "react";
+import {
+  StrictMode,
+  Component,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/query-client";
@@ -6,6 +12,7 @@ import App from "./App";
 import "./styles/globals.css";
 import { useUIStore } from "./stores/ui";
 import { initFrontendLogging, logger } from "./lib/logger";
+import { whenEngineReady, isEngineReady } from "./lib/engine";
 
 // Initialize file-based logging — patches console.error/warn to write to
 // ~/Library/Application Support/houston/logs/frontend.log
@@ -55,11 +62,52 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   }
 }
 
+/**
+ * Blocks the app from rendering until the Tauri supervisor emits
+ * `houston-engine-ready` (or the injection raced in early). Hooks deep in
+ * the tree synchronously call `getEngine()` in their first useEffect, so
+ * we MUST have the handshake before mounting <App />.
+ */
+function EngineGate({ children }: { children: ReactNode }) {
+  const [ready, setReady] = useState(isEngineReady());
+  useEffect(() => {
+    if (ready) return;
+    let cancelled = false;
+    whenEngineReady().then(() => {
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
+  if (!ready) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          fontFamily: "system-ui, sans-serif",
+          color: "#888",
+          fontSize: 14,
+        }}
+      >
+        Starting Houston engine…
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-        <App />
+        <EngineGate>
+          <App />
+        </EngineGate>
       </ErrorBoundary>
     </QueryClientProvider>
   </StrictMode>,
