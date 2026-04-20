@@ -2,6 +2,7 @@
 
 use crate::paths::EnginePaths;
 use crate::sessions::SessionRuntime;
+use crate::sync::SyncRuntime;
 use houston_db::Database;
 use houston_ui_events::DynEventSink;
 use std::sync::Arc;
@@ -13,6 +14,8 @@ pub struct EngineState {
     pub db: Database,
     /// Per-engine session state (Claude-session-ID tracker, pid map).
     pub sessions: SessionRuntime,
+    /// Mobile sync runtime — engine is the WS authority.
+    pub sync: SyncRuntime,
 }
 
 impl EngineState {
@@ -22,6 +25,7 @@ impl EngineState {
             events,
             db,
             sessions: SessionRuntime::default(),
+            sync: SyncRuntime::new(),
         }
     }
 }

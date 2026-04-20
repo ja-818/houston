@@ -2374,6 +2374,7 @@ dependencies = [
  "houston-db",
  "houston-engine-protocol",
  "houston-skills",
+ "houston-sync",
  "houston-terminal-manager",
  "houston-ui-events",
  "reqwest 0.12.28",
@@ -2412,6 +2413,7 @@ dependencies = [
  "houston-engine-core",
  "houston-engine-protocol",
  "houston-skills",
+ "houston-sync",
  "houston-terminal-manager",
  "houston-ui-events",
  "rand 0.8.5",
@@ -2541,6 +2543,7 @@ version = "0.3.2"
 dependencies = [
  "houston-terminal-manager",
  "serde",
+ "serde_json",
  "tokio",
  "tracing",
 ]

@@ -14,6 +14,7 @@ pub mod routines;
 pub mod sessions;
 pub mod skills;
 pub mod store;
+pub mod sync;
 pub mod worktree;
 pub mod workspaces;
 
