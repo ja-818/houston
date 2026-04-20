@@ -53,11 +53,11 @@ All pure libraries. No frontend assumptions.
 - `houston-composio` — Composio MCP server lifecycle
 - `houston-sync` — WebSocket sync envelope (desktop↔mobile pairing; engine WS lives in `houston-engine-server`)
 - `houston-skills` — skill discovery + management
-- `houston-engine-core` — runtime container (`EngineState`, paths, domain logic relocated from Tauri adapter)
+- `houston-engine-core` — runtime container (`EngineState`, paths, `workspaces::*`, `agents::{activity,routines,routine_runs,config,conversations,files,prompt,self_improvement}`). Domain logic relocated from the Tauri adapter.
 - `houston-engine-protocol` — wire types (REST DTOs, WS envelope, error codes). Matches `ui/engine-client/src/types.ts`.
-- `houston-engine-server` — axum HTTP+WS binary `houston-engine`. The process every client talks to.
+- `houston-engine-server` — axum HTTP+WS binary `houston-engine`. The process every client talks to. Current REST surface: `/v1/{health,version,ws,workspaces,agents/activities,agents/routines,agents/routine-runs,agents/config,agents/conversations,agents/files}`.
 
-**Standalone engine, shipping now:** Phase 0-3 of the engine rollout is merged (trait-based decoupling, HTTP+WS binary with health/workspaces/ws, TS client scaffold). Phases 4-5 complete the desktop subprocess flip and public deploy story — see `engine-server.md`.
+**Standalone engine, shipping now:** Phase 0-3 of the engine rollout is merged (trait-based decoupling, HTTP+WS binary, TS client scaffold). Phase 2 feature migration is in flight — workspaces + agents typed CRUD + agent files are now engine-owned with Tauri commands acting as thin proxies. Phases 4-5 complete the desktop subprocess flip and public deploy story — see `engine-server.md`.
 
 ## App-side Rust (`app/`)
 
