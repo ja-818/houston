@@ -1,4 +1,20 @@
-import { invoke as tauriInvoke } from "@tauri-apps/api/core";
+/**
+ * Houston backend adapter.
+ *
+ * Every domain call (workspaces, agents, chat, skills, store, sync, …) goes
+ * through this file. When `VITE_HOUSTON_USE_ENGINE_SERVER=1` each wrapper
+ * routes to `@houston-ai/engine-client` (HTTP/WS to the engine subprocess);
+ * otherwise it falls back to the legacy Tauri command (via
+ * [`legacyInvoke`](./os-bridge)), preserving today's desktop behaviour.
+ *
+ * OS-native calls (`reveal_file`, `open_url`, `pick_directory`, terminals,
+ * local CLI probes, frontend log writes) do NOT flow through here — they
+ * live in `./os-bridge` because the engine may run on a remote VPS.
+ *
+ * Phase 4 will delete the legacy branch once every desktop command has a
+ * `/v1/*` counterpart and the flag flips on by default.
+ */
+
 import type {
   Workspace,
   Agent,
@@ -10,55 +26,116 @@ import type {
   StoreListing,
   ImportedWorkspace,
 } from "./types";
+import type {
+  ComposioAppEntry as EngineComposioAppEntry,
+  ComposioStatus as EngineComposioStatus,
+  ProviderStatus as EngineProviderStatus,
+  SyncInfo as EngineSyncInfo,
+  SyncMessage as EngineSyncMessage,
+} from "@houston-ai/engine-client";
+import { getEngine, useEngineServer } from "./engine";
+import { legacyInvoke, osPickDirectory } from "./os-bridge";
 import { logger } from "./logger";
 
 /**
- * Wrapper around Tauri invoke that surfaces errors as toasts.
+ * Legacy-path wrapper around Tauri invoke that surfaces errors as toasts.
  * NEVER fails silently — users always see what went wrong.
+ *
+ * When `useEngineServer` is on, callers bypass this entirely and hit the
+ * engine client directly.
  */
-async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+async function invokeWithToast<T>(
+  cmd: string,
+  args?: Record<string, unknown>,
+): Promise<T> {
   try {
-    return await tauriInvoke<T>(cmd, args);
+    return await legacyInvoke<T>(cmd, args);
   } catch (err) {
-    const message = typeof err === "string" ? err : String(err);
-    logger.error(`[tauri:${cmd}] ${message}`, JSON.stringify(args));
-
-    // Show toast — import dynamically to avoid circular deps
-    const { useUIStore } = await import("../stores/ui");
-    const { reportBug } = await import("./bug-report");
-    const timestamp = new Date().toISOString();
-
-    useUIStore.getState().addToast({
-      title: `Error: ${cmd.replace(/_/g, " ")}`,
-      description: message,
-      action: {
-        label: "Report bug",
-        onClick: () => {
-          reportBug({
-            command: cmd,
-            error: message,
-            timestamp,
-            appVersion: __APP_VERSION__,
-          }).catch((e) => console.error("Failed to report bug:", e));
-        },
-      },
-    });
-
+    await surfaceToast(cmd, err, args);
     throw err;
   }
 }
 
+/** Same toast/report flow as `invokeWithToast` but wraps an engine call. */
+async function wrapEngineCall<T>(
+  cmd: string,
+  fn: () => Promise<T>,
+  args?: Record<string, unknown>,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    await surfaceToast(cmd, err, args);
+    throw err;
+  }
+}
+
+async function surfaceToast(
+  cmd: string,
+  err: unknown,
+  args?: Record<string, unknown>,
+): Promise<void> {
+  const message =
+    err instanceof Error ? err.message : typeof err === "string" ? err : String(err);
+  logger.error(`[tauri:${cmd}] ${message}`, args ? JSON.stringify(args) : undefined);
+  const { useUIStore } = await import("../stores/ui");
+  const { reportBug } = await import("./bug-report");
+  const timestamp = new Date().toISOString();
+  useUIStore.getState().addToast({
+    title: `Error: ${cmd.replace(/_/g, " ")}`,
+    description: message,
+    action: {
+      label: "Report bug",
+      onClick: () => {
+        reportBug({
+          command: cmd,
+          error: message,
+          timestamp,
+          appVersion: __APP_VERSION__,
+        }).catch((e) => console.error("Failed to report bug:", e));
+      },
+    },
+  });
+}
+
+/** Dispatch a call either to the engine client or to the legacy Tauri path. */
+function dual<T>(
+  cmd: string,
+  tauriArgs: Record<string, unknown> | undefined,
+  engineFn: () => Promise<T>,
+): Promise<T> {
+  if (useEngineServer) {
+    return wrapEngineCall(cmd, engineFn, tauriArgs);
+  }
+  return invokeWithToast<T>(cmd, tauriArgs);
+}
+
+// ─── Workspaces ────────────────────────────────────────────────────────
+
 export const tauriWorkspaces = {
-  list: () => invoke<Workspace[]>("list_workspaces"),
+  list: () =>
+    dual<Workspace[]>("list_workspaces", undefined, () => getEngine().listWorkspaces()),
   create: (name: string, provider?: string, model?: string) =>
-    invoke<Workspace>("create_workspace", { name, provider: provider ?? null, model: model ?? null }),
+    dual<Workspace>(
+      "create_workspace",
+      { name, provider: provider ?? null, model: model ?? null },
+      () => getEngine().createWorkspace({ name, provider, model }),
+    ),
   delete: (id: string) =>
-    invoke<void>("delete_workspace", { id }),
+    dual<void>("delete_workspace", { id }, () => getEngine().deleteWorkspace(id)),
   rename: (id: string, newName: string) =>
-    invoke<void>("rename_workspace", { id, new_name: newName }),
+    dual<void>("rename_workspace", { id, new_name: newName }, async () => {
+      await getEngine().renameWorkspace(id, { newName });
+    }),
   updateProvider: (id: string, provider: string, model?: string) =>
-    invoke<Workspace>("update_workspace_provider", { id, provider, model: model ?? null }),
+    dual<Workspace>(
+      "update_workspace_provider",
+      { id, provider, model: model ?? null },
+      () => getEngine().setWorkspaceProvider(id, { provider, model }),
+    ),
 };
+
+// ─── Agents (workspace-scoped CRUD, no engine route yet) ──────────────
 
 export interface CreateAgentResult {
   agent: Agent;
@@ -67,16 +144,39 @@ export interface CreateAgentResult {
 
 export const tauriAgents = {
   list: (workspaceId: string) =>
-    invoke<Agent[]>("list_agents", { workspace_id: workspaceId }),
-  create: (workspaceId: string, name: string, configId: string, color?: string, claudeMd?: string, installedPath?: string, seeds?: Record<string, string>, existingPath?: string) =>
-    invoke<CreateAgentResult>("create_agent", { workspace_id: workspaceId, name, config_id: configId, color, claude_md: claudeMd, installed_path: installedPath, seeds, existing_path: existingPath ?? null }),
-  pickDirectory: () =>
-    invoke<string | null>("pick_directory"),
+    invokeWithToast<Agent[]>("list_agents", { workspace_id: workspaceId }),
+  pickDirectory: () => osPickDirectory(),
+  create: (
+    workspaceId: string,
+    name: string,
+    configId: string,
+    color?: string,
+    claudeMd?: string,
+    installedPath?: string,
+    seeds?: Record<string, string>,
+    existingPath?: string,
+  ) =>
+    invokeWithToast<CreateAgentResult>("create_agent", {
+      workspace_id: workspaceId,
+      name,
+      config_id: configId,
+      color,
+      claude_md: claudeMd,
+      installed_path: installedPath,
+      seeds,
+      existing_path: existingPath ?? null,
+    }),
   delete: (workspaceId: string, id: string) =>
-    invoke<void>("delete_agent", { workspace_id: workspaceId, id }),
+    invokeWithToast<void>("delete_agent", { workspace_id: workspaceId, id }),
   rename: (workspaceId: string, id: string, newName: string) =>
-    invoke<void>("rename_agent", { workspace_id: workspaceId, id, new_name: newName }),
+    invokeWithToast<void>("rename_agent", {
+      workspace_id: workspaceId,
+      id,
+      new_name: newName,
+    }),
 };
+
+// ─── Chat sessions ────────────────────────────────────────────────────
 
 export const tauriChat = {
   send: (
@@ -90,8 +190,8 @@ export const tauriChat = {
       providerOverride?: string;
       modelOverride?: string;
     },
-  ) =>
-    invoke<string>("send_message", {
+  ) => {
+    const args = {
       agent_path: agentPath,
       prompt,
       session_key: sessionKey,
@@ -99,30 +199,50 @@ export const tauriChat = {
       working_dir_override: opts?.workingDirOverride ?? null,
       provider_override: opts?.providerOverride ?? null,
       model_override: opts?.modelOverride ?? null,
-    }),
+    };
+    return dual<string>("send_message", args, async () => {
+      const res = await getEngine().startSession(agentPath, {
+        sessionKey,
+        prompt,
+        source: "desktop",
+        workingDir: opts?.workingDirOverride,
+        provider: opts?.providerOverride,
+        model: opts?.modelOverride,
+      });
+      return res.sessionKey;
+    });
+  },
+  // Onboarding needs Tauri's seed + prompt assembly — no engine route yet.
   startOnboarding: (agentPath: string, sessionKey: string) =>
-    invoke<void>("start_onboarding_session", { agent_path: agentPath, session_key: sessionKey }),
+    invokeWithToast<void>("start_onboarding_session", {
+      agent_path: agentPath,
+      session_key: sessionKey,
+    }),
   stop: (agentPath: string, sessionKey: string) =>
-    invoke<void>("stop_session", { agent_path: agentPath, session_key: sessionKey }),
-  loadHistory: (agentPath: string, sessionKey: string) =>
-    invoke<Array<{ feed_type: string; data: unknown }>>(
-      "load_chat_history",
+    dual<void>(
+      "stop_session",
       { agent_path: agentPath, session_key: sessionKey },
+      async () => {
+        await getEngine().cancelSession(agentPath, sessionKey);
+      },
     ),
+  // `load_chat_history` reads SQLite via the Tauri adapter — no engine route yet.
+  loadHistory: (agentPath: string, sessionKey: string) =>
+    invokeWithToast<Array<{ feed_type: string; data: unknown }>>("load_chat_history", {
+      agent_path: agentPath,
+      session_key: sessionKey,
+    }),
   summarize: (message: string) =>
-    invoke<{ title: string; description: string }>("summarize_activity", { message }),
+    invokeWithToast<{ title: string; description: string }>("summarize_activity", {
+      message,
+    }),
 };
 
-/**
- * Composer attachments — persisted under <app cache>/houston/attachments/<scope_id>/.
- * Files survive app restarts and are deleted when their owning activity/agent
- * is deleted. Claude reads them via its Read tool from the absolute paths
- * returned by `save`.
- */
+// ─── Composer attachments ─────────────────────────────────────────────
+
 async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
   const bytes = new Uint8Array(buffer);
-  // Chunked encoding to avoid call-stack overflow on large files.
   let binary = "";
   const chunk = 0x8000;
   for (let i = 0; i < bytes.length; i += chunk) {
@@ -135,29 +255,28 @@ async function fileToBase64(file: File): Promise<string> {
 }
 
 export const tauriAttachments = {
-  /** Save files for `scopeId`, returns the absolute paths Claude can Read. */
   save: async (scopeId: string, files: File[]): Promise<string[]> => {
     if (files.length === 0) return [];
     const payload = await Promise.all(
-      files.map(async (f) => ({
-        name: f.name,
-        data_base64: await fileToBase64(f),
-      })),
+      files.map(async (f) => ({ name: f.name, data_base64: await fileToBase64(f) })),
     );
-    return invoke<string[]>("save_attachments", {
-      scope_id: scopeId,
-      files: payload,
-    });
+    return dual<string[]>(
+      "save_attachments",
+      { scope_id: scopeId, files: payload },
+      () =>
+        getEngine().saveAttachments(
+          scopeId,
+          payload.map((p) => ({ name: p.name, dataBase64: p.data_base64 })),
+        ),
+    );
   },
-  /** Delete all attachments for `scopeId`. Idempotent. */
   delete: (scopeId: string) =>
-    invoke<void>("delete_attachments", { scope_id: scopeId }),
+    dual<void>("delete_attachments", { scope_id: scopeId }, () =>
+      getEngine().deleteAttachments(scopeId),
+    ),
 };
 
-/**
- * Format a prompt with attachment paths appended in a block Claude can parse.
- * Returns the original text unchanged if there are no paths.
- */
+/** Format a prompt with attachment paths appended. Unchanged. */
 export function withAttachmentPaths(text: string, paths: string[]): string {
   if (paths.length === 0) return text;
   const list = paths.map((p) => `- ${p}`).join("\n");
@@ -165,41 +284,122 @@ export function withAttachmentPaths(text: string, paths: string[]): string {
   return text.length > 0 ? `${text}\n\n${block}` : block;
 }
 
+// ─── Agent-data files (`.houston/**`) ─────────────────────────────────
+
 export const tauriAgent = {
   readFile: (agentPath: string, relPath: string) =>
-    invoke<string>("read_agent_file", { agent_path: agentPath, rel_path: relPath }),
+    dual<string>(
+      "read_agent_file",
+      { agent_path: agentPath, rel_path: relPath },
+      () => getEngine().readAgentFile(agentPath, relPath),
+    ),
   writeFile: (agentPath: string, relPath: string, content: string) =>
-    invoke<void>("write_agent_file", { agent_path: agentPath, rel_path: relPath, content }),
+    dual<void>(
+      "write_agent_file",
+      { agent_path: agentPath, rel_path: relPath, content },
+      () => getEngine().writeAgentFile(agentPath, relPath, content),
+    ),
   seedSchemas: (agentPath: string) =>
-    invoke<void>("seed_agent_schemas", { agent_path: agentPath }),
+    dual<void>("seed_agent_schemas", { agent_path: agentPath }, () =>
+      getEngine().seedAgentSchemas(agentPath),
+    ),
   migrateFiles: (agentPath: string) =>
-    invoke<void>("migrate_agent_files", { agent_path: agentPath }),
+    dual<void>("migrate_agent_files", { agent_path: agentPath }, () =>
+      getEngine().migrateAgentFiles(agentPath),
+    ),
 };
+
+// ─── Skills ───────────────────────────────────────────────────────────
 
 export const tauriSkills = {
   list: (agentPath: string) =>
-    invoke<SkillSummary[]>("list_skills", { workspace_path: agentPath }),
+    dual<SkillSummary[]>(
+      "list_skills",
+      { workspace_path: agentPath },
+      async () =>
+        (await getEngine().listSkills(agentPath)).map((s) => ({
+          name: s.name,
+          description: s.description,
+          version: s.version,
+          tags: s.tags,
+          created: s.created,
+          last_used: s.lastUsed,
+        })),
+    ),
   load: (agentPath: string, name: string) =>
-    invoke<SkillDetail>("load_skill", { workspace_path: agentPath, name }),
-  create: (
-    agentPath: string,
-    name: string,
-    description: string,
-    content: string,
-  ) => invoke<void>("create_skill", { workspace_path: agentPath, name, description, content }),
+    dual<SkillDetail>(
+      "load_skill",
+      { workspace_path: agentPath, name },
+      () => getEngine().loadSkill(agentPath, name),
+    ),
+  create: (agentPath: string, name: string, description: string, content: string) =>
+    dual<void>(
+      "create_skill",
+      { workspace_path: agentPath, name, description, content },
+      () =>
+        getEngine().createSkill({
+          workspacePath: agentPath,
+          name,
+          description,
+          content,
+        }),
+    ),
   delete: (agentPath: string, name: string) =>
-    invoke<void>("delete_skill", { workspace_path: agentPath, name }),
+    dual<void>(
+      "delete_skill",
+      { workspace_path: agentPath, name },
+      () => getEngine().deleteSkill(agentPath, name),
+    ),
   save: (agentPath: string, name: string, content: string) =>
-    invoke<void>("save_skill", { workspace_path: agentPath, name, content }),
+    dual<void>(
+      "save_skill",
+      { workspace_path: agentPath, name, content },
+      () => getEngine().saveSkill(name, { workspacePath: agentPath, content }),
+    ),
   listFromRepo: (source: string) =>
-    invoke<RepoSkill[]>("list_skills_from_repo", { source }),
+    dual<RepoSkill[]>(
+      "list_skills_from_repo",
+      { source },
+      () => getEngine().listSkillsFromRepo(source),
+    ),
   installFromRepo: (agentPath: string, source: string, skills: RepoSkill[]) =>
-    invoke<string[]>("install_skills_from_repo", { workspace_path: agentPath, source, skills }),
+    dual<string[]>(
+      "install_skills_from_repo",
+      { workspace_path: agentPath, source, skills },
+      () =>
+        getEngine().installSkillsFromRepo({
+          workspacePath: agentPath,
+          source,
+          skills,
+        }),
+    ),
   searchCommunity: (query: string) =>
-    invoke<CommunitySkillResult[]>("search_community_skills", { query }),
+    dual<CommunitySkillResult[]>(
+      "search_community_skills",
+      { query },
+      async () =>
+        (await getEngine().searchCommunitySkills(query)).map((s) => ({
+          id: s.id,
+          skillId: s.skillId,
+          name: s.name,
+          installs: s.installs,
+          source: s.source,
+        })),
+    ),
   installCommunity: (agentPath: string, source: string, skillId: string) =>
-    invoke<string>("install_community_skill", { workspace_path: agentPath, source, skill_id: skillId }),
+    dual<string>(
+      "install_community_skill",
+      { workspace_path: agentPath, source, skill_id: skillId },
+      () =>
+        getEngine().installCommunitySkill({
+          workspacePath: agentPath,
+          source,
+          skillId,
+        }),
+    ),
 };
+
+// ─── Composio ─────────────────────────────────────────────────────────
 
 export interface ComposioAppEntry {
   toolkit: string;
@@ -209,23 +409,13 @@ export interface ComposioAppEntry {
   categories: string[];
 }
 
-/**
- * Composio integration state as reported by Houston's CLI-backed backend.
- * Matches the `ComposioStatus` enum in `engine/houston-composio/src/cli.rs`.
- */
-export type ComposioStatus =
-  | { status: "not_installed" }
-  | { status: "needs_auth" }
-  | { status: "error"; message: string }
-  | { status: "ok"; email: string | null; org_name: string | null };
+export type ComposioStatus = EngineComposioStatus;
 
-/** Async login start: opens a URL for the user to approve in the browser. */
 export interface StartLoginResponse {
   login_url: string;
   cli_key: string;
 }
 
-/** Async app-link start: URL the user opens to authorize an app (Gmail, etc). */
 export interface StartLinkResponse {
   redirect_url: string;
   connected_account_id: string;
@@ -233,59 +423,152 @@ export interface StartLinkResponse {
 }
 
 export const tauriConnections = {
-  list: () => invoke<ComposioStatus>("list_composio_connections"),
-  listApps: () => invoke<ComposioAppEntry[]>("list_composio_apps"),
+  list: () =>
+    dual<ComposioStatus>("list_composio_connections", undefined, () =>
+      getEngine().composioStatus(),
+    ),
+  listApps: () =>
+    dual<ComposioAppEntry[]>("list_composio_apps", undefined, async () =>
+      (await getEngine().composioListApps()).map((a: EngineComposioAppEntry) => ({
+        toolkit: a.toolkit,
+        name: a.name,
+        description: a.description,
+        logo_url: a.logo_url,
+        categories: a.categories,
+      })),
+    ),
   listConnectedToolkits: () =>
-    invoke<string[]>("list_composio_connected_toolkits"),
+    dual<string[]>("list_composio_connected_toolkits", undefined, () =>
+      getEngine().composioListConnections(),
+    ),
   connectApp: (toolkit: string) =>
-    invoke<StartLinkResponse>("connect_composio_app", { toolkit }),
-  startOAuth: () => invoke<StartLoginResponse>("start_composio_oauth"),
+    dual<StartLinkResponse>("connect_composio_app", { toolkit }, async () => {
+      const r = await getEngine().composioConnectApp(toolkit);
+      return {
+        redirect_url: r.redirect_url,
+        connected_account_id: r.connected_account_id,
+        toolkit: r.toolkit,
+      } satisfies StartLinkResponse as StartLinkResponse;
+    }),
+  startOAuth: () =>
+    dual<StartLoginResponse>("start_composio_oauth", undefined, async () => {
+      const r = await getEngine().composioStartLogin();
+      return { login_url: r.login_url, cli_key: r.cli_key };
+    }),
   completeLogin: (cliKey: string) =>
-    invoke<void>("complete_composio_login", { cli_key: cliKey }),
-  isCliInstalled: () => invoke<boolean>("is_composio_cli_installed"),
-  installCli: () => invoke<void>("install_composio_cli"),
+    dual<void>(
+      "complete_composio_login",
+      { cli_key: cliKey },
+      () => getEngine().composioCompleteLogin(cliKey),
+    ),
+  isCliInstalled: () =>
+    dual<boolean>("is_composio_cli_installed", undefined, () =>
+      getEngine().composioCliInstalled(),
+    ),
+  installCli: () =>
+    dual<void>("install_composio_cli", undefined, () =>
+      getEngine().composioInstallCli(),
+    ),
 };
+
+// ─── Project files (browser) ──────────────────────────────────────────
+//
+// OS-native file operations live in `./os-bridge`. Here: only the
+// engine-eligible list + rename + delete + folder-create + reveal-free
+// wrappers.
+
+import {
+  osOpenFile,
+  osRevealAgent,
+  osRevealFile,
+} from "./os-bridge";
 
 export const tauriFiles = {
   list: (agentPath: string) =>
-    invoke<FileEntry[]>("list_project_files", { agent_path: agentPath }),
+    dual<FileEntry[]>(
+      "list_project_files",
+      { agent_path: agentPath },
+      async () =>
+        (await getEngine().listProjectFiles(agentPath)).map((f) => ({
+          path: f.path,
+          name: f.name,
+          extension: f.extension,
+          size: f.size,
+        })),
+    ),
   open: (agentPath: string, relativePath: string) =>
-    invoke<void>("open_file", { agent_path: agentPath, relative_path: relativePath }),
+    osOpenFile(agentPath, relativePath),
   reveal: (agentPath: string, relativePath: string) =>
-    invoke<void>("reveal_file", { agent_path: agentPath, relative_path: relativePath }),
+    osRevealFile(agentPath, relativePath),
   delete: (agentPath: string, relativePath: string) =>
-    invoke<void>("delete_file", { agent_path: agentPath, relative_path: relativePath }),
+    dual<void>(
+      "delete_file",
+      { agent_path: agentPath, relative_path: relativePath },
+      () => getEngine().deleteFile(agentPath, relativePath),
+    ),
   rename: (agentPath: string, relativePath: string, newName: string) =>
-    invoke<void>("rename_file", { agent_path: agentPath, relative_path: relativePath, new_name: newName }),
+    dual<void>(
+      "rename_file",
+      { agent_path: agentPath, relative_path: relativePath, new_name: newName },
+      () => getEngine().renameFile(agentPath, relativePath, newName),
+    ),
   createFolder: (agentPath: string, name: string) =>
-    invoke<void>("create_agent_folder", { agent_path: agentPath, folder_name: name }),
-  revealAgent: (agentPath: string) =>
-    invoke<void>("reveal_agent", { agent_path: agentPath }),
+    dual<void>(
+      "create_agent_folder",
+      { agent_path: agentPath, folder_name: name },
+      async () => {
+        await getEngine().createFolder(agentPath, name);
+      },
+    ),
+  revealAgent: (agentPath: string) => osRevealAgent(agentPath),
 };
+
+// ─── Store ────────────────────────────────────────────────────────────
 
 export const tauriStore = {
   listInstalled: () =>
-    invoke<Array<{ config: unknown; path: string }>>(
+    dual<Array<{ config: unknown; path: string }>>(
       "list_installed_configs",
+      undefined,
+      () => getEngine().listInstalledConfigs(),
     ),
   fetchCatalog: () =>
-    invoke<StoreListing[]>("fetch_store_catalog"),
+    dual<StoreListing[]>("fetch_store_catalog", undefined, () =>
+      getEngine().storeCatalog(),
+    ),
   search: (query: string) =>
-    invoke<StoreListing[]>("search_store", { query }),
+    dual<StoreListing[]>("search_store", { query }, () => getEngine().storeSearch(query)),
   install: (repo: string, agentId: string) =>
-    invoke<void>("install_store_agent", { repo, agent_id: agentId }),
+    dual<void>(
+      "install_store_agent",
+      { repo, agent_id: agentId },
+      () => getEngine().installStoreAgent({ repo, agentId }),
+    ),
   uninstall: (agentId: string) =>
-    invoke<void>("uninstall_store_agent", { agent_id: agentId }),
-  /** Install an agent directly from a GitHub URL or "owner/repo" shorthand. */
+    dual<void>(
+      "uninstall_store_agent",
+      { agent_id: agentId },
+      () => getEngine().uninstallStoreAgent(agentId),
+    ),
   installFromGithub: (githubUrl: string) =>
-    invoke<string>("install_agent_from_github", { github_url: githubUrl }),
-  /** Check all installed agents for updates from their GitHub source. Returns list of repos that were updated. */
+    dual<string>(
+      "install_agent_from_github",
+      { github_url: githubUrl },
+      async () => (await getEngine().installAgentFromGithub({ githubUrl })).agentId,
+    ),
   checkUpdates: () =>
-    invoke<string[]>("check_agent_updates"),
-  /** Import a workspace template from GitHub. Creates workspace + all agent instances. */
+    dual<string[]>("check_agent_updates", undefined, () =>
+      getEngine().checkAgentUpdates(),
+    ),
   installWorkspaceFromGithub: (githubUrl: string) =>
-    invoke<ImportedWorkspace>("install_workspace_from_github", { github_url: githubUrl }),
+    dual<ImportedWorkspace>(
+      "install_workspace_from_github",
+      { github_url: githubUrl },
+      () => getEngine().installWorkspaceFromGithub({ githubUrl }),
+    ),
 };
+
+// ─── Conversations ────────────────────────────────────────────────────
 
 interface RawConversation {
   id: string;
@@ -301,10 +584,38 @@ interface RawConversation {
 
 export const tauriConversations = {
   list: (agentPath: string) =>
-    invoke<RawConversation[]>("list_conversations", { agent_path: agentPath }),
+    dual<RawConversation[]>(
+      "list_conversations",
+      { agent_path: agentPath },
+      async () =>
+        (await getEngine().listConversations(agentPath)).map(conversationToRaw),
+    ),
   listAll: (agentPaths: string[]) =>
-    invoke<RawConversation[]>("list_all_conversations", { agent_paths: agentPaths }),
+    dual<RawConversation[]>(
+      "list_all_conversations",
+      { agent_paths: agentPaths },
+      async () =>
+        (await getEngine().listAllConversations(agentPaths)).map(conversationToRaw),
+    ),
 };
+
+function conversationToRaw(
+  c: import("@houston-ai/engine-client").ConversationEntry,
+): RawConversation {
+  return {
+    id: c.id,
+    title: c.title,
+    description: c.description,
+    status: c.status,
+    type: c.type as "primary" | "activity",
+    session_key: c.session_key,
+    updated_at: c.updated_at,
+    agent_path: c.agent_path,
+    agent_name: c.agent_name,
+  };
+}
+
+// ─── Routines (agent data + scheduler passthrough) ────────────────────
 
 import * as activityData from "../data/activity";
 import * as routinesData from "../data/routines";
@@ -315,20 +626,24 @@ export const tauriRoutines = {
   list: (agentPath: string) => routinesData.list(agentPath),
   create: (agentPath: string, input: routinesData.NewRoutine) =>
     routinesData.create(agentPath, input),
-  update: (agentPath: string, routineId: string, updates: routinesData.RoutineUpdate) =>
-    routinesData.update(agentPath, routineId, updates),
+  update: (
+    agentPath: string,
+    routineId: string,
+    updates: routinesData.RoutineUpdate,
+  ) => routinesData.update(agentPath, routineId, updates),
   delete: (agentPath: string, routineId: string) =>
     routinesData.remove(agentPath, routineId),
   listRuns: (agentPath: string, routineId?: string) =>
     routineRunsData.list(agentPath, routineId),
   runNow: (agentPath: string, routineId: string) =>
-    invoke<void>("run_routine_now", { agent_path: agentPath, routine_id: routineId }),
+    invokeWithToast<void>("run_routine_now", {
+      agent_path: agentPath,
+      routine_id: routineId,
+    }),
   startScheduler: (agentPath: string) =>
-    invoke<void>("start_routine_scheduler", { agent_path: agentPath }),
-  stopScheduler: () =>
-    invoke<void>("stop_routine_scheduler"),
-  syncScheduler: () =>
-    invoke<void>("sync_routine_scheduler"),
+    invokeWithToast<void>("start_routine_scheduler", { agent_path: agentPath }),
+  stopScheduler: () => invokeWithToast<void>("stop_routine_scheduler"),
+  syncScheduler: () => invokeWithToast<void>("sync_routine_scheduler"),
 };
 
 export const tauriActivity = {
@@ -349,34 +664,53 @@ export const tauriActivity = {
     activityData.remove(agentPath, activityId),
 };
 
+// ─── Worktrees & shell ────────────────────────────────────────────────
+
 export const tauriWorktree = {
   create: (repoPath: string, name: string, branch?: string) =>
-    invoke<{ path: string; branch: string; is_main: boolean }>(
+    dual<{ path: string; branch: string; is_main: boolean }>(
       "create_worktree",
       { repo_path: repoPath, name, branch },
+      async () => {
+        const w = await getEngine().createWorktree({ repoPath, name, branch });
+        return { path: w.path, branch: w.branch, is_main: w.isMain };
+      },
     ),
   remove: (repoPath: string, worktreePath: string) =>
-    invoke<void>("remove_worktree", { repo_path: repoPath, worktree_path: worktreePath }),
+    dual<void>(
+      "remove_worktree",
+      { repo_path: repoPath, worktree_path: worktreePath },
+      () => getEngine().removeWorktree({ repoPath, worktreePath }),
+    ),
   list: (repoPath: string) =>
-    invoke<Array<{ path: string; branch: string; is_main: boolean }>>(
+    dual<Array<{ path: string; branch: string; is_main: boolean }>>(
       "list_worktrees",
       { repo_path: repoPath },
+      async () =>
+        (await getEngine().listWorktrees({ repoPath })).map((w) => ({
+          path: w.path,
+          branch: w.branch,
+          is_main: w.isMain,
+        })),
     ),
 };
 
 export const tauriShell = {
   run: (path: string, command: string) =>
-    invoke<string>("run_shell", { path, command }),
+    dual<string>("run_shell", { path, command }, () =>
+      getEngine().runShell({ path, command }),
+    ),
 };
 
+// Terminal launching is OS-native — see `./os-bridge::osOpenTerminal`.
+// Keep the `tauriTerminal` export for callers that haven't migrated.
+import { osOpenTerminal } from "./os-bridge";
 export const tauriTerminal = {
   open: (path: string, command?: string, terminalApp?: string) =>
-    invoke<void>("open_terminal", {
-      path,
-      command: command ?? null,
-      terminal_app: terminalApp ?? null,
-    }),
+    osOpenTerminal(path, command, terminalApp),
 };
+
+// ─── Agent config (per-agent JSON on disk) ────────────────────────────
 
 export const tauriConfig = {
   read: (agentPath: string) => configData.read(agentPath),
@@ -384,12 +718,16 @@ export const tauriConfig = {
     configData.write(agentPath, config),
 };
 
+// ─── Preferences ──────────────────────────────────────────────────────
+
 export const tauriPreferences = {
   get: (key: string) =>
-    invoke<string | null>("get_preference", { key }),
+    dual<string | null>("get_preference", { key }, () => getEngine().getPreference(key)),
   set: (key: string, value: string) =>
-    invoke<void>("set_preference", { key, value }),
+    dual<void>("set_preference", { key, value }, () => getEngine().setPreference(key, value)),
 };
+
+// ─── Providers ────────────────────────────────────────────────────────
 
 export interface ProviderStatus {
   provider: string;
@@ -398,37 +736,77 @@ export interface ProviderStatus {
   cli_name: string;
 }
 
+const DEFAULT_PROVIDER_PREF_KEY = "default_provider";
+
 export const tauriProvider = {
   checkStatus: (provider: string) =>
-    invoke<ProviderStatus>("check_provider_status", { provider }),
+    dual<ProviderStatus>(
+      "check_provider_status",
+      { provider },
+      async () => {
+        const p: EngineProviderStatus = await getEngine().providerStatus(provider);
+        return {
+          provider: p.provider,
+          cli_installed: p.cliInstalled,
+          authenticated: p.authenticated,
+          cli_name: p.cliName,
+        };
+      },
+    ),
   getDefault: () =>
-    invoke<string>("get_default_provider"),
+    dual<string>("get_default_provider", undefined, async () =>
+      (await getEngine().getPreference(DEFAULT_PROVIDER_PREF_KEY)) ?? "",
+    ),
   setDefault: (provider: string) =>
-    invoke<void>("set_default_provider", { provider }),
+    dual<void>("set_default_provider", { provider }, () =>
+      getEngine().setPreference(DEFAULT_PROVIDER_PREF_KEY, provider),
+    ),
   launchLogin: (provider: string) =>
-    invoke<void>("launch_provider_login", { provider }),
+    dual<void>("launch_provider_login", { provider }, () =>
+      getEngine().providerLogin(provider),
+    ),
 };
 
+// ─── System (OS-native helpers, preserved for back-compat) ────────────
+
+import { osCheckClaudeCli, osOpenUrl } from "./os-bridge";
 export const tauriSystem = {
-  checkClaudeCli: () => invoke<boolean>("check_claude_cli"),
-  openUrl: (url: string) => invoke<void>("open_url", { url }),
+  checkClaudeCli: () => osCheckClaudeCli(),
+  openUrl: (url: string) => osOpenUrl(url),
 };
+
+// ─── Mobile sync ──────────────────────────────────────────────────────
 
 export interface SyncInfo {
   token: string;
   pairing_url: string;
 }
 
+function toLegacySyncInfo(info: EngineSyncInfo | null): SyncInfo | null {
+  if (!info) return null;
+  return { token: info.token, pairing_url: info.pairingUrl };
+}
+
 export const tauriSync = {
-  start: () => invoke<SyncInfo>("start_sync"),
-  stop: () => invoke<void>("stop_sync"),
-  status: () => invoke<SyncInfo | null>("get_sync_status"),
-  send: (message: { type: string; from: string; ts: string; payload: unknown }) =>
-    invoke<void>("send_sync_message", { message }),
+  start: () =>
+    dual<SyncInfo>("start_sync", undefined, async () =>
+      toLegacySyncInfo(await getEngine().startSync()) as SyncInfo,
+    ),
+  stop: () => dual<void>("stop_sync", undefined, () => getEngine().stopSync()),
+  status: () =>
+    dual<SyncInfo | null>("get_sync_status", undefined, async () =>
+      toLegacySyncInfo(await getEngine().syncStatus()),
+    ),
+  send: (message: EngineSyncMessage) =>
+    dual<void>("send_sync_message", { message }, () =>
+      getEngine().sendSyncMessage(message),
+    ),
 };
+
+// ─── Agent file watcher (no engine route yet) ─────────────────────────
 
 export const tauriWatcher = {
   start: (agentPath: string) =>
-    invoke<void>("start_agent_watcher", { agent_path: agentPath }),
-  stop: () => invoke<void>("stop_agent_watcher"),
+    invokeWithToast<void>("start_agent_watcher", { agent_path: agentPath }),
+  stop: () => invokeWithToast<void>("stop_agent_watcher"),
 };

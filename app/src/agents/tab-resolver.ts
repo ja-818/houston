@@ -57,11 +57,8 @@ export function resolveTabComponent(
       const componentName = tab.customComponent;
       const component = lazy(async () => {
         try {
-          const { invoke } = await import("@tauri-apps/api/core");
-          const code = await invoke<string>("read_agent_file", {
-            agent_path: agentDef.path,
-            name: "bundle.js",
-          });
+          const { tauriAgent } = await import("../lib/tauri");
+          const code = await tauriAgent.readFile(agentDef.path!, "bundle.js");
           // Evaluate the IIFE — it assigns exports to window.__houston_bundle__
           const script = document.createElement("script");
           script.textContent = code;

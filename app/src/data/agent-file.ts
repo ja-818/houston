@@ -1,14 +1,14 @@
 /**
  * Shared helpers for reading/writing typed JSON files under `.houston/<type>/<type>.json`.
  *
- * The Rust backend exposes two generic commands (`read_agent_file` / `write_agent_file`);
- * everything else — the per-type folder path, schema validation, timestamps — lives here
- * in TypeScript so the backend stays untyped.
+ * Read/write go through `tauriAgent` (in `lib/tauri.ts`) so they respect the
+ * `VITE_HOUSTON_USE_ENGINE_SERVER` flag — same code runs over Tauri IPC today
+ * and over the engine REST route tomorrow.
  */
 
-import { invoke } from "@tauri-apps/api/core";
 import Ajv, { type ValidateFunction, type Schema } from "ajv";
 import { logger } from "../lib/logger";
+import { tauriAgent } from "../lib/tauri";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validators = new Map<string, ValidateFunction>();
@@ -39,10 +39,7 @@ export async function readAgentJson<T>(
   schema: Schema,
   fallback: T,
 ): Promise<T> {
-  const raw = await invoke<string>("read_agent_file", {
-    agent_path: agentPath,
-    rel_path: relPath(name),
-  });
+  const raw = await tauriAgent.readFile(agentPath, relPath(name));
   if (!raw) return fallback;
   let parsed: unknown;
   try {
@@ -75,11 +72,7 @@ export async function writeAgentJson<T>(
       JSON.stringify(validate.errors),
     );
   }
-  await invoke<void>("write_agent_file", {
-    agent_path: agentPath,
-    rel_path: relPath(name),
-    content: JSON.stringify(data, null, 2),
-  });
+  await tauriAgent.writeFile(agentPath, relPath(name), JSON.stringify(data, null, 2));
 }
 
 /** UUID via the Web Crypto API — good enough for in-UI ids. */
