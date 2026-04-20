@@ -1,24 +1,17 @@
-//! houston-tauri — Tauri plugin wrapping houston crates for AI agent desktop apps.
+//! houston-tauri — Tauri adapter for the Houston desktop app.
 //!
-//! Provides Tauri command handlers, managed state, and app-level glue.
-//! Heavier concerns live in sibling crates: event types in `houston-ui-events`,
-//! conversation orchestration in `houston-agents-conversations`, etc.
+//! Post-Phase-4 this crate is intentionally thin: domain logic lives in
+//! `houston-engine-core` and is exposed over HTTP+WS by
+//! `houston-engine-server`. The adapter only keeps what the desktop
+//! specifically needs: OS-native glue (tray, event sink, path helpers,
+//! shared state).
 
+pub mod event_sink;
 pub mod paths;
-pub mod self_improvement;
 pub mod state;
 pub mod tray;
-pub mod agent;
-pub mod agent_commands;
-pub mod agent_files;
-pub mod agent_store;
-pub mod conversations;
-pub mod composio_commands;
-pub mod event_sink;
-pub mod watcher_commands;
 
 pub use event_sink::{tauri_sink, TauriEventSink};
-pub use watcher_commands::{start_agent_watcher, stop_agent_watcher};
 
 // Re-export sub-crates for convenience.
 pub use houston_agent_files;

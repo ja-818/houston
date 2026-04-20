@@ -1,32 +1,27 @@
 /**
  * OS-native Tauri IPC bridge.
  *
- * Phase 3 of the engine split (see `.claude/plans/distributed-churning-muffin.md`)
- * funnels every Tauri IPC call through this single module so that the rest of
- * `app/src/` talks to the engine over HTTP/WS. Two classes of calls live here:
+ * Post-Phase-4 this module is the ONLY place in `app/src/` that may call
+ * `invoke(...)`. Two classes of calls live here:
  *
- *  1. **OS-native helpers** (`osRevealFile`, `osPickDirectory`, …). These probe
- *     the user's local machine (Finder, open URL, terminal, local Claude CLI)
- *     and will NEVER move to the engine — the engine may run on a remote VPS.
+ *  1. **OS-native helpers** (`osRevealFile`, `osPickDirectory`, …). These
+ *     probe the user's local machine (Finder, open URL, terminal, local
+ *     Claude CLI, local log writes) and will NEVER move to the engine —
+ *     the engine may run on a remote VPS.
  *
- *  2. **Legacy transport passthrough** (`legacyInvoke`, `legacyListen`,
- *     `legacyEmit`). Used by `lib/tauri.ts` and friends when
- *     `VITE_HOUSTON_USE_ENGINE_SERVER` is off, or for Tauri commands that do
- *     not yet have a `/v1/*` counterpart (e.g. onboarding, routine scheduler).
- *     Phase 4 deletes these once every domain call has a REST route.
+ *  2. **Local Tauri events** (`legacyListen`, `legacyEmit`). Used by
+ *     `events.ts` for events that never leave the desktop process —
+ *     `app-activated` (OS window resume) and `sync-connection` (internal
+ *     dispatch by `useSyncResponder`).
  *
- * Invariant enforced by CI (exit criterion of Phase 3):
- *     grep -rn "invoke(" app/src/  # only matches this file
+ * Invariant enforced by CI: `grep -rn "invoke(" app/src/` only matches
+ * this file.
  */
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen, emit, type Event, type UnlistenFn } from "@tauri-apps/api/event";
 
-// ── Legacy transport passthrough ──────────────────────────────────────
-
-export function legacyInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  return invoke<T>(cmd, args);
-}
+// ── Local Tauri events (non-domain) ──────────────────────────────────
 
 export function legacyListen<T>(
   event: string,

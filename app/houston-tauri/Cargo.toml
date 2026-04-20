@@ -2,7 +2,7 @@
 name = "houston-tauri"
 version = "0.3.2"
 edition = "2021"
-description = "Tauri adapter for Houston Engine. Applies engine crates to the Houston desktop app. Not part of Engine — Engine stays frontend-agnostic."
+description = "Thin Tauri adapter for the Houston desktop app. Owns the event-sink bridge, tray UI, path helpers, and shared state. All domain logic lives in the engine crates."
 license = "MIT"
 repository = "https://github.com/ja-818/houston"
 
@@ -11,19 +11,11 @@ houston-terminal-manager = { workspace = true }
 houston-db = { workspace = true }
 houston-events = { workspace = true }
 houston-scheduler = { workspace = true }
-houston-sync = { workspace = true }
 houston-agent-files = { workspace = true }
-houston-engine-core = { workspace = true }
 houston-ui-events = { workspace = true }
 houston-agents-conversations = { workspace = true }
-houston-file-watcher = { workspace = true }
-houston-composio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 tauri = { version = "2", features = ["tray-icon"] }
-uuid = { workspace = true }
-chrono = { workspace = true }
-libsql = "0.6"
-base64 = "0.22"
 tracing = { workspace = true }

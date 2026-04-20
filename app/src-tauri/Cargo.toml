@@ -16,26 +16,15 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 dirs = "5"
-houston-tauri = { path = "../houston-tauri" }
-houston-skills = { path = "../../engine/houston-skills", features = ["remote"] }
-uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
-cron = "0.15"
+houston-tauri = { path = "../houston-tauri" }
 tauri-plugin-notification = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 tauri-plugin-sentry = "0.5"
 sentry = "0.42"
-open = "5"
-houston-sync = { path = "../../engine/houston-sync" }
-houston-agent-files = { path = "../../engine/houston-agent-files" }
 houston-ui-events = { path = "../../engine/houston-ui-events" }
-houston-agents-conversations = { path = "../../engine/houston-agents-conversations" }
-houston-file-watcher = { path = "../../engine/houston-file-watcher" }
-houston-composio = { path = "../../engine/houston-composio" }
-houston-engine-core = { workspace = true }
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "blocking"], default-features = false }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = { workspace = true }
-base64 = "0.22"
