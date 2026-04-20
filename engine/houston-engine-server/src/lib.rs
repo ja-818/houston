@@ -10,14 +10,9 @@ pub mod routes;
 pub mod state;
 pub mod ws;
 
-use axum::{
-    http::{HeaderValue, Method},
-    middleware,
-    routing::get,
-    Router,
-};
+use axum::{http::HeaderValue, middleware, routing::get, Router};
 use std::sync::Arc;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 
 pub use config::ServerConfig;
 pub use state::ServerState;
@@ -53,10 +48,14 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     Router::new()
         .nest("/v1", v1)
         .layer(
+            // Permissive CORS for loopback dev — the webview (tauri://
+            // localhost or http://localhost:1420 in dev) is cross-origin
+            // to 127.0.0.1:<port>. Bearer tokens are not "credentials"
+            // in CORS parlance, so wildcard + Any is safe here.
             CorsLayer::new()
                 .allow_origin("*".parse::<HeaderValue>().unwrap())
-                .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::PATCH])
-                .allow_headers(tower_http::cors::Any),
+                .allow_methods(Any)
+                .allow_headers(Any),
         )
         .with_state(state)
 }
