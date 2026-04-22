@@ -102,7 +102,18 @@ export function ProviderPicker({ value, model: controlledModel, onSelect }: Prop
                 if (isSelected) onSelect(prov.id, m);
               }}
               onSelect={() => onSelect(prov.id, models[prov.id] ?? prov.defaultModel)}
-              onExpand={() => setExpanded(isExpanded ? null : prov.id)}
+              // Settle the expanded state based on what got clicked:
+              //   - connected card              → collapse (no setup needed)
+              //   - disconnected card currently expanded → collapse (toggle off)
+              //   - disconnected card not expanded       → switch to it
+              // Previously we only called onExpand when !connected, so
+              // clicking a connected card while a disconnected card's
+              // SetupGuidance was open left that stale card behind.
+              onExpand={() =>
+                setExpanded(
+                  connected ? null : isExpanded ? null : prov.id,
+                )
+              }
             />
           );
         })}
@@ -148,7 +159,11 @@ function ProviderCard({
 }) {
   const handleClick = () => {
     onSelect();
-    if (!connected) onExpand();
+    // Always settle the expansion state — the parent decides whether this
+    // means "open me", "close me", or "close whoever was open". Must NOT
+    // gate on `!connected` here or a connected card's click leaves the
+    // previously-open disconnected card's SetupGuidance orphaned below.
+    onExpand();
   };
 
   const selectedModelObj = provider.models.find((m) => m.id === selectedModel) ?? provider.models[0];

@@ -1,9 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import {
-  RoutinesGrid,
-  RoutineEditor,
-  TimezoneGate,
-} from "@houston-ai/routines";
+import { RoutinesGrid, RoutineEditor } from "@houston-ai/routines";
 import type { RoutineFormData, RoutineRun } from "@houston-ai/routines";
 import {
   useRoutines,
@@ -138,18 +134,16 @@ export default function RoutinesTab({ agent }: TabProps) {
     [runNow],
   );
 
-  // ------- Render order: timezone gate first, then routines UI -------
-
-  if (!tz.loaded) {
+  // `useTimezonePreference` auto-seeds on first call, so `tz.timezone` is
+  // non-null from the first render. We still wait for the roundtrip to
+  // finish so the cron schedule renders against the real zone instead of
+  // an empty placeholder.
+  if (!tz.loaded || !tz.timezone) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <p className="text-sm text-muted-foreground animate-pulse">Loading…</p>
       </div>
     );
-  }
-
-  if (!tz.timezone) {
-    return <TimezoneGate detected={tz.detected} onConfirm={tz.confirm} />;
   }
 
   if (view.type === "editor") {

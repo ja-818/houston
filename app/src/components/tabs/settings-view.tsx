@@ -7,6 +7,10 @@ import { useAgentStore } from "../../stores/agents";
 import { useUIStore } from "../../stores/ui";
 import { tauriPreferences } from "../../lib/tauri";
 import { setTheme, type Theme } from "../../lib/theme";
+import {
+  useTimezonePreference,
+  detectTimezone,
+} from "../../hooks/use-timezone-preference";
 
 export function SettingsView() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
@@ -21,6 +25,12 @@ export function SettingsView() {
   const [theme, setCurrentTheme] = useState<Theme>("light");
   const [wsName, setWsName] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const tz = useTimezonePreference();
+  const [tzDraft, setTzDraft] = useState("");
+  useEffect(() => {
+    setTzDraft(tz.timezone ?? "");
+  }, [tz.timezone]);
 
   useEffect(() => {
     tauriPreferences.get("theme").then((v) => {
@@ -101,6 +111,48 @@ export function SettingsView() {
             model={currentWorkspace.model ?? null}
             onSelect={handleProviderSelect}
           />
+        </section>
+
+        {/* Timezone */}
+        <section className="pt-2 border-t border-border">
+          <h2 className="text-sm font-medium mb-1">Timezone</h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            Used when your routines fire — 9am means 9am in this zone.
+          </p>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1.5">
+              IANA zone
+            </label>
+            <input
+              type="text"
+              value={tzDraft}
+              onChange={(e) => setTzDraft(e.target.value)}
+              onBlur={async () => {
+                const trimmed = tzDraft.trim();
+                if (!trimmed || trimmed === tz.timezone) return;
+                await tz.confirm(trimmed);
+                addToast({ title: `Timezone set to ${trimmed}` });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
+              placeholder="e.g. America/Bogota"
+              className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-ring transition-all"
+            />
+            <div className="flex items-center justify-between mt-1.5 text-xs text-muted-foreground">
+              <button
+                onClick={async () => {
+                  const d = detectTimezone();
+                  setTzDraft(d);
+                  await tz.confirm(d);
+                  addToast({ title: `Timezone set to ${d}` });
+                }}
+                className="underline underline-offset-2 hover:text-foreground transition-colors"
+              >
+                Use detected ({tz.detected})
+              </button>
+            </div>
+          </div>
         </section>
 
         {/* Appearance */}

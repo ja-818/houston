@@ -32,7 +32,26 @@ async function fetchOnce(): Promise<string | null> {
   inflight = (async () => {
     try {
       const stored = await tauriPreferences.get(TIMEZONE_KEY);
-      cache = { value: stored && stored.trim() ? stored : null, loaded: true };
+      let value = stored && stored.trim() ? stored : null;
+
+      // Auto-seed: if the user has never set a timezone, save their
+      // browser-detected one silently. Previously we showed a full-page
+      // "What's your timezone?" gate that blocked the Routines tab. The
+      // detected zone is almost always correct; users who need to change
+      // it later do so in Settings → Timezone.
+      if (!value) {
+        const detected = detectTimezone();
+        try {
+          await tauriPreferences.set(TIMEZONE_KEY, detected);
+          value = detected;
+        } catch {
+          // If persisting fails, fall back to the detected value in memory
+          // so the UI still has something to render a cron schedule against.
+          value = detected;
+        }
+      }
+
+      cache = { value, loaded: true };
       notify();
       return cache.value;
     } finally {
@@ -60,9 +79,9 @@ export interface TimezoneState {
 }
 
 /**
- * Read-only-ish hook: returns the user's IANA tz only after they've explicitly
- * confirmed it (no silent autosave on boot). Components should treat
- * `timezone === null` as "user hasn't told us yet" and gate accordingly.
+ * Returns the user's IANA timezone. On first call we auto-save the
+ * browser-detected zone, so `timezone` is non-null from the first render
+ * onwards (no "timezone gate" UX). Users can change it later in Settings.
  */
 export function useTimezonePreference(): TimezoneState {
   const [, force] = useState(0);

@@ -116,6 +116,15 @@ pub fn run() {
             // empty. Idempotent on subsequent launches.
             migrate_legacy_docs_dir(&houston);
 
+            // Eagerly run the intra-agent data-layout migration on every
+            // agent the user already has. Previously this only fired the
+            // first time a user started a session on each agent, which
+            // meant upgraders who just BROWSED the Activity tab saw an
+            // empty board even though their `.houston/activity.json` was
+            // sitting next to it. Walk the workspaces dir here so existing
+            // activities, routines, learnings show up immediately.
+            migrate_all_agents(&houston.join("workspaces"));
+
             // AppState keeps a DB handle for any OS-native lookup (log
             // reading, session search). Domain state now lives in the
             // engine subprocess.
@@ -267,6 +276,64 @@ pub fn run() {
                 _ => {}
             }
         });
+}
+
+/// Walk every agent under `<workspaces>/<workspace>/<agent>/` and run
+/// `houston_agent_files::migrate_agent_data` on each. Idempotent — only
+/// does real work for agents whose `.houston/` is still in the legacy flat
+/// layout or still has a `memory/learnings.md` that needs rewriting.
+///
+/// Exists because the per-agent migration used to be gated behind
+/// `seed_agent()`, which only runs when the user starts a session, creates
+/// an agent, or fires a routine. Upgraders from v0.3.x who simply browsed
+/// the Activity / Learnings tabs saw empty boards even though the legacy
+/// files sat right beside the new paths the UI was polling.
+fn migrate_all_agents(workspaces_root: &std::path::Path) {
+    let entries = match std::fs::read_dir(workspaces_root) {
+        Ok(it) => it,
+        Err(_) => return, // no workspaces yet — nothing to migrate
+    };
+
+    for ws_entry in entries.flatten() {
+        let ws_path = ws_entry.path();
+        if !ws_path.is_dir() {
+            continue;
+        }
+        let ws_name = ws_path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+        if ws_name.starts_with('.') {
+            continue;
+        }
+
+        let agent_entries = match std::fs::read_dir(&ws_path) {
+            Ok(it) => it,
+            Err(e) => {
+                tracing::warn!("[migrate-agents] read_dir({}) failed: {e}", ws_path.display());
+                continue;
+            }
+        };
+
+        for agent_entry in agent_entries.flatten() {
+            let agent_path = agent_entry.path();
+            if !agent_path.is_dir() {
+                continue;
+            }
+            let agent_name = agent_path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+            if agent_name.starts_with('.') {
+                continue;
+            }
+            // Only agents that already have a `.houston/` dir — otherwise
+            // we'd eagerly create one for every random folder in the tree.
+            if !agent_path.join(".houston").is_dir() {
+                continue;
+            }
+            if let Err(e) = houston_tauri::houston_agent_files::migrate_agent_data(&agent_path) {
+                tracing::warn!(
+                    "[migrate-agents] migrate_agent_data({}) failed: {e}",
+                    agent_path.display()
+                );
+            }
+        }
+    }
 }
 
 /// Move `~/Documents/Houston/` to `$houston/workspaces/` if:
