@@ -20,6 +20,15 @@ All packages share ONE version. Every release bumps ALL.
 
 ```bash
 ./scripts/version.sh 0.3.X          # bump all package.json + Cargo.toml
+
+# REQUIRED for any user-visible release: write the notes file BEFORE
+# tagging. CI reads `.github/release-notes/<version>.md` verbatim and
+# uses it as the GitHub release body. Skip only for trivial hotfixes
+# (CI then auto-generates from conventional-commit subjects, which is
+# weak signal for end users). See `.github/release-notes/README.md`
+# for what good notes look like + an example at `.../0.4.0.md`.
+$EDITOR .github/release-notes/0.3.X.md
+
 git add -A && git commit -m "release: v0.3.X"
 git tag v0.3.X
 git push origin main --tags
@@ -42,12 +51,13 @@ Duration: ~10-15 min.
 1. **Verify:** `cargo check --workspace && cd app && pnpm tsc --noEmit`
 2. **Commit all changes** to `main`
 3. **Bump:** `./scripts/version.sh 0.3.X` (patch default)
-4. **Commit bump:** `git add -A && git commit -m "release: v0.3.X"`
-5. **Tag + push:** `git tag v0.3.X && git push origin main --tags`
-6. **Wait CI:** ~10-15 min. Check `github.com/ja-818/houston/actions`
-7. **If CI fails:** `gh run view <id> --log-failed`, fix, commit. Re-tag = `git tag -d v0.3.X && git push origin :refs/tags/v0.3.X`, then re-tag + push.
-8. **Publish:** GH Releases → draft → "Publish".
-9. **Verify rollout:** Installed apps show "Update available" w/in 30 min or next launch.
+4. **Write notes:** `.github/release-notes/0.3.X.md` — narrative, not a commit dump. Cover: what changed for the user, before-you-upgrade caveats (always include the macOS drag-install reminder), known limitations. Pattern from `.github/release-notes/0.4.0.md`. Skip only for trivial hotfixes.
+5. **Commit bump + notes:** `git add -A && git commit -m "release: v0.3.X"`
+6. **Tag + push:** `git tag v0.3.X && git push origin main --tags`
+7. **Wait CI:** ~10-15 min. Check `github.com/ja-818/houston/actions`
+8. **If CI fails:** `gh run view <id> --log-failed`, fix, commit. Re-tag = `git tag -d v0.3.X && git push origin :refs/tags/v0.3.X`, then re-tag + push.
+9. **Publish:** GH Releases → draft → "Publish". (Notes already populated from step 4.)
+10. **Verify rollout:** Installed apps show "Update available" w/in 30 min or next launch.
 
 ## Version bump only (no publish)
 ```bash
