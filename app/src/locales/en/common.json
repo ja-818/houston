@@ -1,0 +1,16 @@
+{
+  "actions": {
+    "continue": "Continue",
+    "back": "Back",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "getStarted": "Get started"
+  },
+  "language": {
+    "title": "Language",
+    "description": "Choose the language Houston uses in its interface.",
+    "label": "Interface language",
+    "toastChanged": "Language changed"
+  }
+}

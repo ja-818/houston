@@ -307,6 +307,18 @@ export interface PreferenceValue {
   value: string | null;
 }
 
+/**
+ * Known preference keys. Free-form strings are still allowed — this alias
+ * just documents the well-known keys and gives consumers completion.
+ *
+ * Keep in sync with `houston-engine-core::preferences` constants.
+ */
+export type KnownPreferenceKey =
+  | "timezone"
+  | "locale"
+  // NOTE: D₁ adds "legal_acceptance" here. Leave as append-only.
+  ;
+
 // ---------- Store ----------
 
 export interface StoreListing {
