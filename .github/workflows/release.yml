@@ -133,6 +133,53 @@ jobs:
           echo "=== Notarization staple ==="
           xcrun stapler validate "${{ steps.artifacts.outputs.app }}"
 
+      # Explicit assertions on the bundled `houston-engine` sidecar.
+      # `--deep` above validates all embedded binaries, but a regression in
+      # tauri-action could silently ship an ad-hoc-signed or
+      # hardened-runtime-less sidecar — Gatekeeper would then quarantine-kill
+      # it on first launch for upgraders and the app hangs at splash.
+      # Fail the release if any of these invariants drifts.
+      - name: Verify engine sidecar signing
+        run: |
+          APP="${{ steps.artifacts.outputs.app }}"
+
+          # Tauri strips the triple suffix on bundle; fall back to glob if it doesn't.
+          SIDECAR="$APP/Contents/MacOS/houston-engine"
+          if [ ! -f "$SIDECAR" ]; then
+            SIDECAR=$(find "$APP/Contents" -type f -name 'houston-engine*' ! -name '*.dSYM*' | head -1)
+          fi
+
+          if [ -z "$SIDECAR" ] || [ ! -x "$SIDECAR" ]; then
+            echo "::error::engine sidecar missing or not executable inside .app"
+            echo "--- .app contents ---"
+            find "$APP/Contents" -type f | head -50
+            exit 1
+          fi
+          echo "Sidecar: $SIDECAR"
+
+          echo "=== 1. Signature valid ==="
+          codesign -vvv "$SIDECAR"
+
+          echo "=== 2. Signed with Developer ID (not ad-hoc) ==="
+          AUTH=$(codesign -dvv "$SIDECAR" 2>&1 | grep '^Authority=' | head -1)
+          echo "$AUTH"
+          if ! echo "$AUTH" | grep -q 'Developer ID Application'; then
+            echo "::error::sidecar not signed with Developer ID — Gatekeeper will kill it on first launch"
+            codesign -dvv "$SIDECAR" 2>&1 || true
+            exit 1
+          fi
+
+          echo "=== 3. Hardened runtime enabled ==="
+          FLAGS=$(codesign -dv "$SIDECAR" 2>&1 | grep -E '^CodeDirectory.*flags=' | head -1)
+          echo "$FLAGS"
+          if ! echo "$FLAGS" | grep -q 'runtime'; then
+            echo "::error::sidecar missing hardened runtime flag — required for notarization + subprocess execution"
+            codesign -dv "$SIDECAR" 2>&1 || true
+            exit 1
+          fi
+
+          echo "=== Sidecar checks passed ==="
+
       - name: Notarize DMG
         timeout-minutes: 25
         run: |
