@@ -60,5 +60,35 @@ CI also needs as Secrets:
 - **Workflow:** `.github/workflows/release.yml`
 - **Trigger:** Push tag matching `v*`
 - **Output:** Draft GitHub Release w/ signed+notarized DMG + `latest.json`
-- **Duration:** ~10-15 min (compile + sign + notarize)
+- **Duration:** ~15-20 min (compile 2 arches + sign + notarize)
 - **Draft = QA gate.** Users don't see until published on GitHub.
+
+## macOS Universal (arm64 + Intel)
+
+Houston ships ONE DMG that runs natively on Apple Silicon AND Intel. Same app, same download, same update channel.
+
+### How it works
+- `release.yml` builds `houston-engine` TWICE — once per real triple (`aarch64-apple-darwin`, `x86_64-apple-darwin`).
+- `build.rs` stages both as per-triple sidecars: `src-tauri/binaries/houston-engine-aarch64-apple-darwin` + `-x86_64-apple-darwin`. Tauri universal build requires per-triple sidecars (NOT a pre-lipo'd fat binary).
+- `tauri-action` invoked with `--target universal-apple-darwin`. It runs cargo twice, then `lipo`s the outputs into one fat `.app`. Bundle lands at `target/universal-apple-darwin/release/bundle/`.
+- Verification step runs `lipo -info` on the embedded engine sidecar and fails the release if either slice is missing.
+- `latest.json` ships FOUR platform keys (`darwin-aarch64`, `darwin-aarch64-app`, `darwin-x86_64`, `darwin-x86_64-app`) all pointing at the same tarball + signature. Intel users on older Houston installs check `darwin-x86_64` — if that key is absent they NEVER see the update prompt.
+- `bundle.macOS.minimumSystemVersion = 10.15` in `tauri.conf.json` — required for Intel Macs old enough to matter.
+
+### Engine-only release
+`.github/workflows/engine-release.yml` (tag `engine-v*`) builds `houston-engine` standalone for Linux (arm64 + x86_64 musl) and macOS (arm64 + Intel). Four artifacts total.
+
+### Local universal build
+```bash
+rustup target add aarch64-apple-darwin x86_64-apple-darwin
+cargo build --release --target aarch64-apple-darwin -p houston-engine-server
+cargo build --release --target x86_64-apple-darwin -p houston-engine-server
+cd app && pnpm tauri build --target universal-apple-darwin
+```
+Output: `target/universal-apple-darwin/release/bundle/{macos,dmg}/`.
+
+### Dev is single-arch
+`pnpm tauri dev` stays single-triple (whatever the host is). `build.rs` falls back to `target/release/` when a per-triple path is missing, so nothing breaks.
+
+### Do NOT break Intel without warning
+Removing an arch from `release.yml` (or dropping `darwin-x86_64*` keys from `latest.json`) strands every Intel user silently. Migrate with a deprecation release first.

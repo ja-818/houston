@@ -40,11 +40,23 @@ fn stage_engine_sidecar() -> Result<(), String> {
         "houston-engine"
     };
 
-    // Pick the first existing source: release > debug.
-    let candidates = [
-        workspace.join("target").join("release").join(bin_name),
-        workspace.join("target").join("debug").join(bin_name),
-    ];
+    // Pick the first existing source. Ordering:
+    //   1. `target/<triple>/release/` — required for universal-apple-darwin
+    //      because tauri invokes cargo once per real triple (aarch64 + x86_64)
+    //      and each invocation needs the engine built for THAT triple.
+    //   2. `target/release/` — single-triple release (local `pnpm tauri build`).
+    //   3. `target/<triple>/debug/` — rarely used but keeps `tauri dev --target`
+    //      happy.
+    //   4. `target/debug/` — default dev build.
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if !triple.is_empty() {
+        candidates.push(workspace.join("target").join(&triple).join("release").join(bin_name));
+    }
+    candidates.push(workspace.join("target").join("release").join(bin_name));
+    if !triple.is_empty() {
+        candidates.push(workspace.join("target").join(&triple).join("debug").join(bin_name));
+    }
+    candidates.push(workspace.join("target").join("debug").join(bin_name));
     let src = candidates
         .iter()
         .find(|p| p.exists())

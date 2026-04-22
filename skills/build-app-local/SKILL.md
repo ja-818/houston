@@ -20,32 +20,43 @@ Env vars set in shell:
 ## Flow
 
 ```bash
-# 1. Clean stale
-cd app
-rm -rf src-tauri/target/release/bundle
-rm -rf dist
+# 0. One-time: ensure both macOS rustup targets installed
+rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
-# 2. Build + auto-sign
-pnpm tauri build
+# 1. Clean stale
+cd ..  # workspace root
+rm -rf app/src-tauri/target/universal-apple-darwin/release/bundle
+rm -rf app/dist
+
+# 2. Build engine sidecar for BOTH arches (required for universal)
+cargo build --release --target aarch64-apple-darwin -p houston-engine-server
+cargo build --release --target x86_64-apple-darwin -p houston-engine-server
+
+# 3. Build + auto-sign the app (universal fat binary)
+cd app
+pnpm tauri build --target universal-apple-darwin
 ```
 
 Tauri signs `.app`. Does NOT notarize DMG. Must do manually:
 
 ```bash
-# 3. Submit DMG to Apple for notarization
-DMG="src-tauri/target/release/bundle/dmg/Houston_${VERSION}_aarch64.dmg"
+# 4. Submit DMG to Apple for notarization (note universal path)
+DMG="src-tauri/target/universal-apple-darwin/release/bundle/dmg/Houston_${VERSION}_universal.dmg"
 xcrun notarytool submit "$DMG" \
   --key "$APPLE_API_KEY_PATH" \
   --key-id "$APPLE_API_KEY" \
   --issuer "$APPLE_API_ISSUER" \
   --wait
 
-# 4. Staple ticket to DMG
+# 5. Staple ticket to DMG
 xcrun stapler staple "$DMG"
 
-# 5. Verify
+# 6. Verify
 xcrun stapler validate "$DMG"
 spctl -a -vvv -t install "$DMG"
+lipo -info "$(hdiutil attach "$DMG" -nobrowse -mountpoint /tmp/hmnt -quiet && echo /tmp/hmnt/*.app/Contents/MacOS/houston-engine)"
+# → expect: "Architectures in the fat file: ... x86_64 arm64"
+hdiutil detach /tmp/hmnt -quiet
 ```
 
 ## Output
