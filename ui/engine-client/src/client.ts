@@ -412,9 +412,13 @@ export class HoustonClient {
   // ---------- attachments ----------
 
   saveAttachments(scopeId: string, files: AttachmentInput[]): Promise<string[]> {
+    // Wire contract is camelCase (server uses `#[serde(rename_all = "camelCase")]`
+    // on `SaveAttachmentsRequest` + `AttachmentInput`). Previously sent
+    // `scope_id` / `data_base64` snake_case, which the server rejected with
+    // 422 Unprocessable Entity — drag-and-drop file uploads broke silently.
     return this.request("POST", "/attachments", {
-      scope_id: scopeId,
-      files: files.map((f) => ({ name: f.name, data_base64: f.dataBase64 })),
+      scopeId,
+      files: files.map((f) => ({ name: f.name, dataBase64: f.dataBase64 })),
     });
   }
   deleteAttachments(scopeId: string): Promise<void> {
