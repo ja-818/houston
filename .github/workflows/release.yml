@@ -111,7 +111,9 @@ jobs:
       - name: Locate build artifacts
         id: artifacts
         run: |
-          BUNDLE="app/src-tauri/target/release/bundle"
+          # Cargo workspace: target dir is at workspace root, not per-crate.
+          # tauri-action emits bundles under `target/release/bundle/`.
+          BUNDLE="target/release/bundle"
 
           APP=$(ls -d "$BUNDLE/macos/"*.app 2>/dev/null | head -1)
           DMG=$(ls -t "$BUNDLE/dmg/"*.dmg 2>/dev/null | head -1)
