@@ -6,12 +6,15 @@ import {
 } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { I18nextProvider } from "react-i18next";
 import { queryClient } from "./lib/query-client";
 import App from "./App";
 import "./styles/globals.css";
 import { useUIStore } from "./stores/ui";
 import { initFrontendLogging, logger } from "./lib/logger";
 import { whenEngineReady, isEngineReady } from "./lib/engine";
+import i18n, { applyEngineLocale, LOCALE_PREF_KEY } from "./lib/i18n";
+import { tauriPreferences } from "./lib/tauri";
 
 // Initialize file-based logging — patches console.error/warn to write to
 // ~/.houston/logs/frontend.log (or ~/.dev-houston/logs/frontend.log in dev).
@@ -97,6 +100,26 @@ function EngineGate({ children }: { children: ReactNode }) {
     };
   }, [ready]);
 
+  // Once the engine is ready, read the persisted UI locale and apply it.
+  // i18n was initialized with a cached/navigator guess — this is the
+  // authoritative override from the canonical preferences store.
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    tauriPreferences
+      .get(LOCALE_PREF_KEY)
+      .then((value) => {
+        if (cancelled) return;
+        void applyEngineLocale(value);
+      })
+      .catch(() => {
+        /* non-fatal — keep detector-picked locale */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
   if (!ready) {
     return (
       <div
@@ -125,7 +148,9 @@ createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
       <EngineGate>
-        <App />
+        <I18nextProvider i18n={i18n}>
+          <App />
+        </I18nextProvider>
       </EngineGate>
     </ErrorBoundary>
   </QueryClientProvider>,

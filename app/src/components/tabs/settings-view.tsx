@@ -1,5 +1,15 @@
 import { useState, useEffect } from "react";
-import { Button, ConfirmDialog, Spinner } from "@houston-ai/core";
+import { useTranslation } from "react-i18next";
+import {
+  Button,
+  ConfirmDialog,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Spinner,
+} from "@houston-ai/core";
 import { Sun, Moon } from "lucide-react";
 import { ProviderPicker } from "../shell/provider-picker";
 import { useWorkspaceStore } from "../../stores/workspaces";
@@ -11,6 +21,19 @@ import {
   useTimezonePreference,
   detectTimezone,
 } from "../../hooks/use-timezone-preference";
+import {
+  changeLocale,
+  isSupported,
+  LOCALE_PREF_KEY,
+  SUPPORTED_LOCALES,
+  type SupportedLocale,
+} from "../../lib/i18n";
+
+const LOCALE_LABELS: Record<SupportedLocale, string> = {
+  en: "English",
+  es: "Español",
+  pt: "Português",
+};
 
 export function SettingsView() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
@@ -22,9 +45,13 @@ export function SettingsView() {
   const loadAgents = useAgentStore((s) => s.loadAgents);
   const addToast = useUIStore((s) => s.addToast);
 
+  const { t, i18n } = useTranslation("common");
   const [theme, setCurrentTheme] = useState<Theme>("light");
   const [wsName, setWsName] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const currentLocale: SupportedLocale = isSupported(i18n.resolvedLanguage)
+    ? (i18n.resolvedLanguage as SupportedLocale)
+    : "en";
 
   const tz = useTimezonePreference();
   const [tzDraft, setTzDraft] = useState("");
@@ -74,9 +101,16 @@ export function SettingsView() {
     addToast({ title: `Switched to ${provName} (${model})` });
   };
 
-  const handleThemeToggle = async (t: Theme) => {
-    setCurrentTheme(t);
-    await setTheme(t);
+  const handleThemeToggle = async (value: Theme) => {
+    setCurrentTheme(value);
+    await setTheme(value);
+  };
+
+  const handleLocaleChange = async (value: string) => {
+    if (!isSupported(value)) return;
+    await changeLocale(value);
+    await tauriPreferences.set(LOCALE_PREF_KEY, value);
+    addToast({ title: t("language.toastChanged") });
   };
 
   return (
@@ -152,6 +186,31 @@ export function SettingsView() {
                 Use detected ({tz.detected})
               </button>
             </div>
+          </div>
+        </section>
+
+        {/* Language */}
+        <section className="pt-2 border-t border-border">
+          <h2 className="text-sm font-medium mb-1">{t("language.title")}</h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            {t("language.description")}
+          </p>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1.5">
+              {t("language.label")}
+            </label>
+            <Select value={currentLocale} onValueChange={handleLocaleChange}>
+              <SelectTrigger className="w-full rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_LOCALES.map((loc) => (
+                  <SelectItem key={loc} value={loc}>
+                    {LOCALE_LABELS[loc]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </section>
 
