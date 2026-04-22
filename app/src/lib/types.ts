@@ -84,7 +84,7 @@ export interface AgentDefinition {
 export interface Agent {
   id: string;
   name: string;
-  folderPath: string;      // ~/Documents/Houston/{WorkspaceName}/{AgentName}/
+  folderPath: string;      // ~/.houston/workspaces/{WorkspaceName}/{AgentName}/
   configId: string;      // Points to an AgentConfig
   color?: string;        // User-chosen color for avatar
   createdAt: string;

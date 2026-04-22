@@ -13,4 +13,6 @@ Load on demand. Style: caveman.
 | [sync-protocol.md](sync-protocol.md) | Desktop↔mobile WebSocket contract, envelope, dedupe |
 | [production-infra.md](production-infra.md) | Auto-updater, analytics, Sentry, env vars, CI/CD |
 
+**Custom-frontend integration** → [`examples/smartbooks/README.md`](../examples/smartbooks/README.md) (lives with the code so it stays honest). Includes gotchas every third-party consumer of `houston-engine` hits: start the file watcher, subscribe to WS topics before sessions, feed-item streaming reducer, binary file download workaround.
+
 How-to stuff (deploy, build, debug) → skills. See `/release`, `/build-app-local`, `/debug`.

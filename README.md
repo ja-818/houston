@@ -154,15 +154,43 @@ houston/
 ├── desktop-mobile-bridge/   Cloudflare Worker — pairs Desktop ↔ Mobile
 ├── store/                   Houston Store — agent registry
 ├── website/                 Houston Website — gethouston.ai
-├── always-on/               Houston Always On (TBD — VPS deploy)
+├── always-on/               Houston Always On — VPS deploy (Dockerfile + compose + systemd)
 ├── teams/                   Houston Teams (TBD — hosted multi-tenant)
 │
 ├── ui/                      Houston UI — @houston-ai/* React packages
 ├── engine/                  Houston Engine — Rust crates (frontend-agnostic)
-└── cloud/                   Houston Cloud (TBD — managed Engine hosting)
+├── cloud/                   Houston Cloud (TBD — managed Engine hosting)
+│
+└── examples/                Reference consumers of houston-engine
+    └── smartbooks/            Bookkeeping app built on a custom React frontend
 ```
 
 See `knowledge-base/architecture.md` for crate-level detail + current gaps.
+
+---
+
+## Build on Houston Engine (custom frontends)
+
+The engine is frontend-agnostic. You don't have to ship inside the
+Houston App — any web or native runtime can drive it over HTTP +
+WebSocket using [`@houston-ai/engine-client`](ui/engine-client/).
+
+**Working example: [SmartBooks](examples/smartbooks/)** — a
+bookkeeping product with its own brand, its own UX, and zero
+`@houston-ai/*` UI deps. ~400 lines of TSX, one npm package, renders
+a live transactions table + a multi-sheet Excel workpaper. Soft
+workflow: the user asks for a new column, Claude edits the Python
+script, every future upload picks up the change. Clone it, rename
+things, ship your own AI-native product.
+
+```bash
+cd examples/smartbooks
+pnpm install
+pnpm dev
+```
+
+Full walkthrough + architecture diagram + custom-frontend gotchas in
+[examples/smartbooks/README.md](examples/smartbooks/README.md).
 
 ---
 

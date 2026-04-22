@@ -3,3 +3,4 @@ packages:
   - "app"
   - "mobile"
   - "desktop-mobile-bridge"
+  - "examples/*"

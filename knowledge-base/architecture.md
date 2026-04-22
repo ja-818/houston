@@ -34,17 +34,18 @@ Houston = open platform. Organized as **6 products + 3 code libraries**.
 | Dir | What |
 |-----|------|
 | `desktop-mobile-bridge/` | Cloudflare Worker + Durable Object. Rendezvous server for Desktop↔Mobile (NAT traversal). Deploys separately. Only App-family infra. |
+| `examples/` | Reference consumers of `houston-engine` for third-party devs. First entry: `examples/smartbooks/` — a custom React frontend, own brand, zero `@houston-ai/*` UI deps. Lives in the monorepo (not a separate repo) so it stays in sync with protocol changes. |
 | `knowledge-base/` | These caveman docs. Loaded on demand. |
 | `scripts/` | Version bump, release, CLI binary fetch. |
 
 ## Engine crates (`engine/`)
 
-All pure libraries. No frontend assumptions.
+14 crates. All pure libraries. No frontend assumptions. Full list in
+the workspace root `Cargo.toml`.
 
 - `houston-db` — libSQL. Only `chat_feed` + `preferences` tables.
 - `houston-terminal-manager` — Claude/Codex subprocess manager, parser, streaming
 - `houston-events` — hook/webhook/lifecycle queue
-- `houston-channels` — Telegram/Slack adapters
 - `houston-scheduler` — cron + heartbeat
 - `houston-agent-files` — `.houston/` file I/O, schemas, migration
 - `houston-agents-conversations` — chat feed persistence
@@ -53,24 +54,41 @@ All pure libraries. No frontend assumptions.
 - `houston-composio` — Composio MCP server lifecycle
 - `houston-sync` — WebSocket sync envelope (desktop↔mobile pairing; engine WS lives in `houston-engine-server`)
 - `houston-skills` — skill discovery + management
-- `houston-engine-core` — runtime container (`EngineState`, paths, `workspaces::*`, `agents::{activity,routines,routine_runs,config,conversations,files,prompt,self_improvement}`). Domain logic relocated from the Tauri adapter.
-- `houston-engine-protocol` — wire types (REST DTOs, WS envelope, error codes). Matches `ui/engine-client/src/types.ts`.
-- `houston-engine-server` — axum HTTP+WS binary `houston-engine`. The process every client talks to. Current REST surface: `/v1/{health,version,ws,workspaces,agents/activities,agents/routines,agents/routine-runs,agents/config,agents/conversations,agents/files}`.
+- `houston-engine-core` — runtime container (`EngineState`, paths, `workspaces::*`, `agents::{activity,routines,routine_runs,config,conversations,files,prompt,self_improvement}`, `sessions::{history,provider,summarize}`, `routines::{runner,runs,scheduler,engine_dispatcher}`, `store`, `sync`, `worktree`, `provider`, `attachments`, `preferences`, `conversations`, `skills`, `agent_configs`). Domain logic relocated from the Tauri adapter.
+- `houston-engine-protocol` — wire types (REST DTOs, WS envelope, error codes, `PROTOCOL_VERSION`). Matches `ui/engine-client/src/types.ts`.
+- `houston-engine-server` — axum HTTP+WS binary `houston-engine`. The process every client talks to. Full REST surface live — 17 route modules, ~80 endpoints (workspaces, agents CRUD, sessions, agent data + files, routines + scheduler, skills, store, composio, sync, worktrees, shell, attachments, preferences, providers, agent-configs, conversations, watcher). See `knowledge-base/engine-protocol.md` for the complete table.
 
-**Standalone engine, shipping now:** Phase 0-3 of the engine rollout is merged (trait-based decoupling, HTTP+WS binary, TS client scaffold). Phase 2 feature migration is in flight — workspaces + agents typed CRUD + agent files are now engine-owned with Tauri commands acting as thin proxies. Phases 4-5 complete the desktop subprocess flip and public deploy story — see `engine-server.md`.
+**Standalone engine, shipped:** the desktop app spawns `houston-engine`
+as a subprocess on startup (sidecar via Tauri `externalBin`), parses
+the stdout `HOUSTON_ENGINE_LISTENING` banner for `{port, token}`, and
+talks to it over HTTP+WS — the same way a remote client on a VPS
+would. The supervisor (`app/src-tauri/src/engine_supervisor.rs`) pipes
+stdin so engine sees EOF on parent death and exits cleanly (no orphan
+engines holding ports). All domain Tauri commands are deleted — only
+OS-native glue remains in `app/src-tauri/src/commands/`.
 
 ## App-side Rust (`app/`)
 
-- `app/houston-tauri/` — Tauri adapter. Binds engine crates to Tauri state/events/commands. **Not part of Engine.**
-- `app/src-tauri/` — Tauri binary. Depends on `houston-tauri` + engine crates.
+- `app/houston-tauri/` — Tauri adapter. Binds engine crates (db, event
+  queue, schedulers, watcher) to Tauri state and emits Tauri events.
+  The engine supervisor uses the same crates but speaks HTTP/WS
+  externally. **Not part of Engine.**
+- `app/src-tauri/` — Tauri binary. Depends on `houston-tauri` + engine
+  crates. Spawns the engine subprocess in `setup()`, waits for
+  `/v1/health`, injects `window.__HOUSTON_ENGINE__` handshake before
+  the React tree mounts (see `EngineGate` in `app/src/main.tsx`).
 
 ## UI packages (`ui/`)
 
-`@houston-ai/` + `core, chat, board, layout, connections, events, memory, routines, skills, review, agent, agent-schemas, sync-protocol, engine-client`
+12 packages under `@houston-ai/`: `core, chat, board, layout, events,
+routines, skills, review, agent, agent-schemas, sync-protocol,
+engine-client`.
 
-Mostly internal. `@houston-ai/engine-client` is the one package we expect
-third-party devs to install — it's the TypeScript front door to the engine
-HTTP+WS protocol.
+Mostly internal. `@houston-ai/engine-client` is the one package we
+expect third-party devs to install — it's the TypeScript front door to
+the engine HTTP+WS protocol. `@houston-ai/agent-schemas` ships the
+JSON schemas that Rust embeds via `include_str!` — source of truth for
+the typed `.houston/<type>/<type>.json` layout.
 
 ## Current gap to vision
 
@@ -79,10 +97,12 @@ HTTP+WS protocol.
 | Clear product dirs | ✅ done |
 | App ↔ Engine clear boundary | ✅ `app/houston-tauri` split |
 | UI standalone | ✅ |
-| Engine reusable by non-Tauri frontends | 🟡 binary ships, protocol drafted, command migration in progress |
-| Always On | 🟡 Dockerfile + compose + systemd unit shipped; needs docs polish |
+| Engine reusable by non-Tauri frontends | ✅ binary ships as Tauri sidecar + standalone; desktop app consumes it over HTTP/WS, no in-process coupling |
+| Reference custom-frontend integration | ✅ `examples/smartbooks/` — Vite + React, own brand, ~400 LOC TSX, proven end-to-end |
+| Always On | ✅ Dockerfile + compose + systemd unit + README all shipped |
 | Teams / Cloud | ❌ TBD placeholders |
 | Store populated | ❌ placeholder |
+| Binary file read route (xlsx, pdf download through HTTP) | ❌ workaround: use `/v1/shell` with `open`/`xdg-open` to hand binary files to host OS |
 
 ## Direction of work
 - **library-first** — new reusable capability → ui/ or engine/, then consumed by app/

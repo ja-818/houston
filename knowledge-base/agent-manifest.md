@@ -38,9 +38,9 @@ interface AgentTab {
 ```
 
 ## Locations
-- **Built-in:** `app/src/agents/builtin/` (9 agents: Default, Project Manager, Meeting Assistant, Research, Data Analyst, Code Reviewer, DevOps, Content Writer, Customer Support)
-- **Installed:** `~/.houston/agents/{id}/houston.json` — downloaded from GitHub
-- **Override rule:** installed definition w/ same id as builtin → overrides builtin (dedup in `loader.ts`)
+- **Built-in:** `app/src/agents/builtin/` — currently one `blankAgent` (start-from-scratch). The richer catalog lives in Houston Store.
+- **Installed:** `~/.houston/agents/{id}/houston.json` — downloaded from GitHub.
+- **Override rule:** installed definition with same id as builtin → overrides builtin (dedup in `app/src/stores/agent-configs.ts`).
 
 ## Import flow
 "New Agent > GitHub" dialog. User pastes `owner/repo`. Houston downloads `houston.json`, `CLAUDE.md`, `icon.png`, `bundle.js` → `~/.houston/agents/{id}/`.
@@ -75,7 +75,7 @@ my-workspace/
 
 **Import:** "New Workspace > Import from GitHub". Paste `owner/repo`. Houston downloads workspace.json, installs all agent defs, creates workspace, creates agent instances w/ CLAUDE.md + seed files. All agents chat-ready immediately.
 
-Rust cmd: `install_workspace_from_github` in `app/src-tauri/src/commands/store.rs`.
+Engine route: `POST /v1/store/workspaces/install-from-github`. Rust impl: `houston_engine_core::store::install_workspace_from_github`. Server wiring: `engine/houston-engine-server/src/routes/store.rs`.
 
 ## Sidebar structure
 
@@ -94,26 +94,29 @@ Rust cmd: `install_workspace_from_github` in `app/src-tauri/src/commands/store.r
 ```
 
 ## Workspace
-- Storage: `~/.houston/workspaces.json` (index) + one dir per workspace `~/.houston/workspaces/{Name}/`
+- Storage: `~/.houston/workspaces/workspaces.json` (index) + one dir per workspace `~/.houston/workspaces/{Name}/`. `HOUSTON_DOCS` env var overrides the root.
 - First launch: welcome screen, create first workspace
-- Rust cmds: `list_workspaces`, `create_workspace`, `rename_workspace`, `delete_workspace` (`app/src-tauri/src/commands/workspaces.rs`)
+- Engine routes: `GET /v1/workspaces`, `POST /v1/workspaces`, `POST /v1/workspaces/:id/rename`, `DELETE /v1/workspaces/:id`, `PATCH /v1/workspaces/:id/provider` (`engine/houston-engine-server/src/routes/workspaces.rs`). Frontend reaches them via `@houston-ai/engine-client` — no Tauri commands in the path.
 - Store: `useWorkspaceStore` — `loadWorkspaces()`, `setCurrent()`, `create()`, `rename()`, `delete()`
 
 ## Prompt assembly
-Order (in `agent.rs`):
-1. `.houston/prompts/system.md` — base prompt
-2. `.houston/prompts/self-improvement.md` — learning directives
-3. `.houston/memory/` — learnings snapshot
-4. `.agents/skills/` — skills index
-5. `CLAUDE.md` — agent instructions
+Order (in `engine/houston-engine-core/src/agents/prompt.rs::build_houston_system_prompt`):
+1. **Working directory block** — hard rules scoping file I/O to `<agent-root>`.
+2. `.houston/prompts/system.md` — base prompt (falls back to `DEFAULT_SYSTEM_PROMPT`, which includes the non-technical-user voice rules).
+3. Mode file `.houston/prompts/modes/<mode>.md` (optional).
+4. `SELF_IMPROVEMENT_GUIDANCE` const (`engine/houston-engine-core/src/agents/self_improvement.rs`) — skills/learnings/CLAUDE.md directives. Source of truth; the per-agent seed file is reference-only.
+5. Skills index — `.agents/skills/` via `houston_skills::build_skills_index`.
+6. Integrations block — based on `.houston/integrations.json` if present.
 
-Both prompt files seeded on creation via `seed_file()` (write-once, never overwrite).
+`CLAUDE.md` is read by the CLI (claude/codex) itself at startup, not injected by the engine.
+
+Prompt files are seeded on agent creation via `seed_file()` (write-once, never overwrite). Runtime behavior uses the engine constants — editing the seed files affects only what the UI displays, not what the agent actually runs.
 
 ## Board / Activity tab
-`@houston-ai/board::AIBoard` = `KanbanBoard` + `KanbanDetailPanel` + `ChatPanel`. Each card = activity from `.houston/activity.json`. Click → opens chat w/ conversation history. App `board-tab.tsx` ~140 lines, thin store wrapper.
+`@houston-ai/board::AIBoard` = `KanbanBoard` + `KanbanDetailPanel` + `ChatPanel`. Each card = activity from `.houston/activity/activity.json`. Click → opens chat w/ conversation history. App `board-tab.tsx` ~140 lines, thin store wrapper.
 
 `AIBoard` props: `items, feedItems (keyed by sessionKey), isLoading, onCreateConversation, onSendMessage, onLoadHistory, onDelete, onApprove, onSelect, selectedId`.
 
-Status transitions: session completes → `useSessionEvents` → activity = `"needs_you"`. `ActivityChanged` event from Rust update cmd auto-invalidates TanStack Query → board refreshes.
+Status transitions: session completes → `useSessionEvents` (listens to the WS `*` firehose) → activity status flipped to `needs_you` via the engine update route. The emitted `ActivityChanged` event auto-invalidates TanStack Query → board refreshes.
 
 Columns can have `onAdd` callback → renders "+" button for creating activities from board.

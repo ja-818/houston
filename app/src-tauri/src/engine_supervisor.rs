@@ -19,7 +19,7 @@
 
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -40,6 +40,15 @@ impl EngineHandshake {
 /// Managed engine subprocess. Drop to kill.
 pub struct EngineSubprocess {
     child: Arc<Mutex<Option<Child>>>,
+    /// Write-end of the child's stdin pipe. We never write to it —
+    /// it's kept alive solely so `Drop` on this struct closes the
+    /// pipe, which the engine's watchdog sees as EOF and exits
+    /// cleanly. We must hold it OUTSIDE `Child` because
+    /// `Child::wait()` closes stdin before blocking, which would
+    /// trigger the watchdog the moment the supervisor starts
+    /// reaping. Keeping it here means only an actual supervisor
+    /// drop (parent process exit) closes the pipe.
+    _stdin: Option<ChildStdin>,
     pub handshake: EngineHandshake,
 }
 
@@ -49,7 +58,13 @@ impl EngineSubprocess {
         let mut cmd = Command::new(binary);
         cmd.stdout(Stdio::piped())
             .stderr(Stdio::inherit())
-            .stdin(Stdio::null());
+            // Piped stdin we never write to: when this supervisor
+            // process exits (or crashes), the write-end drops and the
+            // child's `read(stdin)` returns EOF. The engine's
+            // `spawn_parent_watchdog` listens for that and exits,
+            // preventing orphan engines holding ports after the app
+            // force-quits.
+            .stdin(Stdio::piped());
 
         #[cfg(unix)]
         unsafe {
@@ -64,29 +79,61 @@ impl EngineSubprocess {
             .spawn()
             .map_err(|e| format!("failed to spawn {}: {e}", binary.display()))?;
 
+        // Take stdin out of the Child BEFORE anything can call
+        // `Child::wait()` — wait() closes stdin, which would trip the
+        // engine's parent watchdog the moment we start reaping.
+        let stdin = child.stdin.take();
         let stdout = child.stdout.take().ok_or("no stdout from engine")?;
-        let reader = BufReader::new(stdout);
+        let mut reader = BufReader::new(stdout);
 
         let deadline = Instant::now() + timeout;
-        let mut handshake: Option<EngineHandshake> = None;
-        for line in reader.lines() {
-            if Instant::now() > deadline {
-                let _ = child.kill();
-                return Err(format!(
-                    "engine did not emit banner within {timeout:?}"
-                ));
+        let handshake: EngineHandshake = {
+            let mut line = String::new();
+            loop {
+                if Instant::now() > deadline {
+                    let _ = child.kill();
+                    return Err(format!(
+                        "engine did not emit banner within {timeout:?}"
+                    ));
+                }
+                line.clear();
+                let n = reader
+                    .read_line(&mut line)
+                    .map_err(|e| format!("engine stdout: {e}"))?;
+                if n == 0 {
+                    return Err("engine stdout closed without banner".into());
+                }
+                let trimmed = line.trim_end().to_string();
+                tracing::debug!("[engine] {trimmed}");
+                if let Some(h) = parse_banner(&trimmed) {
+                    break h;
+                }
             }
-            let line = line.map_err(|e| format!("engine stdout: {e}"))?;
-            tracing::debug!("[engine] {line}");
-            if let Some(h) = parse_banner(&line) {
-                handshake = Some(h);
-                break;
-            }
-        }
+        };
 
-        let handshake = handshake.ok_or("engine stdout closed without banner")?;
+        // Keep draining stdout so the engine never blocks on a full pipe
+        // buffer or sees EPIPE from tracing. Tracing already goes to
+        // stderr, but this is defense-in-depth and forwards any stray
+        // println! from the engine to our tracing sink.
+        thread::spawn(move || {
+            let mut line = String::new();
+            loop {
+                line.clear();
+                match reader.read_line(&mut line) {
+                    Ok(0) | Err(_) => break,
+                    Ok(_) => {
+                        let trimmed = line.trim_end();
+                        if !trimmed.is_empty() {
+                            tracing::debug!("[engine:stdout] {trimmed}");
+                        }
+                    }
+                }
+            }
+        });
+
         Ok(Self {
             child: Arc::new(Mutex::new(Some(child))),
+            _stdin: stdin,
             handshake,
         })
     }

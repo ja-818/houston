@@ -14,6 +14,20 @@ Off only if user says "stop caveman" or "normal mode".
 
 ---
 
+## System at a glance (read once at session start)
+
+Houston = desktop app + standalone engine + open library of agents.
+
+- **`app/`** — Tauri 2 desktop. React frontend, small Rust binary that spawns the engine as a sidecar subprocess and talks to it over HTTP/WS. OS-native glue only (file pickers, reveal-in-finder, logs). No domain logic.
+- **`engine/`** — Rust crates. `houston-engine-core` = runtime/domain. `houston-engine-protocol` = wire types. `houston-engine-server` = axum HTTP+WS binary (`houston-engine`). `houston-agent-files`, `houston-skills`, `houston-sessions`, `houston-file-watcher`, etc. are leaf crates. Frontend-agnostic: no Tauri, no React.
+- **`ui/`** — `@houston-ai/*` React packages (chat, board, layout, engine-client, …). Props-only, no store imports. `@houston-ai/engine-client` is the TS front door to the engine.
+- **User data** — `~/.houston/`: DB, logs, `engine.json`, and `workspaces/<Workspace>/<Agent>/`. Each agent has `.houston/` data files + `CLAUDE.md` + `.agents/skills/`.
+- **Wire contract** — every domain call is a `fetch` or WS frame in `@houston-ai/engine-client`. There are NO `invoke("list_workspaces", …)` style Tauri commands for domain; those were all deleted.
+- **Reactivity** — engine emits `HoustonEvent`s; desktop subscribes to the WS `*` firehose; TanStack Query invalidation in `app/src/hooks/use-agent-invalidation.ts` maps events → query keys. File watcher catches direct agent writes.
+- **Voice** — agents' target user is NON-technical. Default system prompt forbids mentioning files/JSON/configs/CLIs when talking to the user.
+
+Before touching anything: run PHASE 1 (load `knowledge-base/architecture.md` + any KBs relevant to scope).
+
 ## Dispatch table (progressive discovery)
 
 Deploying / shipping a release? → `/release`
@@ -27,6 +41,7 @@ Need specific knowledge? Load on demand:
 - Agent manifest, tiers, sidebar, workspaces → `knowledge-base/agent-manifest.md`
 - Engine wire protocol (REST + WS) → `knowledge-base/engine-protocol.md`
 - `houston-engine` binary ops → `knowledge-base/engine-server.md`
+- Custom frontend on `houston-engine` (integration reference) → `examples/smartbooks/README.md`
 - Desktop ↔ Mobile WS contract → `knowledge-base/sync-protocol.md`
 - Updater, analytics, Sentry, env vars, CI → `knowledge-base/production-infra.md`
 
@@ -117,7 +132,8 @@ Ask: "Ready to commit? (yes/no/skip)" **STOP.** Yes → stage specific files, co
 
 ### Internal code = no backwards compat
 - Types, APIs, Rust modules, TS fns: change = change. No "just in case" keeps.
-- **User data = different.** Files under `~/Documents/Houston/**` + `~/.houston/**` already on user machines. Shape/layout change → **idempotent migration** on upgrade. See `houston_agent_files::migrate_agent_data`. Never break existing users.
+- **User data = different.** Canonical location is `~/.houston/**` (workspaces live at `~/.houston/workspaces/`). Shape/layout changes inside `~/.houston/<agent>/.houston/**` need an **idempotent migration** in `houston_agent_files::migrate_agent_data`. Never break existing users.
+- **Legacy `~/Documents/Houston/**`** — earlier versions used this path. We do NOT auto-migrate from there; if a user upgrades they may need to copy their workspaces manually. When introducing further root moves, propose a migration story before executing.
 
 ### Tests mandatory
 Every feature gets tests. No exceptions. Tests don't count toward 200-line limit.

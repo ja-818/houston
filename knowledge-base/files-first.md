@@ -9,7 +9,7 @@ If app-specific → `.houston/`.
 ## Layout
 
 ```
-~/Documents/Houston/{Workspace}/{Agent}/
+~/.houston/workspaces/{Workspace}/{Agent}/
   .houston/
     agent.json                  AgentMeta (id, manifest_id, created_at, last_opened_at)
     activity/
@@ -23,6 +23,8 @@ If app-specific → `.houston/`.
       config.json + .schema.json
     learnings/
       learnings.json + .schema.json   ({id, text, created_at})
+      # Legacy `.houston/memory/learnings.md` auto-migrated on startup
+      # (bullet list → JSON). See `houston_agent_files::migrate_agent_data`.
     prompts/
       system.md                 editable base system prompt
       self-improvement.md       editable learning directives
@@ -36,12 +38,13 @@ If app-specific → `.houston/`.
   AGENTS.md                     symlink → CLAUDE.md (for Codex)
 ```
 
-## Two generic commands
-Frontend file I/O goes through exactly two Tauri commands:
-- `read_agent_file(agent_path, rel_path) -> string` — atomic read, `""` if missing
-- `write_agent_file(agent_path, rel_path, content) -> ()` — atomic temp+rename, emits matching `HoustonEvent`
-
-No typed CRUD. Per-type folder + schema = type safety in TS.
+## File I/O path
+Frontend never touches the filesystem directly. All `.houston/` reads
+and writes flow through `@houston-ai/engine-client` → `houston-engine`
+REST routes (`/v1/agents/:path/files/:kind`, etc.), which call into
+`houston-agent-files`. Writes are atomic (temp + rename) and emit a
+matching `HoustonEvent` over the WS. No typed CRUD — per-type folder +
+schema + a generic read/write pair covers everything.
 
 ## Schemas
 Authoritative. Live in `ui/agent-schemas/src/*.schema.json`. Embedded in Rust via `include_str!` in `houston-agent-files::schemas`. Seeded into each agent's `.houston/<type>/<type>.schema.json` on first launch. Prompts instruct model to read schema before writing data file.
@@ -70,16 +73,16 @@ Everything else lives in files.
 Users + LLMs equal participants. Both read/write all workspace data. All changes visible to both immediately.
 
 ### Two writers
-1. **Frontend via Tauri commands** — user clicks "Create Activity" → Tauri → Rust writes file
-2. **CLI agent direct writes** — agent writes `.agents/skills/<name>/SKILL.md` directly
+1. **Frontend via the engine** — user clicks "Create Activity" → React hook → `engine-client` → `houston-engine` REST route → `houston-agent-files` writes the file.
+2. **CLI agent direct writes** — the claude/codex subprocess writes `.agents/skills/<name>/SKILL.md` or updates `.houston/<type>/<type>.json` directly without talking to the engine.
 
 ### Three-layer reactivity stack
 1. **TanStack Query (frontend)** — all `.houston/` fetches via `useQuery`. Query keys: `["activity", agentPath]` etc. Dedup, background refresh, stale-while-revalidate.
-2. **Event emission on Tauri writes (Rust)** — `write_skill()` emits `SkillsChanged`, `create_activity()` emits `ActivityChanged`. Global listener invalidates matching query key.
-3. **File watcher on `.houston/` (Rust, `notify`)** — catches direct agent writes bypassing Tauri. Emits same events. Debounced.
+2. **Event emission on engine writes** — the engine's write helpers emit `HoustonEvent` variants (`SkillsChanged`, `ActivityChanged`, `LearningsChanged`, …) onto its broadcast bus. The desktop WS client (`ui/engine-client`) fans them out; global listeners in `app/src/hooks/use-agent-invalidation.ts` invalidate the matching query key.
+3. **File watcher on `.houston/` (Rust `notify`, `houston-file-watcher`)** — catches direct agent writes that bypass the engine's write path. Emits the same events onto the same bus. Debounced.
 
 ### The rule
 Never build feature where agent changes data but UI won't reflect until refresh. If in `.houston/`, must be reactive.
 
 ## User data = upgrade-safe
-Files under `~/Documents/Houston/**` + `~/.houston/**` exist on user machines. Changing shape/layout requires **idempotent migration** on upgrade. See `houston_agent_files::migrate_agent_data`. Never leave existing users broken.
+Files under `~/.houston/**` (including legacy `~/Documents/Houston/**` from earlier versions) exist on user machines. Changing shape/layout requires **idempotent migration** on upgrade. See `houston_agent_files::migrate_agent_data`. Never leave existing users broken.

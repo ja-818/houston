@@ -57,8 +57,8 @@ when you're connected to a remote engine.
 | `HOUSTON_BIND` | `127.0.0.1:0` | `ip:port` to bind. Set to `0.0.0.0:7777` for remote. |
 | `HOUSTON_BIND_ALL` | unset | Must be `1` to allow binding `0.0.0.0`. |
 | `HOUSTON_ENGINE_TOKEN` | auto-generated | Bearer token clients must send. |
-| `HOUSTON_HOME` | `~/.houston` | Data dir (DB + `engine.json`). |
-| `HOUSTON_DOCS` | `~/Documents/Houston` | Workspace root. |
+| `HOUSTON_HOME` | `~/.houston` | Data dir (DB, `engine.json`, workspaces). |
+| `HOUSTON_DOCS` | `$HOUSTON_HOME/workspaces` | Workspaces root. |
 | `RUST_LOG` | `info,houston=debug` | tracing filter. |
 
 ## Native build (no Docker)

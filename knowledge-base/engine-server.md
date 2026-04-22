@@ -20,8 +20,9 @@ All via environment variables.
 | `HOUSTON_BIND` | `127.0.0.1:0` | `ip:port`. Random local port by default. |
 | `HOUSTON_BIND_ALL` | unset | Must be `1` to bind `0.0.0.0`. Safety net against accidental public exposure. |
 | `HOUSTON_ENGINE_TOKEN` | auto | Bearer token clients must send. 48-char alphanumeric if unset. |
-| `HOUSTON_HOME` | `~/.houston` | DB, logs, `engine.json`. |
-| `HOUSTON_DOCS` | `~/Documents/Houston` | Workspace filesystem root. |
+| `HOUSTON_HOME` | `~/.houston` | DB, logs, `engine.json`, workspaces. |
+| `HOUSTON_DOCS` | `$HOUSTON_HOME/workspaces` | Workspaces filesystem root. |
+| `HOUSTON_NO_PARENT_WATCHDOG` | unset | Set to `1` to disable the stdin-EOF → exit watchdog (see "Parent watchdog" below). Required when running under systemd/docker where no supervisor holds the stdin pipe. |
 | `RUST_LOG` | `info,houston=debug` | `tracing` filter. |
 
 ## Startup handshake
@@ -47,6 +48,11 @@ The desktop supervisor (`app/src-tauri/src/engine_supervisor.rs`) parses
 that line to bootstrap the webview. Do **not** log the token anywhere
 else.
 
+**stdout vs stderr:** the banner is the ONLY stdout write. All
+`tracing` output goes to stderr. That lets the supervisor close its
+read-end of stdout after the banner without triggering EPIPE storms on
+the engine side.
+
 ## Process model
 
 - Single process, tokio multi-threaded runtime.
@@ -59,13 +65,35 @@ else.
 
 `engine_supervisor.rs` spawns the binary with:
 
+- **Piped stdin** that the supervisor holds open but never writes.
+  When the supervisor (the Tauri app) exits for any reason, the pipe
+  closes → the engine's `spawn_parent_watchdog` sees stdin EOF →
+  `exit(0)`. This is the cross-platform orphan-prevention.
 - **macOS/Linux:** `setpgid(0,0)` so the child gets its own process group.
-  Parent drop kills `-pgrp`.
-- **Linux:** `prctl(PR_SET_PDEATHSIG, SIGKILL)` (Phase 4 task).
+  Parent drop also kills `-pgrp` as a backup path.
+- **Linux:** `prctl(PR_SET_PDEATHSIG, SIGKILL)` (Phase 4 task; the
+  stdin watchdog already covers this case).
 - **Windows:** Job Objects with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`
   (Phase 4 task).
 
 Restart policy: exponential backoff 500ms → 30s cap on child crash.
+
+### Parent watchdog
+
+`engine/houston-engine-server/src/main.rs::spawn_parent_watchdog` runs a
+blocking read on stdin. On EOF (parent pipe closed), the process exits.
+Gating:
+
+- Disabled when stdin is a TTY (i.e. you're running the binary by hand
+  for debugging). `IsTerminal::is_terminal()` check.
+- Disabled when `HOUSTON_NO_PARENT_WATCHDOG=1` is set. Use this under
+  systemd, docker, or any supervisor that owns lifecycle some other
+  way.
+
+**Important interaction:** `engine_supervisor.rs` takes the child's
+`ChildStdin` out of `Child` before any `wait()` call — `Child::wait()`
+closes stdin as part of its contract, which would otherwise trip the
+watchdog the moment the supervisor tried to reap.
 
 ## Deployment modes
 
@@ -100,3 +128,9 @@ See `always-on/README.md` for the VPS path.
   upstream timeout past 30s.
 - **Desktop never launches** → supervisor did not see banner in 5s. Check
   child stderr; binary missing from sidecar bundle?
+- **Engine exits immediately on manual run / under non-Tauri supervisor** →
+  parent watchdog sees no writer on stdin. Set `HOUSTON_NO_PARENT_WATCHDOG=1`
+  or redirect stdin from a pipe that stays open (`cat | houston-engine`).
+- **CORS `Load failed` in WKWebView** → rebuild the engine. The old
+  allow_methods list omitted PUT/PATCH; current code uses `Any` + `*`
+  wildcard. Stale sidecar binary is the usual cause.

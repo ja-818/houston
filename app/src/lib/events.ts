@@ -17,8 +17,17 @@ import { legacyEmit, legacyListen } from "./os-bridge";
 
 type Unsub = () => void;
 
-/** Broad topics every frontend needs a stream of, regardless of agent. */
+/**
+ * Topics every frontend needs regardless of agent.
+ *
+ * `*` is the firehose — see `engine/houston-engine-server/src/ws.rs`.
+ * The desktop app listens to every session and every agent path, so we
+ * subscribe to everything rather than track per-agent / per-session
+ * subscriptions. Remote/headless clients that only care about a narrow
+ * slice can sub to specific topics instead.
+ */
 const BROAD_TOPICS: readonly string[] = [
+  "*",
   topics.auth,
   topics.toast,
   topics.events,
