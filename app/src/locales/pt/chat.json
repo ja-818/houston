@@ -24,5 +24,7 @@
     "thinking": "Pensando...",
     "thoughtFor": "Pensou por {{count}} segundos",
     "thoughtForFew": "Pensou por alguns segundos"
-  }
+  },
+  "filesUpdated_one": "1 arquivo atualizado",
+  "filesUpdated_other": "{{count}} arquivos atualizados"
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
 import { Button, Spinner } from "@houston-ai/core";
 import { useUIStore } from "../../stores/ui";
@@ -6,6 +7,7 @@ import { tauriProvider } from "../../lib/tauri";
 import { getProvider } from "../../lib/providers";
 
 export function AuthReconnectBanner() {
+  const { t } = useTranslation(["shell", "common"]);
   const authRequired = useUIStore((s) => s.authRequired);
   const setAuthRequired = useUIStore((s) => s.setAuthRequired);
   const [loginLaunched, setLoginLaunched] = useState(false);
@@ -57,11 +59,11 @@ export function AuthReconnectBanner() {
             <div className="flex items-center gap-2 mb-1">
               <AlertTriangle className="h-4 w-4 text-[#e0ac00]" />
               <p className="text-sm font-semibold text-foreground">
-                Houston, we have a problem
+                {t("shell:authReconnect.heading")}
               </p>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Your {provider.name} session expired. Sign in again to keep your agents running.
+              {t("shell:authReconnect.body", { provider: provider.name })}
             </p>
 
             {!loginLaunched ? (
@@ -70,19 +72,19 @@ export function AuthReconnectBanner() {
                 className="rounded-full"
                 size="sm"
               >
-                Sign in with {provider.name}
+                {t("shell:authReconnect.signInWith", { provider: provider.name })}
               </Button>
             ) : (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Spinner className="h-3.5 w-3.5" />
-                  <span>Waiting for browser sign-in...</span>
+                  <span>{t("shell:authReconnect.waiting")}</span>
                 </div>
                 <button
                   onClick={handleSignIn}
                   className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
                 >
-                  Try again
+                  {t("common:actions.tryAgain")}
                 </button>
               </div>
             )}
@@ -92,9 +94,9 @@ export function AuthReconnectBanner() {
           <button
             onClick={() => setAuthRequired(null)}
             className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Dismiss"
+            aria-label={t("common:actions.dismiss")}
           >
-            Dismiss
+            {t("common:actions.dismiss")}
           </button>
         </div>
       </div>

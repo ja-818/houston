@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, Check } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,6 +28,7 @@ interface ChatModelSelectorProps {
 }
 
 export function ChatModelSelector({ provider, model, onSelect, lockedProvider }: ChatModelSelectorProps) {
+  const { t } = useTranslation("chat");
   const [statuses, setStatuses] = useState<Record<string, ProviderStatus>>({});
 
   const loadStatuses = useCallback(async () => {
@@ -43,7 +45,7 @@ export function ChatModelSelector({ provider, model, onSelect, lockedProvider }:
 
   const currentProvider = getProvider(provider);
   const currentModel = getModel(provider, model);
-  const displayLabel = currentModel?.label ?? currentProvider?.subtitle ?? "Select model";
+  const displayLabel = currentModel?.label ?? currentProvider?.subtitle ?? t("modelSelector.selectModel");
 
   return (
     // Stop pointer events from bubbling — prevents the board detail panel
@@ -105,6 +107,7 @@ function ProviderModelGroup({
   onSelect: (provider: string, model: string) => void;
   showSeparator: boolean;
 }) {
+  const { t } = useTranslation("chat");
   return (
     <>
       {showSeparator && <DropdownMenuSeparator />}
@@ -112,7 +115,7 @@ function ProviderModelGroup({
         <ProviderIcon providerId={provider.id} className="size-3.5" />
         {provider.name}
         {!connected && (
-          <span className="text-[10px] text-muted-foreground/60 ml-auto">Not connected</span>
+          <span className="text-[10px] text-muted-foreground/60 ml-auto">{t("modelSelector.notConnected")}</span>
         )}
       </DropdownMenuLabel>
       {provider.models.map((m) => {

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { SkillsGrid, SkillDetailPage } from "@houston-ai/skills";
 import type { Skill, CommunitySkill } from "@houston-ai/skills";
 import type { TabProps } from "../../lib/types";
@@ -14,6 +15,7 @@ import {
 } from "../../hooks/queries";
 
 export default function SkillsTab({ agent }: TabProps) {
+  const { t } = useTranslation("skills");
   const path = agent.folderPath;
   const { data: summaries, isLoading: skillsLoading } = useSkills(path);
   const [selectedSkillName, setSelectedSkillName] = useState<string | null>(null);
@@ -45,9 +47,9 @@ export default function SkillsTab({ agent }: TabProps) {
   return (
     <div className="h-full overflow-auto">
       <div className="max-w-3xl mx-auto px-6 py-6">
-        <h2 className="text-sm font-medium text-foreground">Skills</h2>
+        <h2 className="text-sm font-medium text-foreground">{t("page.title")}</h2>
         <p className="text-xs text-muted-foreground/60 mt-0.5 mb-3">
-          Reusable instructions the agents can use.
+          {t("page.description")}
         </p>
         {selectedSkill ? (
           <SkillDetailPage skill={selectedSkill} onBack={() => setSelectedSkillName(null)} onSave={handleSkillSave} onDelete={handleSkillDelete} />

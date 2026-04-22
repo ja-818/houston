@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanItem } from "@houston-ai/board";
@@ -57,6 +58,7 @@ function PanelAvatar({ color, isRunning }: { color?: string; isRunning: boolean 
 }
 
 export default function BoardTab({ agent, agentDef }: TabProps) {
+  const { t } = useTranslation("board");
   const panelContainer = useDetailPanelContainer();
   const path = agent.folderPath;
   const agentModes = agentDef.config.agents;
@@ -376,14 +378,14 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         <button
           onClick={(e) => { e.stopPropagation(); handleRunInTerminal(item); }}
           className="flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-secondary text-foreground text-[10px] font-medium hover:bg-accent transition-colors duration-200"
-          title="Open terminal in worktree"
+          title={t("cardActions.openTerminal")}
         >
           <Terminal className="size-2.5" />
-          Run
+          {t("cardActions.run")}
         </button>
       );
     },
-    [handleRunInTerminal],
+    [handleRunInTerminal, t],
   );
 
   const panelActions = useCallback(
@@ -403,15 +405,15 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           <button
             onClick={() => handleRunInTerminal(item)}
             className="flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-secondary text-foreground text-[10px] font-medium hover:bg-accent transition-colors duration-200"
-            title="Open terminal in worktree"
+            title={t("cardActions.openTerminal")}
           >
             <Terminal className="size-2.5" />
-            Run
+            {t("cardActions.run")}
           </button>
         </div>
       );
     },
-    [handleRunInTerminal],
+    [handleRunInTerminal, t],
   );
 
   return (

@@ -24,5 +24,7 @@
     "thinking": "Thinking...",
     "thoughtFor": "Thought for {{count}} seconds",
     "thoughtForFew": "Thought for a few seconds"
-  }
+  },
+  "filesUpdated_one": "1 file updated",
+  "filesUpdated_other": "{{count}} files updated"
 }

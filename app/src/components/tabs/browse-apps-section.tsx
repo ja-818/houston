@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Search, Loader2, Plus, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { tauriConnections, tauriSystem } from "../../lib/tauri";
@@ -11,6 +12,7 @@ interface BrowseAppsSectionProps {
 const PAGE_SIZE = 100;
 
 export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps) {
+  const { t } = useTranslation("integrations");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [visible, setVisible] = useState(PAGE_SIZE);
@@ -90,10 +92,12 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
     <section className="mt-8">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-medium text-foreground">
-          Browse all apps
+          {t("browse.title")}
         </h2>
         <span className="text-xs text-muted-foreground">
-          {available.length} {available.length === 1 ? "app" : "apps"}
+          {available.length === 1
+            ? t("browse.countOne", { count: available.length })
+            : t("browse.countOther", { count: available.length })}
         </span>
       </div>
 
@@ -105,7 +109,7 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search apps..."
+            placeholder={t("browse.searchPlaceholder")}
             className="w-full h-9 pl-9 pr-3 rounded-full border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
           />
         </div>
@@ -119,7 +123,7 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
               }}
               className="h-9 pl-3 pr-8 rounded-full border border-border bg-background text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/20"
             >
-              <option value="all">All categories</option>
+              <option value="all">{t("browse.allCategories")}</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, " ")}
@@ -134,7 +138,7 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
       {/* Grid */}
       {available.length === 0 && (
         <p className="text-sm text-muted-foreground py-4 text-center">
-          No matching apps found.
+          {t("browse.noResults")}
         </p>
       )}
       {available.length > 0 && (
@@ -155,7 +159,7 @@ export function BrowseAppsSection({ connectedToolkits }: BrowseAppsSectionProps)
                 onClick={() => setVisible((v) => v + PAGE_SIZE)}
                 className="inline-flex items-center gap-1 h-8 px-4 rounded-full border border-border bg-background text-foreground text-xs font-medium hover:bg-secondary transition-colors duration-200"
               >
-                Load more ({available.length - visible} remaining)
+                {t("browse.loadMoreWithRemaining", { count: available.length - visible })}
               </button>
             </div>
           )}
@@ -182,6 +186,7 @@ function AppCard({
   connecting: boolean;
   onConnect: (toolkit: string) => void;
 }) {
+  const { t } = useTranslation("integrations");
   const [imgError, setImgError] = useState(false);
   const initial = app.name.charAt(0).toUpperCase();
 
@@ -190,7 +195,7 @@ function AppCard({
       type="button"
       onClick={() => onConnect(app.toolkit)}
       disabled={connecting}
-      title={`Connect ${app.name}`}
+      title={t("browse.connectTitle", { name: app.name })}
       className="group w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary hover:bg-black/[0.05] transition-colors disabled:opacity-60 disabled:cursor-wait focus-visible:outline-none focus-visible:bg-black/[0.05]"
     >
       {!imgError ? (

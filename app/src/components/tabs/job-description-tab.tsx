@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { SkillsGrid, SkillDetailPage } from "@houston-ai/skills";
 import type { Skill, CommunitySkill } from "@houston-ai/skills";
 import {
@@ -36,13 +37,10 @@ import type { TabProps } from "../../lib/types";
 
 type SubTab = "instructions" | "skills" | "learnings";
 
-const SUB_TABS: { id: SubTab; label: string }[] = [
-  { id: "instructions", label: "Instructions" },
-  { id: "skills", label: "Skills" },
-  { id: "learnings", label: "Learnings" },
-];
+const SUB_TAB_IDS: SubTab[] = ["instructions", "skills", "learnings"];
 
 export default function JobDescriptionTab({ agent }: TabProps) {
+  const { t } = useTranslation("agents");
   const path = agent.folderPath;
   const [activeTab, setActiveTab] = useState<SubTab>("instructions");
 
@@ -155,18 +153,18 @@ export default function JobDescriptionTab({ agent }: TabProps) {
     <div className="flex-1 flex flex-col min-h-0 bg-background">
       {/* Sub-tab pills */}
       <div className="flex gap-1 px-6 pt-4 pb-3 shrink-0">
-        {SUB_TABS.map((tab) => (
+        {SUB_TAB_IDS.map((tabId) => (
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            key={tabId}
+            onClick={() => setActiveTab(tabId)}
             className={cn(
               "h-8 px-3 rounded-full text-xs font-medium transition-colors",
-              activeTab === tab.id
+              activeTab === tabId
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-black/[0.03] hover:text-foreground",
             )}
           >
-            {tab.label}
+            {t(`subTabs.${tabId}`)}
           </button>
         ))}
       </div>
@@ -219,6 +217,7 @@ function InstructionsContent({
   content: string;
   onSave: (content: string) => Promise<unknown>;
 }) {
+  const { t } = useTranslation("agents");
   const [value, setValue] = useState(content);
   const [editing, setEditing] = useState(false);
   const [state, setState] = useState<SaveState>("idle");
@@ -248,9 +247,9 @@ function InstructionsContent({
     return (
       <div className="mx-auto max-w-md flex flex-col items-center gap-6 text-center pt-24 px-6">
         <EmptyHeader>
-          <EmptyTitle>No instructions yet</EmptyTitle>
+          <EmptyTitle>{t("instructions.emptyTitle")}</EmptyTitle>
           <EmptyDescription>
-            Tell your agent how it should think and act.
+            {t("instructions.emptyDescription")}
           </EmptyDescription>
         </EmptyHeader>
         <Button
@@ -260,7 +259,7 @@ function InstructionsContent({
           }}
         >
           <FileText className="size-4" />
-          Write instructions
+          {t("instructions.writeButton")}
         </Button>
       </div>
     );
@@ -270,7 +269,7 @@ function InstructionsContent({
     <div className="max-w-3xl mx-auto w-full px-6 pb-12 pt-2">
       <div className="flex items-baseline justify-between gap-4 mb-4">
         <p className="text-xs text-muted-foreground max-w-md">
-          How this agent should think and act.
+          {t("instructions.helper")}
         </p>
         <span
           className={cn(
@@ -281,7 +280,7 @@ function InstructionsContent({
           )}
           aria-live="polite"
         >
-          {state === "saving" ? "Saving…" : state === "saved" ? "Saved" : ""}
+          {state === "saving" ? t("instructions.saving") : state === "saved" ? t("instructions.saved") : ""}
         </span>
       </div>
       <section className="rounded-xl bg-secondary p-3">
@@ -290,7 +289,7 @@ function InstructionsContent({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onBlur={handleBlur}
-          placeholder="Write instructions for your agent…"
+          placeholder={t("instructions.placeholder")}
           rows={Math.max(12, value.split("\n").length + 2)}
           className={cn(
             "w-full px-4 py-3 text-sm text-foreground leading-relaxed",
@@ -336,6 +335,7 @@ function LearningsContent({
   onRemove: (index: number) => Promise<unknown>;
   onUpdate: (id: string, text: string) => Promise<unknown>;
 }) {
+  const { t } = useTranslation("agents");
   // Local IDs for unsaved drafts (separate from server-assigned IDs).
   const [drafts, setDrafts] = useState<string[]>([]);
   const [pendingRemove, setPendingRemove] = useState<LearningEntry | null>(null);
@@ -368,15 +368,14 @@ function LearningsContent({
     return (
       <div className="mx-auto max-w-md flex flex-col items-center gap-6 text-center pt-24 px-6">
         <EmptyHeader>
-          <EmptyTitle>No learnings yet</EmptyTitle>
+          <EmptyTitle>{t("learnings.emptyTitle")}</EmptyTitle>
           <EmptyDescription>
-            The agent jots things down as it works — or you can add them
-            yourself.
+            {t("learnings.emptyDescription")}
           </EmptyDescription>
         </EmptyHeader>
         <Button onClick={addDraft}>
           <Plus className="size-4" />
-          Add learning
+          {t("learnings.addLearning")}
         </Button>
       </div>
     );
@@ -386,11 +385,11 @@ function LearningsContent({
     <div className="max-w-3xl mx-auto w-full px-6 pb-12 pt-2">
       <div className="flex items-center justify-between gap-4 mb-4">
         <p className="text-xs text-muted-foreground max-w-md">
-          Quick notes the agent picks up over time.
+          {t("learnings.helper")}
         </p>
         <Button size="sm" onClick={addDraft} className="shrink-0">
           <Plus className="size-3.5" />
-          Add learning
+          {t("learnings.addLearning")}
         </Button>
       </div>
 
@@ -419,9 +418,9 @@ function LearningsContent({
         onOpenChange={(open) => {
           if (!open) setPendingRemove(null);
         }}
-        title="Remove this learning?"
-        description="The agent will lose this note. You can add it back later."
-        confirmLabel="Remove"
+        title={t("learnings.confirmRemoveTitle")}
+        description={t("learnings.confirmRemoveDescription")}
+        confirmLabel={t("learnings.confirmRemoveLabel")}
         onConfirm={handleConfirmRemove}
       />
     </div>
@@ -446,6 +445,7 @@ function LearningRow({
   onCancel?: () => void;
   isDraft?: boolean;
 }) {
+  const { t } = useTranslation(["agents", "common"]);
   const [value, setValue] = useState(initialText);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -496,7 +496,7 @@ function LearningRow({
           }
         }}
         onBlur={commit}
-        placeholder={isDraft ? "Type a learning and press Enter…" : ""}
+        placeholder={isDraft ? t("agents:learnings.inputPlaceholder") : ""}
         className={cn(
           "flex-1 bg-transparent text-sm text-foreground",
           "placeholder:text-muted-foreground/60",
@@ -511,7 +511,7 @@ function LearningRow({
             "text-muted-foreground hover:text-red-500 hover:bg-black/[0.05]",
             "transition-colors",
           )}
-          aria-label="Remove learning"
+          aria-label={t("agents:learnings.removeAria")}
         >
           <Trash2 className="size-3.5" />
         </button>
@@ -524,7 +524,7 @@ function LearningRow({
             "px-2 py-1 rounded-md transition-colors",
           )}
         >
-          Cancel
+          {t("common:actions.cancel")}
         </button>
       )}
     </div>

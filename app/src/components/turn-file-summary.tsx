@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDownIcon } from "lucide-react";
 import { cn } from "@houston-ai/core";
 import { tauriFiles } from "../lib/tauri";
@@ -10,6 +11,7 @@ interface TurnFileSummaryProps {
 }
 
 export function TurnFileSummary({ filePaths, agentPath }: TurnFileSummaryProps) {
+  const { t } = useTranslation("chat");
   const [open, setOpen] = useState(false);
 
   const handleOpen = useCallback(
@@ -35,9 +37,7 @@ export function TurnFileSummary({ filePaths, agentPath }: TurnFileSummaryProps) 
           )}
         />
         <span>
-          {filePaths.length === 1
-            ? "1 file updated"
-            : `${filePaths.length} files updated`}
+          {t("filesUpdated", { count: filePaths.length })}
         </span>
       </button>
       {open && (

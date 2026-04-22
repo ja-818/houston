@@ -3,6 +3,7 @@
  * No "install" step visible to the user.
  */
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, Spinner } from "@houston-ai/core";
 import { AlertCircle, Github } from "lucide-react";
 
@@ -11,6 +12,7 @@ interface GithubImportViewProps {
 }
 
 export function GithubImportView({ onImport }: GithubImportViewProps) {
+  const { t } = useTranslation("shell");
   const [source, setSource] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -47,7 +49,7 @@ export function GithubImportView({ onImport }: GithubImportViewProps) {
                   handleGo();
                 }
               }}
-              placeholder="owner/repo"
+              placeholder={t("githubImport.placeholder")}
               disabled={loading}
               autoFocus
               className="w-full h-9 pl-9 pr-3 rounded-full border border-border bg-background text-sm
@@ -60,7 +62,7 @@ export function GithubImportView({ onImport }: GithubImportViewProps) {
             disabled={!source.trim() || loading}
             className="rounded-full shrink-0"
           >
-            {loading ? <Spinner className="size-4" /> : "Next"}
+            {loading ? <Spinner className="size-4" /> : t("githubImport.next")}
           </Button>
         </div>
 
@@ -75,14 +77,14 @@ export function GithubImportView({ onImport }: GithubImportViewProps) {
       <div className="flex-1 min-h-0 overflow-y-auto px-6">
         {!loading && !error && (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            Enter a public GitHub repo in owner/repo format
+            {t("githubImport.hint")}
           </p>
         )}
 
         {loading && (
           <div className="flex flex-col items-center gap-2 py-8">
             <Spinner className="size-5 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Fetching agent...</p>
+            <p className="text-sm text-muted-foreground">{t("githubImport.fetching")}</p>
           </div>
         )}
       </div>

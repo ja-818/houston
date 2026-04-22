@@ -66,5 +66,10 @@
     "projectContext": "Project Context",
     "claudeMdSummary": "CLAUDE.md, {{count}} lines",
     "modeSummary": "{{file}}, {{count}} lines"
+  },
+  "files": {
+    "emptyTitle": "No files yet",
+    "emptyDescription": "Files created by your assistant will appear here.",
+    "openInFinder": "Open in Finder"
   }
 }

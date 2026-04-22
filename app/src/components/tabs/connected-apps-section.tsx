@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { tauriConnections, tauriSystem } from "../../lib/tauri";
@@ -10,6 +11,7 @@ interface ConnectedAppsSectionProps {
 export function ConnectedAppsSection({
   connectedToolkits,
 }: ConnectedAppsSectionProps) {
+  const { t } = useTranslation("integrations");
   const { data: apiApps } = useQuery({
     queryKey: ["composio-apps"],
     queryFn: () => tauriConnections.listApps(),
@@ -34,7 +36,7 @@ export function ConnectedAppsSection({
           byToolkit.get(slug) ?? {
             toolkit: slug,
             name: slug,
-            description: "Connected",
+            description: t("connected.title"),
             logoUrl: fallbackLogo(slug),
           },
       )
@@ -48,10 +50,11 @@ export function ConnectedAppsSection({
   return (
     <section className="mt-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-medium text-foreground">Connected</h2>
+        <h2 className="text-sm font-medium text-foreground">{t("connected.title")}</h2>
         <span className="text-xs text-muted-foreground">
-          {connectedApps.length}{" "}
-          {connectedApps.length === 1 ? "app" : "apps"}
+          {connectedApps.length === 1
+            ? t("connected.countOne", { count: connectedApps.length })
+            : t("connected.countOther", { count: connectedApps.length })}
         </span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -76,6 +79,7 @@ function composioAppUrl(toolkit: string): string {
 
 
 function ConnectedAppCard({ app }: { app: AppInfo }) {
+  const { t } = useTranslation("integrations");
   const [imgError, setImgError] = useState(false);
   const initial = app.name.charAt(0).toUpperCase();
 
@@ -83,7 +87,7 @@ function ConnectedAppCard({ app }: { app: AppInfo }) {
     <button
       type="button"
       onClick={() => tauriSystem.openUrl(composioAppUrl(app.toolkit))}
-      title={`Manage ${app.name} on Composio`}
+      title={t("connected.manageOn", { name: app.name })}
       className="group w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary hover:bg-black/[0.05] transition-colors focus-visible:outline-none focus-visible:bg-black/[0.05]"
     >
       {!imgError ? (
@@ -105,7 +109,7 @@ function ConnectedAppCard({ app }: { app: AppInfo }) {
           {app.name}
           <span
             className="size-1.5 rounded-full bg-emerald-500 shrink-0"
-            aria-label="Connected"
+            aria-label={t("connected.dotAria")}
           />
         </p>
         <p className="text-[11px] text-muted-foreground truncate">
