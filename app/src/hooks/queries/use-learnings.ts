@@ -1,30 +1,22 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import * as learnings from "../../data/learnings";
 import { queryKeys } from "../../lib/query-keys";
-import { tauriLearnings } from "../../lib/tauri";
 
 export function useLearnings(agentPath: string | undefined) {
-  return useQuery({
+  const q = useQuery({
     queryKey: queryKeys.learnings(agentPath ?? ""),
-    queryFn: () => tauriLearnings.load(agentPath!),
+    queryFn: () => learnings.list(agentPath!),
     enabled: !!agentPath,
   });
+  // Adapt to legacy `{ index, text }[]` shape so existing UIs keep working.
+  const entries = (q.data ?? []).map((l, index) => ({ index, text: l.text, id: l.id }));
+  return { data: { entries }, isLoading: q.isLoading };
 }
 
 export function useAddLearning(agentPath: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (text: string) => tauriLearnings.add(agentPath!, text),
-    onSuccess: () => {
-      if (agentPath) qc.invalidateQueries({ queryKey: queryKeys.learnings(agentPath) });
-    },
-  });
-}
-
-export function useReplaceLearning(agentPath: string | undefined) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ index, text }: { index: number; text: string }) =>
-      tauriLearnings.replace(agentPath!, index, text),
+    mutationFn: (text: string) => learnings.add(agentPath!, text),
     onSuccess: () => {
       if (agentPath) qc.invalidateQueries({ queryKey: queryKeys.learnings(agentPath) });
     },
@@ -34,7 +26,23 @@ export function useReplaceLearning(agentPath: string | undefined) {
 export function useRemoveLearning(agentPath: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (index: number) => tauriLearnings.remove(agentPath!, index),
+    mutationFn: async (index: number) => {
+      const all = await learnings.list(agentPath!);
+      const target = all[index];
+      if (!target) return;
+      await learnings.remove(agentPath!, target.id);
+    },
+    onSuccess: () => {
+      if (agentPath) qc.invalidateQueries({ queryKey: queryKeys.learnings(agentPath) });
+    },
+  });
+}
+
+export function useUpdateLearning(agentPath: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, text }: { id: string; text: string }) =>
+      learnings.update(agentPath!, id, text),
     onSuccess: () => {
       if (agentPath) qc.invalidateQueries({ queryKey: queryKeys.learnings(agentPath) });
     },

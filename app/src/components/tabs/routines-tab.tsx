@@ -1,5 +1,9 @@
-import { useState, useCallback, useMemo } from "react";
-import { RoutinesGrid, RoutineDetail, RoutineForm } from "@houston-ai/routines";
+import { useCallback, useMemo, useState } from "react";
+import {
+  RoutinesGrid,
+  RoutineEditor,
+  TimezoneGate,
+} from "@houston-ai/routines";
 import type { RoutineFormData, RoutineRun } from "@houston-ai/routines";
 import {
   useRoutines,
@@ -9,9 +13,10 @@ import {
   useDeleteRoutine,
   useRunRoutineNow,
 } from "../../hooks/queries";
+import { useTimezonePreference } from "../../hooks/use-timezone-preference";
 import type { TabProps } from "../../lib/types";
 
-type View = { type: "grid" } | { type: "detail"; id: string } | { type: "form"; editId?: string };
+type View = { type: "grid" } | { type: "editor"; editId?: string };
 
 const EMPTY_FORM: RoutineFormData = {
   name: "",
@@ -19,10 +24,27 @@ const EMPTY_FORM: RoutineFormData = {
   prompt: "",
   schedule: "0 9 * * *",
   suppress_when_silent: true,
+  timezone: null,
 };
+
+function formMatchesRoutine(
+  form: RoutineFormData,
+  source: RoutineFormData,
+): boolean {
+  return (
+    form.name === source.name &&
+    form.description === source.description &&
+    form.prompt === source.prompt &&
+    form.schedule === source.schedule &&
+    form.suppress_when_silent === source.suppress_when_silent &&
+    (form.timezone ?? null) === (source.timezone ?? null)
+  );
+}
 
 export default function RoutinesTab({ agent }: TabProps) {
   const path = agent.folderPath;
+  const tz = useTimezonePreference();
+
   const { data: routines, isLoading } = useRoutines(path);
   const { data: allRuns } = useRoutineRuns(path);
   const createRoutine = useCreateRoutine(path);
@@ -32,6 +54,7 @@ export default function RoutinesTab({ agent }: TabProps) {
 
   const [view, setView] = useState<View>({ type: "grid" });
   const [form, setForm] = useState<RoutineFormData>(EMPTY_FORM);
+  const [baseline, setBaseline] = useState<RoutineFormData>(EMPTY_FORM);
 
   // Compute last run per routine
   const lastRuns = useMemo(() => {
@@ -48,30 +71,45 @@ export default function RoutinesTab({ agent }: TabProps) {
 
   const handleCreate = useCallback(() => {
     setForm(EMPTY_FORM);
-    setView({ type: "form" });
+    setBaseline(EMPTY_FORM);
+    setView({ type: "editor" });
   }, []);
 
-  const handleEdit = useCallback(
+  const openEditor = useCallback(
     (routineId: string) => {
       const r = routines?.find((x) => x.id === routineId);
       if (!r) return;
-      setForm({
+      const next: RoutineFormData = {
         name: r.name,
         description: r.description,
         prompt: r.prompt,
         schedule: r.schedule,
         suppress_when_silent: r.suppress_when_silent,
-      });
-      setView({ type: "form", editId: routineId });
+        timezone: r.timezone ?? null,
+      };
+      setForm(next);
+      setBaseline(next);
+      setView({ type: "editor", editId: routineId });
     },
     [routines],
   );
 
   const handleSubmit = useCallback(async () => {
-    if (view.type !== "form") return;
+    if (view.type !== "editor") return;
     if (view.editId) {
-      await updateRoutine.mutateAsync({ routineId: view.editId, updates: form });
-      setView({ type: "detail", id: view.editId });
+      const updated = await updateRoutine.mutateAsync({
+        routineId: view.editId,
+        updates: form,
+      });
+      // Reset baseline so the Save button disables until the next edit.
+      setBaseline({
+        name: updated.name,
+        description: updated.description,
+        prompt: updated.prompt,
+        schedule: updated.schedule,
+        suppress_when_silent: updated.suppress_when_silent,
+        timezone: updated.timezone ?? null,
+      });
     } else {
       await createRoutine.mutateAsync(form);
       setView({ type: "grid" });
@@ -100,47 +138,43 @@ export default function RoutinesTab({ agent }: TabProps) {
     [runNow],
   );
 
-  const selectedRoutine =
-    view.type === "detail" ? routines?.find((r) => r.id === view.id) : undefined;
-  const selectedRuns = useMemo(
-    () =>
-      view.type === "detail" && allRuns
-        ? allRuns.filter((r) => r.routine_id === view.id)
-        : [],
-    [view, allRuns],
-  );
+  // ------- Render order: timezone gate first, then routines UI -------
 
-  if (view.type === "form") {
+  if (!tz.loaded) {
     return (
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-xl mx-auto px-6 py-8">
-          <h2 className="text-lg font-medium text-foreground mb-6">
-            {view.editId ? "Edit routine" : "New routine"}
-          </h2>
-          <RoutineForm
-            value={form}
-            onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
-            onSubmit={handleSubmit}
-            onCancel={() =>
-              setView(view.editId ? { type: "detail", id: view.editId } : { type: "grid" })
-            }
-            submitLabel={view.editId ? "Save" : "Create"}
-          />
-        </div>
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-sm text-muted-foreground animate-pulse">Loading…</p>
       </div>
     );
   }
 
-  if (view.type === "detail" && selectedRoutine) {
+  if (!tz.timezone) {
+    return <TimezoneGate detected={tz.detected} onConfirm={tz.confirm} />;
+  }
+
+  if (view.type === "editor") {
+    const editing = view.editId
+      ? routines?.find((r) => r.id === view.editId)
+      : undefined;
+    const editingRuns = view.editId
+      ? (allRuns ?? []).filter((r) => r.routine_id === view.editId)
+      : [];
+
     return (
-      <RoutineDetail
-        routine={selectedRoutine}
-        runs={selectedRuns}
+      <RoutineEditor
+        value={form}
+        onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
         onBack={() => setView({ type: "grid" })}
-        onEdit={() => handleEdit(selectedRoutine.id)}
-        onRunNow={() => handleRunNow(selectedRoutine.id)}
-        onToggle={(enabled) => handleToggle(selectedRoutine.id, enabled)}
-        onDelete={() => handleDelete(selectedRoutine.id)}
+        onSubmit={handleSubmit}
+        routine={editing}
+        runs={editingRuns}
+        onRunNow={editing ? () => handleRunNow(editing.id) : undefined}
+        onToggle={
+          editing ? (enabled) => handleToggle(editing.id, enabled) : undefined
+        }
+        onDelete={editing ? () => handleDelete(editing.id) : undefined}
+        accountTimezone={tz.timezone}
+        hasChanges={!formMatchesRoutine(form, baseline)}
       />
     );
   }
@@ -149,8 +183,9 @@ export default function RoutinesTab({ agent }: TabProps) {
     <RoutinesGrid
       routines={routines ?? []}
       lastRuns={lastRuns}
+      accountTimezone={tz.timezone}
       loading={isLoading}
-      onSelect={(id) => setView({ type: "detail", id })}
+      onSelect={openEditor}
       onCreate={handleCreate}
       onToggle={handleToggle}
     />

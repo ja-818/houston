@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Learnings",
+  "description": "Persistent lessons the agent has recorded about this workspace.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "text", "created_at"],
+    "properties": {
+      "id": { "type": "string" },
+      "text": { "type": "string" },
+      "created_at": { "type": "string", "format": "date-time" }
+    },
+    "additionalProperties": false
+  }
+}

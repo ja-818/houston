@@ -1,5 +1,6 @@
 packages:
-  - "packages/*"
-  - "create-app"
-  - "showcase"
+  - "ui/*"
   - "app"
+  - "mobile"
+  - "desktop-mobile-bridge"
+  - "examples/*"

@@ -1,0 +1,52 @@
+//! Composio integration — plain async fns (transport-neutral).
+//!
+//! Houston's composio support is powered by the `composio` CLI. Each
+//! function here is a thin wrapper around `cli::*` functions
+//! that shell out to the binary at `~/.composio/composio`.
+//!
+//! Tauri command decorators live in the adapter crate (`houston-tauri`),
+//! keeping this crate frontend-agnostic.
+
+use crate::cli::{self, ComposioStatus, StartLinkResponse, StartLoginResponse};
+use crate::install;
+
+/// Current state of Houston's composio integration.
+pub async fn list_composio_connections() -> ComposioStatus {
+    cli::status().await
+}
+
+/// True if the composio CLI is installed at the expected location.
+pub fn is_composio_cli_installed() -> bool {
+    install::is_installed()
+}
+
+/// Run Composio's official install script to put the CLI at
+/// `~/.composio/composio`. Blocks until the binary is in place.
+pub async fn install_composio_cli() -> Result<(), String> {
+    install::install().await.map(|_| ())
+}
+
+/// Start the composio login flow. Returns `{login_url, cli_key}`.
+pub async fn start_composio_oauth() -> Result<StartLoginResponse, String> {
+    cli::start_login().await
+}
+
+/// Finish the login flow started by `start_composio_oauth`.
+pub async fn complete_composio_login(cli_key: String) -> Result<(), String> {
+    cli::complete_login(&cli_key).await
+}
+
+/// Start the flow to link an external app to the currently-signed-in account.
+pub async fn connect_composio_app(toolkit: String) -> Result<StartLinkResponse, String> {
+    cli::start_link(&toolkit).await
+}
+
+/// List all available Composio apps from the REST API.
+pub async fn list_composio_apps() -> Vec<crate::apps::ComposioAppEntry> {
+    crate::apps::list_all_apps().await
+}
+
+/// List all connected toolkit slugs in the consumer namespace.
+pub async fn list_composio_connected_toolkits() -> Vec<String> {
+    cli::list_connected_toolkits().await
+}

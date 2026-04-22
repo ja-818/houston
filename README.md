@@ -142,34 +142,55 @@ Three tiers:
 
 ## Monorepo layout
 
+Organized as **6 end-user products + 3 code libraries**.
+
 ```
 houston/
-├── app/                Houston app (Tauri 2)
-│   ├── src/            React frontend
-│   └── src-tauri/      Rust backend
-├── packages/           @houston-ai/* — 11 React packages
-│   ├── core/           Design system, 38 components
-│   ├── chat/           Chat panel, streaming, tool activity
-│   ├── board/          Kanban board with animated cards
-│   ├── layout/         Sidebar, tab bar, split view
-│   ├── connections/    Channel and service connections
-│   ├── events/         Event feed
-│   ├── memory/         Memory browser
-│   ├── routines/       Scheduled routines
-│   ├── skills/         Skill management
-│   ├── review/         Review queue
-│   └── agent/          File browser
-├── crates/             houston-* — Rust crates
-│   ├── houston-sessions/   Claude CLI session management
-│   ├── houston-db/         SQLite (chat feed + preferences)
-│   ├── houston-tauri/      Tauri integration layer
-│   ├── houston-channels/   Slack, Telegram adapters
-│   ├── houston-events/     Event queue
-│   ├── houston-scheduler/  Cron jobs
-│   └── houston-memory/     Memory store
-├── website/            gethouston.ai
-└── create-app/         Scaffolding templates
+├── app/                     Houston App — desktop (Tauri 2)
+│   ├── src/                 React frontend
+│   ├── src-tauri/           Tauri binary
+│   └── houston-tauri/       Tauri adapter (applies Engine to desktop)
+├── mobile/                  Houston Mobile companion
+├── desktop-mobile-bridge/   Cloudflare Worker — pairs Desktop ↔ Mobile
+├── store/                   Houston Store — agent registry
+├── website/                 Houston Website — gethouston.ai
+├── always-on/               Houston Always On — VPS deploy (Dockerfile + compose + systemd)
+├── teams/                   Houston Teams (TBD — hosted multi-tenant)
+│
+├── ui/                      Houston UI — @houston-ai/* React packages
+├── engine/                  Houston Engine — Rust crates (frontend-agnostic)
+├── cloud/                   Houston Cloud (TBD — managed Engine hosting)
+│
+└── examples/                Reference consumers of houston-engine
+    └── smartbooks/            Bookkeeping app built on a custom React frontend
 ```
+
+See `knowledge-base/architecture.md` for crate-level detail + current gaps.
+
+---
+
+## Build on Houston Engine (custom frontends)
+
+The engine is frontend-agnostic. You don't have to ship inside the
+Houston App — any web or native runtime can drive it over HTTP +
+WebSocket using [`@houston-ai/engine-client`](ui/engine-client/).
+
+**Working example: [SmartBooks](examples/smartbooks/)** — a
+bookkeeping product with its own brand, its own UX, and zero
+`@houston-ai/*` UI deps. ~400 lines of TSX, one npm package, renders
+a live transactions table + a multi-sheet Excel workpaper. Soft
+workflow: the user asks for a new column, Claude edits the Python
+script, every future upload picks up the change. Clone it, rename
+things, ship your own AI-native product.
+
+```bash
+cd examples/smartbooks
+pnpm install
+pnpm dev
+```
+
+Full walkthrough + architecture diagram + custom-frontend gotchas in
+[examples/smartbooks/README.md](examples/smartbooks/README.md).
 
 ---
 

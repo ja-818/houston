@@ -1,12 +1,3 @@
-pub mod agent_configs;
-pub mod agents;
-pub mod attachments;
-pub mod chat;
-pub mod memory;
-pub mod preferences;
-pub mod provider;
-pub mod skills;
-pub mod store;
-pub mod system;
-pub mod worktree;
-pub mod workspaces;
+//! OS-native Tauri commands — everything else is served by the engine.
+
+pub mod os;

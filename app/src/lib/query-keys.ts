@@ -11,13 +11,12 @@ export const queryKeys = {
   skills: (agentPath: string) => ["skills", agentPath] as const,
   skillDetail: (agentPath: string, name: string) =>
     ["skill-detail", agentPath, name] as const,
-  learnings: (agentPath: string) => ["learnings", agentPath] as const,
-  channels: (agentPath: string) => ["channels", agentPath] as const,
   files: (agentPath: string) => ["files", agentPath] as const,
   instructions: (agentPath: string) =>
     ["instructions", agentPath] as const,
   config: (agentPath: string) => ["config", agentPath] as const,
   routines: (agentPath: string) => ["routines", agentPath] as const,
+  learnings: (agentPath: string) => ["learnings", agentPath] as const,
   routineRuns: (agentPath: string, routineId?: string) =>
     routineId
       ? (["routine-runs", agentPath, routineId] as const)

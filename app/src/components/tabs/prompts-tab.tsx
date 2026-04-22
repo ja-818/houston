@@ -7,21 +7,21 @@ import { queryKeys } from "../../lib/query-keys";
 import { useInstructions, useSaveInstructions } from "../../hooks/queries";
 import { AutoSaveTextarea } from "./configure-sections";
 
-function usePromptFile(agentPath: string, fileName: string) {
+function usePromptFile(agentPath: string, modeName: string) {
   return useQuery({
-    queryKey: [...queryKeys.instructions(agentPath), "prompt", fileName],
+    queryKey: [...queryKeys.instructions(agentPath), "mode", modeName],
     queryFn: () =>
-      tauriAgent.readFile(agentPath, `.houston/prompts/${fileName}`).catch(() => ""),
+      tauriAgent.readFile(agentPath, `.houston/prompts/modes/${modeName}`).catch(() => ""),
     enabled: !!agentPath,
   });
 }
 
-function useSavePromptFile(agentPath: string, fileName: string) {
+function useSavePromptFile(agentPath: string, modeName: string) {
   return useCallback(
     async (content: string) => {
-      await tauriAgent.writeFile(agentPath, `.houston/prompts/${fileName}`, content);
+      await tauriAgent.writeFile(agentPath, `.houston/prompts/modes/${modeName}`, content);
     },
-    [agentPath, fileName],
+    [agentPath, modeName],
   );
 }
 

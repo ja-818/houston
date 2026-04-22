@@ -1,16 +1,71 @@
 mod commands;
-mod agent;
+mod engine_supervisor;
+mod houston_prompt;
 mod logging;
-mod routine_runner;
 
-use commands::agents::WorkspaceRoot;
-use houston_tauri::agent_sessions::AgentSessionMap;
+use engine_supervisor::{
+    resolve_engine_binary, spawn_supervisor, wait_until_healthy, EngineHandshake,
+    SupervisorCallbacks,
+};
 use houston_tauri::houston_db::Database;
 use houston_tauri::state::AppState;
+use houston_ui_events::HoustonEvent;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tauri::{Emitter, Manager};
 
+/// Tauri-managed state holding the latest engine handshake so the frontend
+/// can pull it on demand via `get_engine_handshake` — wins the race when
+/// the one-shot `houston-engine-ready` event fires before the webview's
+/// `listen()` registers.
+#[derive(Default)]
+struct EngineHandshakeState(Mutex<Option<EngineHandshake>>);
+
+#[tauri::command]
+fn get_engine_handshake(
+    state: tauri::State<'_, EngineHandshakeState>,
+) -> Result<serde_json::Value, String> {
+    let guard = state.0.lock().map_err(|e| e.to_string())?;
+    let h = guard
+        .as_ref()
+        .ok_or_else(|| "engine not ready".to_string())?;
+    Ok(serde_json::json!({
+        "baseUrl": h.base_url(),
+        "token": h.token,
+    }))
+}
+
+/// Supervisor callback that toasts the UI on each engine restart.
+struct TauriSupervisorCallbacks {
+    handle: tauri::AppHandle,
+}
+
+impl SupervisorCallbacks for TauriSupervisorCallbacks {
+    fn on_restart(&self, handshake: &EngineHandshake) {
+        tracing::info!(
+            "[engine] restarted on {} (token redacted)",
+            handshake.base_url()
+        );
+        let payload = serde_json::json!({
+            "baseUrl": handshake.base_url(),
+            "token": handshake.token,
+        });
+        let _ = self.handle.emit("houston-engine-restarted", payload);
+        let _ = self.handle.emit(
+            "houston-event",
+            HoustonEvent::CompletionToast {
+                title: "Engine reconnected".into(),
+                issue_id: None,
+            },
+        );
+    }
+}
+
 pub fn run() {
-    // Initialize logging before anything else
+    // Initialize logging before anything else. `houston_dir()` flips to
+    // `~/.dev-houston/` in debug builds so `pnpm tauri dev` stays isolated
+    // from an installed release of Houston.
     let houston = houston_tauri::houston_db::db::houston_dir();
     logging::init(&houston);
 
@@ -37,9 +92,6 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_sentry::init(client));
     }
 
-    // Aptabase analytics is handled entirely in the frontend via @aptabase/web
-    // (no Rust plugin needed — avoids Tokio runtime conflicts)
-
     builder
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -47,11 +99,10 @@ pub fn run() {
         .setup(|app| {
             // Resolve the user's shell PATH early so provider checks work
             // in release builds (macOS .app bundles get a minimal PATH).
-            houston_tauri::houston_sessions::claude_path::init();
+            houston_tauri::houston_terminal_manager::claude_path::init();
 
             let houston = houston_tauri::houston_db::db::houston_dir();
             let db_path = houston.join("db").join("houston.db");
-
             let db = tauri::async_runtime::block_on(async {
                 Database::connect(&db_path)
                     .await
@@ -61,23 +112,108 @@ pub fn run() {
             let root = houston.join("workspaces");
             std::fs::create_dir_all(&root).ok();
 
+            // AppState keeps a DB handle for any OS-native lookup (log
+            // reading, session search). Domain state now lives in the
+            // engine subprocess.
             app.manage(AppState {
                 db,
                 event_queue: None,
                 scheduler: None,
             });
-            app.manage(AgentSessionMap::default());
-            app.manage(houston_tauri::session_pids::SessionPidMap::default());
-            app.manage(WorkspaceRoot(root.clone()));
-            app.manage(houston_tauri::agent_watcher::WatcherState::default());
-            app.manage(routine_runner::RoutineSchedulerState::default());
 
-            // Warm the Composio catalog cache in the background so the integrations
-            // tab loads instantly when the user opens it.
-            tauri::async_runtime::spawn(async {
-                let apps = houston_tauri::composio_apps::list_all_apps().await;
-                tracing::info!("[composio] Pre-warmed catalog: {} apps", apps.len());
+            // --- Spawn houston-engine as a subprocess --------------------
+            //
+            // All domain calls go through the engine over HTTP/WS. The
+            // supervisor thread restarts it with exponential backoff on
+            // crash and emits a toast via `houston-event` on each reconnect.
+            let resource_dir = app.path().resource_dir().ok();
+            let binary = resolve_engine_binary(resource_dir.as_ref())
+                .expect("houston-engine binary missing — check externalBin bundling");
+            tracing::info!("[engine] spawning {}", binary.display());
+
+            let cb: Arc<TauriSupervisorCallbacks> = Arc::new(TauriSupervisorCallbacks {
+                handle: app.handle().clone(),
             });
+            // Product-layer prompts live in `houston_prompt.rs` and are
+            // exported to the engine via env vars. The engine treats these
+            // as opaque strings — it has no hardcoded Houston copy.
+            //
+            // Also pin HOUSTON_HOME + HOUSTON_DOCS so the engine uses the
+            // same data roots as the app (matters if someone ever runs a
+            // release engine binary against a debug app or vice-versa).
+            // Dev: workspaces live INSIDE `~/.dev-houston/workspaces/`.
+            // Release: preserve legacy `~/Documents/Houston/` for existing users.
+            let docs_dir = if cfg!(debug_assertions) {
+                houston.join("workspaces")
+            } else {
+                houston
+                    .parent()
+                    .map(|h| h.join("Documents").join("Houston"))
+                    .unwrap_or_else(|| PathBuf::from("Documents").join("Houston"))
+            };
+            let engine_env: Vec<(String, String)> = vec![
+                (
+                    "HOUSTON_APP_SYSTEM_PROMPT".into(),
+                    houston_prompt::system_prompt(),
+                ),
+                (
+                    "HOUSTON_APP_ONBOARDING_PROMPT".into(),
+                    houston_prompt::onboarding_prompt(),
+                ),
+                ("HOUSTON_HOME".into(), houston.display().to_string()),
+                ("HOUSTON_DOCS".into(), docs_dir.display().to_string()),
+            ];
+            // 30s banner timeout: first-run Gatekeeper scan on a notarized
+            // sidecar can take 15–20s on slow machines.
+            let slot = spawn_supervisor(binary, Duration::from_secs(30), engine_env, cb)
+                .expect("failed to spawn houston-engine");
+            let handshake = {
+                let guard = slot.lock().expect("engine slot poisoned");
+                guard
+                    .as_ref()
+                    .expect("engine subprocess missing after spawn")
+                    .handshake
+                    .clone()
+            };
+            wait_until_healthy(&handshake, Duration::from_secs(5))
+                .expect("engine did not pass /v1/health in time");
+
+            // Stash the handshake so the frontend can pull it via
+            // `get_engine_handshake` — wins the race when the one-shot
+            // `houston-engine-ready` event fires before the webview's
+            // `listen()` registers (common in dev + cold Vite).
+            let handshake_state = EngineHandshakeState::default();
+            *handshake_state.0.lock().unwrap() = Some(handshake.clone());
+            app.manage(handshake_state);
+
+            // Inject bootstrap so `app/src/lib/engine.ts::resolveConfig`
+            // picks it up before any HoustonClient call fires.
+            //
+            // Two delivery paths because the webview + React may mount
+            // BEFORE `setup()` finishes waiting on /v1/health:
+            //   1. `window.eval` — fastest path, wins if the webview hasn't
+            //      loaded the JS bundle yet.
+            //   2. `houston-engine-ready` Tauri event — the frontend's
+            //      `EngineGate` awaits this before rendering the app, so a
+            //      slow health check simply shows a splash instead of
+            //      crashing the React tree.
+            let init_script = format!(
+                "window.__HOUSTON_ENGINE__ = {{ baseUrl: \"{}\", token: \"{}\" }};",
+                handshake.base_url(),
+                handshake.token.replace('"', "\\\"")
+            );
+            if let Some(window) = app.get_webview_window("main") {
+                if let Err(e) = window.eval(&init_script) {
+                    tracing::error!("[engine] failed to inject bootstrap: {e}");
+                }
+            }
+            let ready_payload = serde_json::json!({
+                "baseUrl": handshake.base_url(),
+                "token": handshake.token,
+            });
+            if let Err(e) = app.emit("houston-engine-ready", ready_payload) {
+                tracing::error!("[engine] failed to emit ready event: {e}");
+            }
 
             // Size window to 80% of the screen so it looks good on any display
             if let Some(window) = app.get_webview_window("main") {
@@ -94,130 +230,20 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // Workspace CRUD (top-level container, formerly "Space")
-            commands::workspaces::list_workspaces,
-            commands::workspaces::create_workspace,
-            commands::workspaces::rename_workspace,
-            commands::workspaces::delete_workspace,
-            commands::workspaces::update_workspace_provider,
-            // Agent CRUD (scoped to workspace, formerly "Workspace")
-            commands::agents::list_agents,
-            commands::agents::create_agent,
-            commands::agents::delete_agent,
-            commands::agents::rename_agent,
-            commands::agents::update_agent_opened,
-            // Preferences
-            commands::preferences::get_preference,
-            commands::preferences::set_preference,
-            // Provider management
-            commands::provider::check_provider_status,
-            commands::provider::get_default_provider,
-            commands::provider::set_default_provider,
-            commands::provider::launch_provider_login,
-            // Houston Store — installed agent configs
-            commands::agent_configs::list_installed_configs,
-            // Houston Store — remote registry
-            commands::store::fetch_store_catalog,
-            commands::store::search_store,
-            commands::store::install_store_agent,
-            commands::store::uninstall_store_agent,
-            commands::store::install_agent_from_github,
-            commands::store::check_agent_updates,
-            commands::store::install_workspace_from_github,
-            // Chat commands (send_message, load_chat_history, file read/write)
-            commands::chat::send_message,
-            commands::chat::start_onboarding_session,
-            commands::chat::stop_session,
-            commands::chat::load_chat_history,
-            commands::chat::read_agent_file,
-            commands::chat::write_agent_file,
-            commands::chat::summarize_activity,
-            // Chat composer attachments — persist user-attached files in the
-            // app cache dir scoped by activity/agent id, paths handed to Claude.
-            commands::attachments::save_attachments,
-            commands::attachments::delete_attachments,
-            // Learnings
-            commands::memory::load_learnings,
-            commands::memory::add_learning,
-            commands::memory::replace_learning,
-            commands::memory::remove_learning,
-            // Skills
-            commands::skills::list_skills,
-            commands::skills::load_skill,
-            commands::skills::create_skill,
-            commands::skills::save_skill,
-            commands::skills::delete_skill,
-            commands::skills::list_skills_from_repo,
-            commands::skills::install_skills_from_repo,
-            commands::skills::search_community_skills,
-            commands::skills::install_community_skill,
-            // Agent store — conversations, activity, routines, goals, channels, log, config
-            houston_tauri::agent_store::commands::list_conversations,
-            houston_tauri::agent_store::commands::list_all_conversations,
-            houston_tauri::agent_store::commands::list_activity,
-            houston_tauri::agent_store::commands::create_activity,
-            houston_tauri::agent_store::commands::update_activity,
-            houston_tauri::agent_store::commands::delete_activity,
-            houston_tauri::agent_store::commands::list_routines,
-            houston_tauri::agent_store::commands::create_routine,
-            houston_tauri::agent_store::commands::update_routine,
-            houston_tauri::agent_store::commands::delete_routine,
-            houston_tauri::agent_store::commands::list_routine_runs,
-            houston_tauri::agent_store::commands::list_goals,
-            houston_tauri::agent_store::commands::create_goal,
-            houston_tauri::agent_store::commands::update_goal,
-            houston_tauri::agent_store::commands::delete_goal,
-            houston_tauri::agent_store::commands::list_channels_config,
-            houston_tauri::agent_store::commands::add_channel_config,
-            houston_tauri::agent_store::commands::remove_channel_config,
-            houston_tauri::agent_store::commands::append_log,
-            houston_tauri::agent_store::commands::read_log,
-            houston_tauri::agent_store::commands::read_config,
-            houston_tauri::agent_store::commands::write_config,
-            // Agent file operations
-            houston_tauri::agent_commands::list_project_files,
-            houston_tauri::agent_commands::open_file,
-            houston_tauri::agent_commands::reveal_file,
-            houston_tauri::agent_commands::delete_file,
-            houston_tauri::agent_commands::rename_file,
-            houston_tauri::agent_commands::create_agent_folder,
-            houston_tauri::agent_commands::reveal_agent,
-            houston_tauri::agent_commands::import_files,
-            houston_tauri::agent_commands::open_url,
-            houston_tauri::agent_commands::write_file_bytes,
-            houston_tauri::agent_commands::read_project_file,
-            houston_tauri::agent_commands::search_sessions,
-            houston_tauri::agent_commands::list_recent_sessions,
-            houston_tauri::agent_commands::load_session_feed,
-            // Agent file watcher (AI-native reactivity)
-            houston_tauri::agent_watcher::start_agent_watcher,
-            houston_tauri::agent_watcher::stop_agent_watcher,
-            // Routine scheduler
-            routine_runner::run_routine_now,
-            routine_runner::start_routine_scheduler,
-            routine_runner::stop_routine_scheduler,
-            routine_runner::sync_routine_scheduler,
-            // System
-            commands::system::check_claude_cli,
-            // Composio integrations (CLI-backed)
-            houston_tauri::composio_commands::list_composio_connections,
-            houston_tauri::composio_commands::list_composio_apps,
-            houston_tauri::composio_commands::list_composio_connected_toolkits,
-            houston_tauri::composio_commands::connect_composio_app,
-            houston_tauri::composio_commands::start_composio_oauth,
-            houston_tauri::composio_commands::complete_composio_login,
-            houston_tauri::composio_commands::is_composio_cli_installed,
-            houston_tauri::composio_commands::install_composio_cli,
-            // Worktree + Terminal + Directory picker
-            commands::worktree::pick_directory,
-            commands::worktree::create_worktree,
-            commands::worktree::remove_worktree,
-            commands::worktree::list_worktrees,
-            commands::worktree::run_shell,
-            commands::worktree::open_terminal,
-            // Logging
+            // OS-native glue — everything domain-related flows through the
+            // engine over HTTP/WS, not Tauri IPC.
+            commands::os::pick_directory,
+            commands::os::open_url,
+            commands::os::open_file,
+            commands::os::reveal_file,
+            commands::os::reveal_agent,
+            commands::os::open_terminal,
+            commands::os::check_claude_cli,
+            // Logging (writes to local log files).
             logging::write_frontend_log,
             logging::read_recent_logs,
+            // Engine handshake pull (race-free fallback for `EngineGate`).
+            get_engine_handshake,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
@@ -233,9 +259,11 @@ pub fn run() {
                     }
                     let _ = app_handle.emit("app-activated", ());
                 }
-                // Window-level focus gain — fires when a notification click brings
-                // the window to front even if RunEvent::Resumed doesn't fire.
-                tauri::RunEvent::WindowEvent { label, event: tauri::WindowEvent::Focused(true), .. } if label == "main" => {
+                tauri::RunEvent::WindowEvent {
+                    label,
+                    event: tauri::WindowEvent::Focused(true),
+                    ..
+                } if label == "main" => {
                     tracing::debug!("[app] WindowEvent::Focused(true) — emitting app-activated");
                     let _ = app_handle.emit("app-activated", ());
                 }

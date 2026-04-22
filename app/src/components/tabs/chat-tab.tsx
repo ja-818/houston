@@ -23,7 +23,7 @@ import type { TabProps } from "../../lib/types";
 import { HoustonThinkingIndicator } from "../shell/experience-card";
 import { ChatModelSelector } from "../chat-model-selector";
 import { getDefaultModel } from "../../lib/providers";
-import { AuthReconnectBanner } from "../shell/auth-reconnect-banner";
+import { ProviderReconnectCard } from "../shell/provider-reconnect-card";
 
 export default function ChatTab({ agent }: TabProps) {
   const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(agent.folderPath);
@@ -176,7 +176,6 @@ export default function ChatTab({ agent }: TabProps) {
 
   return (
     <div className="h-full w-full flex flex-col">
-      <AuthReconnectBanner />
       <ChatPanel
         sessionKey={sessionKey}
         feedItems={feedItems ?? []}
@@ -188,6 +187,7 @@ export default function ChatTab({ agent }: TabProps) {
         isSpecialTool={isSpecialTool}
         renderToolResult={renderToolResult}
         renderTurnSummary={renderTurnSummary}
+        afterMessages={<ProviderReconnectCard />}
         thinkingIndicator={<HoustonThinkingIndicator />}
         placeholder="Ask anything..."
         value={composerText}

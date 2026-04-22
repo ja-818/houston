@@ -1,0 +1,449 @@
+/**
+ * Wire types mirroring `engine/houston-engine-protocol/src/lib.rs` and
+ * domain DTOs from `engine/houston-engine-core`.
+ *
+ * Until we wire up a Rust→TS code generator (`ts-rs` or `specta`) these
+ * are maintained by hand. Keep them in sync — the Rust side is the
+ * source of truth.
+ */
+
+export const PROTOCOL_VERSION = 1 as const;
+
+export type EnvelopeKind = "event" | "req" | "res" | "ping" | "pong";
+
+export interface EngineEnvelope<P = unknown> {
+  v: number;
+  id: string;
+  kind: EnvelopeKind;
+  ts: number;
+  payload: P;
+}
+
+export type ClientRequest =
+  | { op: "sub"; topics: string[] }
+  | { op: "unsub"; topics: string[] };
+
+export interface LagMarker {
+  type: "Lag";
+  dropped: number;
+}
+
+export type ErrorCode =
+  | "UNAUTHORIZED"
+  | "FORBIDDEN"
+  | "NOT_FOUND"
+  | "BAD_REQUEST"
+  | "CONFLICT"
+  | "INTERNAL"
+  | "UNAVAILABLE"
+  | "VERSION_MISMATCH";
+
+export interface ErrorBody {
+  error: {
+    code: ErrorCode;
+    message: string;
+    details?: unknown;
+  };
+}
+
+export interface HealthResponse {
+  status: "ok";
+  version: string;
+  protocol: number;
+}
+
+export interface VersionResponse {
+  engine: string;
+  protocol: number;
+  build: string | null;
+}
+
+// ---------- Workspaces ----------
+
+export interface Workspace {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  createdAt: string;
+  provider?: string;
+  model?: string;
+}
+
+export interface CreateWorkspace {
+  name: string;
+  provider?: string;
+  model?: string;
+}
+
+export interface RenameWorkspace {
+  newName: string;
+}
+
+export interface UpdateProvider {
+  provider: string;
+  model?: string;
+}
+
+// ---------- Workspace-scoped agent CRUD ----------
+
+export interface Agent {
+  id: string;
+  name: string;
+  folderPath: string;
+  configId: string;
+  color?: string;
+  createdAt: string;
+  lastOpenedAt?: string;
+}
+
+export interface CreateAgent {
+  name: string;
+  configId: string;
+  color?: string;
+  claudeMd?: string;
+  installedPath?: string;
+  seeds?: Record<string, string>;
+  existingPath?: string;
+}
+
+export interface CreateAgentResult {
+  agent: Agent;
+  onboardingActivityId: string | null;
+}
+
+// ---------- Agents / agent-data files ----------
+
+export interface Activity {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  claude_session_id?: string | null;
+  session_key?: string;
+  agent?: string;
+  worktree_path?: string | null;
+  routine_id?: string;
+  routine_run_id?: string;
+  updated_at?: string;
+}
+
+export interface ActivityUpdate {
+  title?: string;
+  description?: string;
+  status?: string;
+  claude_session_id?: string | null;
+  session_key?: string;
+  agent?: string;
+  worktree_path?: string | null;
+  routine_id?: string;
+  routine_run_id?: string;
+}
+
+export interface NewActivity {
+  title: string;
+  description?: string;
+  agent?: string;
+  worktree_path?: string;
+}
+
+export interface Routine {
+  id: string;
+  name: string;
+  description: string;
+  prompt: string;
+  schedule: string;
+  enabled: boolean;
+  suppress_when_silent: boolean;
+  /** IANA timezone override; absent means use the user's preference. */
+  timezone?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewRoutine {
+  name: string;
+  description?: string;
+  prompt: string;
+  schedule: string;
+  enabled?: boolean;
+  suppress_when_silent?: boolean;
+  /** IANA timezone override (e.g. "America/Bogota"). Falls back to user pref. */
+  timezone?: string | null;
+}
+
+export interface RoutineUpdate {
+  name?: string;
+  description?: string;
+  prompt?: string;
+  schedule?: string;
+  enabled?: boolean;
+  suppress_when_silent?: boolean;
+  /** Set to a string to override, `null` to clear, omit to leave unchanged. */
+  timezone?: string | null;
+}
+
+export type RoutineRunStatus = "running" | "silent" | "surfaced" | "error";
+
+export interface RoutineRun {
+  id: string;
+  routine_id: string;
+  status: RoutineRunStatus;
+  session_key: string;
+  activity_id?: string;
+  summary?: string;
+  started_at: string;
+  completed_at?: string;
+}
+
+export interface RoutineRunUpdate {
+  status?: RoutineRunStatus;
+  activity_id?: string;
+  summary?: string;
+  completed_at?: string;
+}
+
+export interface ProjectConfig {
+  name?: string;
+  provider?: string;
+  model?: string;
+  effort?: string;
+  [extra: string]: unknown;
+}
+
+export interface ProjectFile {
+  path: string;
+  name: string;
+  extension: string;
+  size: number;
+  is_directory: boolean;
+}
+
+export interface InstalledConfig {
+  config: unknown;
+  path: string;
+}
+
+// ---------- Conversations ----------
+
+export interface ConversationEntry {
+  id: string;
+  title: string;
+  description?: string;
+  status?: string;
+  type: string;
+  session_key: string;
+  updated_at?: string;
+  agent_path: string;
+  agent_name: string;
+}
+
+// ---------- Skills ----------
+
+export interface SkillSummary {
+  name: string;
+  description: string;
+  version: number;
+  tags: string[];
+  created: string | null;
+  lastUsed: string | null;
+}
+
+export interface SkillDetail {
+  name: string;
+  description: string;
+  version: number;
+  content: string;
+}
+
+export interface CreateSkillRequest {
+  workspacePath: string;
+  name: string;
+  description: string;
+  content: string;
+}
+
+export interface SaveSkillRequest {
+  workspacePath: string;
+  content: string;
+}
+
+export interface RepoSkill {
+  id: string;
+  name: string;
+  description: string;
+  path: string;
+}
+
+export interface InstallFromRepoRequest {
+  workspacePath: string;
+  source: string;
+  skills: RepoSkill[];
+}
+
+export interface InstallCommunityRequest {
+  workspacePath: string;
+  source: string;
+  skillId: string;
+}
+
+export interface CommunitySkill {
+  id: string;
+  skillId: string;
+  name: string;
+  installs: number;
+  source: string;
+}
+
+// ---------- Providers / preferences ----------
+
+export interface ProviderStatus {
+  provider: string;
+  cliInstalled: boolean;
+  authenticated: boolean;
+  cliName: string;
+}
+
+export interface PreferenceValue {
+  value: string | null;
+}
+
+// ---------- Store ----------
+
+export interface StoreListing {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  author: string;
+  tags: string[];
+  icon_url: string;
+  repo: string;
+  installs: number;
+  registered_at: string;
+}
+
+export interface InstallAgent {
+  repo: string;
+  agentId: string;
+}
+
+export interface InstallFromGithub {
+  githubUrl: string;
+}
+
+export interface ImportedWorkspace {
+  workspaceId: string;
+  workspaceName: string;
+  agentIds: string[];
+}
+
+// ---------- Sync ----------
+
+export interface SyncInfo {
+  token: string;
+  pairingUrl: string;
+}
+
+export interface SyncMessage {
+  type: string;
+  from: string;
+  ts: string;
+  payload: unknown;
+}
+
+// ---------- Worktree / shell ----------
+
+export interface WorktreeInfo {
+  path: string;
+  branch: string;
+  isMain: boolean;
+}
+
+export interface CreateWorktreeRequest {
+  repoPath: string;
+  name: string;
+  branch?: string;
+}
+
+export interface ListWorktreesRequest {
+  repoPath: string;
+}
+
+export interface RemoveWorktreeRequest {
+  repoPath: string;
+  worktreePath: string;
+}
+
+export interface RunShellRequest {
+  path: string;
+  command: string;
+}
+
+// ---------- Sessions ----------
+
+export interface SessionStartRequest {
+  sessionKey: string;
+  prompt: string;
+  systemPrompt?: string;
+  source?: string;
+  workingDir?: string;
+  provider?: string;
+  model?: string;
+}
+
+export interface SessionStartResponse {
+  sessionKey: string;
+}
+
+export interface SessionCancelResponse {
+  cancelled: boolean;
+}
+
+export interface ChatHistoryEntry {
+  feed_type: string;
+  data: unknown;
+}
+
+export interface SummarizeResult {
+  title: string;
+  description: string;
+}
+
+// ---------- Attachments ----------
+
+export interface AttachmentInput {
+  name: string;
+  dataBase64: string;
+}
+
+export interface SaveAttachmentsRequest {
+  scopeId: string;
+  files: AttachmentInput[];
+}
+
+// ---------- Composio ----------
+
+export type ComposioStatus =
+  | { status: "not_installed" }
+  | { status: "needs_auth" }
+  | { status: "ok"; email: string | null; org_name: string | null }
+  | { status: "error"; message: string };
+
+export interface ComposioAppEntry {
+  toolkit: string;
+  name: string;
+  description: string;
+  logo_url: string;
+  categories: string[];
+}
+
+export interface ComposioStartLoginResponse {
+  login_url: string;
+  cli_key: string;
+}
+
+export interface ComposioStartLinkResponse {
+  redirect_url: string;
+  connected_account_id: string;
+  toolkit: string;
+}

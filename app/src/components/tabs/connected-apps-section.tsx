@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { tauriConnections, tauriSystem } from "../../lib/tauri";
 
@@ -80,43 +80,40 @@ function ConnectedAppCard({ app }: { app: AppInfo }) {
   const initial = app.name.charAt(0).toUpperCase();
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-black/5 hover:bg-accent/50 transition-colors">
+    <button
+      type="button"
+      onClick={() => tauriSystem.openUrl(composioAppUrl(app.toolkit))}
+      title={`Manage ${app.name} on Composio`}
+      className="group w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary hover:bg-black/[0.05] transition-colors focus-visible:outline-none focus-visible:bg-black/[0.05]"
+    >
       {!imgError ? (
         <img
           src={app.logoUrl}
           alt={app.name}
-          className="size-8 rounded-lg object-contain shrink-0"
+          className="size-8 rounded-lg object-contain shrink-0 bg-background"
           onError={() => setImgError(true)}
         />
       ) : (
-        <div className="size-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
+        <div className="size-8 rounded-lg bg-background flex items-center justify-center shrink-0">
           <span className="text-xs font-semibold text-muted-foreground">
             {initial}
           </span>
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-medium text-foreground truncate">
+        <p className="text-[13px] font-medium text-foreground truncate flex items-center gap-1.5">
           {app.name}
+          <span
+            className="size-1.5 rounded-full bg-emerald-500 shrink-0"
+            aria-label="Connected"
+          />
         </p>
         <p className="text-[11px] text-muted-foreground truncate">
           {app.description}
         </p>
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">
-          <Check className="size-3" />
-          Connected
-        </span>
-        <button
-          onClick={() => tauriSystem.openUrl(composioAppUrl(app.toolkit))}
-          className="inline-flex items-center justify-center size-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          title={`Manage ${app.name} on Composio`}
-        >
-          <ExternalLink className="size-3.5" />
-        </button>
-      </div>
-    </div>
+      <ExternalLink className="size-3.5 text-muted-foreground/60 shrink-0 group-hover:text-muted-foreground transition-colors" />
+    </button>
   );
 }
 

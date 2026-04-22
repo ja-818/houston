@@ -9,7 +9,6 @@ import {
   NotInstalledState,
   NeedsAuthState,
   ErrorState,
-  SignedInHeader,
 } from "./integrations-states";
 import type { TabProps } from "../../lib/types";
 
@@ -67,10 +66,7 @@ export default function ConnectionsTab(_props: TabProps) {
         )}
 
         {!loading && result?.status === "ok" && (
-          <>
-            <SignedInHeader email={result.email} orgName={result.org_name} />
-            <BrowseAppsSection connectedToolkits={new Set()} />
-          </>
+          <BrowseAppsSection connectedToolkits={new Set()} />
         )}
       </div>
 

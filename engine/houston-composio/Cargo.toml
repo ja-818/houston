@@ -1,0 +1,19 @@
+[package]
+name = "houston-composio"
+version = "0.3.2"
+edition = "2021"
+description = "Composio integration — CLI install/lifecycle, OAuth, app catalog (transport-neutral)"
+license = "MIT"
+repository = "https://github.com/ja-818/houston"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+reqwest = { version = "0.12", features = ["json"] }
+base64 = "0.22"
+sha2 = "0.10"
+houston-ui-events = { workspace = true }
+houston-db = { workspace = true }

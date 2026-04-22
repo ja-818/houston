@@ -1,0 +1,76 @@
+/**
+ * SkillRow — one row in the Skills list.
+ *
+ * Visual: transparent row sitting on a gray container card. Whole row
+ * clickable; delete tucked into an overflow menu.
+ */
+import {
+  cn,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@houston-ai/core"
+import { MoreHorizontal, Trash2 } from "lucide-react"
+import type { Skill } from "./types"
+
+export interface SkillRowProps {
+  skill: Skill
+  onClick: () => void
+  onDelete?: () => void
+}
+
+export function SkillRow({ skill, onClick, onDelete }: SkillRowProps) {
+  return (
+    <div
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      className={cn(
+        "group flex items-start gap-3 px-5 py-4 cursor-pointer",
+        "transition-colors duration-150",
+        "hover:bg-black/[0.03]",
+        "focus-visible:outline-none focus-visible:bg-black/[0.03]",
+      )}
+    >
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate">
+          {skill.name}
+        </p>
+        {skill.description && (
+          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5 leading-snug">
+            {skill.description}
+          </p>
+        )}
+      </div>
+      {onDelete && (
+        <div onClick={(e) => e.stopPropagation()} className="shrink-0 -mr-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="More actions"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem variant="destructive" onClick={onDelete}>
+                <Trash2 className="size-3.5" />
+                Delete skill
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+    </div>
+  )
+}

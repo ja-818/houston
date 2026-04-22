@@ -39,6 +39,7 @@
     "createUpdaterArtifacts": true,
     "active": true,
     "targets": ["app", "dmg"],
+    "externalBin": ["binaries/houston-engine"],
     "macOS": {
       "signingIdentity": "-",
       "entitlements": "entitlements.plist",

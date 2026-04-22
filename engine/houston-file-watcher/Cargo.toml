@@ -1,0 +1,14 @@
+[package]
+name = "houston-file-watcher"
+version = "0.3.2"
+edition = "2021"
+description = "Filesystem watcher that classifies changes in an agent directory and emits HoustonEvent variants for UI reactivity"
+license = "MIT"
+repository = "https://github.com/ja-818/houston"
+
+[dependencies]
+notify = "7"
+notify-debouncer-mini = "0.5"
+tokio = { workspace = true }
+tracing = { workspace = true }
+houston-ui-events = { workspace = true }

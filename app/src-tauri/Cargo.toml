@@ -1,6 +1,6 @@
 [package]
 name = "houston-app"
-version = "0.3.2"
+version = "0.4.0"
 edition = "2021"
 
 [lib]
@@ -11,26 +11,24 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# `devtools` = enables WKWebView inspector in debug AND release. In practice
+# only dev builds benefit — production ships to non-technical users — but
+# having it on across the board means Cmd+Opt+I works whenever someone
+# runs `pnpm tauri dev` or ships a dev build to a collaborator.
+tauri = { version = "2", features = ["devtools"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 dirs = "5"
-houston-tauri = { path = "../../crates/houston-tauri" }
-houston-memory = { path = "../../crates/houston-memory" }
-houston-skills = { path = "../../crates/houston-skills", features = ["remote"] }
-uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
-cron = "0.15"
+houston-tauri = { path = "../houston-tauri" }
 tauri-plugin-notification = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 tauri-plugin-sentry = "0.5"
 sentry = "0.42"
-open = "5"
-houston-channels = { path = "../../crates/houston-channels" }
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+houston-ui-events = { path = "../../engine/houston-ui-events" }
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "blocking"], default-features = false }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = { workspace = true }
-base64 = "0.22"

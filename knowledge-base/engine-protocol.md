@@ -1,0 +1,341 @@
+# Houston Engine — Wire Protocol
+
+Source of truth for the HTTP + WebSocket contract spoken by `houston-engine`
+and every client (desktop, mobile, CLI, third-party). Rust types live in
+`engine/houston-engine-protocol`; TS types live in
+`ui/engine-client/src/types.ts`. The Rust side wins conflicts.
+
+## Versioning
+
+| Field | Value |
+|---|---|
+| Protocol major | `1` (constant `PROTOCOL_VERSION`) |
+| Engine version | crate `houston-engine-server` version |
+| Version header | `X-Houston-Engine-Version: <semver>` on every response |
+| Breaking changes | require protocol major bump + client version guard |
+
+Clients refuse to talk to an engine whose major `v` exceeds what they know.
+
+## Transport
+
+- **HTTP** under `/v1/*` — resource-oriented REST. `Content-Type: application/json`.
+- **WebSocket** at `/v1/ws` — server-push events + lightweight client requests.
+
+Loopback deploys bind `127.0.0.1:<random>`; remote deploys must opt in via
+`HOUSTON_BIND_ALL=1`.
+
+### CORS
+
+Fully permissive: `allow_origin("*")`, `allow_methods(Any)`,
+`allow_headers(Any)`. This is safe because the bearer token is not a
+CORS credential (no cookies), and because loopback deploys aren't
+browser-reachable from the public internet. Browser clients from any
+origin can call the engine as long as they carry a valid token.
+
+Keep it this way — the WKWebView in the desktop app is cross-origin to
+`127.0.0.1:<port>`, and trimming the allow-list has caused PUT/PATCH
+preflights to fail (e.g. `setPreference` returning "Load failed" in
+Safari/WKWebView). See `engine/houston-engine-server/src/lib.rs`.
+
+## Auth
+
+Bearer token. Three accepted locations (server checks all):
+
+- `Authorization: Bearer <token>` — required for REST, preferred for WS in native clients.
+- `?token=<token>` — convenience for CLIs and browsers that cannot set WS headers.
+- `Sec-WebSocket-Protocol: houston-bearer.<token>` — fallback for browser WS.
+
+Token generation: the binary auto-generates a 48-char alphanumeric token on
+first run unless `HOUSTON_ENGINE_TOKEN` is set. It is written (mode 0600) to
+`~/.houston/engine.json`. The desktop supervisor reads that file before
+injecting `window.__HOUSTON_ENGINE__`.
+
+## REST conventions
+
+- Plural nouns: `/v1/workspaces`, `/v1/agents/{path}/sessions`.
+- Non-CRUD actions as sub-resource POSTs: `POST /v1/agents/{p}/sessions/{k}:cancel`.
+- Path IDs always URL-encoded.
+
+### Error body
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "workspace 7f3e... not found",
+    "details": null
+  }
+}
+```
+
+`code` is a fixed enum: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`,
+`BAD_REQUEST`, `CONFLICT`, `INTERNAL`, `UNAVAILABLE`, `VERSION_MISMATCH`.
+HTTP status maps 1:1 (see `engine-server/src/routes/error.rs`).
+
+### Current routes
+
+Full surface live. Every mutating route emits matching `HoustonEvent` on
+broadcast bus. 17 route modules wired in
+[`houston-engine-server/src/lib.rs`](../engine/houston-engine-server/src/lib.rs).
+Integration tests in `engine/houston-engine-server/tests/` — one file per
+module.
+
+**Health**
+| Method | Path | Description |
+|---|---|---|
+| GET | `/v1/health` | `{status, version, protocol}` |
+| GET | `/v1/version` | `{engine, protocol, build}` |
+| GET | `/v1/ws` | WebSocket upgrade |
+
+**Workspaces + nested agent CRUD**
+| Method | Path | Description |
+|---|---|---|
+| GET | `/v1/workspaces` | List |
+| POST | `/v1/workspaces` | Create |
+| DELETE | `/v1/workspaces/:id` | Delete |
+| POST | `/v1/workspaces/:id/rename` | Rename |
+| PATCH | `/v1/workspaces/:id/provider` | Set provider/model |
+| GET | `/v1/workspaces/:id/agents` | List agents in workspace |
+| POST | `/v1/workspaces/:id/agents` | Create agent |
+| DELETE | `/v1/workspaces/:id/agents/:agent_id` | Delete agent |
+| POST | `/v1/workspaces/:id/agents/:agent_id/rename` | Rename agent |
+| POST | `/v1/workspaces/install-from-github` | Import workspace template |
+
+**Sessions** (`agent_path` path-segment, URL-encoded)
+| Method | Path | Description |
+|---|---|---|
+| POST | `/v1/agents/:agent_path/sessions` | Start turn |
+| POST | `/v1/agents/:agent_path/sessions/onboarding` | Start onboarding turn |
+| POST | `/v1/agents/:agent_path/sessions/:key:cancel` | SIGTERM CLI |
+| GET | `/v1/agents/:agent_path/sessions/:key/history` | Load chat history |
+| POST | `/v1/sessions/summarize` | Activity title/description |
+
+**Agent data** (`?agent_path=` query; writes emit event)
+| Method | Path | Description |
+|---|---|---|
+| GET/POST | `/v1/agents/activities` | List/create |
+| PATCH/DELETE | `/v1/agents/activities/:id` | Update/delete |
+| GET/POST | `/v1/agents/routines` | List/create |
+| PATCH/DELETE | `/v1/agents/routines/:id` | Update/delete |
+| GET/POST | `/v1/agents/routine-runs` | List/create |
+| PATCH | `/v1/agents/routine-runs/:id` | Update |
+| GET/PUT | `/v1/agents/config` | Read/write project config |
+
+**Agent files** (typed `.houston/` + project file browser)
+| Method | Path | Description |
+|---|---|---|
+| GET/DELETE | `/v1/agents/files` | List / delete project file |
+| POST | `/v1/agents/files/read` | Read typed data file |
+| POST | `/v1/agents/files/write` | Write typed data file (emits event) |
+| POST | `/v1/agents/files/seed-schemas` | Seed `.houston/<type>/<type>.schema.json` |
+| POST | `/v1/agents/files/migrate` | Run idempotent migrations |
+| POST | `/v1/agents/files/read-project` | Read project file |
+| POST | `/v1/agents/files/rename` | Rename |
+| POST | `/v1/agents/files/folder` | Create folder |
+| POST | `/v1/agents/files/import` | Import paths |
+| POST | `/v1/agents/files/import-bytes` | Import base64 bytes |
+
+**Routines (separate scheduler surface)**
+| Method | Path | Description |
+|---|---|---|
+| GET/POST | `/v1/routines` | List/create (by `?agentPath`) |
+| PATCH/DELETE | `/v1/routines/:id` | Update/delete |
+| POST | `/v1/routines/:id/runs` | Create run |
+| POST | `/v1/routines/:id/run-now` | Manual trigger |
+| GET | `/v1/routine-runs` | List (optional `?routineId`) |
+| PATCH | `/v1/routine-runs/:id` | Update run |
+| POST | `/v1/routines/scheduler/start` | Start per-agent cron |
+| POST | `/v1/routines/scheduler/stop` | Stop |
+| POST | `/v1/routines/scheduler/sync` | Re-read routines, rebuild cron jobs |
+
+**Conversations** (cross-agent read)
+| Method | Path | Description |
+|---|---|---|
+| POST | `/v1/conversations/list` | List conversations for one agent |
+| POST | `/v1/conversations/list-all` | List across many agents |
+
+**Skills**
+| Method | Path | Description |
+|---|---|---|
+| GET/POST | `/v1/skills` | List/create |
+| GET/PUT/DELETE | `/v1/skills/:name` | Load/save/delete |
+| POST | `/v1/skills/community/search` | Search community registry |
+| POST | `/v1/skills/community/install` | Install community skill |
+| POST | `/v1/skills/repo/list` | List skills in a repo |
+| POST | `/v1/skills/repo/install` | Install from repo |
+
+**Store (agent registry + GitHub import)**
+| Method | Path | Description |
+|---|---|---|
+| GET | `/v1/store/catalog` | Curated listing |
+| GET | `/v1/store/search?q=` | Search catalog |
+| POST | `/v1/store/installs` | Install by `{repo, agentId}` |
+| DELETE | `/v1/store/installs/:agent_id` | Uninstall |
+| POST | `/v1/agents/install-from-github` | One-off install by URL |
+| POST | `/v1/agents/check-updates` | Which installed agents have new versions |
+
+**Preferences + providers + agent-configs**
+| Method | Path | Description |
+|---|---|---|
+| GET/PUT | `/v1/preferences/:key` | String KV (DB-backed) |
+| GET | `/v1/providers/:name/status` | `{cli_installed, authenticated}` |
+| POST | `/v1/providers/:name/login` | Launch CLI login |
+| GET | `/v1/agent-configs` | List installed agent definitions |
+
+**Composio (MCP integrations)**
+| Method | Path | Description |
+|---|---|---|
+| GET | `/v1/composio/status` | Full status bundle |
+| GET | `/v1/composio/cli-installed` | Bool |
+| POST | `/v1/composio/cli` | Install Composio CLI |
+| POST | `/v1/composio/login` | Start OAuth |
+| POST | `/v1/composio/login/complete` | Finish OAuth w/ `cli_key` |
+| GET | `/v1/composio/apps` | Catalog |
+| GET/POST | `/v1/composio/connections` | List / start connect |
+
+**Worktrees + shell**
+| Method | Path | Description |
+|---|---|---|
+| POST | `/v1/worktrees` | Create git worktree |
+| POST | `/v1/worktrees/list` | List |
+| POST | `/v1/worktrees/remove` | Remove |
+| POST | `/v1/shell` | Run arbitrary shell (cwd + cmd) |
+
+**Attachments**
+| Method | Path | Description |
+|---|---|---|
+| POST | `/v1/attachments` | Save base64 attachments under scope_id |
+| DELETE | `/v1/attachments/:scope_id` | Delete all for scope |
+
+**Desktop ↔ mobile sync**
+| Method | Path | Description |
+|---|---|---|
+| POST | `/v1/sync` | Start relay session |
+| DELETE | `/v1/sync` | Stop |
+| GET | `/v1/sync` | Status (`{token, pairingUrl}` or null) |
+| POST | `/v1/sync/messages` | Forward message to peer |
+
+**Watcher**
+| Method | Path | Description |
+|---|---|---|
+| POST | `/v1/watcher/start` | Start `notify` watch on agent dir |
+| POST | `/v1/watcher/stop` | Stop |
+
+## WebSocket envelope
+
+Every WS frame is an `EngineEnvelope`:
+
+```json
+{
+  "v": 1,
+  "id": "b6e1c7d3-...",
+  "kind": "event | req | res | ping | pong",
+  "ts": 1712345678901,
+  "payload": { ... }
+}
+```
+
+- `kind: "event"` → `payload` is a `HoustonEvent` (same enum the frontend already consumes) or a `LagMarker` (`{type:"Lag", dropped: N}`).
+- `kind: "req"` → client request. `{op:"sub"|"unsub", topics:[...]}`. Per-topic filtering is wired — subscribing to `"*"` gets the firehose; subscribing to specific topics limits what the forwarder sends.
+- `kind: "res"` → server response to a prior `req` (future use).
+- `kind: "ping" | "pong"` → keep-alive. Server emits a `ping` every 20s.
+
+### Backpressure
+
+Per-connection bounded `mpsc` with capacity 1024. On lag the server:
+
+1. Coalesces consecutive `SessionStatus` and low-severity `FeedItem` updates.
+2. Sends a `LagMarker` so the client knows to refetch.
+3. Continues streaming once drained.
+
+### Topics
+
+Reserved topic names. Clients that want the firehose subscribe to the
+special `*` topic. Subscribing to specific topics limits what the
+forwarder sends — essential for remote clients where bandwidth matters.
+
+| Topic | Payload variants |
+|---|---|
+| `*` | **Firehose.** Delivers every event regardless of its event_topic. The desktop app uses this so it doesn't need to track per-agent / per-session subscriptions. Remote clients should prefer narrower topics. |
+| `session:{key}` | `FeedItem`, `SessionStatus`, `AuthRequired` |
+| `agent:{path}` | `ActivityChanged`, `SkillsChanged`, `FilesChanged`, `ConfigChanged`, `ContextChanged`, `LearningsChanged`, `ConversationsChanged` |
+| `routines:{agent}` | `RoutinesChanged`, `RoutineRunsChanged` |
+| `composio` | `ComposioCliReady`, `ComposioCliFailed` |
+| `scheduler` | `HeartbeatFired`, `CronFired` |
+| `toast` | `Toast`, `CompletionToast` |
+| `events` | `EventReceived`, `EventProcessed` |
+| `auth` | `AuthRequired` |
+| `sync` | `SyncConnection`, `SyncMessage` |
+
+## Auditing conformance
+
+- `engine/houston-engine-server/tests/` — in-process HTTP + WS assertions.
+- `ui/engine-client/src/types.ts` — mirrors the Rust DTOs by hand until a
+  codegen tool (`ts-rs` or `specta`) is adopted. CI should fail if shapes
+  drift.
+
+## Integration gotchas (custom frontends)
+
+These are load-bearing things every custom frontend must do. Missing
+any of them doesn't break the build but will produce a frozen or
+silently-wrong UI at runtime.
+
+### Start the file watcher on mount
+
+The Claude/Codex CLI writes files via its own tools — those writes
+bypass the engine entirely. The engine only learns about them when
+the filesystem watcher is running. Call
+`POST /v1/watcher/start` (SDK: `client.startAgentWatcher(agentPath)`)
+exactly once after you resolve the agent folder. Without it,
+`FilesChanged` never fires for agent-side writes and the UI looks
+frozen until a manual reload.
+
+### Subscribe to WS topics before firing a session
+
+The per-connection forwarder drops events that arrive before the
+client has subscribed to their topic. Subscribe to `session:<key>`
+and `agent:<path>` first, THEN `POST /v1/agents/:path/sessions`.
+The echoed `session_key` in the start response is safe; early
+events for that key may have been dropped — refetch with
+`/v1/agents/:path/sessions/:key/history` if you need them.
+
+### System prompts are caller-supplied
+
+`POST /v1/agents/:path/sessions` accepts an optional `systemPrompt`
+field. When omitted, the engine falls back to whatever the embedding
+app passed in via `HOUSTON_APP_SYSTEM_PROMPT` at subprocess spawn. The
+engine has no hardcoded product copy — it only assembles generic
+per-agent context from disk (working directory, mode overrides,
+skills index, integrations). Final prompt =
+`<product_prompt>\n\n---\n\n<agent_context>`. Onboarding sessions use
+`HOUSTON_APP_ONBOARDING_PROMPT` as an additional suffix.
+
+### Feed-item streaming needs a reducer
+
+`assistant_text_streaming` deltas should REPLACE the in-progress
+assistant message in your state; `assistant_text` finalizes it.
+Don't append every streaming delta as a new message row. Same
+pattern for `thinking_streaming` / `thinking`. See
+`examples/smartbooks/src/lib/feed.ts::appendFeedItem`.
+
+### Binary file downloads
+
+The `read-project` route returns text only. For xlsx, pdf, images,
+etc., call `POST /v1/shell` with `open "<path>"` (macOS),
+`xdg-open "<path>"` (Linux), or `start "" "<path>"` (Windows) to
+hand the file to the host OS's default application. A first-class
+binary-read endpoint is on the roadmap — until it lands, the shell
+route is the escape hatch.
+
+### Bearer token placement for WebSocket
+
+Browsers can't set `Authorization` on WebSocket upgrades. Use
+`?token=<token>` on the WS URL instead. The engine accepts all three
+(`Authorization` header, `?token=`, `Sec-WebSocket-Protocol:
+houston-bearer.<token>`).
+
+### Reference implementation
+
+[`examples/smartbooks/`](../examples/smartbooks/) — a complete custom
+frontend consumer of the engine, ~400 lines of TSX, zero `@houston-ai/*`
+UI deps. Treat as a copy-paste template.

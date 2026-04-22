@@ -84,7 +84,7 @@ export interface AgentDefinition {
 export interface Agent {
   id: string;
   name: string;
-  folderPath: string;      // ~/Documents/Houston/{WorkspaceName}/{AgentName}/
+  folderPath: string;      // ~/.houston/workspaces/{WorkspaceName}/{AgentName}/
   configId: string;      // Points to an AgentConfig
   color?: string;        // User-chosen color for avatar
   createdAt: string;
@@ -146,21 +146,6 @@ export interface FileEntry {
   name: string;
   extension: string;
   size: number;
-}
-
-/** Learnings data returned by load_learnings */
-export interface LearningsData {
-  entries: { index: number; text: string }[];
-  chars: number;
-  limit: number;
-}
-
-/** A channel entry from .houston/channels.json */
-export interface ChannelEntry {
-  id: string;
-  channel_type: string;
-  name: string;
-  token: string;
 }
 
 /** A listing from the Houston Store registry */

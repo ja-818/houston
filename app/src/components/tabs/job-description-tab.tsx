@@ -1,9 +1,19 @@
-import { useState, useCallback, useEffect } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { SkillsGrid, SkillDetailPage } from "@houston-ai/skills";
 import type { Skill, CommunitySkill } from "@houston-ai/skills";
 import {
+  cn,
   Button,
-  Empty, EmptyHeader, EmptyTitle, EmptyDescription,
+  ConfirmDialog,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
 } from "@houston-ai/core";
 import { FileText, Plus, Trash2 } from "lucide-react";
 import {
@@ -20,6 +30,7 @@ import {
   useLearnings,
   useAddLearning,
   useRemoveLearning,
+  useUpdateLearning,
 } from "../../hooks/queries";
 import type { TabProps } from "../../lib/types";
 
@@ -54,15 +65,19 @@ export default function JobDescriptionTab({ agent }: TabProps) {
   const { data: learningsData } = useLearnings(path);
   const addLearning = useAddLearning(path);
   const removeLearning = useRemoveLearning(path);
+  const updateLearning = useUpdateLearning(path);
 
-  const skills: Skill[] = (summaries ?? []).map((s) => ({
-    id: s.name,
-    name: s.name,
-    description: s.description,
-    instructions: "",
-    learnings: "",
-    file_path: s.name,
-  }));
+  const skills: Skill[] = useMemo(
+    () =>
+      (summaries ?? []).map((s) => ({
+        id: s.name,
+        name: s.name,
+        description: s.description,
+        instructions: "",
+        file_path: s.name,
+      })),
+    [summaries],
+  );
 
   const selectedSkill =
     selectedSkillName && skillDetail
@@ -71,7 +86,6 @@ export default function JobDescriptionTab({ agent }: TabProps) {
           name: skillDetail.name,
           description: skillDetail.description,
           instructions: skillDetail.content,
-          learnings: "",
           file_path: selectedSkillName,
         }
       : null;
@@ -104,102 +118,101 @@ export default function JobDescriptionTab({ agent }: TabProps) {
 
   const handleInstallCommunity = useCallback(
     async (skill: CommunitySkill) => {
-      return await installCommunity.mutateAsync({ source: skill.source, skillId: skill.skillId });
+      return await installCommunity.mutateAsync({
+        source: skill.source,
+        skillId: skill.skillId,
+      });
     },
     [installCommunity],
   );
 
   const handleListFromRepo = useCallback(
-    async (source: string) => {
-      return await listFromRepo.mutateAsync(source);
-    },
+    async (source: string) => listFromRepo.mutateAsync(source),
     [listFromRepo],
   );
 
   const handleInstallFromRepo = useCallback(
-    async (source: string, skills: import("@houston-ai/skills").RepoSkill[]) => {
-      return await installFromRepo.mutateAsync({ source, skills });
-    },
+    async (
+      source: string,
+      repoSkills: import("@houston-ai/skills").RepoSkill[],
+    ) => installFromRepo.mutateAsync({ source, skills: repoSkills }),
     [installFromRepo],
   );
 
+  // Skills sub-tab in detail mode takes over the whole pane (its own header).
+  if (activeTab === "skills" && selectedSkill) {
+    return (
+      <SkillDetailPage
+        skill={selectedSkill}
+        onBack={() => setSelectedSkillName(null)}
+        onSave={handleSkillSave}
+        onDelete={handleSkillDelete}
+      />
+    );
+  }
+
   return (
-    <div className="h-full flex flex-col">
-      {/* Pill tabs */}
-      <div className="flex gap-1 px-6 pt-4 pb-2">
+    <div className="flex-1 flex flex-col min-h-0 bg-background">
+      {/* Sub-tab pills */}
+      <div className="flex gap-1 px-6 pt-4 pb-3 shrink-0">
         {SUB_TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
+            className={cn(
+              "h-8 px-3 rounded-full text-xs font-medium transition-colors",
               activeTab === tab.id
-                ? "bg-accent text-foreground font-medium"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-            }`}
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-black/[0.03] hover:text-foreground",
+            )}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto flex flex-col">
+      {/* Body — each sub-tab decides its own layout (centered Empty vs scrolled card) */}
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
         {activeTab === "instructions" && (
-          <div className="flex-1 flex flex-col p-6">
-            <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
-              <InstructionsSection
-                content={instructions ?? ""}
-                onSave={(c) => saveInstructions.mutateAsync({ name: ".houston/prompts/context.md", content: c })}
-              />
-            </div>
-          </div>
+          <InstructionsContent
+            content={instructions ?? ""}
+            onSave={(c) =>
+              saveInstructions.mutateAsync({ name: "CLAUDE.md", content: c })
+            }
+          />
         )}
 
         {activeTab === "skills" && (
-          <div className="p-6">
-            <div className="max-w-3xl mx-auto">
-              {selectedSkill ? (
-                <SkillDetailPage
-                  skill={selectedSkill}
-                  onBack={() => setSelectedSkillName(null)}
-                  onSave={handleSkillSave}
-                  onDelete={handleSkillDelete}
-                />
-              ) : (
-                <SkillsGrid
-                  skills={skills}
-                  loading={skillsLoading}
-                  onSkillClick={handleSkillClick}
-                  onDelete={handleSkillDelete}
-                  onSearch={handleSearch}
-                  onInstallCommunity={handleInstallCommunity}
-                  onListFromRepo={handleListFromRepo}
-                  onInstallFromRepo={handleInstallFromRepo}
-                />
-              )}
-            </div>
-          </div>
+          <SkillsContent
+            skills={skills}
+            loading={skillsLoading}
+            onSkillClick={handleSkillClick}
+            onDelete={handleSkillDelete}
+            onSearch={handleSearch}
+            onInstallCommunity={handleInstallCommunity}
+            onListFromRepo={handleListFromRepo}
+            onInstallFromRepo={handleInstallFromRepo}
+          />
         )}
 
         {activeTab === "learnings" && (
-          <div className="flex-1 flex flex-col p-6">
-            <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
-              <LearningsSection
-                entries={learningsData?.entries ?? []}
-                onAdd={(text) => addLearning.mutateAsync(text)}
-                onRemove={(index) => removeLearning.mutateAsync(index)}
-              />
-            </div>
-          </div>
+          <LearningsContent
+            entries={(learningsData?.entries ?? []) as LearningEntry[]}
+            onAdd={(text) => addLearning.mutateAsync(text)}
+            onRemove={(index) => removeLearning.mutateAsync(index)}
+            onUpdate={(id, text) => updateLearning.mutateAsync({ id, text })}
+          />
         )}
       </div>
     </div>
   );
 }
 
-// ── Instructions Section ──────────────────────────────────────────
+// ── Instructions ──────────────────────────────────────────────────
 
-function InstructionsSection({
+type SaveState = "idle" | "saving" | "saved";
+
+function InstructionsContent({
   content,
   onSave,
 }: {
@@ -207,144 +220,313 @@ function InstructionsSection({
   onSave: (content: string) => Promise<unknown>;
 }) {
   const [value, setValue] = useState(content);
-  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [state, setState] = useState<SaveState>("idle");
 
   useEffect(() => {
     setValue(content);
   }, [content]);
 
-  const handleBlur = async () => {
-    if (value !== content) {
-      setSaving(true);
-      await onSave(value);
-      setSaving(false);
-    }
-  };
+  const showEmpty = !value.trim() && !editing;
 
-  const isEmpty = !value.trim() && !editing;
-
-  const textareaRef = useCallback((el: HTMLTextAreaElement | null) => {
-    if (el && editing) el.focus();
-  }, [editing]);
-
-  return (
-    <section className="flex-1 flex flex-col">
-      {saving && (
-        <span className="text-[10px] text-muted-foreground/50 mb-1">Saving...</span>
-      )}
-      {isEmpty ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>No instructions yet</EmptyTitle>
-            <EmptyDescription>
-              Add instructions to tell your agent how to behave.
-            </EmptyDescription>
-          </EmptyHeader>
-          <Button
-            className="rounded-full"
-            onClick={() => {
-              setValue("");
-              setEditing(true);
-            }}
-          >
-            <FileText className="h-4 w-4" />
-            Write instructions
-          </Button>
-        </Empty>
-      ) : (
-        <textarea
-          ref={textareaRef}
-          data-instructions-textarea
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onBlur={handleBlur}
-          placeholder="Write instructions for your agent here..."
-          rows={Math.max(8, value.split("\n").length + 1)}
-          className="flex-1 w-full max-w-3xl mx-auto text-sm text-foreground leading-relaxed bg-[#f9f9f9] outline-none rounded-xl px-4 py-3 border border-black/[0.04] hover:border-black/[0.1] focus:border-black/[0.15] focus:bg-white transition-all duration-200 resize-none placeholder:text-muted-foreground/30"
-        />
-      )}
-    </section>
+  const textareaRef = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      if (el && editing) el.focus();
+    },
+    [editing],
   );
-}
 
-// ── Learnings Section ─────────────────────────────────────────────
-
-function LearningsSection({
-  entries,
-  onAdd,
-  onRemove,
-}: {
-  entries: { index: number; text: string }[];
-  onAdd: (text: string) => Promise<unknown>;
-  onRemove: (index: number) => Promise<unknown>;
-}) {
-  const [newText, setNewText] = useState("");
-
-  const handleAdd = () => {
-    if (!newText.trim()) return;
-    onAdd(newText.trim());
-    setNewText("");
+  const handleBlur = async () => {
+    if (value === content) return;
+    setState("saving");
+    await onSave(value);
+    setState("saved");
+    window.setTimeout(() => setState("idle"), 2000);
   };
 
-  if (entries.length === 0) {
+  if (showEmpty) {
     return (
-      <section>
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>No learnings yet</EmptyTitle>
-            <EmptyDescription>
-              The agent will save learnings here as it works, or you can add them manually.
-            </EmptyDescription>
-          </EmptyHeader>
-          <Button className="rounded-full" onClick={() => onAdd("New learning")}>
-            <Plus className="h-4 w-4" />
-            Add learning
-          </Button>
-        </Empty>
-      </section>
+      <div className="mx-auto max-w-md flex flex-col items-center gap-6 text-center pt-24 px-6">
+        <EmptyHeader>
+          <EmptyTitle>No instructions yet</EmptyTitle>
+          <EmptyDescription>
+            Tell your agent how it should think and act.
+          </EmptyDescription>
+        </EmptyHeader>
+        <Button
+          onClick={() => {
+            setValue("");
+            setEditing(true);
+          }}
+        >
+          <FileText className="size-4" />
+          Write instructions
+        </Button>
+      </div>
     );
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={newText}
-          onChange={(e) => setNewText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleAdd();
-          }}
-          placeholder="Add a learning..."
-          className="flex-1 rounded-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
-        />
-        <Button
-          size="icon"
-          className="rounded-full shrink-0"
-          onClick={handleAdd}
-          disabled={!newText.trim()}
+    <div className="max-w-3xl mx-auto w-full px-6 pb-12 pt-2">
+      <div className="flex items-baseline justify-between gap-4 mb-4">
+        <p className="text-xs text-muted-foreground max-w-md">
+          How this agent should think and act.
+        </p>
+        <span
+          className={cn(
+            "text-[11px] tabular-nums transition-opacity duration-200",
+            state === "idle"
+              ? "opacity-0"
+              : "opacity-100 text-muted-foreground",
+          )}
+          aria-live="polite"
         >
-          <Plus className="h-4 w-4" />
+          {state === "saving" ? "Saving…" : state === "saved" ? "Saved" : ""}
+        </span>
+      </div>
+      <section className="rounded-xl bg-secondary p-3">
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={handleBlur}
+          placeholder="Write instructions for your agent…"
+          rows={Math.max(12, value.split("\n").length + 2)}
+          className={cn(
+            "w-full px-4 py-3 text-sm text-foreground leading-relaxed",
+            "placeholder:text-muted-foreground/60",
+            "bg-background border border-black/[0.04] rounded-lg",
+            "outline-none resize-none transition-shadow duration-200",
+            "focus:shadow-[0_1px_2px_rgba(0,0,0,0.04)]",
+          )}
+        />
+      </section>
+    </div>
+  );
+}
+
+// ── Skills ────────────────────────────────────────────────────────
+
+type SkillsContentProps = React.ComponentProps<typeof SkillsGrid>;
+
+function SkillsContent(props: SkillsContentProps) {
+  return (
+    <div className="max-w-3xl mx-auto w-full px-6 pb-12 pt-2 flex-1 flex flex-col">
+      <SkillsGrid {...props} />
+    </div>
+  );
+}
+
+// ── Learnings ─────────────────────────────────────────────────────
+
+interface LearningEntry {
+  index: number;
+  text: string;
+  id: string;
+}
+
+function LearningsContent({
+  entries,
+  onAdd,
+  onRemove,
+  onUpdate,
+}: {
+  entries: LearningEntry[];
+  onAdd: (text: string) => Promise<unknown>;
+  onRemove: (index: number) => Promise<unknown>;
+  onUpdate: (id: string, text: string) => Promise<unknown>;
+}) {
+  // Local IDs for unsaved drafts (separate from server-assigned IDs).
+  const [drafts, setDrafts] = useState<string[]>([]);
+  const [pendingRemove, setPendingRemove] = useState<LearningEntry | null>(null);
+
+  const draftCounterRef = useRef(0);
+
+  const addDraft = () => {
+    draftCounterRef.current += 1;
+    setDrafts((prev) => [`draft-${draftCounterRef.current}`, ...prev]);
+  };
+
+  const removeDraft = (localId: string) => {
+    setDrafts((prev) => prev.filter((id) => id !== localId));
+  };
+
+  const handleSaveDraft = async (localId: string, text: string) => {
+    removeDraft(localId);
+    await onAdd(text);
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!pendingRemove) return;
+    const idx = pendingRemove.index;
+    setPendingRemove(null);
+    await onRemove(idx);
+  };
+
+  // Pure empty: no entries and no drafts in flight.
+  if (entries.length === 0 && drafts.length === 0) {
+    return (
+      <div className="mx-auto max-w-md flex flex-col items-center gap-6 text-center pt-24 px-6">
+        <EmptyHeader>
+          <EmptyTitle>No learnings yet</EmptyTitle>
+          <EmptyDescription>
+            The agent jots things down as it works — or you can add them
+            yourself.
+          </EmptyDescription>
+        </EmptyHeader>
+        <Button onClick={addDraft}>
+          <Plus className="size-4" />
+          Add learning
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto w-full px-6 pb-12 pt-2">
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <p className="text-xs text-muted-foreground max-w-md">
+          Quick notes the agent picks up over time.
+        </p>
+        <Button size="sm" onClick={addDraft} className="shrink-0">
+          <Plus className="size-3.5" />
+          Add learning
         </Button>
       </div>
 
-      <ul className="flex flex-col gap-2">
-        {entries.map((entry) => (
-          <li key={entry.index} className="flex items-start gap-2 text-sm">
-            <span className="flex-1 bg-secondary rounded-lg px-3 py-2">
-              {entry.text}
-            </span>
-            <button
-              onClick={() => onRemove(entry.index)}
-              className="shrink-0 mt-1.5 size-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              aria-label="Remove learning"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-          </li>
+      <div className="rounded-xl bg-secondary overflow-hidden divide-y divide-border/60">
+        {drafts.map((localId) => (
+          <LearningRow
+            key={localId}
+            initialText=""
+            isDraft
+            onSave={(text) => handleSaveDraft(localId, text)}
+            onCancel={() => removeDraft(localId)}
+          />
         ))}
-      </ul>
-    </section>
+        {entries.map((entry) => (
+          <LearningRow
+            key={entry.id}
+            initialText={entry.text}
+            onSave={(text) => onUpdate(entry.id, text)}
+            onDelete={() => setPendingRemove(entry)}
+          />
+        ))}
+      </div>
+
+      <ConfirmDialog
+        open={pendingRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingRemove(null);
+        }}
+        title="Remove this learning?"
+        description="The agent will lose this note. You can add it back later."
+        confirmLabel="Remove"
+        onConfirm={handleConfirmRemove}
+      />
+    </div>
+  );
+}
+
+/**
+ * One row in the learnings list. Always-editable input that looks like text;
+ * persists on blur or Enter. Drafts (no server id yet) call `onCancel` if
+ * blurred while empty so we don't keep a dangling row.
+ */
+function LearningRow({
+  initialText,
+  onSave,
+  onDelete,
+  onCancel,
+  isDraft,
+}: {
+  initialText: string;
+  onSave: (text: string) => Promise<unknown> | unknown;
+  onDelete?: () => void;
+  onCancel?: () => void;
+  isDraft?: boolean;
+}) {
+  const [value, setValue] = useState(initialText);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setValue(initialText);
+  }, [initialText]);
+
+  useEffect(() => {
+    if (isDraft) inputRef.current?.focus();
+  }, [isDraft]);
+
+  const commit = async () => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      // Empty: drafts get cancelled, existing rows revert.
+      if (isDraft && onCancel) onCancel();
+      else setValue(initialText);
+      return;
+    }
+    if (trimmed === initialText) return;
+    await onSave(trimmed);
+  };
+
+  return (
+    <div
+      className={cn(
+        "group flex items-center gap-2 px-5 py-3",
+        "transition-colors duration-150",
+        "hover:bg-black/[0.03] focus-within:bg-black/[0.03]",
+      )}
+    >
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            (e.currentTarget as HTMLInputElement).blur();
+          }
+          if (e.key === "Escape") {
+            if (isDraft && onCancel) onCancel();
+            else {
+              setValue(initialText);
+              (e.currentTarget as HTMLInputElement).blur();
+            }
+          }
+        }}
+        onBlur={commit}
+        placeholder={isDraft ? "Type a learning and press Enter…" : ""}
+        className={cn(
+          "flex-1 bg-transparent text-sm text-foreground",
+          "placeholder:text-muted-foreground/60",
+          "outline-none min-w-0",
+        )}
+      />
+      {onDelete && (
+        <button
+          onClick={onDelete}
+          className={cn(
+            "shrink-0 size-7 flex items-center justify-center rounded-md",
+            "text-muted-foreground hover:text-red-500 hover:bg-black/[0.05]",
+            "transition-colors",
+          )}
+          aria-label="Remove learning"
+        >
+          <Trash2 className="size-3.5" />
+        </button>
+      )}
+      {isDraft && onCancel && (
+        <button
+          onClick={onCancel}
+          className={cn(
+            "shrink-0 text-[11px] text-muted-foreground hover:text-foreground",
+            "px-2 py-1 rounded-md transition-colors",
+          )}
+        >
+          Cancel
+        </button>
+      )}
+    </div>
   );
 }

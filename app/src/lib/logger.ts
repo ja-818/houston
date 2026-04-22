@@ -1,10 +1,10 @@
-import { invoke } from "@tauri-apps/api/core";
+import { osWriteFrontendLog } from "./os-bridge";
 
 type LogLevel = "error" | "warn" | "info" | "debug";
 
 /** Write a log entry to ~/Library/Application Support/houston/logs/frontend.log */
 function writeLog(level: LogLevel, message: string, context?: string) {
-  invoke("write_frontend_log", { level, message, context }).catch(() => {
+  osWriteFrontendLog(level, message, context).catch(() => {
     // If logging itself fails, don't recurse — just drop it
   });
 }

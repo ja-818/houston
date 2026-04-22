@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Activity",
+  "description": "List of board items for a Houston agent.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "title", "description", "status"],
+    "properties": {
+      "id": { "type": "string" },
+      "title": { "type": "string" },
+      "description": { "type": "string" },
+      "status": { "type": "string", "enum": ["todo", "doing", "done", "error"] },
+      "claude_session_id": { "type": ["string", "null"] },
+      "session_key": { "type": "string" },
+      "agent": { "type": "string" },
+      "worktree_path": { "type": ["string", "null"] },
+      "routine_id": { "type": "string" },
+      "routine_run_id": { "type": "string" },
+      "updated_at": { "type": "string", "format": "date-time" }
+    },
+    "additionalProperties": false
+  }
+}

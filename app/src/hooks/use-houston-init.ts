@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { tauriPreferences, tauriProvider } from "../lib/tauri";
+import { tauriPreferences, tauriProvider, tauriRoutines } from "../lib/tauri";
 import { useAgentCatalogStore } from "../stores/agent-catalog";
 import { useWorkspaceStore } from "../stores/workspaces";
 import { useAgentStore } from "../stores/agents";
@@ -42,6 +42,16 @@ export function useHoustonInit() {
 
       if (currentWorkspace) {
         await loadAgents(currentWorkspace.id);
+        // Spin up the routine scheduler for every agent in the workspace so
+        // cron jobs fire even if the user never selects the agent.
+        const agents = useAgentStore.getState().agents;
+        await Promise.all(
+          agents.map((a) =>
+            tauriRoutines.startScheduler(a.folderPath).catch((e) =>
+              console.error(`[init] scheduler start failed for ${a.id}:`, e),
+            ),
+          ),
+        );
       }
 
       try {

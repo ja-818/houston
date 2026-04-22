@@ -1,0 +1,105 @@
+/* Import the Houston design system — all tokens, animations, base styles */
+@import "@houston-ai/core/src/globals.css";
+
+/* Override desktop-only styles from globals.css */
+body {
+  overflow: auto !important;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Kill overscroll bounce on the outer container so the sheet + page
+   transitions don't fight with rubber-banding on iOS. Inner scroll
+   containers still get momentum via the .no-scrollbar overrides below. */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/* Desktop preview: gray surround for the phone frame */
+@media (min-width: 431px) {
+  body {
+    background: #e5e5e5 !important;
+  }
+}
+
+/* Override desktop scrollbar styles — use native mobile scrolling */
+::-webkit-scrollbar {
+  width: initial;
+  height: initial;
+}
+
+::-webkit-scrollbar-track {
+  background: initial;
+}
+
+::-webkit-scrollbar-thumb {
+  background: initial;
+  border-radius: initial;
+}
+
+/* Safe area padding for native app (iPhone notch, home indicator) */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Hide scrollbars for clean mobile feel but keep scrolling + momentum */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---- Touch affordances ----
+   Every primary interactive element (nav buttons, rows, picker items)
+   gets `.touchable`: suppress the grey tap highlight, subtle press
+   feedback, and a comfortable minimum tap target. */
+.touchable {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease;
+  min-height: 44px;
+}
+.touchable:active {
+  transform: scale(0.98);
+}
+
+/* ---- Mobile ChatPanel overrides ---- */
+
+/* Remove ALL max-w-3xl (768px) centering inside the chat — go full-width */
+.mobile-chat .max-w-3xl {
+  max-width: 100% !important;
+}
+
+/* Composer: safe-area bottom padding for iPhone home indicator */
+.mobile-chat > div > div:last-child {
+  padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 8px) !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+/* User message bubbles: slightly wider on mobile */
+.mobile-chat .is-user {
+  max-width: 85% !important;
+}
+
+/* Messages area: comfortable padding */
+.mobile-chat [class*="ConversationContent"],
+.mobile-chat .flex-1.min-h-0 > div > div {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}

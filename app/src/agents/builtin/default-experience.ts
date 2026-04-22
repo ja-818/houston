@@ -10,7 +10,7 @@ export const blankAgent: AgentConfig = {
   tags: ["blank", "custom", "starter"],
   tabs: [
     { id: "activity", label: "Activity", builtIn: "board", badge: "activity" },
-    { id: "routines", label: "Routines", builtIn: "routines", disabled: true, chip: "Soon" },
+    { id: "routines", label: "Routines", builtIn: "routines" },
     { id: "files", label: "Files", builtIn: "files" },
     { id: "job-description", label: "Job Description", builtIn: "job-description" },
     { id: "integrations", label: "Integrations", builtIn: "integrations" },

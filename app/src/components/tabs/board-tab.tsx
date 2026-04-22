@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanItem } from "@houston-ai/board";
 import type { FeedItem } from "@houston-ai/chat";
@@ -11,11 +12,12 @@ import {
   useActivity,
   useDeleteActivity,
   useUpdateActivity,
-  useCreateActivity,
   useConnectedToolkits,
   useConnections,
 } from "../../hooks/queries";
 import { tauriActivity, tauriChat, tauriAttachments, tauriSystem, tauriWorktree, tauriShell, tauriTerminal, tauriConfig, tauriPreferences, withAttachmentPaths } from "../../lib/tauri";
+import { createMission } from "../../lib/create-mission";
+import { queryKeys } from "../../lib/query-keys";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
 import {
   ComposioLinkCard,
@@ -63,7 +65,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   const { data: rawItems } = useActivity(path);
   const deleteActivity = useDeleteActivity(path);
   const updateActivity = useUpdateActivity(path);
-  const createActivity = useCreateActivity(path);
+  const queryClient = useQueryClient();
   const setOnStartMission = useUIStore((s) => s.setOnStartMission);
   const setBoardActions = useUIStore((s) => s.setBoardActions);
   const setMissionPanelOpen = useUIStore((s) => s.setMissionPanelOpen);
@@ -276,31 +278,36 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         }
       } catch { /* config may not exist yet */ }
 
-      const title = text.length > 80 ? text.slice(0, 77) + "..." : text;
-      const item = await createActivity.mutateAsync({
-        title,
-        description: text,
-        agent: agentMode,
-        worktreePath,
-      });
-      analytics.track("mission_created", { agent_id: agent.id, agent_mode: agentMode ?? "default" });
-      const sessionKey = `activity-${item.id}`;
+      // Single source of truth for activity creation + session start. The
+      // buildPrompt callback fires after the activity row exists so we can
+      // scope attachments to `activity-{id}` and decorate the prompt with
+      // their absolute paths in one pass.
+      const { conversationId, sessionKey } = await createMission(
+        { id: agent.id, name: agent.name, color: agent.color, folderPath: path },
+        text,
+        {
+          agentMode,
+          worktreePath,
+          promptFile: mode?.promptFile,
+          providerOverride: chatProvider ?? undefined,
+          modelOverride: chatModel ?? undefined,
+          buildPrompt: async (activityId) => {
+            const saved = await tauriAttachments.save(`activity-${activityId}`, files);
+            return withAttachmentPaths(text, saved);
+          },
+        },
+      );
       const visible = files.length > 0
         ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
         : text;
       pushFeedItem(path, sessionKey, { feed_type: "user_message", data: visible });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
-      const paths = await tauriAttachments.save(`activity-${item.id}`, files);
-      const prompt = withAttachmentPaths(text, paths);
-      tauriChat.send(path, prompt, sessionKey, {
-        mode: mode?.promptFile,
-        workingDirOverride: worktreePath,
-        providerOverride: chatProvider ?? undefined,
-        modelOverride: chatModel ?? undefined,
-      });
-      return item.id;
+      // createMission bypassed useCreateActivity so invalidate manually.
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity(path) });
+      analytics.track("mission_created", { agent_id: agent.id, agent_mode: agentMode ?? "default" });
+      return conversationId;
     },
-    [path, pushFeedItem, createActivity, pendingAgentMode, agentModes, chatProvider, chatModel],
+    [path, agent.id, agent.name, agent.color, pushFeedItem, pendingAgentMode, agentModes, chatProvider, chatModel, queryClient],
   );
 
   // Derive the session key for an activity, using custom key if set by routine runner
@@ -338,7 +345,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       const mode = agentModes?.find((m) => m.id === activity?.agent);
       tauriChat.send(path, prompt, sessionKey, {
         mode: mode?.promptFile,
-        workingDirOverride: activity?.worktree_path,
+        workingDirOverride: activity?.worktree_path ?? undefined,
         providerOverride: chatProvider ?? undefined,
         modelOverride: chatModel ?? undefined,
       });

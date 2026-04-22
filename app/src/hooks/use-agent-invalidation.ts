@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { listen } from "@tauri-apps/api/event";
 import { useQueryClient } from "@tanstack/react-query";
 import type { HoustonEvent } from "@houston-ai/core";
 import { queryKeys } from "../lib/query-keys";
+import { subscribeHoustonEvents } from "../lib/events";
 
 /**
  * Maps agent-change events from Rust (both Tauri command emissions
@@ -14,8 +14,7 @@ export function useAgentInvalidation() {
   const qc = useQueryClient();
 
   useEffect(() => {
-    const unlisten = listen<HoustonEvent>("houston-event", (event) => {
-      const p = event.payload;
+    const unlisten = subscribeHoustonEvents((p: HoustonEvent) => {
       console.log("[invalidation] event:", p.type, "data" in p ? (p as { data: { agent_path?: string } }).data?.agent_path : "");
 
       switch (p.type) {
@@ -25,12 +24,6 @@ export function useAgentInvalidation() {
           break;
         case "SkillsChanged":
           qc.invalidateQueries({ queryKey: queryKeys.skills(p.data.agent_path) });
-          break;
-        case "LearningsChanged":
-          qc.invalidateQueries({ queryKey: queryKeys.learnings(p.data.agent_path) });
-          break;
-        case "ChannelsConfigChanged":
-          qc.invalidateQueries({ queryKey: queryKeys.channels(p.data.agent_path) });
           break;
         case "FilesChanged":
           qc.invalidateQueries({ queryKey: queryKeys.files(p.data.agent_path) });
@@ -51,6 +44,9 @@ export function useAgentInvalidation() {
         case "RoutineRunsChanged":
           qc.invalidateQueries({ queryKey: ["routine-runs", p.data.agent_path] });
           break;
+        case "LearningsChanged":
+          qc.invalidateQueries({ queryKey: queryKeys.learnings(p.data.agent_path) });
+          break;
         // SessionStatus triggers activity invalidation (agent finished → status changed)
         case "SessionStatus":
           if (p.data.status === "completed" || p.data.status === "error") {
@@ -66,7 +62,7 @@ export function useAgentInvalidation() {
     });
 
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten();
     };
   }, [qc]);
 }

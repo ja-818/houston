@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { osReadRecentLogs } from "./os-bridge";
 
 const SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/PLACEHOLDER";
 
@@ -14,7 +14,7 @@ interface BugReportContext {
 /** Fetch the last N lines from backend + frontend log files. */
 async function getRecentLogs(lines = 50): Promise<{ backend: string; frontend: string }> {
   try {
-    return await invoke<{ backend: string; frontend: string }>("read_recent_logs", { lines });
+    return await osReadRecentLogs(lines);
   } catch {
     return { backend: "(unavailable)", frontend: "(unavailable)" };
   }

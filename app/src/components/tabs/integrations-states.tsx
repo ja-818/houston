@@ -135,26 +135,3 @@ export function ErrorState({
   );
 }
 
-/**
- * Header shown on the "ok" state — the user is signed in and can
- * browse apps to connect.
- */
-export function SignedInHeader({
-  email,
-  orgName,
-}: {
-  email: string | null;
-  orgName: string | null;
-}) {
-  return (
-    <div className="mb-6">
-      <h2 className="text-sm font-medium text-foreground">
-        Signed in to Composio
-      </h2>
-      <p className="text-xs text-muted-foreground mt-1">
-        {email ?? "(unknown email)"}
-        {orgName ? ` · ${orgName}` : ""}
-      </p>
-    </div>
-  );
-}

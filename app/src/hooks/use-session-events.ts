@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { HoustonEvent } from "@houston-ai/core";
 import type { FeedItem } from "@houston-ai/chat";
@@ -8,6 +7,7 @@ import { useUIStore } from "../stores/ui";
 import { useWorkspaceStore } from "../stores/workspaces";
 import { useAgentStore } from "../stores/agents";
 import { tauriActivity } from "../lib/tauri";
+import { subscribeHoustonEvents, listenOsEvent } from "../lib/events";
 import { logger } from "../lib/logger";
 
 // Pending navigation set when a completion notification fires.
@@ -108,9 +108,8 @@ export function useSessionEvents() {
       Notification.requestPermission();
     }
 
-    const unlisten = listen<HoustonEvent>("houston-event", (event) => {
+    const unlisten = subscribeHoustonEvents((payload: HoustonEvent) => {
       const h = handlersRef.current;
-      const payload = event.payload;
 
       switch (payload.type) {
         case "FeedItem":
@@ -123,10 +122,21 @@ export function useSessionEvents() {
         case "SessionStatus": {
           const { status, error, session_key, agent_path } = payload.data;
           if (status === "error" && error) {
-            h.pushFeedItem(agent_path, session_key, {
-              feed_type: "system_message",
-              data: `Session error: ${error}`,
-            } as FeedItem);
+            // When auth is required, the backend has emitted AuthRequired and
+            // the inline reconnect card renders from the authRequired store
+            // state. Suppress the generic "Session error: ..." system message
+            // so the feed doesn't show a raw error *and* the card.
+            const isAuth = useUIStore.getState().authRequired !== null;
+            if (!isAuth) {
+              h.pushFeedItem(agent_path, session_key, {
+                feed_type: "system_message",
+                data: `Session error: ${error}`,
+              } as FeedItem);
+            } else {
+              logger.info(
+                `[auth] suppressing Session error system_message for ${agent_path}/${session_key} — card handles it`,
+              );
+            }
           }
           if (status === "completed") {
             const workspace = h.getWorkspace();
@@ -163,6 +173,7 @@ export function useSessionEvents() {
           });
           break;
         case "AuthRequired":
+          logger.info(`[auth] AuthRequired received: provider=${payload.data.provider}`);
           h.setAuthRequired(payload.data.provider);
           break;
       }
@@ -185,7 +196,7 @@ export function useSessionEvents() {
     // Case: app in background — user clicks notification → OS activates app →
     // Rust emits "app-activated" via RunEvent::Resumed → we consume pending nav.
     // Also refresh the agent list so any external changes (e.g. Finder delete) are picked up.
-    const unlistenActivated = listen("app-activated", () => {
+    const unlistenActivated = listenOsEvent<unknown>("app-activated", () => {
       logger.debug(`[notification] app-activated event fired: pendingNav=${JSON.stringify(pendingNotificationNav)}`);
       consumePendingNav();
       const ws = useWorkspaceStore.getState().current;
@@ -204,8 +215,8 @@ export function useSessionEvents() {
     });
 
     return () => {
-      unlisten.then((fn) => fn());
-      unlistenActivated.then((fn) => fn());
+      unlisten();
+      unlistenActivated();
       unlistenNotificationAction?.();
       unlistenTauriFocus.then((fn) => fn());
     };

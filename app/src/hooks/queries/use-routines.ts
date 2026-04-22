@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { NewRoutine, RoutineUpdate } from "@houston-ai/engine-client";
 import { queryKeys } from "../../lib/query-keys";
 import { tauriRoutines } from "../../lib/tauri";
 
@@ -21,18 +22,12 @@ export function useRoutineRuns(agentPath: string | undefined, routineId?: string
 export function useCreateRoutine(agentPath: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: {
-      name: string;
-      description?: string;
-      prompt: string;
-      schedule: string;
-      enabled?: boolean;
-      suppress_when_silent?: boolean;
-    }) => tauriRoutines.create(agentPath, input),
+    mutationFn: (input: NewRoutine) => tauriRoutines.create(agentPath, input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.routines(agentPath) });
-      // Sync the scheduler so new routine gets registered
-      tauriRoutines.syncScheduler().catch(console.error);
+      // Engine syncs the scheduler on write, but a redundant client-side
+      // sync is cheap and protects against race-y reads after WS reconnects.
+      tauriRoutines.syncScheduler(agentPath).catch(console.error);
     },
   });
 }
@@ -45,18 +40,11 @@ export function useUpdateRoutine(agentPath: string) {
       updates,
     }: {
       routineId: string;
-      updates: {
-        name?: string;
-        description?: string;
-        prompt?: string;
-        schedule?: string;
-        enabled?: boolean;
-        suppress_when_silent?: boolean;
-      };
+      updates: RoutineUpdate;
     }) => tauriRoutines.update(agentPath, routineId, updates),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.routines(agentPath) });
-      tauriRoutines.syncScheduler().catch(console.error);
+      tauriRoutines.syncScheduler(agentPath).catch(console.error);
     },
   });
 }
@@ -67,7 +55,7 @@ export function useDeleteRoutine(agentPath: string) {
     mutationFn: (routineId: string) => tauriRoutines.delete(agentPath, routineId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.routines(agentPath) });
-      tauriRoutines.syncScheduler().catch(console.error);
+      tauriRoutines.syncScheduler(agentPath).catch(console.error);
     },
   });
 }

@@ -14,7 +14,6 @@ import {
   NotInstalledState,
   NeedsAuthState,
   ErrorState,
-  SignedInHeader,
 } from "./integrations-states";
 
 const COMPOSIO_DASHBOARD_URL = "https://dashboard.composio.dev";
@@ -89,7 +88,6 @@ export function IntegrationsView({ title }: IntegrationsViewProps) {
 
         {!loading && result?.status === "ok" && (
           <>
-            <SignedInHeader email={result.email} orgName={result.org_name} />
             <ConnectedAppsSection connectedToolkits={connectedSet} />
             <BrowseAppsSection connectedToolkits={connectedSet} />
           </>

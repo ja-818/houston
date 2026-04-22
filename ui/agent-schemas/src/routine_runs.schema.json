@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RoutineRuns",
+  "description": "Execution history of routines.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "routine_id", "status", "session_key", "started_at"],
+    "properties": {
+      "id": { "type": "string" },
+      "routine_id": { "type": "string" },
+      "status": { "type": "string", "enum": ["running", "silent", "surfaced", "error"] },
+      "session_key": { "type": "string" },
+      "activity_id": { "type": "string" },
+      "summary": { "type": "string" },
+      "started_at": { "type": "string", "format": "date-time" },
+      "completed_at": { "type": "string", "format": "date-time" }
+    },
+    "additionalProperties": false
+  }
+}

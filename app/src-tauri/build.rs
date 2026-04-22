@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 fn main() {
     // Load .env file so env!() macros in slack.rs can read credentials at build time.
     if let Ok(env_path) = std::fs::canonicalize(".env") {
@@ -13,5 +15,64 @@ fn main() {
         println!("cargo:rerun-if-changed={}", env_path.display());
     }
 
+    // Stage the houston-engine binary into `binaries/houston-engine-<triple>`
+    // so tauri's `externalBin` picks it up for bundling. The user is expected
+    // to run `cargo build -p houston-engine-server --release` first; CI wires
+    // that into the release workflow. If the binary is missing we print a
+    // warning but don't fail — dev builds resolve the engine binary from the
+    // cargo target directory at runtime (see engine_supervisor::resolve_*).
+    if let Err(e) = stage_engine_sidecar() {
+        println!("cargo:warning=houston-engine sidecar staging skipped: {e}");
+    }
+
     tauri_build::build()
+}
+
+fn stage_engine_sidecar() -> Result<(), String> {
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let workspace = manifest.parent().and_then(|p| p.parent()).ok_or(
+        "could not resolve workspace root from CARGO_MANIFEST_DIR",
+    )?;
+    let triple = std::env::var("TARGET").unwrap_or_default();
+    let bin_name = if cfg!(windows) {
+        "houston-engine.exe"
+    } else {
+        "houston-engine"
+    };
+
+    // Pick the first existing source: release > debug.
+    let candidates = [
+        workspace.join("target").join("release").join(bin_name),
+        workspace.join("target").join("debug").join(bin_name),
+    ];
+    let src = candidates
+        .iter()
+        .find(|p| p.exists())
+        .ok_or(format!("houston-engine not built — tried {:?}", candidates))?;
+
+    let dest_dir = manifest.join("binaries");
+    std::fs::create_dir_all(&dest_dir).map_err(|e| format!("mkdir binaries: {e}"))?;
+    let dest_name = if triple.is_empty() {
+        bin_name.to_string()
+    } else if cfg!(windows) {
+        format!("houston-engine-{triple}.exe")
+    } else {
+        format!("houston-engine-{triple}")
+    };
+    let dest = dest_dir.join(&dest_name);
+    std::fs::copy(src, &dest).map_err(|e| format!("copy engine sidecar: {e}"))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&dest)
+            .map_err(|e| format!("stat sidecar: {e}"))?
+            .permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&dest, perms).map_err(|e| format!("chmod sidecar: {e}"))?;
+    }
+    println!(
+        "cargo:rerun-if-changed={}",
+        src.display()
+    );
+    Ok(())
 }

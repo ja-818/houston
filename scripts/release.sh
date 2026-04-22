@@ -30,17 +30,17 @@ git push origin main --tags
 # 6. Publish npm packages
 echo "Publishing npm packages..."
 for pkg in core chat board layout workspace skills connections events routines review memory; do
-  (cd "packages/$pkg" && npm publish --access public)
+  (cd "ui/$pkg" && npm publish --access public)
 done
 
 # 7. Publish Rust crates (in dependency order)
 echo "Publishing Rust crates..."
-for crate in houston-db houston-events houston-sessions houston-scheduler houston-channels houston-memory houston-skills; do
-  (cd "crates/$crate" && cargo publish)
+for crate in houston-db houston-events houston-terminal-manager houston-scheduler houston-channels houston-memory houston-skills; do
+  (cd "engine/$crate" && cargo publish)
   sleep 15  # crates.io rate limit
 done
-# houston-tauri last (depends on all others)
-(cd "crates/houston-tauri" && cargo publish)
+# houston-tauri lives in app/ (Tauri adapter, not part of Engine)
+(cd "app/houston-tauri" && cargo publish)
 
 # 8. Create GitHub release
 echo "Creating GitHub release..."

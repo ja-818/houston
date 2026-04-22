@@ -1,18 +1,22 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/houston-sessions",
-    "crates/houston-db",
-    "crates/houston-tauri",
-    "crates/houston-events",
-    "crates/houston-scheduler",
-    "crates/houston-channels",
-    "crates/houston-memory",
-    "crates/houston-skills",
+    "engine/houston-terminal-manager",
+    "engine/houston-db",
+    "app/houston-tauri",
+    "engine/houston-events",
+    "engine/houston-scheduler",
+    "engine/houston-skills",
+    "engine/houston-sync",
+    "engine/houston-agent-files",
+    "engine/houston-ui-events",
+    "engine/houston-agents-conversations",
+    "engine/houston-file-watcher",
+    "engine/houston-composio",
+    "engine/houston-engine-core",
+    "engine/houston-engine-protocol",
+    "engine/houston-engine-server",
     "app/src-tauri",
-]
-exclude = [
-    "create-app/template",
 ]
 
 [workspace.dependencies]
@@ -26,11 +30,18 @@ async-trait = "0.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2"
-houston-sessions = { version = "0.3.2", path = "crates/houston-sessions" }
-houston-db = { version = "0.3.2", path = "crates/houston-db" }
-houston-tauri = { version = "0.3.2", path = "crates/houston-tauri" }
-houston-events = { version = "0.3.2", path = "crates/houston-events" }
-houston-scheduler = { version = "0.3.2", path = "crates/houston-scheduler" }
-houston-channels = { version = "0.3.2", path = "crates/houston-channels" }
-houston-memory = { version = "0.3.2", path = "crates/houston-memory" }
-houston-skills = { version = "0.3.2", path = "crates/houston-skills" }
+houston-terminal-manager = { version = "0.3.2", path = "engine/houston-terminal-manager" }
+houston-db = { version = "0.3.2", path = "engine/houston-db" }
+houston-tauri = { version = "0.3.2", path = "app/houston-tauri" }
+houston-events = { version = "0.3.2", path = "engine/houston-events" }
+houston-scheduler = { version = "0.3.2", path = "engine/houston-scheduler" }
+houston-skills = { version = "0.3.2", path = "engine/houston-skills" }
+houston-sync = { version = "0.3.2", path = "engine/houston-sync" }
+houston-agent-files = { version = "0.3.2", path = "engine/houston-agent-files" }
+houston-ui-events = { version = "0.3.2", path = "engine/houston-ui-events" }
+houston-agents-conversations = { version = "0.3.2", path = "engine/houston-agents-conversations" }
+houston-file-watcher = { version = "0.3.2", path = "engine/houston-file-watcher" }
+houston-composio = { version = "0.3.2", path = "engine/houston-composio" }
+houston-engine-core = { version = "0.4.0", path = "engine/houston-engine-core" }
+houston-engine-protocol = { version = "0.4.0", path = "engine/houston-engine-protocol" }
+houston-engine-server = { version = "0.4.0", path = "engine/houston-engine-server" }

@@ -87,7 +87,11 @@ export function CreateAgentDialog() {
       // Write provider/model to agent config if different from workspace default
       if (provider !== wsProvider || model !== wsModel) {
         const cfg = await tauriConfig.read(agent.folderPath);
-        await tauriConfig.write(agent.folderPath, { ...cfg, provider, model });
+        await tauriConfig.write(agent.folderPath, {
+          ...cfg,
+          provider: provider as "anthropic" | "openai",
+          model,
+        });
       }
       if (selectedConfigId === "blank" && onboardingActivityId) {
         tauriChat.startOnboarding(agent.folderPath, `activity-${onboardingActivityId}`);

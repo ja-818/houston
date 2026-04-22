@@ -1,4 +1,9 @@
-import { StrictMode, Component, type ReactNode } from "react";
+import {
+  Component,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/query-client";
@@ -6,9 +11,10 @@ import App from "./App";
 import "./styles/globals.css";
 import { useUIStore } from "./stores/ui";
 import { initFrontendLogging, logger } from "./lib/logger";
+import { whenEngineReady, isEngineReady } from "./lib/engine";
 
 // Initialize file-based logging — patches console.error/warn to write to
-// ~/Library/Application Support/houston/logs/frontend.log
+// ~/.houston/logs/frontend.log (or ~/.dev-houston/logs/frontend.log in dev).
 initFrontendLogging();
 
 // Global error handlers — surface ALL uncaught errors as toasts
@@ -44,10 +50,27 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   render() {
     if (this.state.error) {
       return (
-        <div style={{ padding: 32, fontFamily: "monospace", whiteSpace: "pre-wrap" }}>
-          <h1 style={{ color: "red" }}>App crashed</h1>
-          <p>{this.state.error.message}</p>
-          <pre>{this.state.error.stack}</pre>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            padding: 32,
+            background: "#1e1e1e",
+            color: "#ffdddd",
+            fontFamily: "ui-monospace, Menlo, monospace",
+            fontSize: 13,
+            whiteSpace: "pre-wrap",
+            overflow: "auto",
+            zIndex: 999999,
+          }}
+        >
+          <h1 style={{ color: "#ff6666", fontSize: 24, margin: 0, marginBottom: 16 }}>
+            App crashed
+          </h1>
+          <p style={{ fontSize: 15, marginBottom: 16, color: "#ffffff" }}>
+            {this.state.error.message}
+          </p>
+          <pre style={{ fontSize: 12, opacity: 0.85 }}>{this.state.error.stack}</pre>
         </div>
       );
     }
@@ -55,12 +78,55 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   }
 }
 
+/**
+ * Blocks the app from rendering until the Tauri supervisor emits
+ * `houston-engine-ready` (or the injection raced in early). Hooks deep in
+ * the tree synchronously call `getEngine()` in their first useEffect, so
+ * we MUST have the handshake before mounting <App />.
+ */
+function EngineGate({ children }: { children: ReactNode }) {
+  const [ready, setReady] = useState(isEngineReady());
+  useEffect(() => {
+    if (ready) return;
+    let cancelled = false;
+    whenEngineReady().then(() => {
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
+  if (!ready) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          fontFamily: "system-ui, sans-serif",
+          color: "#888",
+          fontSize: 14,
+        }}
+      >
+        Starting Houston engine…
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
+// StrictMode intentionally remounts components to catch bugs. In Tauri's
+// WKWebView that double-mount collides with portal DOM + Tauri event
+// listeners and throws NotFoundError on removeChild. Skipping it for now;
+// revisit once the underlying portal/listener churn is fixed.
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
+  <QueryClientProvider client={queryClient}>
+    <ErrorBoundary>
+      <EngineGate>
         <App />
-      </ErrorBoundary>
-    </QueryClientProvider>
-  </StrictMode>,
+      </EngineGate>
+    </ErrorBoundary>
+  </QueryClientProvider>,
 );

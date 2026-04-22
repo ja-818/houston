@@ -42,7 +42,7 @@ export function AgentRenderer({
   const customProps = useCustomTabProps(agent);
 
   return (
-    <div className="h-full w-full relative">
+    <div className="h-full w-full relative min-h-0">
       {tabs.map((tab) => {
         const TabComponent = resolveTabComponent(tab, agentDef);
         const isActive = tab.id === activeTabId;
@@ -53,7 +53,7 @@ export function AgentRenderer({
         return (
           <div
             key={tab.id}
-            className={isActive ? "h-full w-full" : "hidden"}
+            className={isActive ? "h-full w-full flex flex-col min-h-0" : "hidden"}
           >
             <Suspense
               fallback={

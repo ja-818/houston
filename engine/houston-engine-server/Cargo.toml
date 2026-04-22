@@ -1,0 +1,44 @@
+[package]
+name = "houston-engine-server"
+version = "0.4.0"
+edition = "2021"
+description = "Houston Engine HTTP+WS server — axum binary speaking the Houston wire protocol"
+license = "MIT"
+repository = "https://github.com/ja-818/houston"
+
+[[bin]]
+name = "houston-engine"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.7", features = ["ws", "macros"] }
+tokio = { workspace = true }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "cors"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+sha2 = "0.10"
+base64 = "0.22"
+rand = "0.8"
+futures-util = "0.3"
+houston-engine-protocol = { version = "0.4.0", path = "../houston-engine-protocol" }
+houston-engine-core = { version = "0.4.0", path = "../houston-engine-core" }
+houston-composio = { workspace = true }
+houston-sync = { workspace = true }
+houston-db = { workspace = true }
+houston-skills = { workspace = true, features = ["remote"] }
+houston-ui-events = { workspace = true }
+houston-terminal-manager = { workspace = true }
+houston-file-watcher = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+reqwest = { version = "0.12", features = ["json"] }
+tokio-tungstenite = "0.24"
+tempfile = "3"
+urlencoding = "2"
+base64 = "0.22"

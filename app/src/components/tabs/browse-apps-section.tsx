@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Search, Loader2, ExternalLink, ChevronDown } from "lucide-react";
+import { Search, Loader2, Plus, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { tauriConnections, tauriSystem } from "../../lib/tauri";
 import { useComposioRefetchOnReturn } from "../../hooks/use-composio-refetch-on-return";
@@ -186,16 +186,22 @@ function AppCard({
   const initial = app.name.charAt(0).toUpperCase();
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-black/5 hover:bg-accent/50 transition-colors">
+    <button
+      type="button"
+      onClick={() => onConnect(app.toolkit)}
+      disabled={connecting}
+      title={`Connect ${app.name}`}
+      className="group w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary hover:bg-black/[0.05] transition-colors disabled:opacity-60 disabled:cursor-wait focus-visible:outline-none focus-visible:bg-black/[0.05]"
+    >
       {!imgError ? (
         <img
           src={app.logoUrl}
           alt={app.name}
-          className="size-8 rounded-lg object-contain shrink-0"
+          className="size-8 rounded-lg object-contain shrink-0 bg-background"
           onError={() => setImgError(true)}
         />
       ) : (
-        <div className="size-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
+        <div className="size-8 rounded-lg bg-background flex items-center justify-center shrink-0">
           <span className="text-xs font-semibold text-muted-foreground">
             {initial}
           </span>
@@ -209,21 +215,12 @@ function AppCard({
           {app.description}
         </p>
       </div>
-      <button
-        onClick={() => onConnect(app.toolkit)}
-        disabled={connecting}
-        className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-border bg-background text-foreground text-xs font-medium hover:bg-secondary transition-colors duration-200 disabled:opacity-50 shrink-0"
-      >
-        {connecting ? (
-          <Loader2 className="size-3 animate-spin" />
-        ) : (
-          <>
-            Connect
-            <ExternalLink className="size-3" />
-          </>
-        )}
-      </button>
-    </div>
+      {connecting ? (
+        <Loader2 className="size-3.5 animate-spin text-muted-foreground shrink-0" />
+      ) : (
+        <Plus className="size-3.5 text-muted-foreground/60 shrink-0 group-hover:text-muted-foreground transition-colors" />
+      )}
+    </button>
   );
 }
 
