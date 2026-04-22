@@ -72,6 +72,23 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys
           echo "${{ secrets.APPLE_API_KEY_CONTENT }}" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
 
+      # Build the engine sidecar BEFORE the Tauri app build. The app's
+      # `build.rs` stages `target/release/houston-engine` into
+      # `src-tauri/binaries/houston-engine-<triple>` for Tauri's `externalBin`
+      # to bundle. Without this step the Tauri build fails with
+      # `resource path 'binaries/houston-engine-...' doesn't exist` — which
+      # silently broke v0.3.3's release pipeline.
+      - name: Build houston-engine sidecar
+        run: |
+          TRIPLE="aarch64-apple-darwin"
+          cargo build --release --target "$TRIPLE" -p houston-engine-server
+          # The target-specific cargo output lives at `target/<triple>/release/`.
+          # `build.rs` also looks at `target/release/` (no triple) so mirror the
+          # binary there so both paths resolve.
+          mkdir -p target/release
+          cp "target/$TRIPLE/release/houston-engine" target/release/houston-engine
+          ls -la target/release/houston-engine "target/$TRIPLE/release/houston-engine"
+
       # Build only — no release creation (no tagName).
       # tauri-action handles certificate import, code signing, .app notarization + stapling.
       - name: Build Tauri app
