@@ -272,67 +272,72 @@ jobs:
             > checksums-sha256.txt
           cat checksums-sha256.txt
 
-      # Build `release-notes.md` by grouping conventional-commit subjects
-      # between the previous tag and HEAD.
+      # Resolve `release-notes.md`. Two paths:
       #
-      # We do commit-based, not PR-based, grouping because:
-      #   - squash-merge policy means 1 commit ≈ 1 logical change
-      #   - direct tag pushes (hotfixes, version bumps) are included
-      #   - no dependency on GitHub's release-notes generator which can
-      #     rate-limit, change format, or surface unwanted contributor
-      #     spam
+      # 1. Author-written notes at `.github/release-notes/<version>.md`
+      #    — preferred. Whoever drives the release (Claude in our flow,
+      #    or a human) drops a markdown file alongside the version-bump
+      #    commit, tagged commit, etc. Used verbatim.
       #
-      # Sections:
-      #   - Features         (feat, feat(scope))
-      #   - Fixes            (fix)
-      #   - Docs             (docs)
-      #   - CI & infra       (ci)
-      #   - Changes          (refactor, perf, style, test — short list)
-      # `chore:` and version-bump commits are intentionally hidden.
+      # 2. Auto-generated fallback grouping conventional-commit subjects
+      #    in `git log <prev-tag>..HEAD` by prefix:
+      #      Features (feat) / Fixes (fix) / Docs (docs) /
+      #      CI & infra (ci) / Changes (refactor|perf|style|test)
+      #    `chore:` and untyped commits are hidden. Use this when a fast
+      #    hotfix doesn't justify hand-written notes.
       #
-      # Uses `git tag --sort=-v:refname` to find the previous semver
-      # release; falls back to HEAD~50 if this is the first one.
+      # Either way the release stays a draft, so the author can still
+      # polish before publishing.
       - name: Build release notes
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          PREV_TAG=$(git tag --sort=-v:refname --list 'v*' | grep -v "^${GITHUB_REF_NAME}$" | head -1)
-          if [ -z "$PREV_TAG" ]; then
-            echo "No previous tag; diffing against HEAD~50"
-            RANGE="HEAD~50..HEAD"
-            COMPARE=""
+          AUTHORED=".github/release-notes/${VERSION}.md"
+
+          if [ -f "$AUTHORED" ]; then
+            echo "Using author-written notes from $AUTHORED"
+            cp "$AUTHORED" release-notes.md
           else
-            RANGE="$PREV_TAG..HEAD"
-            COMPARE="**Full changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...${GITHUB_REF_NAME}"
+            echo "No $AUTHORED — falling back to auto-generated changelog"
+
+            PREV_TAG=$(git tag --sort=-v:refname --list 'v*' | grep -v "^${GITHUB_REF_NAME}$" | head -1)
+            if [ -z "$PREV_TAG" ]; then
+              echo "No previous tag; diffing against HEAD~50"
+              RANGE="HEAD~50..HEAD"
+              COMPARE=""
+            else
+              RANGE="$PREV_TAG..HEAD"
+              COMPARE="**Full changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...${GITHUB_REF_NAME}"
+            fi
+
+            section() {
+              local title="$1"; shift
+              local pattern="$1"; shift
+              local matches
+              matches=$(git log "$RANGE" --no-merges --pretty='- %s' | grep -E "^- ($pattern)(\([^)]+\))?:" || true)
+              if [ -n "$matches" ]; then
+                printf '\n### %s\n\n%s\n' "$title" "$matches"
+              fi
+            }
+
+            {
+              echo "## Houston v$VERSION"
+              section "Features"  "feat"
+              section "Fixes"     "fix"
+              section "Docs"      "docs"
+              section "CI & infra" "ci"
+              section "Changes"   "refactor|perf|style|test"
+              echo
+              # Keep the upgrade reminder everyone needs — drag-install
+              # doesn't reliably replace a running .app.
+              echo "### Before you upgrade"
+              echo ""
+              echo "- Quit Houston before installing. macOS doesn't always replace a running app. If in doubt: \`rm -rf /Applications/Houston.app\` and drag the new copy in."
+              echo ""
+              if [ -n "$COMPARE" ]; then
+                echo "$COMPARE"
+              fi
+            } > release-notes.md
           fi
-
-          section() {
-            local title="$1"; shift
-            local pattern="$1"; shift
-            local matches
-            matches=$(git log "$RANGE" --no-merges --pretty='- %s' | grep -E "^- ($pattern)(\([^)]+\))?:" || true)
-            if [ -n "$matches" ]; then
-              printf '\n### %s\n\n%s\n' "$title" "$matches"
-            fi
-          }
-
-          {
-            echo "## Houston v$VERSION"
-            section "Features"  "feat"
-            section "Fixes"     "fix"
-            section "Docs"      "docs"
-            section "CI & infra" "ci"
-            section "Changes"   "refactor|perf|style|test"
-            echo
-            # Keep the upgrade reminder everyone needs — drag-install
-            # doesn't reliably replace a running .app.
-            echo "### Before you upgrade"
-            echo ""
-            echo "- Quit Houston before installing. macOS doesn't always replace a running app. If in doubt: \`rm -rf /Applications/Houston.app\` and drag the new copy in."
-            echo ""
-            if [ -n "$COMPARE" ]; then
-              echo "$COMPARE"
-            fi
-          } > release-notes.md
 
           echo "----- release-notes.md -----"
           cat release-notes.md
