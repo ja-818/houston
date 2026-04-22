@@ -2347,6 +2347,7 @@ name = "houston-composio"
 version = "0.3.2"
 dependencies = [
  "base64 0.22.1",
+ "dirs 5.0.1",
  "houston-db",
  "houston-ui-events",
  "reqwest 0.12.28",
@@ -2536,6 +2537,7 @@ dependencies = [
 name = "houston-terminal-manager"
 version = "0.3.2"
 dependencies = [
+ "dirs 5.0.1",
  "serde",
  "serde_json",
  "tokio",

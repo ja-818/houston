@@ -103,6 +103,7 @@ the typed `.houston/<type>/<type>.json` layout.
 | Teams / Cloud | ❌ TBD placeholders |
 | Store populated | ❌ placeholder |
 | Binary file read route (xlsx, pdf download through HTTP) | ❌ workaround: use `/v1/shell` with `open`/`xdg-open` to hand binary files to host OS |
+| Windows support (Rust engine layer) | ✅ `cargo check --target x86_64-pc-windows-gnu` clean across the workspace; platform-specific branches (taskkill vs kill, PATH separator, symlink_dir) covered. See `knowledge-base/platform-matrix.md`. |
 
 ## Direction of work
 - **library-first** — new reusable capability → ui/ or engine/, then consumed by app/
