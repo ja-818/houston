@@ -307,6 +307,21 @@ export interface PreferenceValue {
   value: string | null;
 }
 
+/**
+ * Persisted record that the user has accepted a given version of the
+ * in-app security disclaimer. Stored as the JSON-encoded value of the
+ * `"legal_acceptance"` preference. The frontend re-prompts whenever the
+ * stored `version` is lower than the current in-app constant.
+ */
+export interface LegalAcceptance {
+  version: number;
+  /** RFC3339 timestamp captured at the moment of acceptance. */
+  acceptedAt: string;
+}
+
+/** Preference key for the JSON-encoded [`LegalAcceptance`]. */
+export const LEGAL_ACCEPTANCE_KEY = "legal_acceptance";
+
 // ---------- Store ----------
 
 export interface StoreListing {
