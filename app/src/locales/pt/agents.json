@@ -1,0 +1,70 @@
+{
+  "toasts": {
+    "renamed": "Espaço de trabalho renomeado",
+    "deleted": "Espaço de trabalho excluído",
+    "switchedModel": "Mudou para {{provider}} ({{model}})",
+    "timezoneSet": "Fuso horário definido como {{zone}}"
+  },
+  "instructions": {
+    "emptyTitle": "Ainda sem instruções",
+    "emptyDescription": "Diga ao seu agente como ele deve pensar e agir.",
+    "writeButton": "Escrever instruções",
+    "helper": "Como este agente deve pensar e agir.",
+    "placeholder": "Escreva as instruções para o seu agente…",
+    "saving": "Salvando…",
+    "saved": "Salvo"
+  },
+  "learnings": {
+    "emptyTitle": "Ainda sem aprendizados",
+    "emptyDescription": "O agente vai anotando coisas enquanto trabalha, ou você pode adicionar as suas.",
+    "addLearning": "Adicionar aprendizado",
+    "helper": "Anotações rápidas que o agente vai juntando com o tempo.",
+    "inputPlaceholder": "Digite um aprendizado e aperte Enter…",
+    "removeAria": "Remover aprendizado",
+    "confirmRemoveTitle": "Remover este aprendizado?",
+    "confirmRemoveDescription": "O agente vai perder esta nota. Você pode adicionar de novo depois.",
+    "confirmRemoveLabel": "Remover"
+  },
+  "subTabs": {
+    "instructions": "Instruções",
+    "skills": "Habilidades",
+    "learnings": "Aprendizados"
+  },
+  "configure": {
+    "projectContext": {
+      "title": "Contexto do projeto",
+      "description": "Injetado em todos os agentes. Descreva seu projeto, convenções e regras.",
+      "placeholder": "Contexto do projeto, convenções de código, notas de arquitetura..."
+    },
+    "agentPrompts": {
+      "title": "Instruções do agente",
+      "description": "Cada modo do agente tem sua própria instrução.",
+      "placeholder": "Instrução para {{name}}..."
+    },
+    "skills": {
+      "title": "Habilidades",
+      "description": "Instruções reutilizáveis que os agentes podem usar."
+    },
+    "learnings": {
+      "title": "Aprendizados",
+      "description": "Os agentes salvam aprendizados enquanto trabalham. Você também pode adicionar os seus.",
+      "addPlaceholder": "Adicionar um aprendizado..."
+    },
+    "settings": {
+      "title": "Configurações",
+      "description": "Configuração do agente e opções de execução.",
+      "savingHint": "Salvando...",
+      "worktreeMode": "Modo worktree",
+      "worktreeModeDescription": "Criar um worktree do git separado para cada missão",
+      "installCommand": "Comando de instalação",
+      "installCommandPlaceholder": "ex. pnpm install, npm install, cargo build",
+      "devCommand": "Comando de desenvolvimento",
+      "devCommandPlaceholder": "ex. pnpm dev, npm run dev, cargo run"
+    }
+  },
+  "promptCards": {
+    "projectContext": "Contexto do projeto",
+    "claudeMdSummary": "CLAUDE.md, {{count}} linhas",
+    "modeSummary": "{{file}}, {{count}} linhas"
+  }
+}

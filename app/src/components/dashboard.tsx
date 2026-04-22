@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanColumnConfig } from "@houston-ai/board";
 import {
@@ -24,13 +25,13 @@ import { MissionControlNewDialog } from "./mission-control-new-dialog";
 import { useDetailPanelContainer } from "./shell/detail-panel-context";
 import { AgentMiniAvatar, HoustonThinkingIndicator } from "./shell/experience-card";
 
-const MC_COLUMNS: KanbanColumnConfig[] = [
-  { id: "running", label: "Running", statuses: ["running"] },
-  { id: "needs_you", label: "Needs you", statuses: ["needs_you"] },
-  { id: "done", label: "Done", statuses: ["done", "cancelled"] },
-];
-
 export function Dashboard() {
+  const { t } = useTranslation(["dashboard", "common"]);
+  const MC_COLUMNS: KanbanColumnConfig[] = [
+    { id: "running", label: t("dashboard:columns.running"), statuses: ["running"] },
+    { id: "needs_you", label: t("dashboard:columns.needsYou"), statuses: ["needs_you"] },
+    { id: "done", label: t("dashboard:columns.done"), statuses: ["done", "cancelled"] },
+  ];
   const panelContainer = useDetailPanelContainer();
   const agents = useAgentStore((s) => s.agents);
   const setDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
@@ -84,9 +85,9 @@ export function Dashboard() {
       <div className="h-full flex items-center justify-center">
         <Empty className="border-0">
           <EmptyHeader>
-            <EmptyTitle>No agents yet</EmptyTitle>
+            <EmptyTitle>{t("dashboard:noAgents.title")}</EmptyTitle>
             <EmptyDescription>
-              Build your AI team and ship the impossible.
+              {t("dashboard:noAgents.description")}
             </EmptyDescription>
           </EmptyHeader>
           <Button
@@ -94,7 +95,7 @@ export function Dashboard() {
             onClick={() => setDialogOpen(true)}
           >
             <Plus className="h-4 w-4" />
-            New Agent
+            {t("dashboard:noAgents.cta")}
           </Button>
         </Empty>
       </div>
@@ -104,9 +105,9 @@ export function Dashboard() {
   const emptyBoard = (
     <Empty className="border-0">
       <EmptyHeader>
-        <EmptyTitle>No conversations yet</EmptyTitle>
+        <EmptyTitle>{t("dashboard:empty.boardTitle")}</EmptyTitle>
         <EmptyDescription>
-          Start a new conversation to delegate work to an agent.
+          {t("dashboard:empty.boardDescription")}
         </EmptyDescription>
       </EmptyHeader>
       <Button
@@ -115,7 +116,7 @@ export function Dashboard() {
         onClick={() => setNewDialogOpen(true)}
       >
         <HoustonLogo size={16} />
-        New mission
+        {t("dashboard:empty.newMission")}
       </Button>
     </Empty>
   );
@@ -126,21 +127,21 @@ export function Dashboard() {
       <div className="shrink-0 px-5 pt-4">
         <div className="flex items-center gap-2 mb-3">
           <h1 className="text-xl font-semibold text-foreground">
-            Mission Control
+            {t("dashboard:title")}
           </h1>
           <div className="ml-auto flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full h-8 gap-1.5">
                   {filterPath
-                    ? agents.find((a) => a.folderPath === filterPath)?.name ?? "All agents"
-                    : "All agents"}
+                    ? agents.find((a) => a.folderPath === filterPath)?.name ?? t("dashboard:filter.allAgents")
+                    : t("dashboard:filter.allAgents")}
                   <ChevronDown className="size-3.5 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setFilterPath("")}>
-                  All agents
+                  {t("dashboard:filter.allAgents")}
                 </DropdownMenuItem>
                 {agents.map((a) => (
                   <DropdownMenuItem

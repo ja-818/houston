@@ -1,0 +1,95 @@
+{
+  "sidebar": {
+    "missionControl": "Central de missões",
+    "integrations": "Integrações",
+    "settings": "Configurações",
+    "yourAgents": "Seus agentes",
+    "selectWorkspace": "Escolha um espaço de trabalho"
+  },
+  "tabActions": {
+    "newMission": "Nova missão"
+  },
+  "agentDelete": {
+    "title": "Excluir o agente?",
+    "description": "Isso apaga o agente e todos os seus dados de forma permanente. Não dá para desfazer."
+  },
+  "workspaceDialog": {
+    "title": "Novo espaço de trabalho",
+    "tabNew": "Criar novo",
+    "tabGithub": "Importar do GitHub",
+    "githubDescription": "Importe um modelo de espaço de trabalho do GitHub. Isso cria um espaço com todos os agentes prontos para usar.",
+    "githubPlaceholder": "usuario/repo",
+    "githubImport": "Importar",
+    "githubImporting": "Importando espaço de trabalho e agentes..."
+  },
+  "agentUpdate": {
+    "title": "Atualização do agente disponível",
+    "descriptionOne": "{{name}} tem uma nova versão disponível.",
+    "descriptionMany": "{{names}} têm novas versões disponíveis.",
+    "descriptionSuffix": "A atualização já foi baixada. Recarregue para aplicar.",
+    "reloadNow": "Recarregar agora"
+  },
+  "authReconnect": {
+    "heading": "Houston, temos um problema",
+    "body": "Sua sessão no {{provider}} expirou. Entre de novo para manter seus agentes funcionando.",
+    "waiting": "Aguardando o login no navegador...",
+    "signInWith": "Entrar com {{provider}}"
+  },
+  "providerReconnect": {
+    "title": "Sessão expirada",
+    "body": "Sua conexão com o {{provider}} encerrou, isso acontece de vez em quando. Entre de novo e está tudo certo.",
+    "reconnect": "Reconectar ao {{provider}}",
+    "waiting": "Aguardando o login no navegador...",
+    "tryAgain": "Tentar de novo"
+  },
+  "updateChecker": {
+    "available": "v{{version}} disponível",
+    "downloading": "Baixando... {{progress}}%",
+    "restart": "Reinicie para atualizar"
+  },
+  "githubImport": {
+    "placeholder": "usuario/repo",
+    "next": "Próximo",
+    "hint": "Digite um repositório público do GitHub no formato usuario/repo",
+    "fetching": "Buscando o agente..."
+  },
+  "store": {
+    "searchPlaceholder": "Buscar na loja...",
+    "categoryAll": "Tudo",
+    "categoryProductivity": "Produtividade",
+    "categoryDevelopment": "Desenvolvimento",
+    "categoryResearch": "Pesquisa",
+    "categoryCreative": "Criatividade",
+    "categoryBusiness": "Negócios",
+    "sectionHoustonAgents": "Pelo Houston",
+    "sectionCommunityAgents": "Comunidade",
+    "sectionStore": "Loja Houston",
+    "noResults": "Nenhum agente corresponde à sua busca"
+  },
+  "naming": {
+    "dialogTitle": "Dê um nome ao seu agente",
+    "newAgentFallback": "Novo agente",
+    "tagline": "Escolha uma cor e dê um nome ao seu agente",
+    "namePlaceholder": "ex. Projeto Alpha",
+    "linkExistingProject": "Vincular projeto existente",
+    "createAgent": "Criar agente"
+  },
+  "newAgent": {
+    "dialogTitle": "Novo agente",
+    "dialogDescription": "Veja a loja ou importe do GitHub.",
+    "tabStore": "Loja Houston",
+    "tabGithub": "GitHub"
+  },
+  "mobileSync": {
+    "buttonLabel": "App mobile",
+    "dialogTitle": "Conectar o app mobile",
+    "dialogDescription": "Leia este QR Code no app mobile do Houston para parear seu celular.",
+    "connecting": "Conectando ao servidor...",
+    "waitingForPhone": "Aguardando o celular",
+    "reconnecting": "Reconectando...",
+    "phoneConnected": "Celular conectado",
+    "phoneConnectedBody": "Pode fechar este diálogo, o celular continua pareado.",
+    "disconnect": "Desconectar",
+    "tryAgain": "Tentar de novo"
+  }
+}

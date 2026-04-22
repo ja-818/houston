@@ -1,0 +1,24 @@
+{
+  "card": {
+    "connected": "Conectado",
+    "notConnected": "Sem conexão",
+    "ariaLabelConnected": "{{name}}, Conectado",
+    "ariaLabelNotConnected": "{{name}}, Sem conexão",
+    "modelDropdownLabel": "Modelo"
+  },
+  "setup": {
+    "headline": "Configurar {{provider}}",
+    "cliInstalled": "A ferramenta {{cli}} está instalada",
+    "cliNotFound": "A ferramenta {{cli}} não foi encontrada",
+    "signedIn": "Sessão iniciada",
+    "notSignedIn": "Sem sessão iniciada",
+    "installHint": "Instale a ferramenta {{cli}},",
+    "installGuide": "Guia de instalação",
+    "signInWith": "Entrar com {{provider}}",
+    "waiting": "Aguardando o login no navegador...",
+    "openBrowserAgain": "Abrir o navegador de novo",
+    "launchErrorTitle": "Não foi possível abrir o {{cli}}",
+    "installedCheckAgain": "Já instalei, verificar de novo",
+    "canContinueHint": "Você pode continuar sem conectar, mas vai precisar da ferramenta pronta antes de usar agentes."
+  }
+}

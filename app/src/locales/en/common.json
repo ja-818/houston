@@ -5,12 +5,43 @@
     "cancel": "Cancel",
     "save": "Save",
     "close": "Close",
-    "getStarted": "Get started"
+    "getStarted": "Get started",
+    "delete": "Delete",
+    "remove": "Remove",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "tryAgain": "Try again",
+    "edit": "Edit",
+    "rename": "Rename",
+    "add": "Add",
+    "next": "Next",
+    "done": "Done",
+    "loading": "Loading",
+    "saving": "Saving",
+    "saved": "Saved",
+    "create": "Create",
+    "dismiss": "Dismiss",
+    "submit": "Submit",
+    "search": "Search",
+    "loadMore": "Load more",
+    "install": "Install",
+    "installing": "Installing",
+    "reload": "Reload",
+    "later": "Later",
+    "signIn": "Sign in"
   },
   "language": {
     "title": "Language",
     "description": "Choose the language Houston uses in its interface.",
     "label": "Interface language",
     "toastChanged": "Language changed"
+  },
+  "app": {
+    "starting": "Starting...",
+    "welcomeTitle": "Welcome to Houston",
+    "welcomeTagline": "Ship the impossible.",
+    "noAgentsTitle": "No agents yet",
+    "noAgentsDescription": "Build your AI team and ship the impossible.",
+    "newAgent": "New agent"
   }
 }

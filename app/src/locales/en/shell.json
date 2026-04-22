@@ -1,0 +1,95 @@
+{
+  "sidebar": {
+    "missionControl": "Mission Control",
+    "integrations": "Integrations",
+    "settings": "Settings",
+    "yourAgents": "Your Agents",
+    "selectWorkspace": "Select workspace"
+  },
+  "tabActions": {
+    "newMission": "New mission"
+  },
+  "agentDelete": {
+    "title": "Delete agent?",
+    "description": "This will permanently delete the agent and all its data. This cannot be undone."
+  },
+  "workspaceDialog": {
+    "title": "New workspace",
+    "tabNew": "Create new",
+    "tabGithub": "Import from GitHub",
+    "githubDescription": "Import a workspace template from GitHub. This creates a workspace with all its agents ready to use.",
+    "githubPlaceholder": "owner/repo",
+    "githubImport": "Import",
+    "githubImporting": "Importing workspace and agents..."
+  },
+  "agentUpdate": {
+    "title": "Agent update available",
+    "descriptionOne": "{{name}} has a new version available.",
+    "descriptionMany": "{{names}} have new versions available.",
+    "descriptionSuffix": "The update has been downloaded. Reload to apply it.",
+    "reloadNow": "Reload now"
+  },
+  "authReconnect": {
+    "heading": "Houston, we have a problem",
+    "body": "Your {{provider}} session expired. Sign in again to keep your agents running.",
+    "waiting": "Waiting for browser sign-in...",
+    "signInWith": "Sign in with {{provider}}"
+  },
+  "providerReconnect": {
+    "title": "Session expired",
+    "body": "Your {{provider}} connection ended, this happens from time to time. Sign back in and you're good to go.",
+    "reconnect": "Reconnect to {{provider}}",
+    "waiting": "Waiting for browser sign-in...",
+    "tryAgain": "Try again"
+  },
+  "updateChecker": {
+    "available": "v{{version}} available",
+    "downloading": "Downloading... {{progress}}%",
+    "restart": "Restart to update"
+  },
+  "githubImport": {
+    "placeholder": "owner/repo",
+    "next": "Next",
+    "hint": "Enter a public GitHub repo in owner/repo format",
+    "fetching": "Fetching agent..."
+  },
+  "store": {
+    "searchPlaceholder": "Search the store...",
+    "categoryAll": "All",
+    "categoryProductivity": "Productivity",
+    "categoryDevelopment": "Development",
+    "categoryResearch": "Research",
+    "categoryCreative": "Creative",
+    "categoryBusiness": "Business",
+    "sectionHoustonAgents": "By Houston",
+    "sectionCommunityAgents": "Community",
+    "sectionStore": "Houston Store",
+    "noResults": "No agents match your search"
+  },
+  "naming": {
+    "dialogTitle": "Name your Agent",
+    "newAgentFallback": "New Agent",
+    "tagline": "Pick a color and name your agent",
+    "namePlaceholder": "e.g. Project Alpha",
+    "linkExistingProject": "Link existing project",
+    "createAgent": "Create Agent"
+  },
+  "newAgent": {
+    "dialogTitle": "New agent",
+    "dialogDescription": "Browse the store or import from GitHub.",
+    "tabStore": "Houston Store",
+    "tabGithub": "GitHub"
+  },
+  "mobileSync": {
+    "buttonLabel": "Mobile companion",
+    "dialogTitle": "Connect mobile app",
+    "dialogDescription": "Scan this QR code with the Houston companion app to pair your phone.",
+    "connecting": "Connecting to relay...",
+    "waitingForPhone": "Waiting for phone",
+    "reconnecting": "Reconnecting...",
+    "phoneConnected": "Phone connected",
+    "phoneConnectedBody": "You can close this dialog, the phone will stay paired.",
+    "disconnect": "Disconnect",
+    "tryAgain": "Try again"
+  }
+}

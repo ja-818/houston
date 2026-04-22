@@ -15,12 +15,48 @@ import { initReactI18next } from "react-i18next";
 import commonEn from "../locales/en/common.json";
 import setupEn from "../locales/en/setup.json";
 import legalEn from "../locales/en/legal.json";
+import shellEn from "../locales/en/shell.json";
+import dashboardEn from "../locales/en/dashboard.json";
+import settingsEn from "../locales/en/settings.json";
+import chatEn from "../locales/en/chat.json";
+import boardEn from "../locales/en/board.json";
+import agentsEn from "../locales/en/agents.json";
+import skillsEn from "../locales/en/skills.json";
+import routinesEn from "../locales/en/routines.json";
+import integrationsEn from "../locales/en/integrations.json";
+import providersEn from "../locales/en/providers.json";
+import errorsEn from "../locales/en/errors.json";
+import eventsEn from "../locales/en/events.json";
 import commonEs from "../locales/es/common.json";
 import setupEs from "../locales/es/setup.json";
 import legalEs from "../locales/es/legal.json";
+import shellEs from "../locales/es/shell.json";
+import dashboardEs from "../locales/es/dashboard.json";
+import settingsEs from "../locales/es/settings.json";
+import chatEs from "../locales/es/chat.json";
+import boardEs from "../locales/es/board.json";
+import agentsEs from "../locales/es/agents.json";
+import skillsEs from "../locales/es/skills.json";
+import routinesEs from "../locales/es/routines.json";
+import integrationsEs from "../locales/es/integrations.json";
+import providersEs from "../locales/es/providers.json";
+import errorsEs from "../locales/es/errors.json";
+import eventsEs from "../locales/es/events.json";
 import commonPt from "../locales/pt/common.json";
 import setupPt from "../locales/pt/setup.json";
 import legalPt from "../locales/pt/legal.json";
+import shellPt from "../locales/pt/shell.json";
+import dashboardPt from "../locales/pt/dashboard.json";
+import settingsPt from "../locales/pt/settings.json";
+import chatPt from "../locales/pt/chat.json";
+import boardPt from "../locales/pt/board.json";
+import agentsPt from "../locales/pt/agents.json";
+import skillsPt from "../locales/pt/skills.json";
+import routinesPt from "../locales/pt/routines.json";
+import integrationsPt from "../locales/pt/integrations.json";
+import providersPt from "../locales/pt/providers.json";
+import errorsPt from "../locales/pt/errors.json";
+import eventsPt from "../locales/pt/events.json";
 
 export const SUPPORTED_LOCALES = ["en", "es", "pt"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -66,9 +102,57 @@ export function normalizeLocale(value: string | null | undefined): SupportedLoca
 }
 
 const resources = {
-  en: { common: commonEn, setup: setupEn, legal: legalEn },
-  es: { common: commonEs, setup: setupEs, legal: legalEs },
-  pt: { common: commonPt, setup: setupPt, legal: legalPt },
+  en: {
+    common: commonEn,
+    setup: setupEn,
+    legal: legalEn,
+    shell: shellEn,
+    dashboard: dashboardEn,
+    settings: settingsEn,
+    chat: chatEn,
+    board: boardEn,
+    agents: agentsEn,
+    skills: skillsEn,
+    routines: routinesEn,
+    integrations: integrationsEn,
+    providers: providersEn,
+    errors: errorsEn,
+    events: eventsEn,
+  },
+  es: {
+    common: commonEs,
+    setup: setupEs,
+    legal: legalEs,
+    shell: shellEs,
+    dashboard: dashboardEs,
+    settings: settingsEs,
+    chat: chatEs,
+    board: boardEs,
+    agents: agentsEs,
+    skills: skillsEs,
+    routines: routinesEs,
+    integrations: integrationsEs,
+    providers: providersEs,
+    errors: errorsEs,
+    events: eventsEs,
+  },
+  pt: {
+    common: commonPt,
+    setup: setupPt,
+    legal: legalPt,
+    shell: shellPt,
+    dashboard: dashboardPt,
+    settings: settingsPt,
+    chat: chatPt,
+    board: boardPt,
+    agents: agentsPt,
+    skills: skillsPt,
+    routines: routinesPt,
+    integrations: integrationsPt,
+    providers: providersPt,
+    errors: errorsPt,
+    events: eventsPt,
+  },
 } as const;
 
 // Pick an initial language: cached pref → navigator → 'en'.
@@ -89,7 +173,23 @@ void i18n
     supportedLngs: SUPPORTED_LOCALES as unknown as string[],
     nonExplicitSupportedLngs: true, // map pt-BR → pt, es-ES → es, etc.
     defaultNS: "common",
-    ns: ["common", "setup", "legal"],
+    ns: [
+      "common",
+      "setup",
+      "legal",
+      "shell",
+      "dashboard",
+      "settings",
+      "chat",
+      "board",
+      "agents",
+      "skills",
+      "routines",
+      "integrations",
+      "providers",
+      "errors",
+      "events",
+    ],
     interpolation: { escapeValue: false }, // react already escapes
     detection: {
       // Cache only — the engine preference is source of truth, applied by

@@ -1,0 +1,32 @@
+{
+  "title": "Configuración",
+  "workspace": {
+    "title": "Espacio de trabajo",
+    "nameLabel": "Nombre"
+  },
+  "provider": {
+    "title": "Proveedor de IA",
+    "description": "Houston usa <emph>tu propia</emph> suscripción. Nunca vemos tus credenciales."
+  },
+  "timezone": {
+    "title": "Zona horaria",
+    "description": "Se usa cuando tus rutinas se disparan, 9:00 significa las 9:00 en esta zona.",
+    "label": "Zona IANA",
+    "placeholder": "p. ej. America/Bogota",
+    "useDetected": "Usar la detectada ({{zone}})"
+  },
+  "appearance": {
+    "title": "Apariencia",
+    "light": "Claro",
+    "dark": "Oscuro"
+  },
+  "dangerZone": {
+    "title": "Zona de peligro",
+    "description": "Elimina este espacio de trabajo y todos sus agentes de forma permanente.",
+    "deleteButton": "Eliminar espacio de trabajo",
+    "createAnotherFirst": "Crea otro espacio de trabajo antes de eliminar este.",
+    "confirmTitle": "¿Eliminar \"{{name}}\"?",
+    "confirmDescription": "Esto eliminará de forma permanente este espacio de trabajo y todos sus agentes. No se puede deshacer.",
+    "confirmLabel": "Eliminar"
+  }
+}

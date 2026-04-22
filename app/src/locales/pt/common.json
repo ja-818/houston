@@ -1,1 +1,47 @@
-{}
+{
+  "actions": {
+    "continue": "Continuar",
+    "back": "Voltar",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "close": "Fechar",
+    "getStarted": "Começar",
+    "delete": "Excluir",
+    "remove": "Remover",
+    "confirm": "Confirmar",
+    "retry": "Tentar de novo",
+    "tryAgain": "Tentar novamente",
+    "edit": "Editar",
+    "rename": "Renomear",
+    "add": "Adicionar",
+    "next": "Próximo",
+    "done": "Pronto",
+    "loading": "Carregando",
+    "saving": "Salvando",
+    "saved": "Salvo",
+    "create": "Criar",
+    "dismiss": "Dispensar",
+    "submit": "Enviar",
+    "search": "Buscar",
+    "loadMore": "Carregar mais",
+    "install": "Instalar",
+    "installing": "Instalando",
+    "reload": "Recarregar",
+    "later": "Mais tarde",
+    "signIn": "Entrar"
+  },
+  "language": {
+    "title": "Idioma",
+    "description": "Escolha o idioma que o Houston usa na interface.",
+    "label": "Idioma da interface",
+    "toastChanged": "Idioma alterado"
+  },
+  "app": {
+    "starting": "Iniciando...",
+    "welcomeTitle": "Bem-vindo ao Houston",
+    "welcomeTagline": "Realize o impossível.",
+    "noAgentsTitle": "Ainda sem agentes",
+    "noAgentsDescription": "Monte seu time de IA e realize o impossível.",
+    "newAgent": "Novo agente"
+  }
+}

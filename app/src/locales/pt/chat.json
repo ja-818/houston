@@ -1,0 +1,28 @@
+{
+  "composer": {
+    "placeholder": "Pergunte qualquer coisa..."
+  },
+  "empty": {
+    "title": "Comece uma conversa",
+    "description": "Digite uma mensagem para falar com seu assistente."
+  },
+  "errors": {
+    "sessionStart": "Não foi possível iniciar a sessão: {{error}}"
+  },
+  "composio": {
+    "integration": "Integração do Composio",
+    "alreadyConnected": "Já conectado",
+    "connected": "Conectado",
+    "connect": "Conectar"
+  },
+  "modelSelector": {
+    "selectModel": "Escolha um modelo",
+    "model": "Modelo",
+    "notConnected": "Sem conexão"
+  },
+  "reasoning": {
+    "thinking": "Pensando...",
+    "thoughtFor": "Pensou por {{count}} segundos",
+    "thoughtForFew": "Pensou por alguns segundos"
+  }
+}

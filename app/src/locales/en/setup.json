@@ -1,7 +1,7 @@
 {
   "name": {
     "title": "Name your workspace",
-    "description": "Workspaces keep your agents organized — one for personal, one for work, etc.",
+    "description": "Workspaces keep your agents organized, one for personal, one for work, etc.",
     "placeholder": "e.g. Personal, Work, Acme Corp"
   },
   "provider": {
