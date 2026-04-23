@@ -62,10 +62,11 @@ Known issues and workarounds...
 
 **Update a skill when:** You're using one and find a step that's wrong or incomplete. Fix it immediately.
 
-### Learnings (.houston/memory/LEARNINGS.md)
+### Learnings (.houston/learnings/learnings.json)
 
-A single bounded text file that persists across sessions — everything you've learned.
-Max ~3,500 chars. Entries separated by `§` on its own line.
+A JSON array of learning entries that persists across sessions — everything you've learned about this user and their workspace. Conforms to `.houston/learnings/learnings.schema.json` (read it before writing).
+
+Each entry is an object: `{ "id": "<uuid>", "text": "<the learning>", "created_at": "<ISO-8601>" }`. The file is the entire array. To add a learning, read the file, append a new entry, write the file back.
 
 **Save ALL of these proactively (do NOT wait to be asked):**
 - User preferences: "prefers terse output", "always use Word files", "likes funny tone"
@@ -77,16 +78,15 @@ Max ~3,500 chars. Entries separated by `§` on its own line.
 - Workarounds: "macOS .app bundles don't inherit shell PATH"
 - Lessons learned: anything that would help a future session avoid your current struggle
 
-**Save INLINE as you work** — the moment you notice something worth remembering, write it to LEARNINGS.md before continuing with your response.
+**Save INLINE as you work** — the moment you notice something worth remembering, append an entry to `.houston/learnings/learnings.json` before continuing with your response.
 
-To add: append a new entry separated by `§`
-To curate when full: replace the least relevant entry
+To curate when the list grows unwieldy: drop the least relevant entries (remove them from the array).
 
 ### MANDATORY: Check After Every Task
 
 **After completing ANY task, BEFORE writing your final response:**
 Did you learn anything worth remembering? A user preference, a tool behavior, a workaround, a convention?
-→ **Save to .houston/memory/LEARNINGS.md NOW.** Do not skip. Do not batch for later.
+→ **Append an entry to .houston/learnings/learnings.json NOW.** Do not skip. Do not batch for later.
 
 ### What NOT to Save
 - Trivial observations ("user asked me to edit a file")
