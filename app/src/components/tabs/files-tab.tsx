@@ -7,6 +7,20 @@ import type { TabProps } from "../../lib/types";
 
 export default function FilesTab({ agent }: TabProps) {
   const { t } = useTranslation("agents");
+  const browserLabels = {
+    columnName: t("files.columns.name"),
+    columnDateModified: t("files.columns.dateModified"),
+    columnSize: t("files.columns.size"),
+    columnKind: t("files.columns.kind"),
+    loading: t("files.loading"),
+    browseFiles: t("files.browseFiles"),
+  };
+  const menuLabels = {
+    open: t("files.menu.open"),
+    rename: t("files.menu.rename"),
+    reveal: t("files.menu.reveal"),
+    delete: t("files.menu.delete"),
+  };
   const path = agent.folderPath;
   const { data: files, isLoading: loading } = useFiles(path);
   const deleteFile = useDeleteFile(path);
@@ -25,6 +39,8 @@ export default function FilesTab({ agent }: TabProps) {
         onCreateFolder={(name) => createFolder.mutate(name)}
         emptyTitle={t("files.emptyTitle")}
         emptyDescription={t("files.emptyDescription")}
+        labels={browserLabels}
+        menuLabels={menuLabels}
         statusBarAction={
           <button
             onClick={() => tauriFiles.revealAgent(path)}

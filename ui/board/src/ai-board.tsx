@@ -7,6 +7,7 @@ import type { FeedItem, ToolsAndCardsProps } from "@houston-ai/chat"
 import { SplitView } from "@houston-ai/layout"
 import { KanbanBoard } from "./kanban-board"
 import { KanbanDetailPanel } from "./kanban-detail-panel"
+import type { KanbanCardLabels } from "./kanban-card"
 import type { KanbanItem, KanbanColumn } from "./types"
 
 export interface AIBoardProps {
@@ -88,6 +89,8 @@ export interface AIBoardProps {
   drafts?: Record<string, string>
   /** Called when the user types in the panel's chat input. */
   onDraftChange?: (sessionKey: string, text: string) => void
+  /** Translated label overrides for per-card copy (Approve button + delete confirm). */
+  cardLabels?: KanbanCardLabels
 }
 
 const DEFAULT_COLUMNS: KanbanColumn[] = [
@@ -136,6 +139,7 @@ export function AIBoard({
   onOpenLink,
   renderLink,
   footer,
+  cardLabels,
 }: AIBoardProps) {
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [newPanelOpen, setNewPanelOpen] = useState(false)
@@ -282,6 +286,7 @@ export function AIBoard({
         emptyState={emptyState}
         actions={actions}
         avatar={cardAvatar}
+        cardLabels={cardLabels}
       />
     </div>
   )

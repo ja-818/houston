@@ -184,6 +184,13 @@ export default function RoutinesTab({ agent }: TabProps) {
       onSelect={openEditor}
       onCreate={handleCreate}
       onToggle={handleToggle}
+      labels={{
+        loading: t("loading"),
+        emptyTitle: t("grid.emptyTitle"),
+        emptyDescription: t("grid.emptyDescription"),
+        descriptionShort: t("grid.descriptionShort"),
+        newRoutine: t("grid.newRoutine"),
+      }}
     />
   );
 }

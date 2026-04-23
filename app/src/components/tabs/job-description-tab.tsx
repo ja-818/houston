@@ -41,6 +41,19 @@ const SUB_TAB_IDS: SubTab[] = ["instructions", "skills", "learnings"];
 
 export default function JobDescriptionTab({ agent }: TabProps) {
   const { t } = useTranslation("agents");
+  const { t: tSkills } = useTranslation(["skills", "common"]);
+  const skillDetailLabels = {
+    notFound: tSkills("skills:detail.notFound"),
+    backAria: tSkills("skills:detail.backAria"),
+    saveChanges: tSkills("skills:detail.saveChanges"),
+    savingChanges: tSkills("skills:detail.savingChanges"),
+    moreActions: tSkills("skills:detail.moreActions"),
+    delete: tSkills("skills:detail.delete"),
+    deleteTitle: (name: string) => tSkills("skills:detail.deleteTitle", { name }),
+    deleteDescription: tSkills("skills:detail.deleteDescription"),
+    deleteConfirmLabel: tSkills("common:actions.delete"),
+    instructionsPlaceholder: tSkills("skills:detail.instructionsPlaceholder"),
+  };
   const path = agent.folderPath;
   const [activeTab, setActiveTab] = useState<SubTab>("instructions");
 
@@ -145,6 +158,7 @@ export default function JobDescriptionTab({ agent }: TabProps) {
         onBack={() => setSelectedSkillName(null)}
         onSave={handleSkillSave}
         onDelete={handleSkillDelete}
+        labels={skillDetailLabels}
       />
     );
   }
@@ -309,9 +323,20 @@ function InstructionsContent({
 type SkillsContentProps = React.ComponentProps<typeof SkillsGrid>;
 
 function SkillsContent(props: SkillsContentProps) {
+  const { t } = useTranslation("skills");
+  const labels = {
+    loading: t("grid.loading"),
+    emptyTitle: t("grid.emptyTitle"),
+    emptyDescription: t("grid.emptyDescription"),
+    addSkill: t("grid.addSkill"),
+    descriptionShort: t("grid.descriptionShort"),
+    deleteTitle: (name: string) => t("detail.deleteTitle", { name }),
+    deleteDescription: t("detail.deleteDescription"),
+    deleteConfirmLabel: t("detail.delete"),
+  };
   return (
     <div className="max-w-3xl mx-auto w-full px-6 pb-12 pt-2 flex-1 flex flex-col">
-      <SkillsGrid {...props} />
+      <SkillsGrid {...props} labels={labels} />
     </div>
   );
 }

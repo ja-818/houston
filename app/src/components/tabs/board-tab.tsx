@@ -59,6 +59,11 @@ function PanelAvatar({ color, isRunning }: { color?: string; isRunning: boolean 
 
 export default function BoardTab({ agent, agentDef }: TabProps) {
   const { t } = useTranslation("board");
+  const cardLabels = {
+    approve: t("cardActions.approve"),
+    deleteTitle: (name: string) => t("deleteCard.titleWithName", { name }),
+    deleteDescription: t("deleteCard.description"),
+  };
   const panelContainer = useDetailPanelContainer();
   const path = agent.folderPath;
   const agentModes = agentDef.config.agents;
@@ -464,6 +469,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           isRunning={(rawItems ?? []).some((a) => a.id === selectedId && a.status === "running")}
         />
       }
+      cardLabels={cardLabels}
     />
     </div>
   );

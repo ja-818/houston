@@ -5,7 +5,8 @@ export { buildTree, countFiles } from "./tree"
 
 // Components
 export { FilesBrowser } from "./files-browser"
-export type { FilesBrowserProps } from "./files-browser"
+export type { FilesBrowserProps, FilesBrowserLabels } from "./files-browser"
+export type { FileMenuLabels } from "./file-menu"
 
 export { InstructionsPanel } from "./instructions-panel"
 export type { InstructionsPanelProps } from "./instructions-panel"

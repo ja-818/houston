@@ -5,6 +5,19 @@ import { EventFilter } from "./event-filter"
 import { EventEmpty } from "./event-empty"
 import type { EventEntry, EventType } from "./types"
 
+export interface EventFeedLabels {
+  emptyTitle?: string
+  emptyDescription?: string
+  loading?: string
+}
+
+const DEFAULT_LABELS: Required<EventFeedLabels> = {
+  emptyTitle: "No events",
+  emptyDescription:
+    "Heartbeats, cron jobs, and channel messages will appear here as they happen.",
+  loading: "Loading...",
+}
+
 export interface EventFeedProps {
   events: EventEntry[]
   loading?: boolean
@@ -12,7 +25,9 @@ export interface EventFeedProps {
   onFilterChange?: (type: EventType | null) => void
   onEventClick?: (event: EventEntry) => void
   maxHeight?: string
+  /** @deprecated pass `labels.emptyDescription` instead */
   emptyMessage?: string
+  labels?: EventFeedLabels
 }
 
 export function EventFeed({
@@ -23,7 +38,9 @@ export function EventFeed({
   onEventClick,
   maxHeight = "100%",
   emptyMessage,
+  labels,
 }: EventFeedProps) {
+  const l = { ...DEFAULT_LABELS, ...labels }
   const scrollRef = useRef<HTMLDivElement>(null)
   const isAtBottomRef = useRef(true)
 
@@ -87,7 +104,10 @@ export function EventFeed({
       {/* Event list */}
       <div ref={scrollRef} className="flex-1 flex flex-col overflow-y-auto min-h-0">
         {filteredEvents.length === 0 && !loading ? (
-          <EventEmpty message={emptyMessage} />
+          <EventEmpty
+            title={l.emptyTitle}
+            description={emptyMessage ?? l.emptyDescription}
+          />
         ) : (
           <div className="divide-y divide-border">
             <AnimatePresence initial={false}>
@@ -111,7 +131,7 @@ export function EventFeed({
 
         {loading && (
           <div className="flex items-center justify-center py-4">
-            <span className="text-xs text-muted-foreground">Loading...</span>
+            <span className="text-xs text-muted-foreground">{l.loading}</span>
           </div>
         )}
       </div>

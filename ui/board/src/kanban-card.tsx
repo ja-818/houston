@@ -3,6 +3,19 @@ import { cn, ConfirmDialog } from "@houston-ai/core"
 import { Trash2, CheckCircle, Pencil } from "lucide-react"
 import type { KanbanItem } from "./types"
 
+export interface KanbanCardLabels {
+  approve?: string
+  /** Delete confirm title, `{name}` substituted with `item.title`. */
+  deleteTitle?: (name: string) => string
+  deleteDescription?: string
+}
+
+const DEFAULT_LABELS: Required<KanbanCardLabels> = {
+  approve: "Approve",
+  deleteTitle: (name) => `Delete "${name}"?`,
+  deleteDescription: "This item and its history will be permanently removed.",
+}
+
 export interface KanbanCardProps {
   item: KanbanItem
   onSelect: () => void
@@ -13,6 +26,7 @@ export interface KanbanCardProps {
   approveStatuses?: string[]
   actions?: React.ReactNode
   avatar?: React.ReactNode
+  labels?: KanbanCardLabels
 }
 
 export function KanbanCard({
@@ -25,7 +39,9 @@ export function KanbanCard({
   approveStatuses = ["needs_you"],
   actions,
   avatar,
+  labels,
 }: KanbanCardProps) {
+  const l = { ...DEFAULT_LABELS, ...labels }
   const isRunning = runningStatuses.includes(item.status)
   const isNeedsApproval = approveStatuses.includes(item.status)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -161,7 +177,7 @@ export function KanbanCard({
                   className="flex items-center gap-0.5 h-5 pl-1 pr-2 rounded-full bg-primary text-primary-foreground text-[10px] font-medium hover:bg-primary/85 transition-colors duration-200"
                 >
                   <CheckCircle className="size-2.5" />
-                  Approve
+                  {l.approve}
                 </button>
               )}
             </div>
@@ -172,8 +188,8 @@ export function KanbanCard({
       <ConfirmDialog
         open={showConfirm}
         onOpenChange={setShowConfirm}
-        title={`Delete "${item.title}"?`}
-        description="This item and its history will be permanently removed."
+        title={l.deleteTitle(item.title)}
+        description={l.deleteDescription}
         onConfirm={confirmDelete}
       />
     </>

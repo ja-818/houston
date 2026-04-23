@@ -70,6 +70,20 @@
   "files": {
     "emptyTitle": "No files yet",
     "emptyDescription": "Files created by your assistant will appear here.",
-    "openInFinder": "Open in Finder"
+    "openInFinder": "Open in Finder",
+    "loading": "Loading…",
+    "browseFiles": "Browse files",
+    "columns": {
+      "name": "Name",
+      "dateModified": "Date Modified",
+      "size": "Size",
+      "kind": "Kind"
+    },
+    "menu": {
+      "open": "Open",
+      "rename": "Rename",
+      "reveal": "Show in Finder",
+      "delete": "Move to Trash"
+    }
   }
 }

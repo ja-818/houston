@@ -20,6 +20,38 @@ import type { Skill, CommunitySkill, RepoSkill } from "./types"
 import { SkillRow } from "./skill-row"
 import { AddSkillDialog } from "./add-skill-dialog"
 
+/**
+ * Optional translated labels. Defaults are English so existing callers
+ * keep working unchanged. Consumers that need localization pass through
+ * `t()` results from their own i18n layer — `ui/` stays i18n-agnostic
+ * per the library-boundary rule.
+ */
+export interface SkillsGridLabels {
+  loading?: string
+  emptyTitle?: string
+  emptyDescription?: string
+  addSkill?: string
+  descriptionShort?: string
+  /** Heading on the delete-skill confirmation. `{name}` is the skill name. */
+  deleteTitle?: (name: string) => string
+  /** Fallback heading when a name isn't available. */
+  deleteTitleFallback?: string
+  deleteDescription?: string
+  deleteConfirmLabel?: string
+}
+
+const DEFAULT_LABELS: Required<SkillsGridLabels> = {
+  loading: "Loading skills…",
+  emptyTitle: "No skills installed",
+  emptyDescription: "Skills are reusable procedures your agent can lean on.",
+  addSkill: "Add skill",
+  descriptionShort: "Reusable procedures your agent can lean on.",
+  deleteTitle: (name) => `Delete "${name}"?`,
+  deleteTitleFallback: "Delete skill?",
+  deleteDescription: "This removes the skill from your agent. You can reinstall it later.",
+  deleteConfirmLabel: "Delete",
+}
+
 export interface SkillsGridProps {
   skills: Skill[]
   loading: boolean
@@ -34,6 +66,8 @@ export interface SkillsGridProps {
   onListFromRepo?: (source: string) => Promise<RepoSkill[]>
   /** Install selected skills from a repo. Returns installed names. */
   onInstallFromRepo?: (source: string, skills: RepoSkill[]) => Promise<string[]>
+  /** Override any/all user-visible strings. Unspecified fields fall back to English. */
+  labels?: SkillsGridLabels
 }
 
 export function SkillsGrid({
@@ -45,7 +79,9 @@ export function SkillsGrid({
   onInstallCommunity,
   onListFromRepo,
   onInstallFromRepo,
+  labels,
 }: SkillsGridProps) {
+  const l = { ...DEFAULT_LABELS, ...labels }
   const [dialogOpen, setDialogOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<Skill | null>(null)
 
@@ -67,7 +103,7 @@ export function SkillsGrid({
     return (
       <div className="flex-1 flex items-center justify-center">
         <p className="text-sm text-muted-foreground animate-pulse">
-          Loading skills…
+          {l.loading}
         </p>
       </div>
     )
@@ -79,15 +115,15 @@ export function SkillsGrid({
       <>
         <div className="mx-auto max-w-md flex flex-col items-center gap-6 text-center pt-24 px-6">
           <EmptyHeader>
-            <EmptyTitle>No skills installed</EmptyTitle>
+            <EmptyTitle>{l.emptyTitle}</EmptyTitle>
             <EmptyDescription>
-              Skills are reusable procedures your agent can lean on.
+              {l.emptyDescription}
             </EmptyDescription>
           </EmptyHeader>
           {canAdd && (
             <Button onClick={() => setDialogOpen(true)}>
               <Plus className="size-4" />
-              Add skill
+              {l.addSkill}
             </Button>
           )}
         </div>
@@ -111,12 +147,12 @@ export function SkillsGrid({
     <div>
       <div className="flex items-center justify-between gap-4 mb-4">
         <p className="text-xs text-muted-foreground max-w-md">
-          Reusable procedures your agent can lean on.
+          {l.descriptionShort}
         </p>
         {canAdd && (
           <Button size="sm" onClick={() => setDialogOpen(true)} className="shrink-0">
             <Plus className="size-3.5" />
-            Add skill
+            {l.addSkill}
           </Button>
         )}
       </div>
@@ -139,10 +175,10 @@ export function SkillsGrid({
             if (!open) setPendingDelete(null)
           }}
           title={
-            pendingDelete ? `Delete "${pendingDelete.name}"?` : "Delete skill?"
+            pendingDelete ? l.deleteTitle(pendingDelete.name) : l.deleteTitleFallback
           }
-          description="This removes the skill from your agent. You can reinstall it later."
-          confirmLabel="Delete"
+          description={l.deleteDescription}
+          confirmLabel={l.deleteConfirmLabel}
           onConfirm={handleConfirmDelete}
         />
       )}

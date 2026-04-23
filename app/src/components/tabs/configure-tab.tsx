@@ -55,6 +55,29 @@ function PromptEditor({ agentPath, mode }: { agentPath: string; mode: AgentMode 
 
 export default function ConfigureTab({ agent, agentDef }: TabProps) {
   const { t } = useTranslation("agents");
+  const { t: tSkills } = useTranslation(["skills", "common"]);
+  const skillsGridLabels = {
+    loading: tSkills("skills:grid.loading"),
+    emptyTitle: tSkills("skills:grid.emptyTitle"),
+    emptyDescription: tSkills("skills:grid.emptyDescription"),
+    addSkill: tSkills("skills:grid.addSkill"),
+    descriptionShort: tSkills("skills:grid.descriptionShort"),
+    deleteTitle: (name: string) => tSkills("skills:detail.deleteTitle", { name }),
+    deleteDescription: tSkills("skills:detail.deleteDescription"),
+    deleteConfirmLabel: tSkills("common:actions.delete"),
+  };
+  const skillDetailLabels = {
+    notFound: tSkills("skills:detail.notFound"),
+    backAria: tSkills("skills:detail.backAria"),
+    saveChanges: tSkills("skills:detail.saveChanges"),
+    savingChanges: tSkills("skills:detail.savingChanges"),
+    moreActions: tSkills("skills:detail.moreActions"),
+    delete: tSkills("skills:detail.delete"),
+    deleteTitle: (name: string) => tSkills("skills:detail.deleteTitle", { name }),
+    deleteDescription: tSkills("skills:detail.deleteDescription"),
+    deleteConfirmLabel: tSkills("common:actions.delete"),
+    instructionsPlaceholder: tSkills("skills:detail.instructionsPlaceholder"),
+  };
   const path = agent.folderPath;
   const modes = agentDef.config.agents ?? [];
 
@@ -120,9 +143,19 @@ export default function ConfigureTab({ agent, agentDef }: TabProps) {
 
         <Section title={t("configure.skills.title")} description={t("configure.skills.description")}>
           {selectedSkill ? (
-            <SkillDetailPage skill={selectedSkill} onBack={() => setSelectedSkillName(null)} onSave={handleSkillSave} onDelete={handleSkillDelete} />
+            <SkillDetailPage skill={selectedSkill} onBack={() => setSelectedSkillName(null)} onSave={handleSkillSave} onDelete={handleSkillDelete} labels={skillDetailLabels} />
           ) : (
-            <SkillsGrid skills={skills} loading={skillsLoading} onSkillClick={handleSkillClick} onDelete={handleSkillDelete} onSearch={handleSearch} onInstallCommunity={handleInstallCommunity} onListFromRepo={handleListFromRepo} onInstallFromRepo={handleInstallFromRepo} />
+            <SkillsGrid
+              skills={skills}
+              loading={skillsLoading}
+              onSkillClick={handleSkillClick}
+              onDelete={handleSkillDelete}
+              onSearch={handleSearch}
+              onInstallCommunity={handleInstallCommunity}
+              onListFromRepo={handleListFromRepo}
+              onInstallFromRepo={handleInstallFromRepo}
+              labels={skillsGridLabels}
+            />
           )}
         </Section>
 

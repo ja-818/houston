@@ -70,6 +70,20 @@
   "files": {
     "emptyTitle": "Aún no hay archivos",
     "emptyDescription": "Los archivos creados por tu asistente aparecerán aquí.",
-    "openInFinder": "Abrir en Finder"
+    "openInFinder": "Abrir en Finder",
+    "loading": "Cargando…",
+    "browseFiles": "Elegir archivos",
+    "columns": {
+      "name": "Nombre",
+      "dateModified": "Fecha de modificación",
+      "size": "Tamaño",
+      "kind": "Tipo"
+    },
+    "menu": {
+      "open": "Abrir",
+      "rename": "Cambiar nombre",
+      "reveal": "Mostrar en Finder",
+      "delete": "Mover a la Papelera"
+    }
   }
 }
