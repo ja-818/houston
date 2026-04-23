@@ -23,6 +23,7 @@ import { TabBar } from "@houston-ai/layout";
 import { useHoustonInit } from "./hooks/use-houston-init";
 import { useSessionEvents } from "./hooks/use-session-events";
 import { useAgentInvalidation } from "./hooks/use-agent-invalidation";
+import { useAnalyticsSubscriber } from "./hooks/use-analytics-subscriber";
 import { useWorkspaceStore } from "./stores/workspaces";
 import { useAgentStore } from "./stores/agents";
 import { useAgentCatalogStore } from "./stores/agent-catalog";
@@ -44,13 +45,19 @@ export default function App() {
   useHoustonInit();
   useSessionEvents();
   useAgentInvalidation();
+  useAnalyticsSubscriber();
   // Prefetch Composio data on launch so the integrations tab opens instantly.
   useConnections();
   useComposioApps();
 
-  // Track app launch + load theme
+  // Track app launch + load theme. Identify the persistent install_id
+  // with PostHog before the first event fires, and derive `user_returned`
+  // from whether the install_id already existed on disk.
   useEffect(() => {
-    analytics.track("app_launched");
+    analytics.init().then(({ isNew }) => {
+      analytics.track("app_launched");
+      if (!isNew) analytics.track("user_returned");
+    });
     loadTheme();
   }, []);
 

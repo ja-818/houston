@@ -9,7 +9,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   define: {
     __APP_VERSION__: JSON.stringify(version),
-    __APTABASE_APP_KEY__: JSON.stringify(process.env.APTABASE_APP_KEY ?? ""),
+    __POSTHOG_KEY__: JSON.stringify(process.env.POSTHOG_KEY ?? ""),
+    __POSTHOG_HOST__: JSON.stringify(
+      process.env.POSTHOG_HOST ?? "https://us.i.posthog.com",
+    ),
   },
   clearScreen: false,
   // Exclude workspace packages from Vite's dep pre-bundling so live edits

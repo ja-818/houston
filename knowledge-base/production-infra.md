@@ -11,21 +11,42 @@ Four prod systems. All **dormant by default** — activate only when env vars se
 - **Critical:** Update signing (Ed25519 via `TAURI_SIGNING_PRIVATE_KEY`) is SEPARATE from Apple code signing. Both needed.
 - **Critical:** Users who install version WITHOUT updater can never auto-update. Ship updater in EVERY release.
 
-## Analytics (`@aptabase/web`)
+## Analytics (`posthog-js`)
 
 - **Pure JS** — runs in webview, no Rust plugin. Avoids Tokio runtime conflicts. Works in future Capacitor mobile too.
-- **Init:** `app/src/lib/analytics.ts` — reads `APTABASE_APP_KEY` via Vite `define` (baked at build time). Empty key → silent no-op.
-- **Debug/Release:** `import.meta.env.DEV` sets `isDebug`. `pnpm tauri dev` events = "Debug" in dashboard. Release = "Release".
-- **Tracked:** `app_launched`, `agent_created`, `chat_message_sent`
+- **Init:** `app/src/lib/analytics.ts` — reads `POSTHOG_KEY` + `POSTHOG_HOST` via Vite `define` (baked at build time). Empty key → silent no-op. PostHog `init()` runs at module load; `analytics.init()` is called from `App.tsx` to resolve the install_id and `identify()` the PostHog distinct_id before the first event.
+- **Install identity:** `app/src/lib/install-id.ts` — mints a UUID on first launch, persists via `tauriPreferences` (`install_id` key). Used as the anonymous PostHog `distinct_id` until a user signs in (PR 2 — `analytics.alias/identify`). Gives per-user retention and activation funnels without requiring auth.
+- **Debug/Release:** `import.meta.env.DEV` → `is_debug` super property. Filter it out in dashboards to exclude dev activity.
+- **Super properties** (set on every event): `app_version`, `os`, `install_id`, `is_debug`.
+- **Group analytics:** `analytics.group("workspace", workspaceId, { name, provider })` fires on `workspace_opened` — unlocks per-workspace retention in PostHog.
+
+### Event surface
+- **Lifecycle:** `app_launched`, `user_returned` (derived: `app_launched` + existing install_id), `session_started`, `session_ended`, `onboarding_completed`
+- **Agent / workspace:** `agent_created`, `agent_selected`, `workspace_created`, `workspace_opened`, `workspace_imported`, `provider_configured`
+- **Chat:** `chat_message_sent`, `chat_message_received` (activation event)
+- **UX:** `tab_switched`, `mission_created`, `error_shown`
+- **Updater:** `app_update_available`, `app_update_downloaded`
+
+**Activation milestone:** `chat_message_received` — user sent a message and got a reply. Configure as the activation event in PostHog; all retention/funnel insights key off it.
 
 ### Adding event
 ```typescript
 import { analytics } from "@/lib/analytics";
-analytics.track("event_name", { key: "value" });
+analytics.track("event_name", { key: "value", flag: true });
 ```
-Props must be `Record<string, string | number>` (no booleans). Fire-and-forget. Never throws/blocks. Not configured → silent no-op.
+Props: `Record<string, string | number | boolean>`. Fire-and-forget. Never throws/blocks. Not configured → silent no-op.
 
 **Analytics in `app/` only** — never in `ui/`. Library boundary rule applies.
+
+### PostHog dashboards (configure in UI, not code)
+1. **Overview**: DAU / WAU / MAU (filter out `is_debug = true`)
+2. **Retention**: Weekly-cohort grid on `chat_message_received`
+3. **Activation funnel**: `app_launched` → `agent_created` → `chat_message_sent` → `chat_message_received`
+4. **Engagement depth**: events per user per day, sessions per user per week
+5. **Feature adoption**: `mission_created`, `provider_configured`, `workspace_imported` breakdowns
+
+### BigQuery export (optional)
+PostHog → BigQuery plugin → target GCP project (burns credits). SQL-queryable event history forever, immune to PostHog retention limits. Useful for investor-update analytics.
 
 ## Crash reporting (`sentry` + `tauri-plugin-sentry`)
 
@@ -46,7 +67,8 @@ Shell (local builds) AND GitHub Secrets (CI):
 | `APPLE_API_ISSUER` | ASC issuer UUID | ASC → Users → Keys |
 | `TAURI_SIGNING_PRIVATE_KEY` | Ed25519 key for update signing | `pnpm tauri signer generate` |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Password for above | Set during gen |
-| `APTABASE_APP_KEY` | Analytics app key | aptabase.com dashboard |
+| `POSTHOG_KEY` | PostHog project API key (client-side, public-safe) | PostHog → Project settings → Project API key |
+| `POSTHOG_HOST` | PostHog ingest host | `https://us.i.posthog.com` (or EU equivalent) |
 | `SENTRY_DSN` | Crash reporting DSN | sentry.io project settings |
 
 CI also needs as Secrets:

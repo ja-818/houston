@@ -37,6 +37,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
     set({ current: ws });
     tauriPreferences.set("last_workspace_id", ws.id);
     analytics.track("workspace_opened", { workspace_id: ws.id });
+    // Per-workspace retention in PostHog — subsequent events inherit this group.
+    analytics.group("workspace", ws.id, {
+      name: ws.name,
+      provider: ws.provider ?? "none",
+    });
   },
 
   create: async (name, provider, model) => {

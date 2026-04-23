@@ -19,7 +19,8 @@
 #   APPLE_API_ISSUER                   — App Store Connect API issuer ID
 #   APPLE_API_KEY                      — App Store Connect API key ID
 #   APPLE_API_KEY_CONTENT              — Base64-encoded .p8 key file
-#   APTABASE_APP_KEY                   — Aptabase analytics key
+#   POSTHOG_KEY                        — PostHog project API key (client-side, public-safe)
+#   POSTHOG_HOST                       — PostHog ingest host (e.g. https://us.i.posthog.com)
 #   SENTRY_DSN                         — Sentry crash reporting DSN
 
 name: Release
@@ -112,7 +113,8 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_KEY_PATH: ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
-          APTABASE_APP_KEY: ${{ secrets.APTABASE_APP_KEY }}
+          POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
       - name: Locate build artifacts

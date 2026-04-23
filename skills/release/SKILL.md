@@ -73,7 +73,7 @@ Duration: ~10-15 min.
 
 ## Env vars required
 
-See `knowledge-base/production-infra.md` for full table. Short version: `APPLE_SIGNING_IDENTITY`, `APPLE_API_KEY`, `APPLE_API_KEY_PATH`, `APPLE_API_ISSUER`, `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, `APTABASE_APP_KEY`, `SENTRY_DSN`. CI also `APPLE_CERTIFICATE` + `APPLE_CERTIFICATE_PASSWORD`.
+See `knowledge-base/production-infra.md` for full table. Short version: `APPLE_SIGNING_IDENTITY`, `APPLE_API_KEY`, `APPLE_API_KEY_PATH`, `APPLE_API_ISSUER`, `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, `POSTHOG_KEY`, `POSTHOG_HOST`, `SENTRY_DSN`. CI also `APPLE_CERTIFICATE` + `APPLE_CERTIFICATE_PASSWORD`.
 
 Never hardcode. `option_env!()` in Rust, env vars in CI.
 
