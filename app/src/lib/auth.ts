@@ -7,24 +7,32 @@ import { logger } from "./logger";
 const REDIRECT_URI = "houston://auth-callback";
 
 /**
- * Kick off the Google OAuth flow. Supabase generates a PKCE verifier
- * (stored in Keychain via our storage adapter), returns an auth URL, and
- * we open it in the user's system browser. After consent the browser
- * redirects to `houston://auth-callback?code=...`, which the deep-link
- * handler in Rust forwards to `installDeepLinkListener` below.
+ * Kick off an OAuth flow for the given provider. Supabase generates a
+ * fresh PKCE verifier (stored in Keychain via our storage adapter),
+ * returns an auth URL, and we open it in the user's system browser.
+ * After consent the browser redirects to `houston://auth-callback?code=...`,
+ * which the deep-link handler in Rust forwards to `installDeepLinkListener`.
+ *
+ * Idempotent — re-calling kicks off a brand-new PKCE flow, which is
+ * exactly what the user wants when they hit the wrong browser profile,
+ * abort consent, or generally need to retry.
  */
-export async function signInWithGoogle(): Promise<void> {
+async function signInWithProvider(
+  provider: "google" | "azure",
+): Promise<void> {
   if (!isAuthConfigured()) {
     throw new Error("Auth not configured");
   }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
+    provider,
     options: {
       redirectTo: REDIRECT_URI,
       // Don't let Supabase touch window.location — we're in a webview and
       // need the consent page to open in the user's real browser.
       skipBrowserRedirect: true,
+      // Microsoft requires explicit scopes to surface email + profile.
+      ...(provider === "azure" ? { scopes: "email openid profile" } : {}),
     },
   });
 
@@ -33,6 +41,9 @@ export async function signInWithGoogle(): Promise<void> {
 
   await tauriSystem.openUrl(data.url);
 }
+
+export const signInWithGoogle = (): Promise<void> => signInWithProvider("google");
+export const signInWithMicrosoft = (): Promise<void> => signInWithProvider("azure");
 
 /**
  * Sign out: clear the Supabase session (our Keychain storage adapter
