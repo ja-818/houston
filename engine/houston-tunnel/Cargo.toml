@@ -21,7 +21,7 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 
 [dependencies.thiserror]
-version = "0.4.1"
+version = "1"
 
 [dev-dependencies]
 tokio = { workspace = true }
