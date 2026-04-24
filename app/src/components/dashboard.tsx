@@ -26,12 +26,22 @@ import { useDetailPanelContainer } from "./shell/detail-panel-context";
 import { AgentMiniAvatar, HoustonThinkingIndicator } from "./shell/experience-card";
 
 export function Dashboard() {
-  const { t } = useTranslation(["dashboard", "common"]);
+  const { t } = useTranslation(["dashboard", "board", "common"]);
   const MC_COLUMNS: KanbanColumnConfig[] = [
     { id: "running", label: t("dashboard:columns.running"), statuses: ["running"] },
     { id: "needs_you", label: t("dashboard:columns.needsYou"), statuses: ["needs_you"] },
     { id: "done", label: t("dashboard:columns.done"), statuses: ["done", "cancelled"] },
   ];
+  // Card-action tooltips (Approve / Rename / Delete) — shared with the
+  // per-agent board tab so the affordance reads the same everywhere.
+  const cardLabels = {
+    approve: t("board:cardActions.approve"),
+    approveTooltip: t("board:cardActions.approveTooltip"),
+    renameTooltip: t("board:cardActions.renameTooltip"),
+    deleteTooltip: t("board:cardActions.deleteTooltip"),
+    deleteTitle: (name: string) => t("board:deleteCard.titleWithName", { name }),
+    deleteDescription: t("board:deleteCard.description"),
+  };
   const panelContainer = useDetailPanelContainer();
   const agents = useAgentStore((s) => s.agents);
   const setDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
@@ -200,6 +210,7 @@ export function Dashboard() {
             )
           }
           thinkingIndicator={<HoustonThinkingIndicator />}
+          cardLabels={cardLabels}
         />
       </div>
 

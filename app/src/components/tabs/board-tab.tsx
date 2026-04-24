@@ -61,6 +61,9 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   const { t } = useTranslation(["board", "dashboard"]);
   const cardLabels = {
     approve: t("board:cardActions.approve"),
+    approveTooltip: t("board:cardActions.approveTooltip"),
+    renameTooltip: t("board:cardActions.renameTooltip"),
+    deleteTooltip: t("board:cardActions.deleteTooltip"),
     deleteTitle: (name: string) => t("board:deleteCard.titleWithName", { name }),
     deleteDescription: t("board:deleteCard.description"),
   };

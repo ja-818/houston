@@ -2,7 +2,10 @@
   "cardActions": {
     "run": "Run",
     "openTerminal": "Open terminal in worktree",
-    "approve": "Approve"
+    "approve": "Move to done",
+    "approveTooltip": "Move to done",
+    "renameTooltip": "Change title",
+    "deleteTooltip": "Delete"
   },
   "deleteCard": {
     "titleWithName": "Delete \"{{name}}\"?",

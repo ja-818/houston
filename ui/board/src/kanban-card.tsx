@@ -4,14 +4,22 @@ import { Trash2, CheckCircle, Pencil } from "lucide-react"
 import type { KanbanItem } from "./types"
 
 export interface KanbanCardLabels {
+  /** @deprecated kept for backward-compat. Was the visible Approve pill text;
+   *  the action is now an icon-only button with `approveTooltip`. */
   approve?: string
+  approveTooltip?: string
+  renameTooltip?: string
+  deleteTooltip?: string
   /** Delete confirm title, `{name}` substituted with `item.title`. */
   deleteTitle?: (name: string) => string
   deleteDescription?: string
 }
 
 const DEFAULT_LABELS: Required<KanbanCardLabels> = {
-  approve: "Approve",
+  approve: "Move to done",
+  approveTooltip: "Move to done",
+  renameTooltip: "Change title",
+  deleteTooltip: "Delete",
   deleteTitle: (name) => `Delete "${name}"?`,
   deleteDescription: "This item and its history will be permanently removed.",
 }
@@ -105,11 +113,22 @@ export function KanbanCard({
             )}
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
+            {!actions && isNeedsApproval && onApprove && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onApprove() }}
+                className="p-1 rounded-md text-[#00a240]/70 hover:text-[#00a240] hover:bg-[#00a240]/10 transition-colors duration-200"
+                aria-label={l.approveTooltip}
+                title={l.approveTooltip}
+              >
+                <CheckCircle className="size-3" />
+              </button>
+            )}
             {onRename && (
               <button
                 onClick={handleRenameClick}
                 className="p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-colors duration-200"
-                aria-label={`Rename ${item.title}`}
+                aria-label={l.renameTooltip}
+                title={l.renameTooltip}
               >
                 <Pencil className="size-3" />
               </button>
@@ -118,7 +137,8 @@ export function KanbanCard({
               <button
                 onClick={handleDeleteClick}
                 className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors duration-200"
-                aria-label={`Delete ${item.title}`}
+                aria-label={l.deleteTooltip}
+                title={l.deleteTooltip}
               >
                 <Trash2 className="size-3" />
               </button>
@@ -153,8 +173,10 @@ export function KanbanCard({
           </p>
         )}
 
-        {/* Footer: tags + actions */}
-        {(item.tags?.length || actions || (isNeedsApproval && onApprove)) && (
+        {/* Footer: tags + custom actions. The Approve action moved to the
+           top-right icon row (see above) so it's visually consistent with
+           Rename / Delete and the tooltip explains exactly what it does. */}
+        {(item.tags?.length || actions) && (
           <div className="flex items-center justify-between mt-2.5">
             <div className="flex items-center gap-1 flex-wrap min-w-0">
               {item.tags?.map((tag) => (
@@ -168,18 +190,6 @@ export function KanbanCard({
             </div>
             <div className="shrink-0">
               {actions}
-              {!actions && isNeedsApproval && onApprove && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onApprove()
-                  }}
-                  className="flex items-center gap-0.5 h-5 pl-1 pr-2 rounded-full bg-primary text-primary-foreground text-[10px] font-medium hover:bg-primary/85 transition-colors duration-200"
-                >
-                  <CheckCircle className="size-2.5" />
-                  {l.approve}
-                </button>
-              )}
             </div>
           </div>
         )}
