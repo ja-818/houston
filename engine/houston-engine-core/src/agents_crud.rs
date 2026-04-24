@@ -269,11 +269,19 @@ pub fn create(root: &Path, workspace_id: &str, req: CreateAgent) -> CoreResult<C
     let mut onboarding_activity_id: Option<String> = None;
     if meta.config_id == "blank" {
         let activity_id = Uuid::new_v4().to_string();
+        // `session_key` is MANDATORY for `sessions::set_status_by_session_key`
+        // to find this row and flip it to `needs_you` on completion. Without
+        // it the onboarding session runs, finishes, and the board sticks on
+        // "Running" forever — exactly the "first chat got stuck" bug we hit.
+        // Mirror the convention used everywhere else in the codebase:
+        // `activity-{id}`.
+        let session_key = format!("activity-{activity_id}");
         let onboarding = serde_json::json!([{
             "id": activity_id,
             "title": "Set up your agent",
             "description": "I'll walk you through configuring your job description, connecting tools, and setting up routines.",
             "status": "running",
+            "session_key": session_key,
             "updated_at": &meta.created_at
         }]);
         seed_json_if_missing(

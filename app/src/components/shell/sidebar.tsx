@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { LayoutDashboard, Blend, Settings } from "lucide-react";
-import { ConfirmDialog } from "@houston-ai/core";
+import { LayoutDashboard, Blend, Settings, Smartphone } from "lucide-react";
+import { Badge, ConfirmDialog } from "@houston-ai/core";
 import { AppSidebar, WorkspaceSwitcher } from "@houston-ai/layout";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useAgentStore } from "../../stores/agents";
@@ -9,11 +9,7 @@ import { useUIStore } from "../../stores/ui";
 import { analytics } from "../../lib/analytics";
 import { AgentMiniAvatar } from "./experience-card";
 import { UpdateChecker } from "./update-checker";
-// Mobile companion app not shipping yet — hide the sidebar entry point
-// so we don't surface a feature that isn't ready. Re-enable once the
-// pairing flow ships end-to-end.
-// import { MobileSyncButton } from "./mobile-sync";
-import { useSyncResponder } from "../../hooks/use-sync-responder";
+import { PairDeviceDialog } from "./pair-device-dialog";
 import { CreateWorkspaceDialog } from "../../App";
 
 export function Sidebar({ children }: { children: ReactNode }) {
@@ -29,14 +25,12 @@ export function Sidebar({ children }: { children: ReactNode }) {
   const deleteAgent = useAgentStore((s) => s.delete);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [createWsOpen, setCreateWsOpen] = useState(false);
+  const [pairOpen, setPairOpen] = useState(false);
 
   const getById = useAgentCatalogStore((s) => s.getById);
   const viewMode = useUIStore((s) => s.viewMode);
   const setViewMode = useUIStore((s) => s.setViewMode);
   const setDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
-
-  // Sync responder — always active regardless of view
-  useSyncResponder();
 
   const sorted = [...agents].sort((a, b) => {
     const aTime = a.lastOpenedAt ?? a.createdAt;
@@ -100,6 +94,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
       onConfirm={confirmDelete}
     />
     <CreateWorkspaceDialog open={createWsOpen} onOpenChange={setCreateWsOpen} />
+    <PairDeviceDialog isOpen={pairOpen} onClose={() => setPairOpen(false)} />
     <div className="flex h-full flex-1 min-w-0">
       <AppSidebar
         header={
@@ -129,6 +124,20 @@ export function Sidebar({ children }: { children: ReactNode }) {
             label: "Settings",
             icon: <Settings className="h-4 w-4" />,
             onClick: () => setViewMode("settings"),
+          },
+          {
+            id: "connect-phone",
+            label: "Connect phone",
+            icon: <Smartphone className="h-4 w-4" />,
+            trailing: (
+              <Badge
+                variant="outline"
+                className="h-4 px-1.5 text-[9px] font-semibold tracking-wider text-muted-foreground"
+              >
+                BETA
+              </Badge>
+            ),
+            onClick: () => setPairOpen(true),
           },
         ]}
         activeNavId={isTopLevel ? viewMode : undefined}

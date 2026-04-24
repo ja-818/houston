@@ -75,7 +75,7 @@ HTTP status maps 1:1 (see `engine-server/src/routes/error.rs`).
 ### Current routes
 
 Full surface live. Every mutating route emits matching `HoustonEvent` on
-broadcast bus. 17 route modules wired in
+broadcast bus. 16 route modules wired in
 [`houston-engine-server/src/lib.rs`](../engine/houston-engine-server/src/lib.rs).
 Integration tests in `engine/houston-engine-server/tests/` — one file per
 module.
@@ -207,13 +207,15 @@ module.
 | POST | `/v1/attachments` | Save base64 attachments under scope_id |
 | DELETE | `/v1/attachments/:scope_id` | Delete all for scope |
 
-**Desktop ↔ mobile sync**
+**Mobile tunnel**
 | Method | Path | Description |
 |---|---|---|
-| POST | `/v1/sync` | Start relay session |
-| DELETE | `/v1/sync` | Stop |
-| GET | `/v1/sync` | Status (`{token, pairingUrl}` or null) |
-| POST | `/v1/sync/messages` | Forward message to peer |
+| GET  | `/v1/tunnel/status` | Tunnel connection state |
+| POST | `/v1/tunnel/pairing` | Mint a 6-digit pairing code (15-min TTL, idempotent) |
+| GET  | `/v1/tunnel/devices` | Paired devices |
+| POST | `/v1/tunnel/devices/:hash/revoke` | Revoke a paired device |
+
+See [`docs/mobile-architecture.md`](../docs/mobile-architecture.md) for the full flow — desktop engine opens an outbound WS to the Houston relay, which proxies mobile HTTP+WS AND serves the PWA bundle from the same origin.
 
 **Watcher**
 | Method | Path | Description |
@@ -265,7 +267,6 @@ forwarder sends — essential for remote clients where bandwidth matters.
 | `toast` | `Toast`, `CompletionToast` |
 | `events` | `EventReceived`, `EventProcessed` |
 | `auth` | `AuthRequired` |
-| `sync` | `SyncConnection`, `SyncMessage` |
 
 ## Auditing conformance
 

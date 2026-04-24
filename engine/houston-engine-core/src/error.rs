@@ -11,6 +11,8 @@ pub enum CoreError {
     Conflict(String),
     #[error("bad request: {0}")]
     BadRequest(String),
+    #[error("unavailable: {0}")]
+    Unavailable(String),
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
     #[error("json error: {0}")]
@@ -25,6 +27,7 @@ impl CoreError {
             Self::NotFound(_) => ErrorCode::NotFound,
             Self::Conflict(_) => ErrorCode::Conflict,
             Self::BadRequest(_) => ErrorCode::BadRequest,
+            Self::Unavailable(_) => ErrorCode::Unavailable,
             _ => ErrorCode::Internal,
         }
     }

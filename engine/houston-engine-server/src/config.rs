@@ -4,6 +4,14 @@ use rand::{distributions::Alphanumeric, Rng};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
+/// Default Houston relay base URL. Mobile companion dials this; desktop
+/// engine's reverse tunnel registers here. Overridable via
+/// `HOUSTON_TUNNEL_URL` for local `wrangler dev`.
+///
+/// Must stay in sync with `mobile/src/lib/pairing.ts::DEFAULT_RELAY` and
+/// with the production `routes` entry in `houston-relay/wrangler.toml`.
+pub const DEFAULT_RELAY_URL: &str = "https://tunnel.gethouston.ai";
+
 /// Resolved server configuration.
 #[derive(Debug, Clone)]
 pub struct ServerConfig {
@@ -23,6 +31,11 @@ pub struct ServerConfig {
     /// Product-layer onboarding prompt supplied by the app via
     /// `HOUSTON_APP_ONBOARDING_PROMPT`. Appended on first-run sessions.
     pub app_onboarding_prompt: String,
+    /// Houston relay base URL. Always populated — defaults to
+    /// [`DEFAULT_RELAY_URL`], overridable via `HOUSTON_TUNNEL_URL`.
+    /// The per-tunnel bearer is allocated from the relay on first boot
+    /// and cached in `<home_dir>/tunnel.json` — never an env var.
+    pub tunnel_url: String,
 }
 
 impl ServerConfig {
@@ -74,6 +87,11 @@ impl ServerConfig {
         let app_onboarding_prompt =
             std::env::var("HOUSTON_APP_ONBOARDING_PROMPT").unwrap_or_default();
 
+        let tunnel_url = std::env::var("HOUSTON_TUNNEL_URL")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| DEFAULT_RELAY_URL.to_string());
+
         Self {
             bind,
             token,
@@ -81,6 +99,7 @@ impl ServerConfig {
             docs_dir,
             app_system_prompt,
             app_onboarding_prompt,
+            tunnel_url,
         }
     }
 }

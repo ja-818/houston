@@ -16,6 +16,8 @@ export interface SidebarNavItemEntry {
   icon: ReactNode;
   active?: boolean;
   onClick: () => void;
+  /** Optional right-aligned slot (e.g. a "Beta" badge). */
+  trailing?: ReactNode;
 }
 
 export interface SidebarProps {
@@ -98,6 +100,7 @@ export function AppSidebar({
                 key={item.id}
                 icon={item.icon}
                 label={item.label}
+                trailing={item.trailing}
                 active={
                   activeNavId !== undefined
                     ? item.id === activeNavId

@@ -7,7 +7,7 @@ members = [
     "engine/houston-events",
     "engine/houston-scheduler",
     "engine/houston-skills",
-    "engine/houston-sync",
+    "engine/houston-tunnel",
     "engine/houston-agent-files",
     "engine/houston-ui-events",
     "engine/houston-agents-conversations",
@@ -36,7 +36,7 @@ houston-tauri = { version = "0.3.2", path = "app/houston-tauri" }
 houston-events = { version = "0.3.2", path = "engine/houston-events" }
 houston-scheduler = { version = "0.3.2", path = "engine/houston-scheduler" }
 houston-skills = { version = "0.3.2", path = "engine/houston-skills" }
-houston-sync = { version = "0.3.2", path = "engine/houston-sync" }
+houston-tunnel = { version = "0.4.0", path = "engine/houston-tunnel" }
 houston-agent-files = { version = "0.3.2", path = "engine/houston-agent-files" }
 houston-ui-events = { version = "0.3.2", path = "engine/houston-ui-events" }
 houston-agents-conversations = { version = "0.3.2", path = "engine/houston-agents-conversations" }

@@ -42,7 +42,7 @@ Need specific knowledge? Load on demand:
 - Engine wire protocol (REST + WS) → `knowledge-base/engine-protocol.md`
 - `houston-engine` binary ops → `knowledge-base/engine-server.md`
 - Custom frontend on `houston-engine` (integration reference) → `examples/smartbooks/README.md`
-- Desktop ↔ Mobile WS contract → `knowledge-base/sync-protocol.md`
+- Mobile PWA (tunnel, pairing, reactivity) → `docs/mobile-architecture.md` + `docs/relay-operations.md`
 - Updater, analytics, Sentry, env vars, CI → `knowledge-base/production-infra.md`
 
 Design work? Skills: `/critique` before, `/polish` after. Else `/clarify` (copy), `/distill` (overloaded screen), `/animate` (micro-interactions), `/audit` (a11y).

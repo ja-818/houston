@@ -32,6 +32,11 @@ export interface AIBoardProps {
   approveStatuses?: string[]
   /** Load persisted chat history for a session. Called once per session key when selected. */
   onLoadHistory?: (sessionKey: string) => Promise<FeedItem[]>
+  /** Called with the loaded history so the parent can merge it into its
+   * own feed store. This replaces the previous "liveFeed wins if
+   * non-empty" hack, which broke when another client (e.g. phone)
+   * pushed a live item into a session the user hadn't yet hydrated. */
+  onHistoryLoaded?: (sessionKey: string, items: FeedItem[]) => void
   /** Called with the openNewPanel function so the parent can trigger it externally (e.g. from a header button). */
   onNewPanelOpenerReady?: (opener: () => void) => void
   /** Custom empty state for the chat panel when no messages exist. */
@@ -114,6 +119,7 @@ export function AIBoard({
   runningStatuses = ["running"],
   approveStatuses = ["needs_you"],
   onLoadHistory,
+  onHistoryLoaded,
   onNewPanelOpenerReady,
   chatEmptyState,
   thinkingIndicator,
@@ -143,8 +149,11 @@ export function AIBoard({
   const selectedId = controlledSelectedId !== undefined ? controlledSelectedId : internalSelectedId
   const rawSetSelectedId = onSelectProp ?? setInternalSelectedId
 
-  // -- History hydration: load persisted chat when a conversation is selected --
-  const [historyCache, setHistoryCache] = useState<Record<string, FeedItem[]>>({})
+  // -- History hydration: load persisted chat when a conversation is
+  // selected, once per session. The loaded history is handed to the
+  // parent via `onHistoryLoaded` so it lives in the same store as live
+  // WS events. Ai-board stays stateless for feed data — single source
+  // of truth = the parent's `feedItems`.
   const hydratedKeys = useRef<Set<string>>(new Set())
 
   const hydrateSession = useCallback(
@@ -153,11 +162,13 @@ export function AIBoard({
       const sk = sessionKeyFor(id)
       if (hydratedKeys.current.has(sk)) return
       hydratedKeys.current.add(sk)
-      onLoadHistory(sk).then((h) => {
-        if (h.length > 0) setHistoryCache((prev) => ({ ...prev, [sk]: h }))
-      }).catch(console.error)
+      onLoadHistory(sk)
+        .then((h) => {
+          if (h.length > 0) onHistoryLoaded?.(sk, h)
+        })
+        .catch(console.error)
     },
-    [onLoadHistory, sessionKeyFor],
+    [onLoadHistory, onHistoryLoaded, sessionKeyFor],
   )
 
   const setSelectedId = useCallback(
@@ -218,9 +229,7 @@ export function AIBoard({
     },
     [selectedItem, onSendMessage, sessionKeyFor, newPanelOpen, onCreateConversation, setSelectedId, onDraftChange, activeDraftKey],
   )
-  const liveFeed = activeSessionKey ? (feedItems[activeSessionKey] ?? []) : []
-  const cachedFeed = activeSessionKey ? (historyCache[activeSessionKey] ?? []) : []
-  const activeFeed = liveFeed.length > 0 ? liveFeed : cachedFeed
+  const activeFeed = activeSessionKey ? (feedItems[activeSessionKey] ?? []) : []
   const activeLoading = activeSessionKey ? (isLoading[activeSessionKey] ?? false) : false
 
   const showPanel = selectedItem || newPanelOpen
