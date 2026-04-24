@@ -188,8 +188,10 @@ export function Dashboard() {
           isLoading={mc.loading}
           onDelete={mc.handleDelete}
           onApprove={mc.handleApprove}
+          onRename={mc.handleRename}
           onSendMessage={mc.handleSendMessage}
           onLoadHistory={mc.loadHistory}
+          onHistoryLoaded={mc.handleHistoryLoaded}
           emptyState={emptyBoard}
           panelContainer={panelContainer}
           onPanelOpenChange={setMissionPanelOpen}
