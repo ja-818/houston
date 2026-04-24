@@ -5,7 +5,7 @@
     "settings": "Configuración",
     "yourAgents": "Tus agentes",
     "selectWorkspace": "Elige un espacio de trabajo",
-    "connectPhone": "Conectar teléfono"
+    "connectPhone": "Conectar celular"
   },
   "tabActions": {
     "newMission": "Nueva misión"
@@ -85,14 +85,14 @@
     "starting": "Iniciando el motor de Houston…"
   },
   "pairDevice": {
-    "title": "Conecta tu teléfono",
+    "title": "Conecta tu celular",
     "description": "Escanea este código para manejar Houston desde tu iPhone.",
-    "loading": "Preparando la conexión con tu teléfono…",
-    "connectingStatus": "Conectando con el servicio del teléfono. Suele tomar unos segundos.",
-    "keepMacAwake": "Mantén este Mac despierto mientras usas Houston en tu teléfono.",
+    "loading": "Preparando la conexión con tu celular…",
+    "connectingStatus": "Conectando con el servicio del celular. Suele tomar unos segundos.",
+    "keepMacAwake": "Mantén este Mac despierto mientras usas Houston en tu celular.",
     "alwaysOnHint": "Para acceso 24/7, <emph>Always On</emph> ejecuta Houston en nuestros servidores.",
     "errors": {
-      "noInternet": "Houston necesita conexión a internet la primera vez que lo abres. Conéctate y reabre Houston para habilitar el emparejamiento del teléfono.",
+      "noInternet": "Houston necesita conexión a internet la primera vez que lo abres. Conéctate y reabre Houston para habilitar el emparejamiento del celular.",
       "generic": "No se pudo generar un código de emparejamiento. Inténtalo de nuevo."
     }
   }
