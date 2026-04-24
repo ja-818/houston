@@ -1,6 +1,12 @@
 import { useState, useRef, useEffect } from "react"
-import { cn, ConfirmDialog } from "@houston-ai/core"
-import { Trash2, CheckCircle, Pencil } from "lucide-react"
+import {
+  cn,
+  ConfirmDialog,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@houston-ai/core"
+import { Trash2, Check, Pencil } from "lucide-react"
 import type { KanbanItem } from "./types"
 
 export interface KanbanCardLabels {
@@ -114,34 +120,46 @@ export function KanbanCard({
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
             {!actions && isNeedsApproval && onApprove && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onApprove() }}
-                className="p-1 rounded-md text-[#00a240]/70 hover:text-[#00a240] hover:bg-[#00a240]/10 transition-colors duration-200"
-                aria-label={l.approveTooltip}
-                title={l.approveTooltip}
-              >
-                <CheckCircle className="size-3" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onApprove() }}
+                    className="p-1 rounded-md text-muted-foreground/40 hover:text-[#00a240] hover:bg-[#00a240]/10 transition-colors duration-200"
+                    aria-label={l.approveTooltip}
+                  >
+                    <Check className="size-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{l.approveTooltip}</TooltipContent>
+              </Tooltip>
             )}
             {onRename && (
-              <button
-                onClick={handleRenameClick}
-                className="p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-colors duration-200"
-                aria-label={l.renameTooltip}
-                title={l.renameTooltip}
-              >
-                <Pencil className="size-3" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleRenameClick}
+                    className="p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-colors duration-200"
+                    aria-label={l.renameTooltip}
+                  >
+                    <Pencil className="size-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{l.renameTooltip}</TooltipContent>
+              </Tooltip>
             )}
             {onDelete && (
-              <button
-                onClick={handleDeleteClick}
-                className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors duration-200"
-                aria-label={l.deleteTooltip}
-                title={l.deleteTooltip}
-              >
-                <Trash2 className="size-3" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleDeleteClick}
+                    className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors duration-200"
+                    aria-label={l.deleteTooltip}
+                  >
+                    <Trash2 className="size-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{l.deleteTooltip}</TooltipContent>
+              </Tooltip>
             )}
           </div>
         </div>
