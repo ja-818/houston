@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { DialogTitle, Button, Input, cn } from "@houston-ai/core";
 import { ArrowLeft, Check, FolderOpen, ChevronDown } from "lucide-react";
 import type { AgentDefinition } from "../../lib/types";
@@ -42,6 +43,7 @@ export function NamingStep({
   onBack,
   onSubmit,
 }: NamingStepProps) {
+  const { t } = useTranslation("shell");
   // Default to white on mount if none selected
   const resolvedColor = resolveAgentColor(color);
 
@@ -60,7 +62,7 @@ export function NamingStep({
         <ArrowLeft className="h-4 w-4" />
       </button>
 
-      <DialogTitle className="sr-only">Name your Agent</DialogTitle>
+      <DialogTitle className="sr-only">{t("naming.dialogTitle")}</DialogTitle>
 
       {/* Avatar preview */}
       <div className="flex flex-col items-center gap-4 mb-8">
@@ -73,10 +75,10 @@ export function NamingStep({
 
         <div className="text-center">
           <p className="text-lg font-semibold">
-            {selectedAgent?.config.name ?? "New Agent"}
+            {selectedAgent?.config.name ?? t("naming.newAgentFallback")}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Pick a color and name your agent
+            {t("naming.tagline")}
           </p>
         </div>
       </div>
@@ -112,7 +114,7 @@ export function NamingStep({
           autoFocus
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
-          placeholder="e.g. Project Alpha"
+          placeholder={t("naming.namePlaceholder")}
           className="text-center rounded-full"
         />
 
@@ -148,7 +150,7 @@ export function NamingStep({
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
               >
                 <FolderOpen className="size-3" />
-                Link existing project
+                {t("naming.linkExistingProject")}
               </button>
             )}
           </div>
@@ -169,7 +171,7 @@ export function NamingStep({
           disabled={!name.trim()}
           className="w-full rounded-full"
         >
-          Create Agent
+          {t("naming.createAgent")}
         </Button>
       </form>
     </div>
@@ -186,6 +188,7 @@ function InlineModelSelector({
   model: string;
   onSelect: (provider: string, model: string) => void;
 }) {
+  const { t } = useTranslation("providers");
   const [statuses, setStatuses] = useState<Record<string, ProviderStatus>>({});
   const [open, setOpen] = useState(false);
 
@@ -236,7 +239,7 @@ function InlineModelSelector({
                   <ProviderIcon providerId={prov.id} className="size-3.5" />
                   {prov.name}
                   {!connected && (
-                    <span className="text-[10px] text-muted-foreground/60 ml-auto">Not connected</span>
+                    <span className="text-[10px] text-muted-foreground/60 ml-auto">{t("card.notConnected")}</span>
                   )}
                 </div>
                 {prov.models.map((m) => {

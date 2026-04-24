@@ -1,0 +1,24 @@
+{
+  "page": {
+    "title": "Skills",
+    "description": "Reusable instructions the agents can use."
+  },
+  "grid": {
+    "loading": "Loading skills…",
+    "emptyTitle": "No skills installed",
+    "emptyDescription": "Skills are reusable procedures your agent can lean on.",
+    "addSkill": "Add skill",
+    "descriptionShort": "Reusable procedures your agent can lean on."
+  },
+  "detail": {
+    "notFound": "Skill not found",
+    "backAria": "Back to skills",
+    "moreActions": "More actions",
+    "saveChanges": "Save changes",
+    "savingChanges": "Saving…",
+    "delete": "Delete skill",
+    "deleteTitle": "Delete \"{{name}}\"?",
+    "deleteDescription": "This removes the skill from your agent. You can reinstall it later.",
+    "instructionsPlaceholder": "Instructions for this skill…"
+  }
+}

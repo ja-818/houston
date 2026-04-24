@@ -1,0 +1,99 @@
+{
+  "sidebar": {
+    "missionControl": "Centro de misiones",
+    "integrations": "Integraciones",
+    "settings": "Configuración",
+    "yourAgents": "Tus agentes",
+    "selectWorkspace": "Elige un espacio de trabajo",
+    "connectPhone": "Conectar teléfono"
+  },
+  "tabActions": {
+    "newMission": "Nueva misión"
+  },
+  "agentDelete": {
+    "title": "¿Eliminar el agente?",
+    "description": "Se eliminará el agente y todos sus datos de forma permanente. Esta acción no se puede deshacer."
+  },
+  "workspaceDialog": {
+    "title": "Nuevo espacio de trabajo",
+    "tabNew": "Crear nuevo",
+    "tabGithub": "Importar desde GitHub",
+    "githubDescription": "Importa una plantilla de espacio de trabajo desde GitHub. Crea un espacio con todos sus agentes listos para usar.",
+    "githubPlaceholder": "usuario/repo",
+    "githubImport": "Importar",
+    "githubImporting": "Importando espacio de trabajo y agentes..."
+  },
+  "agentUpdate": {
+    "title": "Actualización del agente disponible",
+    "descriptionOne": "{{name}} tiene una nueva versión disponible.",
+    "descriptionMany": "{{names}} tienen nuevas versiones disponibles.",
+    "descriptionSuffix": "La actualización ya se descargó. Recarga para aplicarla.",
+    "reloadNow": "Recargar ahora"
+  },
+  "authReconnect": {
+    "heading": "Houston, tenemos un problema",
+    "body": "Tu sesión de {{provider}} expiró. Inicia sesión de nuevo para mantener tus agentes funcionando.",
+    "waiting": "Esperando el inicio de sesión en el navegador...",
+    "signInWith": "Iniciar sesión con {{provider}}"
+  },
+  "providerReconnect": {
+    "title": "Sesión expirada",
+    "body": "Tu conexión con {{provider}} se terminó, pasa de vez en cuando. Inicia sesión otra vez y listo.",
+    "reconnect": "Reconectar a {{provider}}",
+    "waiting": "Esperando el inicio de sesión en el navegador...",
+    "tryAgain": "Intentar de nuevo"
+  },
+  "updateChecker": {
+    "available": "v{{version}} disponible",
+    "downloading": "Descargando... {{progress}}%",
+    "restart": "Reinicia para actualizar"
+  },
+  "githubImport": {
+    "placeholder": "usuario/repo",
+    "next": "Siguiente",
+    "hint": "Escribe un repo público de GitHub en formato usuario/repo",
+    "fetching": "Trayendo el agente..."
+  },
+  "store": {
+    "searchPlaceholder": "Buscar en la tienda...",
+    "categoryAll": "Todo",
+    "categoryProductivity": "Productividad",
+    "categoryDevelopment": "Desarrollo",
+    "categoryResearch": "Investigación",
+    "categoryCreative": "Creatividad",
+    "categoryBusiness": "Negocios",
+    "sectionHoustonAgents": "De Houston",
+    "sectionCommunityAgents": "Comunidad",
+    "sectionStore": "Tienda Houston",
+    "noResults": "Ningún agente coincide con tu búsqueda"
+  },
+  "naming": {
+    "dialogTitle": "Nombra tu agente",
+    "newAgentFallback": "Nuevo agente",
+    "tagline": "Elige un color y pon nombre a tu agente",
+    "namePlaceholder": "p. ej. Proyecto Alpha",
+    "linkExistingProject": "Vincular un proyecto existente",
+    "createAgent": "Crear agente"
+  },
+  "newAgent": {
+    "dialogTitle": "Nuevo agente",
+    "dialogDescription": "Explora la tienda o importa desde GitHub.",
+    "tabStore": "Tienda Houston",
+    "tabGithub": "GitHub"
+  },
+  "engineGate": {
+    "starting": "Iniciando el motor de Houston…"
+  },
+  "pairDevice": {
+    "title": "Conecta tu teléfono",
+    "description": "Escanea este código para manejar Houston desde tu iPhone.",
+    "loading": "Preparando la conexión con tu teléfono…",
+    "connectingStatus": "Conectando con el servicio del teléfono. Suele tomar unos segundos.",
+    "keepMacAwake": "Mantén este Mac despierto mientras usas Houston en tu teléfono.",
+    "alwaysOnHint": "Para acceso 24/7, <emph>Always On</emph> ejecuta Houston en nuestros servidores.",
+    "errors": {
+      "noInternet": "Houston necesita conexión a internet la primera vez que lo abres. Conéctate y reabre Houston para habilitar el emparejamiento del teléfono.",
+      "generic": "No se pudo generar un código de emparejamiento. Inténtalo de nuevo."
+    }
+  }
+}

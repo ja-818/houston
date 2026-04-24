@@ -1,0 +1,104 @@
+{
+  "toasts": {
+    "renamed": "Workspace renamed",
+    "deleted": "Workspace deleted",
+    "switchedModel": "Switched to {{provider}} ({{model}})",
+    "timezoneSet": "Timezone set to {{zone}}"
+  },
+  "instructions": {
+    "emptyTitle": "No instructions yet",
+    "emptyDescription": "Tell your agent how it should think and act.",
+    "writeButton": "Write instructions",
+    "helper": "How this agent should think and act.",
+    "placeholder": "Write instructions for your agent…",
+    "saving": "Saving…",
+    "saved": "Saved"
+  },
+  "learnings": {
+    "emptyTitle": "No learnings yet",
+    "emptyDescription": "The agent jots things down as it works, or you can add them yourself.",
+    "addLearning": "Add learning",
+    "helper": "Quick notes the agent picks up over time.",
+    "inputPlaceholder": "Type a learning and press Enter…",
+    "removeAria": "Remove learning",
+    "confirmRemoveTitle": "Remove this learning?",
+    "confirmRemoveDescription": "The agent will lose this note. You can add it back later.",
+    "confirmRemoveLabel": "Remove"
+  },
+  "subTabs": {
+    "instructions": "Instructions",
+    "skills": "Skills",
+    "learnings": "Learnings"
+  },
+  "tabLabels": {
+    "activity": "Activity",
+    "routines": "Routines",
+    "files": "Files",
+    "job-description": "Job Description",
+    "integrations": "Integrations",
+    "chat": "Chat",
+    "board": "Board",
+    "skills": "Skills",
+    "prompts": "Prompts",
+    "events": "Events",
+    "learnings": "Learnings",
+    "configure": "Configure",
+    "settings": "Settings"
+  },
+  "configure": {
+    "projectContext": {
+      "title": "Project context",
+      "description": "Injected into all agents. Describe your project, conventions, and rules.",
+      "placeholder": "Project context, coding conventions, architecture notes..."
+    },
+    "agentPrompts": {
+      "title": "Agent prompts",
+      "description": "Each agent mode gets its own system prompt.",
+      "placeholder": "System prompt for {{name}}..."
+    },
+    "skills": {
+      "title": "Skills",
+      "description": "Reusable instructions the agents can use."
+    },
+    "learnings": {
+      "title": "Learnings",
+      "description": "Agents save learnings as they work. You can add them manually too.",
+      "addPlaceholder": "Add a learning..."
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Agent configuration and runtime settings.",
+      "savingHint": "Saving...",
+      "worktreeMode": "Worktree mode",
+      "worktreeModeDescription": "Create a separate git worktree for each mission",
+      "installCommand": "Install command",
+      "installCommandPlaceholder": "e.g. pnpm install, npm install, cargo build",
+      "devCommand": "Dev command",
+      "devCommandPlaceholder": "e.g. pnpm dev, npm run dev, cargo run"
+    }
+  },
+  "promptCards": {
+    "projectContext": "Project Context",
+    "claudeMdSummary": "CLAUDE.md, {{count}} lines",
+    "modeSummary": "{{file}}, {{count}} lines"
+  },
+  "files": {
+    "emptyTitle": "No files yet",
+    "emptyDescription": "Files created by your assistant will appear here.",
+    "openInFinder": "Open in Finder",
+    "loading": "Loading…",
+    "browseFiles": "Browse files",
+    "columns": {
+      "name": "Name",
+      "dateModified": "Date Modified",
+      "size": "Size",
+      "kind": "Kind"
+    },
+    "menu": {
+      "open": "Open",
+      "rename": "Rename",
+      "reveal": "Show in Finder",
+      "delete": "Move to Trash"
+    }
+  }
+}

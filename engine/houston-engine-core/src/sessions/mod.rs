@@ -224,9 +224,10 @@ pub async fn start(
     Ok(session_key)
 }
 
-/// Cancel a running session. Sends `SIGTERM` to the Claude CLI process and
-/// emits a `Stopped by user` feed item + `completed` session status so the
-/// UI can reconcile.
+/// Cancel a running session. On Unix sends `SIGTERM` to the Claude CLI
+/// process; on Windows issues `taskkill /PID <pid> /T /F` (terminates the
+/// process tree). Emits a `Stopped by user` feed item + `completed`
+/// session status so the UI can reconcile.
 ///
 /// Returns `true` if a process was found and signaled, `false` if no session
 /// was running under that key.
@@ -241,22 +242,39 @@ pub async fn cancel(
     };
     tracing::info!("[sessions] cancel session_key={session_key} pid={pid}");
 
-    // SIGTERM the CLI. Don't block on kill(1) in tests where the PID may be
-    // stale — tokio Command::output().await can hang on Tauri macOS (see
+    // Terminate the CLI. Don't block on the shell-out in tests where the
+    // PID may be stale — tokio Command can hang on Tauri macOS (see
     // tauri_subprocess_hang memory). A short timeout is cheap and safe.
-    #[cfg(unix)]
-    {
-        use tokio::time::{timeout, Duration};
-        let _ = timeout(Duration::from_millis(500), async {
+    use tokio::time::{timeout, Duration};
+    let _ = timeout(Duration::from_millis(500), async {
+        #[cfg(unix)]
+        {
             let _ = tokio::process::Command::new("kill")
                 .arg("-TERM")
                 .arg(pid.to_string())
                 .kill_on_drop(true)
                 .status()
                 .await;
-        })
-        .await;
-    }
+        }
+        #[cfg(windows)]
+        {
+            // `taskkill /PID <pid> /T /F` — `/T` kills the whole tree
+            // (Claude/Codex spawn node subprocesses), `/F` is forceful.
+            // Windows has no graceful-termination primitive akin to
+            // SIGTERM that works across console applications without a
+            // shared Ctrl-C signal group; forceful is what Task Manager
+            // and `stop` buttons elsewhere do.
+            let _ = tokio::process::Command::new("taskkill")
+                .arg("/PID")
+                .arg(pid.to_string())
+                .arg("/T")
+                .arg("/F")
+                .kill_on_drop(true)
+                .status()
+                .await;
+        }
+    })
+    .await;
 
     events.emit(HoustonEvent::FeedItem {
         agent_path: agent_path.to_string(),

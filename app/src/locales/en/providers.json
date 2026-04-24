@@ -1,0 +1,24 @@
+{
+  "card": {
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "ariaLabelConnected": "{{name}}, Connected",
+    "ariaLabelNotConnected": "{{name}}, Not connected",
+    "modelDropdownLabel": "Model"
+  },
+  "setup": {
+    "headline": "Set up {{provider}}",
+    "cliInstalled": "{{cli}} CLI installed",
+    "cliNotFound": "{{cli}} CLI not found",
+    "signedIn": "Signed in",
+    "notSignedIn": "Not signed in",
+    "installHint": "Install the {{cli}} CLI,",
+    "installGuide": "Installation guide",
+    "signInWith": "Sign in with {{provider}}",
+    "waiting": "Waiting for browser sign-in...",
+    "openBrowserAgain": "Open browser again",
+    "launchErrorTitle": "Couldn't launch {{cli}}",
+    "installedCheckAgain": "I've installed it, check again",
+    "canContinueHint": "You can continue without connecting, but you'll need the CLI set up before using agents."
+  }
+}

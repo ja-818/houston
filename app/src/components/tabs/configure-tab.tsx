@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { SkillsGrid, SkillDetailPage } from "@houston-ai/skills";
 import type { Skill, CommunitySkill } from "@houston-ai/skills";
@@ -41,17 +42,42 @@ function useSavePromptFile(agentPath: string, fileName: string) {
 }
 
 function PromptEditor({ agentPath, mode }: { agentPath: string; mode: AgentMode }) {
+  const { t } = useTranslation("agents");
   const { data: content } = usePromptFile(agentPath, mode.promptFile);
   const save = useSavePromptFile(agentPath, mode.promptFile);
   return (
     <div>
       <label className="text-xs font-medium text-muted-foreground block mb-1.5">{mode.name}</label>
-      <AutoSaveTextarea value={content ?? ""} onSave={save} placeholder={`System prompt for ${mode.name}...`} />
+      <AutoSaveTextarea value={content ?? ""} onSave={save} placeholder={t("configure.agentPrompts.placeholder", { name: mode.name })} />
     </div>
   );
 }
 
 export default function ConfigureTab({ agent, agentDef }: TabProps) {
+  const { t } = useTranslation("agents");
+  const { t: tSkills } = useTranslation(["skills", "common"]);
+  const skillsGridLabels = {
+    loading: tSkills("skills:grid.loading"),
+    emptyTitle: tSkills("skills:grid.emptyTitle"),
+    emptyDescription: tSkills("skills:grid.emptyDescription"),
+    addSkill: tSkills("skills:grid.addSkill"),
+    descriptionShort: tSkills("skills:grid.descriptionShort"),
+    deleteTitle: (name: string) => tSkills("skills:detail.deleteTitle", { name }),
+    deleteDescription: tSkills("skills:detail.deleteDescription"),
+    deleteConfirmLabel: tSkills("common:actions.delete"),
+  };
+  const skillDetailLabels = {
+    notFound: tSkills("skills:detail.notFound"),
+    backAria: tSkills("skills:detail.backAria"),
+    saveChanges: tSkills("skills:detail.saveChanges"),
+    savingChanges: tSkills("skills:detail.savingChanges"),
+    moreActions: tSkills("skills:detail.moreActions"),
+    delete: tSkills("skills:detail.delete"),
+    deleteTitle: (name: string) => tSkills("skills:detail.deleteTitle", { name }),
+    deleteDescription: tSkills("skills:detail.deleteDescription"),
+    deleteConfirmLabel: tSkills("common:actions.delete"),
+    instructionsPlaceholder: tSkills("skills:detail.instructionsPlaceholder"),
+  };
   const path = agent.folderPath;
   const modes = agentDef.config.agents ?? [];
 
@@ -97,16 +123,16 @@ export default function ConfigureTab({ agent, agentDef }: TabProps) {
   return (
     <div className="h-full overflow-auto">
       <div className="max-w-3xl mx-auto px-6 py-6 flex flex-col gap-10">
-        <Section title="Project context" description="Injected into all agents. Describe your project, conventions, and rules.">
+        <Section title={t("configure.projectContext.title")} description={t("configure.projectContext.description")}>
           <AutoSaveTextarea
             value={instructions ?? ""}
             onSave={(c) => saveInstructions.mutateAsync({ name: "CLAUDE.md", content: c })}
-            placeholder="Project context, coding conventions, architecture notes..."
+            placeholder={t("configure.projectContext.placeholder")}
           />
         </Section>
 
         {modes.length > 0 && (
-          <Section title="Agent prompts" description="Each agent mode gets its own system prompt.">
+          <Section title={t("configure.agentPrompts.title")} description={t("configure.agentPrompts.description")}>
             <div className="flex flex-col gap-5">
               {modes.map((mode) => (
                 <PromptEditor key={mode.id} agentPath={path} mode={mode} />
@@ -115,19 +141,29 @@ export default function ConfigureTab({ agent, agentDef }: TabProps) {
           </Section>
         )}
 
-        <Section title="Skills" description="Reusable instructions the agents can use.">
+        <Section title={t("configure.skills.title")} description={t("configure.skills.description")}>
           {selectedSkill ? (
-            <SkillDetailPage skill={selectedSkill} onBack={() => setSelectedSkillName(null)} onSave={handleSkillSave} onDelete={handleSkillDelete} />
+            <SkillDetailPage skill={selectedSkill} onBack={() => setSelectedSkillName(null)} onSave={handleSkillSave} onDelete={handleSkillDelete} labels={skillDetailLabels} />
           ) : (
-            <SkillsGrid skills={skills} loading={skillsLoading} onSkillClick={handleSkillClick} onDelete={handleSkillDelete} onSearch={handleSearch} onInstallCommunity={handleInstallCommunity} onListFromRepo={handleListFromRepo} onInstallFromRepo={handleInstallFromRepo} />
+            <SkillsGrid
+              skills={skills}
+              loading={skillsLoading}
+              onSkillClick={handleSkillClick}
+              onDelete={handleSkillDelete}
+              onSearch={handleSearch}
+              onInstallCommunity={handleInstallCommunity}
+              onListFromRepo={handleListFromRepo}
+              onInstallFromRepo={handleInstallFromRepo}
+              labels={skillsGridLabels}
+            />
           )}
         </Section>
 
-        <Section title="Learnings" description="Agents save learnings as they work. You can add them manually too.">
-          <LearningsSection entries={learningsData?.entries ?? []} onAdd={(t) => addLearning.mutateAsync(t)} onRemove={(i) => removeLearning.mutateAsync(i)} />
+        <Section title={t("configure.learnings.title")} description={t("configure.learnings.description")}>
+          <LearningsSection entries={learningsData?.entries ?? []} onAdd={(txt) => addLearning.mutateAsync(txt)} onRemove={(i) => removeLearning.mutateAsync(i)} />
         </Section>
 
-        <Section title="Settings">
+        <Section title={t("configure.settings.title")}>
           <SettingsForm agentPath={path} config={config ?? {}} />
         </Section>
       </div>

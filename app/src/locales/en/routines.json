@@ -1,0 +1,9 @@
+{
+  "loading": "Loading…",
+  "grid": {
+    "emptyTitle": "Set it and forget it",
+    "emptyDescription": "Routines fire on a schedule and only ping you when something actually needs attention.",
+    "newRoutine": "New routine",
+    "descriptionShort": "Recurring tasks that fire on schedule and only ping you when something needs attention."
+  }
+}

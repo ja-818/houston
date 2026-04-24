@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@houston-ai/core";
@@ -20,6 +21,7 @@ export function ComposioAuthDialog({
   onClose,
   onReopenBrowser,
 }: ComposioAuthDialogProps) {
+  const { t } = useTranslation("integrations");
   return (
     <Dialog
       open={state.open}
@@ -29,9 +31,9 @@ export function ComposioAuthDialog({
     >
       <DialogContent showCloseButton className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Connecting to Composio</DialogTitle>
+          <DialogTitle>{t("authDialog.title")}</DialogTitle>
           <DialogDescription>
-            Complete the sign-in in your browser, then return here.
+            {t("authDialog.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -39,7 +41,7 @@ export function ComposioAuthDialog({
           <div className="flex items-center gap-3 py-2">
             <Loader2 className="size-4 text-muted-foreground animate-spin shrink-0" />
             <p className="text-sm text-muted-foreground">
-              Waiting for you to approve in the browser…
+              {t("authDialog.waiting")}
             </p>
           </div>
         )}
@@ -55,7 +57,7 @@ export function ComposioAuthDialog({
             onClick={onReopenBrowser}
             className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-border bg-background text-foreground text-sm font-medium hover:bg-secondary transition-colors duration-200 self-start"
           >
-            Open link in browser
+            {t("authDialog.openInBrowser")}
             <ExternalLink className="size-3.5" />
           </button>
         )}

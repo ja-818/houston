@@ -1,0 +1,37 @@
+{
+  "title": "Settings",
+  "workspace": {
+    "title": "Workspace",
+    "nameLabel": "Name"
+  },
+  "provider": {
+    "title": "AI provider",
+    "description": "Houston uses <emph>your own</emph> subscription. We never see your credentials."
+  },
+  "timezone": {
+    "title": "Timezone",
+    "description": "Used when your routines fire, 9am means 9am in this zone.",
+    "label": "IANA zone",
+    "placeholder": "e.g. America/Bogota",
+    "useDetected": "Use detected ({{zone}})"
+  },
+  "appearance": {
+    "title": "Appearance",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "dangerZone": {
+    "title": "Danger zone",
+    "description": "Permanently delete this workspace and all its agents.",
+    "deleteButton": "Delete workspace",
+    "createAnotherFirst": "Create another workspace first before deleting this one.",
+    "confirmTitle": "Delete \"{{name}}\"?",
+    "confirmDescription": "This will permanently delete this workspace and all its agents. This cannot be undone.",
+    "confirmLabel": "Delete"
+  },
+  "toasts": {
+    "workspaceRenamed": "Workspace renamed",
+    "providerSwitched": "Switched to {{provider}} ({{model}})",
+    "timezoneSet": "Timezone set to {{zone}}"
+  }
+}

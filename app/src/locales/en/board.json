@@ -1,0 +1,18 @@
+{
+  "cardActions": {
+    "run": "Run",
+    "openTerminal": "Open terminal in worktree",
+    "approve": "Approve"
+  },
+  "deleteCard": {
+    "titleWithName": "Delete \"{{name}}\"?",
+    "description": "This item and its history will be permanently removed."
+  },
+  "empty": {
+    "title": "No conversations yet",
+    "description": "Start a new conversation to delegate work to an agent."
+  },
+  "toasts": {
+    "attached": "Attached: {{names}}"
+  }
+}

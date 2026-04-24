@@ -15,6 +15,29 @@ import { Plus } from "lucide-react"
 import type { Routine, RoutineRun } from "./types"
 import { RoutineRow } from "./routine-row"
 
+/**
+ * Optional translated labels. English defaults so existing callers still
+ * work. Consumers pass `t()` results for localization — `ui/` stays
+ * i18n-agnostic per the library-boundary rule.
+ */
+export interface RoutinesGridLabels {
+  loading?: string
+  emptyTitle?: string
+  emptyDescription?: string
+  descriptionShort?: string
+  newRoutine?: string
+}
+
+const DEFAULT_LABELS: Required<RoutinesGridLabels> = {
+  loading: "Loading…",
+  emptyTitle: "Set it and forget it",
+  emptyDescription:
+    "Routines fire on a schedule and only ping you when something actually needs attention.",
+  descriptionShort:
+    "Recurring tasks that fire on schedule and only ping you when something needs attention.",
+  newRoutine: "New routine",
+}
+
 export interface RoutinesGridProps {
   routines: Routine[]
   /** Most recent run per routine, keyed by routine ID. */
@@ -25,6 +48,7 @@ export interface RoutinesGridProps {
   onSelect: (routineId: string) => void
   onCreate?: () => void
   onToggle?: (routineId: string, enabled: boolean) => void
+  labels?: RoutinesGridLabels
 }
 
 export function RoutinesGrid({
@@ -35,7 +59,9 @@ export function RoutinesGrid({
   onSelect,
   onCreate,
   onToggle,
+  labels,
 }: RoutinesGridProps) {
+  const l = { ...DEFAULT_LABELS, ...labels }
   // Sort: enabled first, then alphabetical
   const sorted = [...routines].sort((a, b) => {
     if (a.enabled !== b.enabled) return a.enabled ? -1 : 1
@@ -46,7 +72,7 @@ export function RoutinesGrid({
     return (
       <div className="flex-1 flex items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground animate-pulse">
-          Loading…
+          {l.loading}
         </p>
       </div>
     )
@@ -57,16 +83,15 @@ export function RoutinesGrid({
       <div className="flex-1 min-h-0 overflow-y-auto bg-background">
         <div className="mx-auto max-w-md flex flex-col items-center gap-6 text-center pt-24 px-6">
           <EmptyHeader>
-            <EmptyTitle>Set it and forget it</EmptyTitle>
+            <EmptyTitle>{l.emptyTitle}</EmptyTitle>
             <EmptyDescription>
-              Routines fire on a schedule and only ping you when something
-              actually needs attention.
+              {l.emptyDescription}
             </EmptyDescription>
           </EmptyHeader>
           {onCreate && (
             <Button onClick={onCreate}>
               <Plus className="size-4" />
-              New routine
+              {l.newRoutine}
             </Button>
           )}
         </div>
@@ -80,13 +105,12 @@ export function RoutinesGrid({
         {/* Description + CTA. No page title — tab handles it. */}
         <div className="flex items-center justify-between gap-4 mb-4">
           <p className="text-xs text-muted-foreground max-w-md">
-            Recurring tasks that fire on schedule and only ping you when
-            something needs attention.
+            {l.descriptionShort}
           </p>
           {onCreate && (
             <Button size="sm" onClick={onCreate} className="shrink-0">
               <Plus className="size-3.5" />
-              New routine
+              {l.newRoutine}
             </Button>
           )}
         </div>

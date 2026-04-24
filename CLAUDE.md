@@ -44,6 +44,7 @@ Need specific knowledge? Load on demand:
 - Custom frontend on `houston-engine` (integration reference) → `examples/smartbooks/README.md`
 - Mobile PWA (tunnel, pairing, reactivity) → `docs/mobile-architecture.md` + `docs/relay-operations.md`
 - Updater, analytics, Sentry, env vars, CI → `knowledge-base/production-infra.md`
+- Translating UI strings, namespaces, ui/ labels prop pattern, `t()` rules → `knowledge-base/i18n.md`
 
 Design work? Skills: `/critique` before, `/polish` after. Else `/clarify` (copy), `/distill` (overloaded screen), `/animate` (micro-interactions), `/audit` (a11y).
 
@@ -106,6 +107,7 @@ Ask: "Ready to commit? (yes/no/skip)" **STOP.** Yes → stage specific files, co
 | ui/ | `pnpm typecheck` | — | — |
 | engine/ | — | `cargo test --workspace` | `cargo build --workspace` |
 | app/ | `cd app && pnpm tsc --noEmit` | `cd app/src-tauri && cargo check` | `cd app && pnpm tauri build` |
+| app/ i18n | `cd app && pnpm check-locales` | — | — |
 
 ---
 
@@ -129,6 +131,17 @@ Ask: "Ready to commit? (yes/no/skip)" **STOP.** Yes → stage specific files, co
 - All `.houston/` fetching → TanStack Query + event invalidation. No load-on-mount-only.
 - Agent writes emit events. File watcher catches bypass writes. Both architecturally required.
 - Never build "agent can do X but UI won't show until refresh."
+
+### Internationalization (frontend)
+- Houston ships **en / es / pt**. Every user-facing string flows through `t()` from `react-i18next`. No literal English in JSX text, props, placeholders, aria-labels, toast titles, error messages, or `<Empty>` defaults.
+- New screen / new strings → pick the right namespace under `app/src/locales/<lang>/<ns>.json` (or create one + register in `app/src/lib/i18n.ts` + augment `app/src/types/react-i18next.d.ts`). en is source of truth; es and pt mirror the structure.
+- **`ui/@houston-ai/*` stays i18n-agnostic** per the library boundary. Components take optional `labels?` props with English defaults; the consumer in `app/` passes `t()` results in. Don't import `react-i18next` in `ui/`.
+- Variables: `t("key", { name })`, never string concat. Plurals: `count` API with `_one` / `_other` keys. Embedded markup: `<Trans components={{...}}>`.
+- **No em dashes (`—`)** in user-facing copy. Commas or sentence breaks. Validator enforces this.
+- Spanish = Latin-American neutral (computador, tú). Portuguese = Brazilian (você).
+- Keys are type-checked via `app/src/types/react-i18next.d.ts` augmentation — typos fail at compile time.
+- Pre-commit: `pnpm tsc --noEmit` AND `pnpm check-locales` (catches missing keys, shape drift, placeholder parity, em dashes).
+- See `knowledge-base/i18n.md` for patterns, glossary, and the wiring checklist.
 
 ### Internal code = no backwards compat
 - Types, APIs, Rust modules, TS fns: change = change. No "just in case" keeps.

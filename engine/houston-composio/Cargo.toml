@@ -17,3 +17,7 @@ base64 = "0.22"
 sha2 = "0.10"
 houston-ui-events = { workspace = true }
 houston-db = { workspace = true }
+# Cross-platform home-directory resolution (used by install.rs to locate
+# `~/.composio/composio[.exe]` on macOS/Linux and `%USERPROFILE%\.composio\…`
+# on Windows).
+dirs = "5"

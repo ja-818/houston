@@ -42,7 +42,6 @@ export function subscribeHoustonEvents(handler: (ev: HoustonEvent) => void): Uns
 /**
  * Listen to a raw Tauri event. Use for events that have no engine counterpart:
  * - `app-activated` (OS window resume)
- * - `sync-connection` (internal desktop-local dispatch by `useSyncResponder`)
  */
 export function listenOsEvent<T>(event: string, handler: (ev: T) => void): Unsub {
   let off: Unsub | undefined;

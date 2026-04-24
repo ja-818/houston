@@ -7,6 +7,20 @@ import { createPortal } from "react-dom"
 import { ExternalLink, FolderSearch, Pencil, Trash2 } from "lucide-react"
 import type { FileEntry } from "./types"
 
+export interface FileMenuLabels {
+  open?: string
+  rename?: string
+  reveal?: string
+  delete?: string
+}
+
+const DEFAULT_LABELS: Required<FileMenuLabels> = {
+  open: "Open",
+  rename: "Rename",
+  reveal: "Show in Finder",
+  delete: "Move to Trash",
+}
+
 export function FileMenu({
   file,
   position,
@@ -15,6 +29,7 @@ export function FileMenu({
   onRename,
   onReveal,
   onDelete,
+  labels,
 }: {
   file: FileEntry
   position: { x: number; y: number }
@@ -23,7 +38,9 @@ export function FileMenu({
   onRename?: () => void
   onReveal?: (file: FileEntry) => void
   onDelete?: (file: FileEntry) => void
+  labels?: FileMenuLabels
 }) {
+  const l = { ...DEFAULT_LABELS, ...labels }
   return createPortal(
     <>
       <div
@@ -37,17 +54,17 @@ export function FileMenu({
         onKeyDown={(e) => e.key === "Escape" && onClose()}
       >
         {onOpen && (
-          <MenuItem onClick={() => { onOpen(file); onClose() }} icon={<ExternalLink />} label="Open" />
+          <MenuItem onClick={() => { onOpen(file); onClose() }} icon={<ExternalLink />} label={l.open} />
         )}
         {onRename && (
-          <MenuItem onClick={() => { onRename(); onClose() }} icon={<Pencil />} label="Rename" />
+          <MenuItem onClick={() => { onRename(); onClose() }} icon={<Pencil />} label={l.rename} />
         )}
         {onReveal && (
-          <MenuItem onClick={() => { onReveal(file); onClose() }} icon={<FolderSearch />} label="Show in Finder" />
+          <MenuItem onClick={() => { onReveal(file); onClose() }} icon={<FolderSearch />} label={l.reveal} />
         )}
         {(onOpen || onRename || onReveal) && onDelete && <div className="-mx-1 my-1 h-px bg-border" />}
         {onDelete && (
-          <MenuItem onClick={() => { onDelete(file); onClose() }} icon={<Trash2 />} label="Move to Trash" destructive />
+          <MenuItem onClick={() => { onDelete(file); onClose() }} icon={<Trash2 />} label={l.delete} destructive />
         )}
       </div>
     </>,

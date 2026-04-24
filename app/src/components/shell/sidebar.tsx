@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { LayoutDashboard, Blend, Settings, Smartphone } from "lucide-react";
 import { Badge, ConfirmDialog } from "@houston-ai/core";
 import { AppSidebar, WorkspaceSwitcher } from "@houston-ai/layout";
@@ -13,6 +14,7 @@ import { PairDeviceDialog } from "./pair-device-dialog";
 import { CreateWorkspaceDialog } from "../../App";
 
 export function Sidebar({ children }: { children: ReactNode }) {
+  const { t } = useTranslation(["shell", "common"]);
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const currentWorkspace = useWorkspaceStore((s) => s.current);
   const setCurrentWorkspace = useWorkspaceStore((s) => s.setCurrent);
@@ -88,9 +90,9 @@ export function Sidebar({ children }: { children: ReactNode }) {
     <ConfirmDialog
       open={pendingDeleteId !== null}
       onOpenChange={(open) => { if (!open) setPendingDeleteId(null); }}
-      title="Delete agent?"
-      description="This will permanently delete the agent and all its data. This cannot be undone."
-      confirmLabel="Delete"
+      title={t("shell:agentDelete.title")}
+      description={t("shell:agentDelete.description")}
+      confirmLabel={t("common:actions.delete")}
       onConfirm={confirmDelete}
     />
     <CreateWorkspaceDialog open={createWsOpen} onOpenChange={setCreateWsOpen} />
@@ -101,7 +103,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
           <WorkspaceSwitcher
             workspaces={workspaces}
             currentId={currentWorkspace?.id ?? null}
-            currentName={currentWorkspace?.name ?? "Select workspace"}
+            currentName={currentWorkspace?.name ?? t("shell:sidebar.selectWorkspace")}
             onSwitch={handleWorkspaceSwitch}
             onCreate={handleCreateWorkspace}
           />
@@ -109,25 +111,25 @@ export function Sidebar({ children }: { children: ReactNode }) {
         navItems={[
           {
             id: "dashboard",
-            label: "Mission Control",
+            label: t("shell:sidebar.missionControl"),
             icon: <LayoutDashboard className="h-4 w-4" />,
             onClick: () => setViewMode("dashboard"),
           },
           {
             id: "connections",
-            label: "Integrations",
+            label: t("shell:sidebar.integrations"),
             icon: <Blend className="h-4 w-4" />,
             onClick: () => setViewMode("connections"),
           },
           {
             id: "settings",
-            label: "Settings",
+            label: t("shell:sidebar.settings"),
             icon: <Settings className="h-4 w-4" />,
             onClick: () => setViewMode("settings"),
           },
           {
             id: "connect-phone",
-            label: "Connect phone",
+            label: t("shell:sidebar.connectPhone"),
             icon: <Smartphone className="h-4 w-4" />,
             trailing: (
               <Badge
@@ -141,7 +143,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
           },
         ]}
         activeNavId={isTopLevel ? viewMode : undefined}
-        sectionLabel="Your Agents"
+        sectionLabel={t("shell:sidebar.yourAgents")}
         items={items}
         selectedId={!isTopLevel ? currentAgent?.id ?? null : null}
         onSelect={handleSelectAgent}

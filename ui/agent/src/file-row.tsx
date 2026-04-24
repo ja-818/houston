@@ -10,7 +10,7 @@ import type { FolderNode } from "./tree"
 import { INTERNAL_DRAG_TYPE, useFolderDropTarget } from "./drop-zone"
 import { FolderIcon, DisclosureChevron, getFileIcon } from "./finder-icons"
 import { formatSize, formatFinderDate, getKind } from "./utils"
-import { FileMenu } from "./file-menu"
+import { FileMenu, type FileMenuLabels } from "./file-menu"
 
 const DEPTH_INDENT = 20
 const BASE_INDENT = 12
@@ -21,7 +21,7 @@ export const COL_GRID = "1fr 190px 80px 130px"
 
 export function FolderSection({
   node, depth, selectedPath, onSelect, onOpen, onReveal, onDelete,
-  onRename, onFilesDropped, onDragActive, onMove,
+  onRename, onFilesDropped, onDragActive, onMove, menuLabels,
 }: {
   node: FolderNode
   depth: number
@@ -34,6 +34,7 @@ export function FolderSection({
   onFilesDropped?: (files: File[], targetFolder?: string) => void
   onDragActive?: (folder: string | null) => void
   onMove?: (sourcePath: string, targetFolder: string | null) => void
+  menuLabels?: FileMenuLabels
 }) {
   const [open, setOpen] = useState(true)
   const [dragging, setDragging] = useState(false)
@@ -81,6 +82,7 @@ export function FolderSection({
               onOpen={onOpen} onReveal={onReveal} onDelete={onDelete}
               onRename={onRename}
               onFilesDropped={onFilesDropped} onDragActive={onDragActive} onMove={onMove}
+              menuLabels={menuLabels}
             />
           ) : (
             <FileRow
@@ -88,6 +90,7 @@ export function FolderSection({
               selected={selectedPath === child.entry.path}
               onSelect={onSelect} onOpen={onOpen}
               onReveal={onReveal} onDelete={onDelete} onRename={onRename} onMove={onMove}
+              menuLabels={menuLabels}
             />
           ),
         )}
@@ -96,7 +99,7 @@ export function FolderSection({
 }
 
 export function FileRow({
-  file, depth = 0, selected, onSelect, onOpen, onReveal, onDelete, onRename, onMove,
+  file, depth = 0, selected, onSelect, onOpen, onReveal, onDelete, onRename, onMove, menuLabels,
 }: {
   file: FileEntry
   depth?: number
@@ -107,6 +110,7 @@ export function FileRow({
   onDelete?: (file: FileEntry) => void
   onRename?: (file: FileEntry, newName: string) => void
   onMove?: (sourcePath: string, targetFolder: string | null) => void
+  menuLabels?: FileMenuLabels
 }) {
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const [dragging, setDragging] = useState(false)
@@ -191,6 +195,7 @@ export function FileRow({
           file={file} position={menu}
           onClose={() => setMenu(null)}
           onOpen={onOpen} onRename={onRename ? startRename : undefined} onReveal={onReveal} onDelete={onDelete}
+          labels={menuLabels}
         />
       )}
     </>

@@ -4,16 +4,16 @@ use std::path::{Path, PathBuf};
 
 /// Expand a leading `~` to the user's home directory. Mirrors the Tauri-side
 /// helper so REST callers can submit `~/Documents/Houston/...` paths verbatim.
+///
+/// Cross-platform: uses `dirs::home_dir()` instead of `$HOME` so Windows
+/// (which sets `%USERPROFILE%` and not `HOME`) also resolves correctly.
 pub fn expand_tilde(path: &Path) -> PathBuf {
     if path.starts_with("~") {
-        if let Ok(home) = std::env::var("HOME") {
-            PathBuf::from(home).join(path.strip_prefix("~").unwrap_or(path))
-        } else {
-            path.to_path_buf()
+        if let Some(home) = dirs::home_dir() {
+            return home.join(path.strip_prefix("~").unwrap_or(path));
         }
-    } else {
-        path.to_path_buf()
     }
+    path.to_path_buf()
 }
 
 #[derive(Clone, Debug)]

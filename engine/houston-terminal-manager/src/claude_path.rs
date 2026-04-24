@@ -3,9 +3,16 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 /// The user's full login-shell PATH, resolved once at startup.
-/// macOS .app bundles get a minimal PATH (/usr/bin:/bin:/usr/sbin:/sbin),
-/// so we ask the user's login shell for the real one AND check common
-/// install locations as fallback.
+///
+/// On Unix (macOS in particular) a `.app` bundle gets a minimal PATH
+/// (`/usr/bin:/bin:/usr/sbin:/sbin`), so we ask the user's login shell
+/// for the real one AND check common install locations as fallback.
+///
+/// On Windows the engine inherits the full user PATH from the process
+/// that launched it (Explorer, Task Scheduler, the Tauri app), so the
+/// shell-resolution dance isn't needed; we still augment with common
+/// install directories in case `claude`/`codex` are installed to user
+/// locations that PATH happens not to include.
 static SHELL_PATH: OnceLock<Option<OsString>> = OnceLock::new();
 
 /// Common locations where `claude` and related CLIs might be installed.
@@ -14,6 +21,13 @@ static SHELL_PATH: OnceLock<Option<OsString>> = OnceLock::new();
 /// Houston's spawned agents can use `composio search`/`composio execute`
 /// via Bash even when the user's login shell hasn't sourced the PATH
 /// modification the Composio installer appends to rc files.
+///
+/// The `~` is expanded against `dirs::home_dir()` so the same list works
+/// on Linux/macOS (expanding to `/Users/x` or `/home/x`) and on Windows
+/// (expanding to `C:\Users\x`). The trailing Windows-specific entries
+/// cover where `npm.cmd`/`claude.cmd` typically land on a default
+/// Node.js install.
+#[cfg(unix)]
 const COMMON_CLAUDE_DIRS: &[&str] = &[
     "~/.local/bin",
     "/opt/homebrew/bin",
@@ -22,56 +36,57 @@ const COMMON_CLAUDE_DIRS: &[&str] = &[
     "~/.composio",
 ];
 
+#[cfg(windows)]
+const COMMON_CLAUDE_DIRS: &[&str] = &[
+    "~\\.cargo\\bin",
+    "~\\.composio",
+    "~\\AppData\\Roaming\\npm",
+    "~\\AppData\\Local\\Programs\\claude",
+];
+
 /// Resolve the user's login shell PATH and cache it.
 /// Call this once at startup before spawning any CLI processes.
 pub fn init() {
     SHELL_PATH.get_or_init(|| {
-        let mut path = resolve_login_shell_path();
+        // Unix: ask the login shell for PATH (macOS `.app` bundle env is
+        // stripped). Windows: start from the inherited process PATH.
+        #[cfg(unix)]
+        let shell_resolved = resolve_login_shell_path()
+            .or_else(resolve_interactive_shell_path);
+        #[cfg(not(unix))]
+        let shell_resolved: Option<OsString> = None;
 
-        // Also try interactive shell (reads .zshrc, not just .zprofile)
-        if path.is_none() {
-            path = resolve_interactive_shell_path();
-        }
+        let mut final_path =
+            shell_resolved.unwrap_or_else(|| std::env::var_os("PATH").unwrap_or_default());
 
-        // Append common dirs that might not be in the shell PATH
-        let mut final_path = path.unwrap_or_else(|| {
-            std::env::var_os("PATH").unwrap_or_default()
-        });
-
-        let home = std::env::var("HOME").unwrap_or_default();
+        // Expand `~` against the user home directory using the cross-platform
+        // `dirs` resolver (HOME on Unix, USERPROFILE on Windows). Falls back
+        // to the raw prefix if home can't be resolved — the directory check
+        // will simply fail, and we'll skip it.
+        let home: PathBuf = dirs::home_dir().unwrap_or_else(|| PathBuf::from("~"));
         for dir in COMMON_CLAUDE_DIRS {
-            let expanded = dir.replace('~', &home);
-            let expanded_path = PathBuf::from(&expanded);
+            let expanded_path = expand_home(dir, &home);
             if expanded_path.is_dir() {
-                // Append if not already in PATH
-                let current = final_path.to_string_lossy();
-                if !current.contains(&expanded) {
-                    let mut new_path = final_path.into_string().unwrap_or_default();
-                    new_path.push(':');
-                    new_path.push_str(&expanded);
-                    final_path = OsString::from(new_path);
-                }
+                append_path(&mut final_path, &expanded_path);
             }
         }
 
-        // Also check for nvm-installed node (claude/codex are often installed via npm)
-        let nvm_dir = PathBuf::from(&home).join(".nvm/versions/node");
-        if nvm_dir.is_dir() {
-            if let Ok(entries) = std::fs::read_dir(&nvm_dir) {
-                for entry in entries.flatten() {
-                    let bin = entry.path().join("bin");
-                    let has_cli = bin.join("claude").is_file()
-                        || bin.join("codex").is_file();
-                    if has_cli {
-                        let bin_str = bin.to_string_lossy();
-                        let current = final_path.to_string_lossy();
-                        if !current.contains(bin_str.as_ref()) {
-                            let mut new_path = final_path.into_string().unwrap_or_default();
-                            new_path.push(':');
-                            new_path.push_str(&bin_str);
-                            final_path = OsString::from(new_path);
+        // Also check for nvm-installed node (claude/codex are often installed
+        // via npm). Only meaningful on Unix — nvm on Windows is a different
+        // layout (nvm-windows uses `%APPDATA%\nvm\v<ver>\`).
+        #[cfg(unix)]
+        {
+            let nvm_dir = home.join(".nvm/versions/node");
+            if nvm_dir.is_dir() {
+                if let Ok(entries) = std::fs::read_dir(&nvm_dir) {
+                    for entry in entries.flatten() {
+                        let bin = entry.path().join("bin");
+                        let has_cli = bin.join("claude").is_file()
+                            || bin.join("codex").is_file();
+                        if has_cli {
+                            append_path(&mut final_path, &bin);
+                            break;
                         }
-                        break;
                     }
                 }
             }
@@ -97,19 +112,74 @@ pub fn is_claude_available() -> bool {
 }
 
 /// Check if a command is available using the resolved PATH.
+///
+/// On Windows we also check `<name>.exe`, `<name>.cmd`, `<name>.bat` — the
+/// common extensions that `PATHEXT` covers — so both `claude` (bare) and
+/// `claude.cmd` (npm-shim install) resolve.
 pub fn is_command_available(command: &str) -> bool {
     let path_val = shell_path();
     let dirs = std::env::split_paths(&path_val);
     for dir in dirs {
-        let candidate = dir.join(command);
-        if candidate.is_file() {
+        if dir.join(command).is_file() {
             return true;
+        }
+        #[cfg(windows)]
+        {
+            for ext in ["exe", "cmd", "bat", "ps1"] {
+                if dir.join(format!("{command}.{ext}")).is_file() {
+                    return true;
+                }
+            }
         }
     }
     false
 }
 
+/// Append `dir` to `base` using the platform-appropriate PATH separator
+/// (`:` on Unix, `;` on Windows), skipping if already present. Uses
+/// `std::env::join_paths` so we never hand-roll separator logic.
+fn append_path(base: &mut OsString, dir: &std::path::Path) {
+    let dir_str = dir.to_string_lossy();
+    let current = base.to_string_lossy();
+    if current
+        .split(PATH_SEP)
+        .any(|segment| segment == dir_str.as_ref())
+    {
+        return;
+    }
+    let mut parts: Vec<PathBuf> = std::env::split_paths(base).collect();
+    parts.push(dir.to_path_buf());
+    match std::env::join_paths(&parts) {
+        Ok(joined) => *base = joined,
+        Err(e) => {
+            tracing::debug!(
+                "[claude_path] join_paths failed for {}: {}",
+                dir.display(),
+                e
+            );
+        }
+    }
+}
+
+/// Expand a leading `~` (with either `/` or `\\` separator) against the
+/// user home directory. Leaves other paths unchanged.
+fn expand_home(dir: &str, home: &std::path::Path) -> PathBuf {
+    if let Some(rest) = dir.strip_prefix("~/") {
+        return home.join(rest);
+    }
+    if let Some(rest) = dir.strip_prefix("~\\") {
+        return home.join(rest);
+    }
+    PathBuf::from(dir)
+}
+
+#[cfg(unix)]
+const PATH_SEP: char = ':';
+#[cfg(windows)]
+const PATH_SEP: char = ';';
+
 /// Ask the user's login shell for its PATH (reads .zprofile).
+#[cfg(unix)]
 fn resolve_login_shell_path() -> Option<OsString> {
     for shell in &["/bin/zsh", "/bin/bash"] {
         if let Some(path) = path_from_shell(shell, &["-l", "-c", "echo $PATH"]) {
@@ -121,6 +191,7 @@ fn resolve_login_shell_path() -> Option<OsString> {
 
 /// Ask the user's interactive shell for its PATH (reads .zshrc).
 /// This catches cases where PATH is set in .zshrc but not .zprofile.
+#[cfg(unix)]
 fn resolve_interactive_shell_path() -> Option<OsString> {
     for shell in &["/bin/zsh", "/bin/bash"] {
         if let Some(path) = path_from_shell(shell, &["-i", "-c", "echo $PATH"]) {
@@ -130,6 +201,7 @@ fn resolve_interactive_shell_path() -> Option<OsString> {
     None
 }
 
+#[cfg(unix)]
 fn path_from_shell(shell: &str, args: &[&str]) -> Option<String> {
     let output = std::process::Command::new(shell)
         .args(args)
@@ -145,4 +217,68 @@ fn path_from_shell(shell: &str, args: &[&str]) -> Option<String> {
         }
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn expand_home_handles_both_separators() {
+        let home = Path::new("/home/alice");
+        assert_eq!(expand_home("~/foo/bar", home), home.join("foo/bar"));
+        assert_eq!(expand_home("~\\foo\\bar", home), home.join("foo\\bar"));
+        assert_eq!(
+            expand_home("/etc/passwd", home),
+            PathBuf::from("/etc/passwd")
+        );
+    }
+
+    #[test]
+    fn append_path_is_idempotent() {
+        let initial = if cfg!(windows) {
+            OsString::from("C:\\a;C:\\b")
+        } else {
+            OsString::from("/a:/b")
+        };
+        let mut p = initial.clone();
+        let existing = if cfg!(windows) {
+            PathBuf::from("C:\\a")
+        } else {
+            PathBuf::from("/a")
+        };
+        append_path(&mut p, &existing);
+        assert_eq!(p, initial);
+    }
+
+    #[test]
+    fn append_path_uses_platform_separator() {
+        let mut p = if cfg!(windows) {
+            OsString::from("C:\\a")
+        } else {
+            OsString::from("/a")
+        };
+        let new_dir = if cfg!(windows) {
+            PathBuf::from("C:\\b")
+        } else {
+            PathBuf::from("/b")
+        };
+        append_path(&mut p, &new_dir);
+        let expected = if cfg!(windows) {
+            OsString::from("C:\\a;C:\\b")
+        } else {
+            OsString::from("/a:/b")
+        };
+        assert_eq!(p, expected);
+    }
+
+    #[test]
+    fn is_command_available_returns_false_for_garbage() {
+        // Using a long random name that can't exist anywhere in PATH —
+        // keeps the test stable across platforms.
+        assert!(!is_command_available(
+            "definitely-not-a-real-binary-xyz-zzz-houston-test"
+        ));
+    }
 }

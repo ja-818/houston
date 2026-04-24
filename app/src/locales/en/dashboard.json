@@ -1,0 +1,30 @@
+{
+  "title": "Mission Control",
+  "filter": {
+    "allAgents": "All agents"
+  },
+  "columns": {
+    "running": "Running",
+    "needsYou": "Needs you",
+    "done": "Done"
+  },
+  "empty": {
+    "boardTitle": "No conversations yet",
+    "boardDescription": "Start a new conversation to delegate work to an agent.",
+    "newMission": "New mission"
+  },
+  "noAgents": {
+    "title": "No agents yet",
+    "description": "Build your AI team and ship the impossible.",
+    "cta": "New Agent"
+  },
+  "newMissionDialog": {
+    "title": "New conversation",
+    "description": "Pick an agent and describe what it should do.",
+    "agentLabel": "Agent",
+    "agentPlaceholder": "Select an agent...",
+    "promptLabel": "Prompt",
+    "promptPlaceholder": "What should the agent work on?",
+    "submit": "Start conversation"
+  }
+}

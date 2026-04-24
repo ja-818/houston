@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, Spinner } from "@houston-ai/core";
 import { useUIStore } from "../../stores/ui";
 import { tauriProvider } from "../../lib/tauri";
 import { getProvider } from "../../lib/providers";
 
 export function ProviderReconnectCard() {
+  const { t } = useTranslation(["shell", "common"]);
   const authRequired = useUIStore((s) => s.authRequired);
   const setAuthRequired = useUIStore((s) => s.setAuthRequired);
   const [loginLaunched, setLoginLaunched] = useState(false);
@@ -52,11 +54,10 @@ export function ProviderReconnectCard() {
 
           {/* Copy */}
           <p className="text-[15px] font-semibold text-foreground mb-1">
-            Session expired
+            {t("shell:providerReconnect.title")}
           </p>
           <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-            Your {provider.subtitle} connection ended — this happens
-            from time to time. Sign back in and you're good to go.
+            {t("shell:providerReconnect.body", { provider: provider.subtitle })}
           </p>
 
           {/* Action */}
@@ -71,19 +72,19 @@ export function ProviderReconnectCard() {
               ) : (
                 <OpenAILogoSmall />
               )}
-              Reconnect to {provider.subtitle}
+              {t("shell:providerReconnect.reconnect", { provider: provider.subtitle })}
             </Button>
           ) : (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Spinner className="h-3.5 w-3.5" />
-                <span>Waiting for browser sign-in...</span>
+                <span>{t("shell:providerReconnect.waiting")}</span>
               </div>
               <button
                 onClick={handleSignIn}
                 className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
               >
-                Try again
+                {t("common:actions.tryAgain")}
               </button>
             </div>
           )}

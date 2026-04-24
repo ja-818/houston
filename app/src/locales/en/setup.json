@@ -1,0 +1,18 @@
+{
+  "welcome": {
+    "title": "Welcome to Houston",
+    "tagline": "Ship the impossible.",
+    "getStarted": "Get started"
+  },
+  "name": {
+    "title": "Name your workspace",
+    "description": "Workspaces keep your agents organized, one for personal, one for work, etc.",
+    "placeholder": "e.g. Personal, Work, Acme Corp"
+  },
+  "provider": {
+    "title": "Connect your AI",
+    "description": "Houston uses <emph>your own</emph> subscription. We never see your credentials.",
+    "finishPage": "Get started",
+    "finishDialog": "Create workspace"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "cardActions": {
+    "run": "Executar",
+    "openTerminal": "Abrir o terminal no worktree",
+    "approve": "Aprovar"
+  },
+  "deleteCard": {
+    "titleWithName": "Excluir \"{{name}}\"?",
+    "description": "Este item e seu histórico serão removidos de forma permanente."
+  },
+  "empty": {
+    "title": "Ainda sem conversas",
+    "description": "Comece uma conversa nova para delegar trabalho a um agente."
+  },
+  "toasts": {
+    "attached": "Anexou: {{names}}"
+  }
+}

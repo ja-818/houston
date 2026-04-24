@@ -1,0 +1,30 @@
+{
+  "composer": {
+    "placeholder": "Ask anything..."
+  },
+  "empty": {
+    "title": "Start a conversation",
+    "description": "Type a message to talk to your assistant."
+  },
+  "errors": {
+    "sessionStart": "Failed to start session: {{error}}"
+  },
+  "composio": {
+    "integration": "Composio integration",
+    "alreadyConnected": "Already connected",
+    "connected": "Connected",
+    "connect": "Connect"
+  },
+  "modelSelector": {
+    "selectModel": "Select model",
+    "model": "Model",
+    "notConnected": "Not connected"
+  },
+  "reasoning": {
+    "thinking": "Thinking...",
+    "thoughtFor": "Thought for {{count}} seconds",
+    "thoughtForFew": "Thought for a few seconds"
+  },
+  "filesUpdated_one": "1 file updated",
+  "filesUpdated_other": "{{count}} files updated"
+}

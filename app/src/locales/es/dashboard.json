@@ -1,0 +1,30 @@
+{
+  "title": "Centro de misiones",
+  "filter": {
+    "allAgents": "Todos los agentes"
+  },
+  "columns": {
+    "running": "En curso",
+    "needsYou": "Necesita tu atención",
+    "done": "Listo"
+  },
+  "empty": {
+    "boardTitle": "Aún no hay conversaciones",
+    "boardDescription": "Inicia una conversación nueva para delegarle trabajo a un agente.",
+    "newMission": "Nueva misión"
+  },
+  "noAgents": {
+    "title": "Aún no tienes agentes",
+    "description": "Arma tu equipo de IA y haz lo imposible.",
+    "cta": "Nuevo agente"
+  },
+  "newMissionDialog": {
+    "title": "Nueva conversación",
+    "description": "Elige un agente y describe qué debe hacer.",
+    "agentLabel": "Agente",
+    "agentPlaceholder": "Selecciona un agente...",
+    "promptLabel": "Indicación",
+    "promptPlaceholder": "¿En qué quieres que trabaje el agente?",
+    "submit": "Iniciar conversación"
+  }
+}

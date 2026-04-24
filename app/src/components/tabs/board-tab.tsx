@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanItem } from "@houston-ai/board";
@@ -57,6 +58,20 @@ function PanelAvatar({ color, isRunning }: { color?: string; isRunning: boolean 
 }
 
 export default function BoardTab({ agent, agentDef }: TabProps) {
+  const { t } = useTranslation(["board", "dashboard"]);
+  const cardLabels = {
+    approve: t("board:cardActions.approve"),
+    deleteTitle: (name: string) => t("board:deleteCard.titleWithName", { name }),
+    deleteDescription: t("board:deleteCard.description"),
+  };
+  // Mirror Mission Control's columns so the tab and dashboard stay in
+  // sync. Without an explicit `columns` prop AIBoard falls back to its
+  // hardcoded English defaults.
+  const boardColumns = [
+    { id: "running", label: t("dashboard:columns.running"), statuses: ["running"] },
+    { id: "needs_you", label: t("dashboard:columns.needsYou"), statuses: ["needs_you"] },
+    { id: "done", label: t("dashboard:columns.done"), statuses: ["done", "cancelled"] },
+  ];
   const panelContainer = useDetailPanelContainer();
   const path = agent.folderPath;
   const agentModes = agentDef.config.agents;
@@ -399,14 +414,14 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         <button
           onClick={(e) => { e.stopPropagation(); handleRunInTerminal(item); }}
           className="flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-secondary text-foreground text-[10px] font-medium hover:bg-accent transition-colors duration-200"
-          title="Open terminal in worktree"
+          title={t("cardActions.openTerminal")}
         >
           <Terminal className="size-2.5" />
-          Run
+          {t("cardActions.run")}
         </button>
       );
     },
-    [handleRunInTerminal],
+    [handleRunInTerminal, t],
   );
 
   const panelActions = useCallback(
@@ -426,21 +441,22 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           <button
             onClick={() => handleRunInTerminal(item)}
             className="flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-secondary text-foreground text-[10px] font-medium hover:bg-accent transition-colors duration-200"
-            title="Open terminal in worktree"
+            title={t("cardActions.openTerminal")}
           >
             <Terminal className="size-2.5" />
-            Run
+            {t("cardActions.run")}
           </button>
         </div>
       );
     },
-    [handleRunInTerminal],
+    [handleRunInTerminal, t],
   );
 
   return (
     <div className="flex flex-col h-full">
     <AIBoard
       items={items}
+      columns={boardColumns}
       selectedId={selectedId}
       onSelect={setSelectedId}
       panelContainer={panelContainer}
@@ -486,6 +502,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           isRunning={(rawItems ?? []).some((a) => a.id === selectedId && a.status === "running")}
         />
       }
+      cardLabels={cardLabels}
     />
     </div>
   );

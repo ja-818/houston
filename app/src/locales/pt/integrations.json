@@ -1,0 +1,52 @@
+{
+  "title": "Integrações",
+  "loading": {
+    "title": "Carregando suas integrações",
+    "body": "Verificando o estado do Composio…"
+  },
+  "notInstalled": {
+    "title": "Conecte seus apps",
+    "body": "O Houston usa a ferramenta do Composio para deixar seu agente usar Gmail, Slack, Google Drive e mais de 100 serviços por você. Instalação única, cerca de 80 MB.",
+    "install": "Instalar o Composio",
+    "installing": "Instalando…"
+  },
+  "needsAuth": {
+    "title": "Conecte-se ao Composio",
+    "body": "Entre no Composio para seu agente poder usar Gmail, Slack, Google Drive e mais de 100 serviços por você.",
+    "signIn": "Entrar no Composio"
+  },
+  "error": {
+    "title": "Não foi possível carregar as integrações",
+    "retry": "Tentar de novo",
+    "openDashboard": "Abrir o painel do Composio"
+  },
+  "connected": {
+    "title": "Conectados",
+    "count_one": "{{count}} app",
+    "count_other": "{{count}} apps",
+    "manageOn": "Gerenciar {{name}} no Composio",
+    "dotAria": "Conectado"
+  },
+  "browse": {
+    "title": "Ver todos os apps",
+    "count_one": "{{count}} app",
+    "count_other": "{{count}} apps",
+    "searchPlaceholder": "Buscar apps...",
+    "allCategories": "Todas as categorias",
+    "noResults": "Nenhum app corresponde à busca.",
+    "loadMoreWithRemaining": "Carregar mais ({{count}} restantes)",
+    "connectTitle": "Conectar {{name}}"
+  },
+  "authDialog": {
+    "title": "Conectando ao Composio",
+    "description": "Conclua o login no navegador e volte para cá.",
+    "waiting": "Aguardando sua aprovação no navegador…",
+    "openInBrowser": "Abrir link no navegador"
+  },
+  "linkCard": {
+    "integration": "Integração do Composio",
+    "alreadyConnected": "Já conectado",
+    "connected": "Conectado",
+    "connect": "Conectar"
+  }
+}

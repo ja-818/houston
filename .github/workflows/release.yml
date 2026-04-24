@@ -61,8 +61,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Setup Rust
+      - name: Setup Rust (universal macOS targets)
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Cache Rust artifacts
         uses: actions/cache@v4
@@ -71,37 +73,53 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             app/src-tauri/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+          key: ${{ runner.os }}-cargo-universal-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-universal-
 
       - name: Write Apple API key to disk
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
           echo "${{ secrets.APPLE_API_KEY_CONTENT }}" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
 
-      # Build the engine sidecar BEFORE the Tauri app build. The app's
-      # `build.rs` stages `target/release/houston-engine` into
-      # `src-tauri/binaries/houston-engine-<triple>` for Tauri's `externalBin`
-      # to bundle. Without this step the Tauri build fails with
-      # `resource path 'binaries/houston-engine-...' doesn't exist` — which
-      # silently broke v0.3.3's release pipeline.
-      - name: Build houston-engine sidecar
+      # Build the engine sidecar for BOTH macOS architectures BEFORE the
+      # Tauri app build.
+      #
+      # Tauri's universal-apple-darwin build invokes cargo once per real
+      # triple (aarch64 + x86_64) and expects per-triple sidecars at
+      # `src-tauri/binaries/houston-engine-<triple>`. `build.rs` copies them
+      # there, but it needs the underlying binary to exist for the triple
+      # cargo is currently compiling for. So we build BOTH up front.
+      #
+      # Shipping an Intel-only or arm64-only engine would break half of our
+      # Mac users — so a missing triple fails hard here rather than producing
+      # a silently-broken DMG.
+      - name: Build houston-engine sidecar (aarch64 + x86_64)
         run: |
-          TRIPLE="aarch64-apple-darwin"
-          cargo build --release --target "$TRIPLE" -p houston-engine-server
-          # The target-specific cargo output lives at `target/<triple>/release/`.
-          # `build.rs` also looks at `target/release/` (no triple) so mirror the
-          # binary there so both paths resolve.
-          mkdir -p target/release
-          cp "target/$TRIPLE/release/houston-engine" target/release/houston-engine
-          ls -la target/release/houston-engine "target/$TRIPLE/release/houston-engine"
+          set -euo pipefail
+          for TRIPLE in aarch64-apple-darwin x86_64-apple-darwin; do
+            echo "=== Building houston-engine for $TRIPLE ==="
+            cargo build --release --target "$TRIPLE" -p houston-engine-server
+            test -x "target/$TRIPLE/release/houston-engine" \
+              || { echo "::error::engine binary missing for $TRIPLE"; exit 1; }
+          done
+          ls -la \
+            target/aarch64-apple-darwin/release/houston-engine \
+            target/x86_64-apple-darwin/release/houston-engine
 
       # Build only — no release creation (no tagName).
       # tauri-action handles certificate import, code signing, .app notarization + stapling.
-      - name: Build Tauri app
+      #
+      # `--target universal-apple-darwin` produces one .app / .dmg whose
+      # binaries are fat (arm64 + x86_64). Tauri invokes cargo twice under
+      # the hood — once per real triple — and lipos the outputs. Our engine
+      # sidecar is handled the same way via the per-triple
+      # `binaries/houston-engine-<triple>` files staged by `build.rs`.
+      # Bundle output lands under `target/universal-apple-darwin/release/bundle/`.
+      - name: Build Tauri app (universal)
         uses: tauri-apps/tauri-action@v0
         with:
           projectPath: app
+          args: --target universal-apple-darwin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -119,8 +137,10 @@ jobs:
         id: artifacts
         run: |
           # Cargo workspace: target dir is at workspace root, not per-crate.
-          # tauri-action emits bundles under `target/release/bundle/`.
-          BUNDLE="target/release/bundle"
+          # Universal builds emit under `target/universal-apple-darwin/release/bundle/`
+          # (NOT `target/release/bundle/` — that path is only populated by a
+          # default-triple build).
+          BUNDLE="target/universal-apple-darwin/release/bundle"
 
           APP=$(ls -d "$BUNDLE/macos/"*.app 2>/dev/null | head -1)
           DMG=$(ls -t "$BUNDLE/dmg/"*.dmg 2>/dev/null | head -1)
@@ -201,6 +221,18 @@ jobs:
           if ! echo "$FLAGS" | grep -q 'runtime'; then
             echo "::error::sidecar missing hardened runtime flag — required for notarization + subprocess execution"
             codesign -dv "$SIDECAR" 2>&1 || true
+            exit 1
+          fi
+
+          echo "=== 4. Universal (fat) binary — both arm64 + x86_64 ==="
+          LIPO=$(lipo -info "$SIDECAR" 2>&1 || true)
+          echo "$LIPO"
+          if ! echo "$LIPO" | grep -q 'arm64'; then
+            echo "::error::sidecar missing arm64 slice — Apple Silicon users will fail to launch"
+            exit 1
+          fi
+          if ! echo "$LIPO" | grep -q 'x86_64'; then
+            echo "::error::sidecar missing x86_64 slice — Intel Mac users will fail to launch (regression to v0.x universal rollout)"
             exit 1
           fi
 
@@ -350,8 +382,14 @@ jobs:
           SIG=$(cat "${{ steps.artifacts.outputs.sig }}")
           URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$TAR_NAME"
 
-          # Both keys required: darwin-aarch64 (generic) and darwin-aarch64-app (.app bundle).
-          # Tauri updater checks for the -app suffix first, falls back to generic.
+          # Four keys required. We ship ONE universal tarball that runs on
+          # both Apple Silicon and Intel, so every platform key points at the
+          # same URL + signature:
+          #   - darwin-aarch64 / darwin-aarch64-app  (Apple Silicon)
+          #   - darwin-x86_64  / darwin-x86_64-app   (Intel)
+          # Tauri updater checks the `-app` suffix first, then falls back to
+          # generic; Intel users on older Houston installs hit `darwin-x86_64`
+          # and need it present or they never see the update prompt.
           jq -n \
             --arg v "$VERSION" \
             --arg sig "$SIG" \
@@ -368,6 +406,14 @@ jobs:
                   url: $url
                 },
                 "darwin-aarch64-app": {
+                  signature: $sig,
+                  url: $url
+                },
+                "darwin-x86_64": {
+                  signature: $sig,
+                  url: $url
+                },
+                "darwin-x86_64-app": {
                   signature: $sig,
                   url: $url
                 }

@@ -1,5 +1,6 @@
 import { useMemo } from "react"
 import { KanbanColumn } from "./kanban-column"
+import type { KanbanCardLabels } from "./kanban-card"
 import type { KanbanItem, KanbanColumn as KanbanColumnType } from "./types"
 
 export interface KanbanBoardProps {
@@ -16,6 +17,7 @@ export interface KanbanBoardProps {
   approveStatuses?: string[]
   actions?: (item: KanbanItem) => React.ReactNode
   avatar?: React.ReactNode
+  cardLabels?: KanbanCardLabels
 }
 
 export function KanbanBoard({
@@ -31,6 +33,7 @@ export function KanbanBoard({
   approveStatuses,
   actions,
   avatar,
+  cardLabels,
 }: KanbanBoardProps) {
   const columnData = useMemo(() => {
     return columns.map((col) => {
@@ -70,6 +73,7 @@ export function KanbanBoard({
           approveStatuses={approveStatuses}
           actions={actions}
           avatar={avatar}
+          cardLabels={cardLabels}
         />
       ))}
     </div>

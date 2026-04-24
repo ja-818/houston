@@ -35,14 +35,18 @@ git push origin main --tags
 ```
 
 GH Actions (`.github/workflows/release.yml`) takes over:
-1. Builds Tauri app on macOS
-2. Signs w/ Apple Developer ID (`$APPLE_SIGNING_IDENTITY`)
-3. Notarizes `.app` w/ Apple
-4. Creates signed `.dmg`
-5. Generates `latest.json` for auto-updater
-6. Creates **draft** GH Release w/ all artifacts
+1. Builds `houston-engine` for BOTH `aarch64-apple-darwin` AND `x86_64-apple-darwin`
+2. Builds Tauri app w/ `--target universal-apple-darwin` (one fat `.app`)
+3. Signs w/ Apple Developer ID (`$APPLE_SIGNING_IDENTITY`)
+4. Notarizes `.app` w/ Apple
+5. Creates signed `.dmg`
+6. Verifies engine sidecar is lipo'd fat (arm64 + x86_64 both present)
+7. Generates `latest.json` w/ `darwin-aarch64*` AND `darwin-x86_64*` keys
+8. Creates **draft** GH Release w/ all artifacts
 
-Duration: ~10-15 min.
+One DMG covers Apple Silicon + Intel. See `knowledge-base/production-infra.md` → "macOS Universal".
+
+Duration: ~15-20 min (2-arch compile).
 
 **After CI:** GH Releases → review draft → "Publish". Users see "Update available" in-app.
 

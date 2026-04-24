@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChatPanel } from "@houston-ai/chat";
 import type { FeedItem } from "@houston-ai/chat";
 import {
@@ -26,6 +27,7 @@ import { getDefaultModel } from "../../lib/providers";
 import { ProviderReconnectCard } from "../shell/provider-reconnect-card";
 
 export default function ChatTab({ agent }: TabProps) {
+  const { t } = useTranslation("chat");
   const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(agent.folderPath);
   // Free-form chat tab gets its own UUID-scoped session key per agent.
   // Must be stable across renders so streaming events land in the same bucket.
@@ -164,7 +166,7 @@ export default function ChatTab({ agent }: TabProps) {
       } catch (err) {
         pushFeedItem(agentPath, sessionKey, {
           feed_type: "system_message",
-          data: `Failed to start session: ${err}`,
+          data: t("errors.sessionStart", { error: String(err) }),
         });
       } finally {
         setIsLoading(false);
@@ -189,7 +191,7 @@ export default function ChatTab({ agent }: TabProps) {
         renderTurnSummary={renderTurnSummary}
         afterMessages={<ProviderReconnectCard />}
         thinkingIndicator={<HoustonThinkingIndicator />}
-        placeholder="Ask anything..."
+        placeholder={t("composer.placeholder")}
         value={composerText}
         onValueChange={setComposerText}
         attachments={composerFiles}
@@ -206,9 +208,9 @@ export default function ChatTab({ agent }: TabProps) {
         emptyState={
           <Empty className="border-0">
             <EmptyHeader>
-              <EmptyTitle>Start a conversation</EmptyTitle>
+              <EmptyTitle>{t("empty.title")}</EmptyTitle>
               <EmptyDescription>
-                Type a message to talk to your assistant.
+                {t("empty.description")}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
