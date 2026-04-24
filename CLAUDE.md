@@ -42,7 +42,7 @@ Need specific knowledge? Load on demand:
 - Engine wire protocol (REST + WS) → `knowledge-base/engine-protocol.md`
 - `houston-engine` binary ops → `knowledge-base/engine-server.md`
 - Custom frontend on `houston-engine` (integration reference) → `examples/smartbooks/README.md`
-- Desktop ↔ Mobile WS contract → `knowledge-base/sync-protocol.md`
+- Mobile PWA (tunnel, pairing, reactivity) → `docs/mobile-architecture.md` + `docs/relay-operations.md`
 - Updater, analytics, Sentry, env vars, CI → `knowledge-base/production-infra.md`
 - Translating UI strings, namespaces, ui/ labels prop pattern, `t()` rules → `knowledge-base/i18n.md`
 
@@ -171,20 +171,24 @@ Never "You're absolutely right!" if better approach exists. Say it.
 
 ---
 
-## Git
+## Git — Worktree workflow (ALWAYS)
+
+User ALWAYS runs Claude in a per-task worktree. Each task = isolated branch in `.claude/worktrees/<name>/`. Main stays clean.
 
 Branch model:
 - `main` — releasable, protected, PRs only
-- `claude/wip` — working branch, all Claude commits here
-- `feature/*` — optional, big isolated features
+- `claude/<worktree-name>` — the worktree's own branch (auto-created on worktree spawn); commits go here
 
-Before every commit:
-1. `git branch --show-current` → must be `claude/wip`. If `main`, `git checkout claude/wip`.
+End-to-end flow (run without asking, unless a step is destructive and not pre-authorized):
+1. `git branch --show-current` → confirm it's the worktree branch (e.g. `claude/crazy-pare-b3d43d`). Never switch to `claude/wip` or `main`.
 2. Stage specific files. Never `git add -A`.
 3. Conventional commit (`feat:` `fix:` `docs:` `chore:` `refactor:` `style:` `test:`).
-4. `git push origin claude/wip`.
+4. `git push -u origin <worktree-branch>`.
+5. `gh pr create --base main --title "…" --body "…"` — summarise changes, list affected files.
+6. Merge the PR yourself: `gh pr merge --squash --delete-branch`. User does NOT review — they rely on the phase protocol + tests + typecheck to catch issues before commit.
+7. Cleanup (from the main repo checkout, not the worktree): `git worktree remove <path>` is handled by the harness on exit; just ensure the remote branch is deleted by `--delete-branch`.
 
-Merge to main: PR `claude/wip` → `main`, squash. After merge: `git checkout claude/wip && git reset --hard main`.
+Never `git reset --hard` on `main`, never force-push to `main`, never merge without the PR step (even for trivial changes — PR is the audit trail).
 
 ---
 

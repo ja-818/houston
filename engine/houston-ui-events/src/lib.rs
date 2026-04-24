@@ -127,18 +127,6 @@ pub enum HoustonEvent {
     ComposioCliReady,
     /// Composio CLI install or upgrade failed.
     ComposioCliFailed { message: String },
-
-    // ----- Mobile sync (desktop ↔ mobile relay) -----
-
-    /// Connection state transition reported by the sync runner
-    /// (`connected` / `reconnecting` / `disconnected`). Lifted out of
-    /// `SyncMessage` so UI layers can subscribe to state changes
-    /// without filtering the general message stream.
-    SyncConnection { state: String },
-    /// Raw sync message envelope (`{type, from, ts, payload}`) routed
-    /// from the relay. Payload shape is owned by `@houston-ai/sync-protocol`;
-    /// the engine only forwards.
-    SyncMessage { message: serde_json::Value },
 }
 
 // ---------------------------------------------------------------------------

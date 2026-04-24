@@ -13,7 +13,7 @@ Four prod systems. All **dormant by default** — activate only when env vars se
 
 ## Analytics (`@aptabase/web`)
 
-- **Pure JS** — runs in webview, no Rust plugin. Avoids Tokio runtime conflicts. Works in future Capacitor mobile too.
+- **Pure JS** — runs in webview, no Rust plugin. Avoids Tokio runtime conflicts.
 - **Init:** `app/src/lib/analytics.ts` — reads `APTABASE_APP_KEY` via Vite `define` (baked at build time). Empty key → silent no-op.
 - **Debug/Release:** `import.meta.env.DEV` sets `isDebug`. `pnpm tauri dev` events = "Debug" in dashboard. Release = "Release".
 - **Tracked:** `app_launched`, `agent_created`, `chat_message_sent`

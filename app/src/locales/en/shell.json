@@ -4,7 +4,8 @@
     "integrations": "Integrations",
     "settings": "Settings",
     "yourAgents": "Your Agents",
-    "selectWorkspace": "Select workspace"
+    "selectWorkspace": "Select workspace",
+    "connectPhone": "Connect phone"
   },
   "tabActions": {
     "newMission": "New mission"
@@ -82,17 +83,5 @@
   },
   "engineGate": {
     "starting": "Starting Houston engine…"
-  },
-  "mobileSync": {
-    "buttonLabel": "Mobile companion",
-    "dialogTitle": "Connect mobile app",
-    "dialogDescription": "Scan this QR code with the Houston companion app to pair your phone.",
-    "connecting": "Connecting to relay...",
-    "waitingForPhone": "Waiting for phone",
-    "reconnecting": "Reconnecting...",
-    "phoneConnected": "Phone connected",
-    "phoneConnectedBody": "You can close this dialog, the phone will stay paired.",
-    "disconnect": "Disconnect",
-    "tryAgain": "Try again"
   }
 }

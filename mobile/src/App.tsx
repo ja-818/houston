@@ -1,67 +1,110 @@
+// Root. On boot:
+//   1. Read any paired-engine record from localStorage.
+//   2. If paired, initialise the HoustonClient + WS.
+//   3. Route gate: unpaired → /pair; paired → / (missions).
+
+import { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
   Route,
+  Navigate,
   useLocation,
 } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import type { ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MissionControl } from "./components/mission-control";
 import { ChatView } from "./components/chat-view";
-import { useSync } from "./hooks/use-sync";
-import { useAutoConnect } from "./hooks/use-auto-connect";
+import { PairScreen } from "./components/pair-screen";
+import { OfflineBanner } from "./components/offline-banner";
+import { initEngine, stopEngine, useEngineReady } from "./lib/engine";
+import { clearPaired, loadPaired } from "./lib/storage";
+import { useEngineInvalidation } from "./hooks/use-engine-invalidation";
 
-/** Slide-fade wrapper used on each route so navigation feels native. */
-function PageTransition({ children }: { children: ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 8 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -8 }}
-      transition={{ duration: 0.18 }}
-      className="h-full"
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-function AppRoutes() {
-  useSync();
-  useAutoConnect();
-  const location = useLocation();
-
-  return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route
-          path="/"
-          element={
-            <PageTransition>
-              <MissionControl />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/chat/:convoId"
-          element={
-            <PageTransition>
-              <ChatView />
-            </PageTransition>
-          }
-        />
-      </Routes>
-    </AnimatePresence>
-  );
-}
+const qc = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: 2,
+    },
+  },
+});
 
 export function App() {
   return (
-    <BrowserRouter>
-      {/* Mobile-width container — centers the app on desktop browsers */}
-      <div className="mx-auto h-full w-full max-w-[430px] bg-background shadow-lg">
-        <AppRoutes />
-      </div>
-    </BrowserRouter>
+    <QueryClientProvider client={qc}>
+      <BootGate>
+        <BrowserRouter>
+          <div className="mx-auto h-full w-full max-w-[430px] bg-background">
+            <OfflineBanner />
+            <InvalidationPump />
+            <Routes>
+              <Route path="/" element={<RequirePaired><MissionControl /></RequirePaired>} />
+              <Route path="/session/:sessionKey" element={<RequirePaired><ChatView /></RequirePaired>} />
+              <Route path="/pair" element={<PairScreen />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </BootGate>
+    </QueryClientProvider>
   );
+}
+
+function BootGate({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    // `?code=<...>` means the user just landed via a fresh QR — always
+    // re-pair, discarding any previously-stored token. Otherwise a
+    // previously-paired browser would boot straight into the stale
+    // pairing and never even look at the new code.
+    const hasDeepLinkCode = new URLSearchParams(window.location.search).has(
+      "code",
+    );
+    if (hasDeepLinkCode) {
+      clearPaired();
+      stopEngine();
+      setReady(true);
+      return;
+    }
+
+    const paired = loadPaired();
+    if (paired) {
+      try {
+        initEngine(paired);
+      } catch (e) {
+        console.warn("[boot] engine init failed", e);
+        stopEngine();
+      }
+    }
+    setReady(true);
+  }, []);
+
+  if (!ready) {
+    return (
+      <div className="flex h-full items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">Starting Houston…</p>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
+function InvalidationPump() {
+  useEngineInvalidation();
+  return null;
+}
+
+function RequirePaired({ children }: { children: React.ReactNode }) {
+  const loc = useLocation();
+  // Reactive readiness — re-render when pairing completes so the user
+  // is not stuck on `/pair` after redemption finishes.
+  const ready = useEngineReady();
+  if (!ready) {
+    // Preserve the search string (e.g. `?code=<...>` from the QR deep
+    // link) when bouncing to the pair screen. Without this, auto-pairing
+    // never fires because the PairScreen sees an empty search.
+    return <Navigate to={{ pathname: "/pair", search: loc.search }} replace />;
+  }
+  return <>{children}</>;
 }

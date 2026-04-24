@@ -39,6 +39,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history + all tags so the release-notes step can diff
+          # against the previous release tag (`git log <prev>..HEAD`).
+          # Default is shallow depth=1 with no tags, which would make the
+          # notes builder fall through to the HEAD~50 fallback every time.
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -297,6 +304,77 @@ jobs:
             > checksums-sha256.txt
           cat checksums-sha256.txt
 
+      # Resolve `release-notes.md`. Two paths:
+      #
+      # 1. Author-written notes at `.github/release-notes/<version>.md`
+      #    — preferred. Whoever drives the release (Claude in our flow,
+      #    or a human) drops a markdown file alongside the version-bump
+      #    commit, tagged commit, etc. Used verbatim.
+      #
+      # 2. Auto-generated fallback grouping conventional-commit subjects
+      #    in `git log <prev-tag>..HEAD` by prefix:
+      #      Features (feat) / Fixes (fix) / Docs (docs) /
+      #      CI & infra (ci) / Changes (refactor|perf|style|test)
+      #    `chore:` and untyped commits are hidden. Use this when a fast
+      #    hotfix doesn't justify hand-written notes.
+      #
+      # Either way the release stays a draft, so the author can still
+      # polish before publishing.
+      - name: Build release notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          AUTHORED=".github/release-notes/${VERSION}.md"
+
+          if [ -f "$AUTHORED" ]; then
+            echo "Using author-written notes from $AUTHORED"
+            cp "$AUTHORED" release-notes.md
+          else
+            echo "No $AUTHORED — falling back to auto-generated changelog"
+
+            PREV_TAG=$(git tag --sort=-v:refname --list 'v*' | grep -v "^${GITHUB_REF_NAME}$" | head -1)
+            if [ -z "$PREV_TAG" ]; then
+              echo "No previous tag; diffing against HEAD~50"
+              RANGE="HEAD~50..HEAD"
+              COMPARE=""
+            else
+              RANGE="$PREV_TAG..HEAD"
+              COMPARE="**Full changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...${GITHUB_REF_NAME}"
+            fi
+
+            section() {
+              local title="$1"; shift
+              local pattern="$1"; shift
+              local matches
+              matches=$(git log "$RANGE" --no-merges --pretty='- %s' | grep -E "^- ($pattern)(\([^)]+\))?:" || true)
+              if [ -n "$matches" ]; then
+                printf '\n### %s\n\n%s\n' "$title" "$matches"
+              fi
+            }
+
+            {
+              echo "## Houston v$VERSION"
+              section "Features"  "feat"
+              section "Fixes"     "fix"
+              section "Docs"      "docs"
+              section "CI & infra" "ci"
+              section "Changes"   "refactor|perf|style|test"
+              echo
+              # Keep the upgrade reminder everyone needs — drag-install
+              # doesn't reliably replace a running .app.
+              echo "### Before you upgrade"
+              echo ""
+              echo "- Quit Houston before installing. macOS doesn't always replace a running app. If in doubt: \`rm -rf /Applications/Houston.app\` and drag the new copy in."
+              echo ""
+              if [ -n "$COMPARE" ]; then
+                echo "$COMPARE"
+              fi
+            } > release-notes.md
+          fi
+
+          echo "----- release-notes.md -----"
+          cat release-notes.md
+          echo "----- end -----"
+
       - name: Generate updater manifest
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -353,7 +431,7 @@ jobs:
 
           gh release create "$GITHUB_REF_NAME" \
             --title "Houston v$VERSION" \
-            --notes "See the assets to download and install this version." \
+            --notes-file release-notes.md \
             --draft \
             "${{ steps.artifacts.outputs.dmg }}" \
             "${{ steps.artifacts.outputs.tar }}" \
@@ -361,4 +439,4 @@ jobs:
             latest.json \
             checksums-sha256.txt
 
-          echo "::notice::Draft release created — publish at https://github.com/${{ github.repository }}/releases/tag/$GITHUB_REF_NAME"
+          echo "::notice::Draft release created — review notes then publish at https://github.com/${{ github.repository }}/releases/tag/$GITHUB_REF_NAME"

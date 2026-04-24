@@ -1,137 +1,42 @@
-import { useEffect, useState } from "react";
+// Bottom-sheet: pick an agent → open a fresh chat view.
+//
+// Pure client-side. We DON'T create an activity here — that would
+// flash a "New mission" row onto the desktop board the second the
+// user picks an agent, even if they immediately back out. Instead
+// we generate a `draft-<uuid>` session key and hand the chat view a
+// blank canvas. The actual activity (and therefore the desktop row)
+// is created on the first real send. See `chat-view.tsx::handleSend`.
+
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  SYNC_MSG_TYPES,
-  newMsgId,
-  type MissionCreatedPayload,
-  type MissionErrorPayload,
-} from "@houston-ai/sync-protocol";
-import { useMobileStore } from "@/lib/store";
-import { syncClient } from "@/lib/sync-client";
-import type { AgentNameEntry } from "@/lib/types";
-import { NewMissionAgentPicker } from "./new-mission-agent-picker";
-import { NewMissionCompose } from "./new-mission-compose";
+import type { Agent } from "@houston-ai/engine-client";
+import { HoustonAvatar } from "@houston-ai/core";
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  agents: Agent[];
 }
 
-type Step = "pick-agent" | "compose";
+function newDraftKey(): string {
+  const id =
+    globalThis.crypto && "randomUUID" in globalThis.crypto
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `draft-${id}`;
+}
 
-const SEND_TIMEOUT_MS = 15_000;
-
-/**
- * Bottom sheet for starting a new mission from the phone.
- *
- * Two-step flow:
- *   1. pick-agent — list of agents
- *   2. compose    — textarea, send button
- *
- * Send path:
- *   - mint msgId, emit CREATE_MISSION
- *   - wait for MISSION_CREATED (navigate to chat) or MISSION_ERROR (show)
- *   - 15s timeout -> error
- */
-export function NewMissionSheet({ open, onClose }: Props) {
-  const navigate = useNavigate();
-  const agentNames = useMobileStore((s) => s.agentNames);
-  const isConnected = useMobileStore((s) => s.isConnected);
-  const connected = isConnected();
-
-  const [step, setStep] = useState<Step>("pick-agent");
-  const [selectedAgent, setSelectedAgent] = useState<AgentNameEntry | null>(
-    null,
-  );
-  const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
+export function NewMissionSheet({ open, onClose, agents }: Props) {
+  const nav = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
-  // Reset state when the sheet closes.
-  useEffect(() => {
-    if (!open) {
-      setStep("pick-agent");
-      setSelectedAgent(null);
-      setText("");
-      setSending(false);
-      setError(null);
-    }
-  }, [open]);
-
-  // Escape to close.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  function pickAgent(agent: AgentNameEntry) {
-    setSelectedAgent(agent);
-    setStep("compose");
-  }
-
-  function send() {
-    const trimmed = text.trim();
-    if (!trimmed || !selectedAgent || sending) return;
-    if (!connected) {
-      setError("Not connected. Reconnect first.");
-      return;
-    }
-
-    const msgId = newMsgId();
-    setSending(true);
+  function pickAgent(agent: Agent) {
     setError(null);
-
-    const cleanup: Array<() => void> = [];
-    let settled = false;
-
-    const finish = (fn: () => void) => {
-      if (settled) return;
-      settled = true;
-      for (const c of cleanup) c();
-      fn();
-    };
-
-    cleanup.push(
-      syncClient.on(SYNC_MSG_TYPES.MISSION_CREATED, (payload: unknown) => {
-        const p = payload as MissionCreatedPayload;
-        if (p?.msgId !== msgId) return;
-        finish(() => {
-          setSending(false);
-          navigate(`/chat/${p.conversationId}`);
-          onClose();
-        });
-      }),
+    onClose();
+    nav(
+      `/session/${encodeURIComponent(newDraftKey())}?agent=${encodeURIComponent(agent.folderPath)}&new=1`,
     );
-
-    cleanup.push(
-      syncClient.on(SYNC_MSG_TYPES.MISSION_ERROR, (payload: unknown) => {
-        const p = payload as MissionErrorPayload;
-        if (p?.msgId !== msgId) return;
-        finish(() => {
-          setSending(false);
-          setError(p.message || "Could not start the mission.");
-        });
-      }),
-    );
-
-    const timeoutId = window.setTimeout(() => {
-      finish(() => {
-        setSending(false);
-        setError("Connection timed out. Try again.");
-      });
-    }, SEND_TIMEOUT_MS);
-    cleanup.push(() => window.clearTimeout(timeoutId));
-
-    syncClient.send(SYNC_MSG_TYPES.CREATE_MISSION, {
-      agentId: selectedAgent.id,
-      text: trimmed,
-      msgId,
-    });
   }
 
   return (
@@ -143,9 +48,10 @@ export function NewMissionSheet({ open, onClose }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={onClose}
-            aria-hidden="true"
+            onClick={() => {
+              setError(null);
+              onClose();
+            }}
           />
           <motion.div
             className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[85vh] w-full max-w-[430px] flex-col rounded-t-2xl bg-background shadow-2xl safe-bottom"
@@ -153,38 +59,37 @@ export function NewMissionSheet({ open, onClose }: Props) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.35 }}
-            onDragEnd={(_, info) => {
-              if (info.offset.y > 120 || info.velocity.y > 500) onClose();
-            }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="New mission"
           >
             <div className="flex justify-center pt-2 pb-1">
               <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
             </div>
 
-            {step === "pick-agent" ? (
-              <NewMissionAgentPicker
-                agents={agentNames}
-                onPick={pickAgent}
-                onClose={onClose}
-              />
-            ) : (
-              <NewMissionCompose
-                agent={selectedAgent!}
-                text={text}
-                setText={setText}
-                sending={sending}
-                error={error}
-                connected={connected}
-                onBack={() => setStep("pick-agent")}
-                onSend={send}
-              />
-            )}
+            <div className="px-4 pb-4">
+              <h2 className="text-lg font-semibold">Pick an agent</h2>
+              <ul className="mt-3 divide-y divide-border">
+                {agents.length === 0 && (
+                  <li className="py-6 text-center text-sm text-muted-foreground">
+                    No agents available on this Mac.
+                  </li>
+                )}
+                {agents.map((a) => (
+                  <li key={a.id}>
+                    <button
+                      className="touchable w-full flex items-center gap-3 py-3 text-left hover:bg-accent/60 rounded-lg px-2"
+                      onClick={() => pickAgent(a)}
+                    >
+                      <HoustonAvatar color={a.color} diameter={40} />
+                      <p className="truncate text-sm font-medium flex-1">
+                        {a.name}
+                      </p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {error && (
+                <p className="mt-3 text-xs text-destructive">{error}</p>
+              )}
+            </div>
           </motion.div>
         </>
       )}

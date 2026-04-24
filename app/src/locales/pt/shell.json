@@ -4,7 +4,8 @@
     "integrations": "Integrações",
     "settings": "Configurações",
     "yourAgents": "Seus agentes",
-    "selectWorkspace": "Escolha um espaço de trabalho"
+    "selectWorkspace": "Escolha um espaço de trabalho",
+    "connectPhone": "Conectar celular"
   },
   "tabActions": {
     "newMission": "Nova missão"
@@ -82,17 +83,5 @@
   },
   "engineGate": {
     "starting": "Iniciando o motor do Houston…"
-  },
-  "mobileSync": {
-    "buttonLabel": "App mobile",
-    "dialogTitle": "Conectar o app mobile",
-    "dialogDescription": "Leia este QR Code no app mobile do Houston para parear seu celular.",
-    "connecting": "Conectando ao servidor...",
-    "waitingForPhone": "Aguardando o celular",
-    "reconnecting": "Reconectando...",
-    "phoneConnected": "Celular conectado",
-    "phoneConnectedBody": "Pode fechar este diálogo, o celular continua pareado.",
-    "disconnect": "Desconectar",
-    "tryAgain": "Tentar de novo"
   }
 }

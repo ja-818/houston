@@ -196,6 +196,28 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     [],
   );
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
+  const setFeed = useFeedStore((s) => s.setFeed);
+  const handleHistoryLoaded = useCallback(
+    (sessionKey: string, items: FeedItem[]) => {
+      // Seed the feed store with persisted history when the user opens
+      // an activity. After this, the store is the single source of
+      // truth — live WS events append cleanly and no "liveFeed wins if
+      // non-empty" hack is needed. Any items already in the bucket
+      // from WS events that arrived between activity creation and
+      // selection are preserved by merging the server history with
+      // the current bucket and dropping exact duplicates by position.
+      const current = useFeedStore.getState().items[path]?.[sessionKey] ?? [];
+      // Server history is authoritative for everything persisted up to
+      // load time. Anything currently in `current` that isn't in the
+      // server history must be either an optimistic overlay we pushed
+      // or an event that landed mid-load. Append those after the
+      // server slice.
+      const serverIds = new Set(items.map((it) => JSON.stringify(it)));
+      const tail = current.filter((it) => !serverIds.has(JSON.stringify(it)));
+      setFeed(path, sessionKey, [...items, ...tail]);
+    },
+    [path, setFeed],
+  );
   const [loadingState, setLoading] = useState<Record<string, boolean>>({});
   // A session is "loading" from the user's perspective whenever its activity
   // is running — not just when WE started it from this component. This catches
@@ -351,9 +373,10 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       const activity = (rawItems ?? []).find(
         (t) => (t.session_key ?? `activity-${t.id}`) === sessionKey,
       );
-      if (activity) {
-        tauriActivity.update(path, activity.id, { status: "running" }).catch(console.error);
-      }
+      // Activity status flip (→ "running") is owned by the engine now —
+      // `sessions::start` writes it atomically and emits ActivityChanged
+      // so every client (desktop, mobile, third-party) sees the same
+      // transition. Don't pre-write from the UI.
       const scopeId = activity ? `activity-${activity.id}` : sessionKey;
       const paths = await tauriAttachments.save(scopeId, files);
       const prompt = withAttachmentPaths(text, paths);
@@ -448,6 +471,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       onCreateConversation={handleCreateConversation}
       onSendMessage={handleSendMessage}
       onLoadHistory={loadHistory}
+      onHistoryLoaded={handleHistoryLoaded}
       onNewPanelOpenerReady={handleOpenerReady}
       onPanelOpenChange={setMissionPanelOpen}
       onStopSession={handleStopSession}

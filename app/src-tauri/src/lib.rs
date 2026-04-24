@@ -157,7 +157,7 @@ pub fn run() {
             // and release (`~/.houston/`) — everything Houston writes is
             // rooted at a single discoverable location.
             let docs_dir = houston.join("workspaces");
-            let engine_env: Vec<(String, String)> = vec![
+            let mut engine_env: Vec<(String, String)> = vec![
                 (
                     "HOUSTON_APP_SYSTEM_PROMPT".into(),
                     houston_prompt::system_prompt(),
@@ -169,6 +169,14 @@ pub fn run() {
                 ("HOUSTON_HOME".into(), houston.display().to_string()),
                 ("HOUSTON_DOCS".into(), docs_dir.display().to_string()),
             ];
+            // Pass through `HOUSTON_TUNNEL_URL` for local relay dev
+            // (`wrangler dev` on localhost:8787). Production uses the
+            // engine's baked-in default (`tunnel.gethouston.ai`).
+            if let Ok(v) = std::env::var("HOUSTON_TUNNEL_URL") {
+                if !v.is_empty() {
+                    engine_env.push(("HOUSTON_TUNNEL_URL".into(), v));
+                }
+            }
             // 30s banner timeout: first-run Gatekeeper scan on a notarized
             // sidecar can take 15–20s on slow machines.
             let slot = spawn_supervisor(binary, Duration::from_secs(30), engine_env, cb)

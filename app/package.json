@@ -25,7 +25,6 @@
     "@houston-ai/review": "workspace:*",
     "@houston-ai/routines": "workspace:*",
     "@houston-ai/skills": "workspace:*",
-    "@houston-ai/sync-protocol": "workspace:*",
     "@tanstack/react-query": "^5.96.2",
     "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-notification": "^2.3.3",

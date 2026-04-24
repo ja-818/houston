@@ -26,8 +26,6 @@ import type {
   ComposioAppEntry as EngineComposioAppEntry,
   ComposioStatus as EngineComposioStatus,
   ProviderStatus as EngineProviderStatus,
-  SyncInfo as EngineSyncInfo,
-  SyncMessage as EngineSyncMessage,
 } from "@houston-ai/engine-client";
 import { getEngine } from "./engine";
 import { osPickDirectory } from "./os-bridge";
@@ -634,38 +632,31 @@ export const tauriSystem = {
   openUrl: (url: string) => osOpenUrl(url),
 };
 
-// ─── Mobile sync ──────────────────────────────────────────────────────
-
-export interface SyncInfo {
-  token: string;
-  pairing_url: string;
-}
-
-function toLegacySyncInfo(info: EngineSyncInfo | null): SyncInfo | null {
-  if (!info) return null;
-  return { token: info.token, pairing_url: info.pairingUrl };
-}
-
-export const tauriSync = {
-  start: () =>
-    call<SyncInfo>(
-      "start_sync",
-      async () => toLegacySyncInfo(await getEngine().startSync()) as SyncInfo,
-    ),
-  stop: () => call<void>("stop_sync", () => getEngine().stopSync()),
-  status: () =>
-    call<SyncInfo | null>(
-      "get_sync_status",
-      async () => toLegacySyncInfo(await getEngine().syncStatus()),
-    ),
-  send: (message: EngineSyncMessage) =>
-    call<void>("send_sync_message", () => getEngine().sendSyncMessage(message)),
-};
-
 // ─── Agent file watcher ───────────────────────────────────────────────
 
 export const tauriWatcher = {
   start: (agentPath: string) =>
     call<void>("start_agent_watcher", () => getEngine().startAgentWatcher(agentPath)),
   stop: () => call<void>("stop_agent_watcher", () => getEngine().stopAgentWatcher()),
+};
+
+// ─── Tunnel (mobile pairing) ──────────────────────────────────────────
+
+import type {
+  TunnelStatus as EngineTunnelStatus,
+  PairingCode as EnginePairingCode,
+  PairedDevice as EnginePairedDevice,
+} from "@houston-ai/engine-client";
+
+export const tauriTunnel = {
+  status: () =>
+    call<EngineTunnelStatus>("tunnel_status", () => getEngine().tunnelStatus()),
+  mintPairingCode: () =>
+    call<EnginePairingCode>("tunnel_mint_pairing", () => getEngine().mintPairingCode()),
+  listDevices: () =>
+    call<EnginePairedDevice[]>("tunnel_list_devices", () =>
+      getEngine().listPairedDevices(),
+    ),
+  revokeDevice: (hash: string) =>
+    call<void>("tunnel_revoke_device", () => getEngine().revokePairedDevice(hash)),
 };
