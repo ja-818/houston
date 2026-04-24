@@ -11,8 +11,7 @@
  *
  *  2. **Local Tauri events** (`legacyListen`, `legacyEmit`). Used by
  *     `events.ts` for events that never leave the desktop process —
- *     `app-activated` (OS window resume) and `sync-connection` (internal
- *     dispatch by `useSyncResponder`).
+ *     e.g. `app-activated` (OS window resume).
  *
  * Invariant enforced by CI: `grep -rn "invoke(" app/src/` only matches
  * this file.

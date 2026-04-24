@@ -12,6 +12,7 @@
  * how long the dialog has been open.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -47,6 +48,7 @@ const STATUS_POLL_MS = 2_000;
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 
 export function PairDeviceDialog({ isOpen, onClose }: Props) {
+  const { t } = useTranslation("shell");
   const [info, setInfo] = useState<TunnelInfo | null>(null);
   const [pairing, setPairing] = useState<Pairing | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,11 +72,11 @@ export function PairDeviceDialog({ isOpen, onClose }: Props) {
       const msg = e instanceof Error ? e.message : String(e);
       setError(
         /tunnel allocation|tunnel not configured/i.test(msg)
-          ? "Houston needs an internet connection the first time you open the app. Please connect and reopen Houston to enable phone pairing."
-          : "Couldn\u2019t prepare a pairing code. Please try again.",
+          ? t("pairDevice.errors.noInternet")
+          : t("pairDevice.errors.generic"),
       );
     }
-  }, []);
+  }, [t]);
 
   // While the dialog is open: poll tunnel status every STATUS_POLL_MS so
   // the UI reflects connection drops live, and refresh the code every
@@ -126,10 +128,10 @@ export function PairDeviceDialog({ isOpen, onClose }: Props) {
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Phone className="size-4" />
-            <DialogTitle>Connect your phone</DialogTitle>
+            <DialogTitle>{t("pairDevice.title")}</DialogTitle>
           </div>
           <DialogDescription>
-            Scan this code to manage Houston from your iPhone.
+            {t("pairDevice.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -151,7 +153,7 @@ export function PairDeviceDialog({ isOpen, onClose }: Props) {
           ) : (
             <div className="size-[220px] rounded-xl bg-muted/40 animate-pulse flex items-center justify-center">
               <p className="text-[11px] text-muted-foreground text-center px-6 leading-relaxed">
-                Getting ready to connect your phone…
+                {t("pairDevice.loading")}
               </p>
             </div>
           )}
@@ -159,16 +161,17 @@ export function PairDeviceDialog({ isOpen, onClose }: Props) {
 
         {info && !info.connected && !error && (
           <div className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-800 leading-relaxed text-center">
-            Connecting to the phone service. This usually takes a few seconds.
+            {t("pairDevice.connectingStatus")}
           </div>
         )}
 
         <p className="text-[11px] text-muted-foreground leading-relaxed text-center mt-1">
-          Keep this Mac awake while you use Houston on your phone.
+          {t("pairDevice.keepMacAwake")}
           <br />
-          For 24/7 access,{" "}
-          <span className="underline underline-offset-2">Always On</span> runs
-          Houston on our servers.
+          <Trans
+            i18nKey="shell:pairDevice.alwaysOnHint"
+            components={{ emph: <span className="underline underline-offset-2" /> }}
+          />
         </p>
       </DialogContent>
     </Dialog>

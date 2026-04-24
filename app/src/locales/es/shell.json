@@ -83,5 +83,17 @@
   },
   "engineGate": {
     "starting": "Iniciando el motor de Houston…"
+  },
+  "pairDevice": {
+    "title": "Conecta tu teléfono",
+    "description": "Escanea este código para manejar Houston desde tu iPhone.",
+    "loading": "Preparando la conexión con tu teléfono…",
+    "connectingStatus": "Conectando con el servicio del teléfono. Suele tomar unos segundos.",
+    "keepMacAwake": "Mantén este Mac despierto mientras usas Houston en tu teléfono.",
+    "alwaysOnHint": "Para acceso 24/7, <emph>Always On</emph> ejecuta Houston en nuestros servidores.",
+    "errors": {
+      "noInternet": "Houston necesita conexión a internet la primera vez que lo abres. Conéctate y reabre Houston para habilitar el emparejamiento del teléfono.",
+      "generic": "No se pudo generar un código de emparejamiento. Inténtalo de nuevo."
+    }
   }
 }
