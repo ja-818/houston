@@ -1,0 +1,5 @@
+{
+  "name": "Simplified Verticals",
+  "description": "A workspace of simplified, full-stack vertical agents — one agent per vertical that covers the full surface area of a team. The 'simplified' counterpart to Houston's multi-agent founder workspaces: same output quality, single conversation, single context.",
+  "agents": ["marketing", "sales", "engineering", "people", "legal", "operations", "support", "bookkeeping"]
+}

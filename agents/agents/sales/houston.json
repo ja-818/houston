@@ -1,0 +1,856 @@
+{
+  "id": "sales",
+  "name": "Sales",
+  "description": "Your full-stack AI sales operator for solo founders. One agent that covers playbook & strategy, outbound prospecting, inbound triage, meeting prep & deal work, CRM hygiene & forecasting, and retention & expansion. No upfront onboarding — I ask for what I need as we work. Chat-first, markdown outputs, drafts only (I never send or commit deal-stage changes without your nod).",
+  "icon": "Target",
+  "category": "business",
+  "author": "Houston Simplified Verticals",
+  "tags": [
+    "sales",
+    "solo-founder",
+    "playbook",
+    "outbound",
+    "inbound",
+    "crm",
+    "meetings",
+    "retention"
+  ],
+  "tabs": [
+    {
+      "id": "overview",
+      "label": "Overview",
+      "customComponent": "Dashboard"
+    },
+    {
+      "id": "activity",
+      "label": "Activity",
+      "builtIn": "board",
+      "badge": "activity"
+    },
+    {
+      "id": "routines",
+      "label": "Routines",
+      "builtIn": "routines"
+    },
+    {
+      "id": "job-description",
+      "label": "Job Description",
+      "builtIn": "job-description"
+    },
+    {
+      "id": "files",
+      "label": "Files",
+      "builtIn": "files"
+    },
+    {
+      "id": "integrations",
+      "label": "Integrations",
+      "builtIn": "integrations"
+    }
+  ],
+  "defaultTab": "overview",
+  "agentSeeds": {
+    "outputs.json": "[]",
+    "config/context-ledger.json": "{\n  \"universal\": {},\n  \"domains\": {\n    \"outbound\": {},\n    \"crm\": {},\n    \"meetings\": {},\n    \"retention\": {}\n  }\n}\n",
+    ".houston/activity.json": "[{\"id\": \"f47c8a29-e3b5-4a91-bd7c-c1d5e2f8a0b3\", \"title\": \"Start anywhere — I'll ask for what I need\", \"description\": \"No upfront onboarding. Open the Overview tab and click any tile that sounds useful — playbook, lead research, cold email, call prep, pipeline readout, renewal note, churn-save. When I need something specific about your company, ICP, pricing, deal stages, or connected CRM, I'll ask one targeted question (best way first: connect via Composio in the Integrations tab) and remember it.\", \"status\": \"needs_you\"}]",
+    ".houston/routines/routines.json": "[{\"id\": \"weekly-sales-review\", \"name\": \"Monday sales review\", \"description\": \"Every Monday morning: what shipped, what's stalled, missed followups, top 3 moves — rolled up across playbook, outbound, inbound, meetings, CRM, and retention.\", \"prompt\": \"Run the Monday sales review. Use the analyze skill with subject=sales-health.\\n\\nAggregate everything I produced last week from outputs.json (leads, calls, outreach, proposals, close plans, QBRs, saves, scores, forecasts). Group by domain (Playbook, Outbound, Inbound, Meetings, CRM, Retention). For each domain, surface (a) what shipped, (b) what's stale — items in status:draft or with no updatedAt in 3+ weeks, (c) the single most useful next move. End with the top 3 moves for the week across all domains.\\n\\nWrite the review to analyses/sales-health-{YYYY-MM-DD}.md and log it in outputs.json. This routine always surfaces — I want you to see the review every Monday even if the week was quiet.\", \"schedule\": \"0 8 * * 1\", \"enabled\": true, \"suppress_when_silent\": false, \"created_at\": \"2026-04-24T00:00:00Z\", \"updated_at\": \"2026-04-24T00:00:00Z\"}, {\"id\": \"weekly-forecast\", \"name\": \"Weekly forecast\", \"description\": \"Every Friday afternoon: commit / best / pipeline roll-up + the leakiest transition — so Monday doesn't start blind.\", \"prompt\": \"Run the weekly forecast. Use the run-forecast skill.\\n\\nPull open deals from my connected CRM (via Composio). For each deal, classify against the playbook's deal-stage exit criteria into Commit / Best / Pipeline / Omit. Roll up ARR per bucket. Flag any deal that's >2x baseline time-in-stage, <50% qualification-pillar coverage, or >14 days since last touch in an active stage. Compare against the previous week's forecast in forecasts/ to flag slippage.\\n\\nWrite the forecast to forecasts/{YYYY-WNN}.md and log in outputs.json. Always surface — a quiet week is also news.\", \"schedule\": \"0 15 * * 5\", \"enabled\": true, \"suppress_when_silent\": false, \"created_at\": \"2026-04-24T00:00:00Z\", \"updated_at\": \"2026-04-24T00:00:00Z\"}, {\"id\": \"monthly-crm-hygiene\", \"name\": \"Monthly CRM hygiene\", \"description\": \"1st of every month: detect dupes, missing required fields, and stage mismatches in the CRM. Silent unless a new issue appeared.\", \"prompt\": \"Run the monthly CRM hygiene sweep. Use the manage-crm skill with action=clean.\\n\\nPull the full contact + deal list from my connected CRM. Detect dupes, missing required fields (per the playbook's qualification framework), stale deals (no activity >30 days in active stages), and stage mismatches (deal in Stage N with Stage N-1 exit criteria unmet). Compare against the most recent clean report in crm-reports/ so you can flag *new* issues vs. ones already surfaced.\\n\\nWrite the diff list to crm-reports/clean-{YYYY-MM-DD}.md and log in outputs.json. Do not mutate — surface the diff for per-row approval.\\n\\nIf no new issues appeared since the last sweep (no new dupes, no new stale deals, no new stage mismatches), end with ROUTINE_OK so this stays silent. Surface only when a new issue was detected. On the first run (no prior sweep exists), always surface — that's the baseline.\", \"schedule\": \"0 8 1 * *\", \"enabled\": true, \"suppress_when_silent\": true, \"created_at\": \"2026-04-24T00:00:00Z\", \"updated_at\": \"2026-04-24T00:00:00Z\"}, {\"id\": \"monthly-customer-health\", \"name\": \"Monthly customer-health check\", \"description\": \"15th of every month: score every current customer on product-usage, billing signal, and support volume. Silent unless a new customer flipped yellow or red.\", \"prompt\": \"Run the monthly customer-health check. Use the score skill with subject=customer-health.\\n\\nPull every current customer from customers.json and the connected CRM. For each, compute drivers: usage trend (% of prior-4-week baseline) via connected PostHog / Mixpanel / Amplitude, billing signal (downgrade / cancel proximity) via Stripe, and support-ticket volume if a ticket tool is connected. Apply the health thresholds from config/context-ledger.json (domains.retention.healthThresholds — ask if missing). Name the top 2 drivers per row.\\n\\nCompare against the most recent customer-health score in scores/ so you can flag *new* reds and *new* yellows. Write to scores/customer-health-{YYYY-MM-DD}.md and log in outputs.json.\\n\\nIf no customer flipped to a worse color since the last check, end with ROUTINE_OK so this stays silent. Surface on any new yellow or red. On the first run, always surface — that's the baseline.\", \"schedule\": \"0 8 15 * *\", \"enabled\": true, \"suppress_when_silent\": true, \"created_at\": \"2026-04-24T00:00:00Z\", \"updated_at\": \"2026-04-24T00:00:00Z\"}]"
+  },
+  "useCases": [
+    {
+      "category": "Playbook",
+      "title": "Draft the playbook that anchors every other output",
+      "blurb": "ICP, buying committee, qualification, pricing, stages, objections.",
+      "prompt": "Help me write my sales playbook.",
+      "fullPrompt": "Help me write my full sales playbook: ICP, buying committee, disqualifiers, qualification framework (MEDDPICC / BANT / custom), pricing stance, deal stages with exit criteria, objection handbook, top 3 competitors, primary first-call goal. Use the define-playbook skill. Interview me briefly, then write to context/sales-context.md — the source of truth every other skill in this agent reads before it drafts outreach, preps calls, or scores deals.",
+      "description": "I interview you briefly and write the full playbook (ICP, buying committee, qualification framework, pricing stance, deal stages, objection handbook, competitors, primary first-call goal) to context/sales-context.md. Every other skill reads it first.",
+      "outcome": "A locked playbook at context/sales-context.md — every skill that drafts outreach, preps calls, or scores deals reads it first.",
+      "skill": "define-playbook",
+      "tools": {
+        "docs": [
+          "googledocs",
+          "notion"
+        ]
+      }
+    },
+    {
+      "category": "Playbook",
+      "title": "Profile the buying committee for a segment",
+      "blurb": "Champion, economic buyer, blocker, disqualifiers.",
+      "prompt": "Profile the buying committee for {segment}.",
+      "fullPrompt": "Profile the buying committee for {segment}. Use the profile-icp skill. Pull top closed-won accounts from my connected CRM (HubSpot / Salesforce / Attio / Pipedrive / Close via Composio), identify the champion (title + motivations), economic buyer (title + what wins them), blocker (who kills deals + why), and influencers. Save to personas/{segment-slug}.md.",
+      "description": "Pull top closed-won accounts from your connected CRM and synthesize a sales-flavored persona: champion, economic buyer, blocker, disqualifiers, anchor accounts — the foundation every call prep pulls from.",
+      "outcome": "Persona at personas/{segment}.md — the foundation call prep + proposals pull from.",
+      "skill": "profile-icp"
+    },
+    {
+      "category": "Playbook",
+      "title": "Mine your last 10 calls for playbook edits",
+      "blurb": "Verbatim pains + objection frequencies + playbook edits.",
+      "prompt": "Mine my last 10 sales calls for playbook edits.",
+      "fullPrompt": "Mine my last 10 sales calls for playbook edits. Use the analyze skill with subject=call-insights. Pull transcripts from my connected call-recording app (Gong / Fireflies via Composio), extract the top 5 verbatim pain phrases, the top 5 objections with frequency + current best reframe, and win/loss themes. End with concrete playbook-edit suggestions (add pain X, rework objection Y, tighten pillar Z). Save to call-insights/{YYYY-MM-DD}.md.",
+      "description": "I pull transcripts from your connected call-recording app (Gong / Fireflies), extract verbatim pain phrases, rank objections by frequency, and end with concrete playbook-edit suggestions.",
+      "outcome": "Cross-call insights at call-insights/{date}.md — the single best source for playbook tightening.",
+      "skill": "analyze",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ]
+      }
+    },
+    {
+      "category": "Playbook",
+      "title": "Run win-loss across closed deals",
+      "blurb": "Cluster won + lost deals, find 3 patterns, propose edits.",
+      "prompt": "Run win-loss on my closed deals.",
+      "fullPrompt": "Run win-loss across my closed deals. Use the analyze skill with subject=win-loss. Pull closed-won and closed-lost deals from my connected CRM (at least 5 of each), cluster by reason, find the 3 patterns that repeat, and propose concrete playbook edits (ICP tightening, objection handbook additions, pricing adjustments). Save to analyses/win-loss-{YYYY-MM-DD}.md.",
+      "description": "Cluster closed-won + closed-lost deals by reason via the connected CRM. Find the 3 repeat patterns. Propose concrete playbook edits — ICP tightening, objection handbook additions, pricing adjustments.",
+      "outcome": "Win-loss at analyses/win-loss-{date}.md with 3 playbook-edit proposals.",
+      "skill": "analyze",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ]
+      }
+    },
+    {
+      "category": "Playbook",
+      "title": "The Monday sales health review",
+      "blurb": "What shipped, what's stalled, top 3 moves.",
+      "prompt": "Give me the Monday sales review.",
+      "fullPrompt": "Give me the Monday sales review. Use the analyze skill with subject=sales-health. Aggregate everything this agent produced last week from outputs.json (leads, calls, outreach, proposals, QBRs, scores, forecasts), group by domain, flag stalled work + missed followups, and recommend the top 3 moves for the week. Save to analyses/sales-health-{YYYY-MM-DD}.md.",
+      "description": "I aggregate last week's outputs across Playbook, Outbound, Inbound, Meetings, CRM, and Retention from outputs.json, flag what's stalled, and recommend the top 3 moves. A 2-minute scan.",
+      "outcome": "Review at analyses/sales-health-{date}.md with top 3 moves across all domains.",
+      "skill": "analyze",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ]
+      }
+    },
+    {
+      "category": "Playbook",
+      "title": "Brief me for today",
+      "blurb": "Calendar + approvals queue + top 3 moves.",
+      "prompt": "Brief me for today.",
+      "fullPrompt": "Brief me for today. Use the daily-brief skill. Produce today's calendar (pull from my connected Google Calendar), approvals queue (drafts from outputs.json with status:draft), and top 3 moves for the day. Save to briefs/{YYYY-MM-DD}.md.",
+      "description": "I produce today's calendar (from your connected Google Calendar), the approvals queue from drafts in outputs.json, and the top 3 moves for the day — one screen, no digging.",
+      "outcome": "Daily brief at briefs/{date}.md.",
+      "skill": "daily-brief"
+    },
+    {
+      "category": "Outbound",
+      "title": "Find 20 new leads in a segment",
+      "blurb": "CRM lookalikes, funding signals, LinkedIn threads, Google Maps.",
+      "prompt": "Find me 20 leads in {segment}.",
+      "fullPrompt": "Find me 20 leads in {segment}. Use the find-leads skill. Pick a source that fits the segment: my connected CRM for lookalikes of closed-won, a LinkedIn comment thread, recent-funding / recent-hire feeds, Google Maps for local biz, or a subreddit. Quick-score each against the playbook's disqualifiers, drop REDs, save GREEN + YELLOW to leads.json with the trigger signal cited per lead. Write the batch to leads/batches/{segment-slug}-{YYYY-MM-DD}.md.",
+      "description": "I surface net-new leads from your connected sources or public intent signals (CRM lookalikes, LinkedIn threads, recent-funding feeds, Google Maps, subreddits). Each lead has the trigger signal cited — no generic lists.",
+      "outcome": "Batch at leads/batches/{segment}-{date}.md + new rows in leads.json.",
+      "skill": "find-leads",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "social": [
+          "linkedin"
+        ],
+        "search": [
+          "exa"
+        ],
+        "scrape": [
+          "firecrawl"
+        ]
+      }
+    },
+    {
+      "category": "Outbound",
+      "title": "Full account research brief with sources",
+      "blurb": "Site scrape + recent news + tech stack + outreach angles.",
+      "prompt": "Research {Acme} — give me a full brief.",
+      "fullPrompt": "Research {Acme} — give me a full brief. Use the research-account skill with depth=full-brief. Scrape their site via Firecrawl, pull the last 12 weeks of news via Exa, detect tech-stack signals, scan company LinkedIn. Structure: snapshot, recent signals (cited), tech stack, buying-committee guesses, 3 outreach angles ranked. Save to accounts/{slug}/brief-{YYYY-MM-DD}.md.",
+      "description": "Multi-pass cited brief on an account: site scrape + 12 weeks of news + tech-stack signals + LinkedIn scan via Exa and Firecrawl. 3 outreach angles ranked by strength.",
+      "outcome": "Brief at accounts/{slug}/brief-{date}.md. Chain into draft-outreach or prep-meeting.",
+      "skill": "research-account",
+      "tools": {
+        "search": [
+          "exa",
+          "perplexityai"
+        ],
+        "scrape": [
+          "firecrawl"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "social": [
+          "linkedin"
+        ]
+      }
+    },
+    {
+      "category": "Outbound",
+      "title": "Enrich a named contact for outreach",
+      "blurb": "Firmographics + role context + recent signals.",
+      "prompt": "Enrich {person} at {company}.",
+      "fullPrompt": "Enrich {person} at {company}. Use the research-account skill with depth=enrich-contact. Via LinkedIn + my connected CRM, capture title, tenure, prior companies, recent posts / talks / podcasts (6 months), and any trigger signal (new role, speaker, press). Save to leads/{slug}/enrichment-{YYYY-MM-DD}.md.",
+      "description": "I pull firmographics + role context + recent posts / talks for a named person via LinkedIn and your connected CRM — personalization input for the first cold email.",
+      "outcome": "Enrichment at leads/{slug}/enrichment-{date}.md.",
+      "skill": "research-account",
+      "tools": {
+        "search": [
+          "exa",
+          "perplexityai"
+        ],
+        "scrape": [
+          "firecrawl"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "social": [
+          "linkedin"
+        ]
+      }
+    },
+    {
+      "category": "Outbound",
+      "title": "Quick-qualify a URL in 30 seconds",
+      "blurb": "IN-ICP / BORDER / OUT + one angle.",
+      "prompt": "Quick-qualify {url} — is this in-ICP?",
+      "fullPrompt": "Quick-qualify {url}. Use the research-account skill with depth=quick-qualify. One scrape via Firecrawl, one decision (IN-ICP / BORDER / OUT) vs the playbook's disqualifiers, one angle if IN. Save to leads/{slug}/qualify-{YYYY-MM-DD}.md.",
+      "description": "30-second read of a single URL via Firecrawl. One decision (IN-ICP / BORDER / OUT) against the playbook's disqualifiers, one angle if IN. For fast triage, not a full brief.",
+      "outcome": "Qualify note at leads/{slug}/qualify-{date}.md.",
+      "skill": "research-account",
+      "tools": {
+        "search": [
+          "exa",
+          "perplexityai"
+        ],
+        "scrape": [
+          "firecrawl"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "social": [
+          "linkedin"
+        ]
+      }
+    },
+    {
+      "category": "Outbound",
+      "title": "Find warm-paths into an account",
+      "blurb": "First-degree intros from LinkedIn + CRM.",
+      "prompt": "Who do I know at {Acme} for a warm intro?",
+      "fullPrompt": "Find warm-paths into {Acme}. Use the research-account skill with depth=warm-paths. Search my connected LinkedIn + CRM for first-degree connections and mutual-customer paths. Rank Strong / Medium / Weak. Draft the intro ask per strong path. Save to leads/{slug}/warm-paths-{YYYY-MM-DD}.md.",
+      "description": "I search your connected LinkedIn and CRM for first-degree connections at the target — ranked Strong / Medium / Weak — and draft the intro ask per strong path.",
+      "outcome": "Warm-paths at leads/{slug}/warm-paths-{date}.md with drafted intro asks.",
+      "skill": "research-account",
+      "tools": {
+        "search": [
+          "exa",
+          "perplexityai"
+        ],
+        "scrape": [
+          "firecrawl"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "social": [
+          "linkedin"
+        ]
+      }
+    },
+    {
+      "category": "Outbound",
+      "title": "Bulk-score my un-scored leads against ICP",
+      "blurb": "Playbook + disqualifiers. GREEN / YELLOW / RED.",
+      "prompt": "Bulk-score my un-scored leads.",
+      "fullPrompt": "Bulk-score every un-scored lead in leads.json + new leads from my connected CRM. Use the score skill with subject=lead. Compare each against the playbook's ICP + disqualifiers, drop hard-disqualifier RED, score each surviving lead 0-3 per dimension, and output GREEN / YELLOW / RED with the angle for each GREEN. Save to scores/lead-{YYYY-MM-DD}.md and update leads.json rows.",
+      "description": "System-wide pass across every un-scored lead (leads.json + new-leads view in your connected CRM). Each row scored 0-3 per ICP dimension with transparent drivers — no black-box numbers.",
+      "outcome": "Ranked table at scores/lead-{date}.md + updated leads.json rows.",
+      "skill": "score",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "billing": [
+          "stripe"
+        ],
+        "analytics": [
+          "posthog"
+        ]
+      }
+    },
+    {
+      "category": "Outbound",
+      "title": "Score one lead for ICP fit + angle",
+      "blurb": "Single-row read. Angle for the first touch.",
+      "prompt": "Is {lead} a fit?",
+      "fullPrompt": "Is {lead} a fit? Use the score skill with subject=icp-fit. Score the named lead against the playbook's ICP + disqualifiers, output GREEN / YELLOW / RED, and if GREEN name the single pain from the playbook that's the best angle for the first touch. Save to scores/icp-fit-{YYYY-MM-DD}.md.",
+      "description": "Fast single-row fit score against the playbook's ICP + disqualifiers. If GREEN, I name the single pain from the playbook that's the angle for the first touch.",
+      "outcome": "Fit note at scores/icp-fit-{date}.md with the outreach angle.",
+      "skill": "score",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "billing": [
+          "stripe"
+        ],
+        "analytics": [
+          "posthog"
+        ]
+      }
+    },
+    {
+      "category": "Outbound",
+      "title": "Draft a grounded cold email",
+      "blurb": "Trigger signal → specific pain → one-line ask.",
+      "prompt": "Draft a cold email to {person} at {Acme}.",
+      "fullPrompt": "Draft a cold email to {person} at {Acme}. Use the draft-outreach skill with stage=cold-email. Run a fresh signal search (recent news, hires, funding, product launches) via Composio, pick the single strongest signal, and draft 3 short paragraphs: signal → specific pain (from playbook) → one-line ask. Match voice from config/voice.md. Max 110 words body. Save to outreach/email-{lead-slug}-{YYYY-MM-DD}.md.",
+      "description": "Grounded 3-paragraph first-touch email: cited trigger signal → specific pain from the playbook → one-line ask. Voice-matched to your saved samples. Max 110 words.",
+      "outcome": "Draft at outreach/email-{slug}-{date}.md — copy into your inbox when ready.",
+      "skill": "draft-outreach",
+      "tools": {
+        "inbox": [
+          "gmail",
+          "outlook"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ],
+        "billing": [
+          "stripe"
+        ]
+      }
+    },
+    {
+      "category": "Outbound",
+      "title": "Draft a 60-90s cold-call script",
+      "blurb": "Opener + pattern-interrupt + 2 discovery Qs + CTA.",
+      "prompt": "Draft a cold-call script for {Acme}.",
+      "fullPrompt": "Draft a cold-call script for {Acme}. Use the draft-outreach skill with stage=cold-script. Structure: 15-second opener, pattern-interrupt (one specific observation unique to them), 2 discovery questions matched to the weakest qualification pillar for their segment, soft CTA (15m next week), and one landmine to avoid from call-insights. Save to outreach/script-{lead-slug}-{YYYY-MM-DD}.md.",
+      "description": "60-90s script: opener · pattern-interrupt (specific observation) · 2 discovery questions matched to the weakest qualification pillar for their segment · soft CTA · landmine to avoid.",
+      "outcome": "Script at outreach/script-{slug}-{date}.md — read it before the call.",
+      "skill": "draft-outreach",
+      "tools": {
+        "inbox": [
+          "gmail",
+          "outlook"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ],
+        "billing": [
+          "stripe"
+        ]
+      }
+    },
+    {
+      "category": "Inbound",
+      "title": "Triage an inbound reply and draft the response",
+      "blurb": "Classify · interested / Q / objection / not-now / spam.",
+      "prompt": "Triage this inbound reply and draft the response.",
+      "fullPrompt": "Triage this inbound reply and draft the response. Use the draft-outreach skill with stage=inbound-reply. Classify as interested / asking-question / objection / not-now / unsubscribe / spam, then draft the right reply (for interested: booking with 2-3 calendar slots; for objection: chain into handle-objection; for not-now: polite circle-back). Save to outreach/inbound-reply-{lead-slug}-{YYYY-MM-DD}.md.",
+      "description": "I classify the inbound as interested / asking-question / objection / not-now / unsubscribe / spam and draft the right reply — booking slots for interested, a polite circle-back for not-now, the objection reframe for objection.",
+      "outcome": "Reply draft at outreach/inbound-reply-{slug}-{date}.md.",
+      "skill": "draft-outreach",
+      "tools": {
+        "inbox": [
+          "gmail",
+          "outlook"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ],
+        "billing": [
+          "stripe"
+        ]
+      }
+    },
+    {
+      "category": "Inbound",
+      "title": "Is this inbound URL worth pursuing?",
+      "blurb": "30-second qualify + angle, or drop.",
+      "prompt": "Is {url} worth pursuing? Quick qualify.",
+      "fullPrompt": "Is {url} worth pursuing? Use the research-account skill with depth=quick-qualify. One scrape via Firecrawl, one decision (IN-ICP / BORDER / OUT) vs the playbook's disqualifiers, one angle if IN. Save to leads/{slug}/qualify-{YYYY-MM-DD}.md. If OUT, I'll recommend dropping; if IN, I'll suggest draft-outreach next.",
+      "description": "Fast 30-second read of an inbound URL: IN-ICP / BORDER / OUT against your playbook's disqualifiers, with one angle if IN.",
+      "outcome": "Qualify note at leads/{slug}/qualify-{date}.md + next-step recommendation.",
+      "skill": "research-account",
+      "tools": {
+        "search": [
+          "exa",
+          "perplexityai"
+        ],
+        "scrape": [
+          "firecrawl"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "social": [
+          "linkedin"
+        ]
+      }
+    },
+    {
+      "category": "Inbound",
+      "title": "Route new inbounds by score",
+      "blurb": "GREEN → assign, YELLOW → nurture, RED → drop.",
+      "prompt": "Route my new inbounds.",
+      "fullPrompt": "Route my new inbounds. Use the manage-crm skill with action=route. Read the latest scores from scores/lead-*.md (or run the score skill first if stale), apply the playbook's routing policy (GREEN → assign to owner, YELLOW → nurture queue, RED → drop with disqualifier cited), and write the routing decisions to crm-reports/route-{YYYY-MM-DD}.md. I wait for per-row approval before mutating the CRM.",
+      "description": "I read the latest lead scores, apply your routing policy (GREEN → assign, YELLOW → nurture, RED → drop), and write the decisions. No CRM mutations until you approve per row.",
+      "outcome": "Routing decisions at crm-reports/route-{date}.md awaiting approval.",
+      "skill": "manage-crm",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio",
+          "pipedrive",
+          "close"
+        ],
+        "dev": [
+          "linear"
+        ],
+        "docs": [
+          "notion"
+        ]
+      }
+    },
+    {
+      "category": "Meetings",
+      "title": "Prep me for a discovery / demo call",
+      "blurb": "Goal · attendees · questions · objections · exit criteria.",
+      "prompt": "Prep me for my call with {Acme}.",
+      "fullPrompt": "Prep me for my call with {Acme}. Use the prep-meeting skill with type=call. Read the deal record from deals.json + any prior call analyses in calls/{slug}/, pull meeting details from my connected Google Calendar, and compile: meeting goal (from playbook), attendees, question bank (5-8 from the qualification framework, prioritized on the weakest pillar), likely objections with reframes, exit criteria for the stage advance, landmines from call-insights. Save to deals/{slug}/call-prep-{YYYY-MM-DD}.md.",
+      "description": "Pre-call one-pager: meeting goal from the playbook · attendees (enriched from LinkedIn) · question bank prioritized on the weakest qualification pillar · likely objections · exit criteria · landmines from call insights.",
+      "outcome": "Prep at deals/{slug}/call-prep-{date}.md — read it 5 minutes before.",
+      "skill": "prep-meeting",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "calendar": [
+          "googlecalendar"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ],
+        "analytics": [
+          "posthog"
+        ]
+      }
+    },
+    {
+      "category": "Meetings",
+      "title": "Capture call notes from a transcript",
+      "blurb": "Structure → pains, decisions, actions, next step.",
+      "prompt": "Capture notes from today's call with {Acme}.",
+      "fullPrompt": "Capture notes from today's call with {Acme}. Use the capture-call-notes skill. Pull the transcript from my connected call-recorder (Gong / Fireflies via Composio) or I'll paste. Structure: agenda actual-vs-intended, attendees, pains stated (verbatim where possible), decisions, action items, next step. Save to calls/{slug}/notes-{YYYY-MM-DD}.md.",
+      "description": "I pull the transcript from your connected Gong / Fireflies (or accept a paste) and structure it: agenda vs actual · pains verbatim · decisions · actions · next step.",
+      "outcome": "Notes at calls/{slug}/notes-{date}.md. Chain into analyze subject=discovery-call.",
+      "skill": "capture-call-notes"
+    },
+    {
+      "category": "Meetings",
+      "title": "Deep read on a discovery call",
+      "blurb": "Talk ratio, pain score, qual gaps, followup.",
+      "prompt": "How did my call with {Acme} go?",
+      "fullPrompt": "How did my call with {Acme} go? Use the analyze skill with subject=discovery-call. Read the latest calls/{slug}/notes-*.md. Compute talk-ratio (target 40% rep / 60% prospect), score each qualification pillar 0-3 vs the playbook's framework, surface risks (unanswered objections, missing stakeholder) and opportunities (expansion signal, strong champion, timeline pressure), and draft the followup. Save to calls/{slug}/analysis-{YYYY-MM-DD}.md.",
+      "description": "I compute talk-ratio, score each qualification pillar 0-3 against the playbook's framework, surface risks + opportunities, and draft the followup — all from the latest call notes.",
+      "outcome": "Analysis at calls/{slug}/analysis-{date}.md with the drafted followup.",
+      "skill": "analyze",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ]
+      }
+    },
+    {
+      "category": "Meetings",
+      "title": "Build a battlecard vs a named competitor",
+      "blurb": "Per-prospect. Grid · trap-Qs · rebuttals · proof.",
+      "prompt": "Build a battlecard for {Acme} vs {competitor}.",
+      "fullPrompt": "Build a battlecard for {Acme} vs {competitor}. Use the build-battlecard skill. Research the competitor (positioning, pricing shape, known weaknesses, recent reviews) via Firecrawl + Exa. Build the 3-criterion comparison grid anchored in what Acme actually cares about (pulled from deal notes), 3 trap-set questions, 3 objection rebuttals, 2 proof points from the playbook's anchor accounts. Save to battlecards/{competitor}-{prospect}.md.",
+      "description": "Per-prospect card (not a generic matrix): 3-criterion grid anchored in what this prospect cares about, 3 trap-set questions, 3 honest rebuttals, 2 proof points from your anchor accounts.",
+      "outcome": "Battlecard at battlecards/{competitor}-{prospect}.md.",
+      "skill": "build-battlecard"
+    },
+    {
+      "category": "Meetings",
+      "title": "Reframe an objection — 3 sentences + followup",
+      "blurb": "Acknowledge → reframe → specific next step.",
+      "prompt": "They said '{objection}' — draft my reframe.",
+      "fullPrompt": "They said '{objection}' — draft my reframe. Use the handle-objection skill. Look up the objection in the playbook's handbook + any pattern in call-insights, then draft a 3-sentence in-call reframe (acknowledge → reframe with concrete example from anchor accounts → propose dated next step) plus a 5-8 line post-call follow-up email. Save to deals/{slug}/objections/{YYYY-MM-DD}-{objection-slug}.md.",
+      "description": "I draft a 3-sentence in-call reframe (acknowledge → reframe with concrete anchor-account example → propose dated next step) plus a short follow-up email grounded in the playbook's objection handbook.",
+      "outcome": "Reframe at deals/{slug}/objections/{date}-{slug}.md — use the 3-sentence version live on the next touch.",
+      "skill": "handle-objection"
+    },
+    {
+      "category": "Meetings",
+      "title": "Draft a one-page proposal",
+      "blurb": "Problem · scope · pricing · terms · success metrics.",
+      "prompt": "Draft a proposal for {Acme}.",
+      "fullPrompt": "Draft a proposal for {Acme}. Use the draft-proposal skill. Read the deal history (all call notes + analyses under calls/{slug}/), extract their problem statement verbatim, their success metric verbatim, and stakeholders. Draft the one-pager: problem → approach → scope (in + out) → pricing (within playbook's stance) → terms → success metrics → timeline → next step. Save to deals/{slug}/proposal-v{N}.md. Flag anything outside the pricing stance with FLAG: needs approval.",
+      "description": "One-page proposal grounded in their verbatim problem statement and success metric from call notes. Pricing inside your playbook's stance — any exception gets flagged for your approval.",
+      "outcome": "Proposal at deals/{slug}/proposal-v{N}.md with any pricing flags surfaced.",
+      "skill": "draft-proposal"
+    },
+    {
+      "category": "Meetings",
+      "title": "Build a mutual action plan with {Acme}",
+      "blurb": "Procurement, security, budget, owners, dates.",
+      "prompt": "Build a close plan with {Acme}.",
+      "fullPrompt": "Build a mutual action plan with {Acme}. Use the draft-close-plan skill. Stitch the call analyses into a shared timeline with procurement, security review, budget approval, legal, owners (ours + theirs), and target dates. Surface the top 3 risks. Save to deals/{slug}/close-plan.md.",
+      "description": "Shared timeline across procurement / security / budget / legal with owners + dates — stitched from your call analyses. Top 3 deal risks surfaced.",
+      "outcome": "Close plan at deals/{slug}/close-plan.md with top 3 risks.",
+      "skill": "draft-close-plan"
+    },
+    {
+      "category": "Meetings",
+      "title": "Draft a post-call followup in your voice",
+      "blurb": "Recap · objection addressed · specific next step.",
+      "prompt": "Draft my followup for today's call with {Acme}.",
+      "fullPrompt": "Draft my followup for today's call with {Acme}. Use the draft-outreach skill with stage=followup. Read the latest calls/{slug}/notes-*.md and analysis-*.md. Subject: 'Re: {their pain, in their words}'. Body: confirm we heard them → 2-3 bullets answering the stated objection / open question → next step with a specific date. Match voice from config/voice.md. Save to deals/{slug}/followup-{YYYY-MM-DD}.md.",
+      "description": "Post-call recap in your voice, grounded in the call analysis: subject cites their pain verbatim, body answers the stated objection, close names a specific dated next step.",
+      "outcome": "Followup at deals/{slug}/followup-{date}.md.",
+      "skill": "draft-outreach",
+      "tools": {
+        "inbox": [
+          "gmail",
+          "outlook"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ],
+        "billing": [
+          "stripe"
+        ]
+      }
+    },
+    {
+      "category": "CRM",
+      "title": "Sweep the CRM for hygiene issues",
+      "blurb": "Dupes · missing fields · stage mismatches.",
+      "prompt": "Sweep my CRM for hygiene issues.",
+      "fullPrompt": "Sweep my CRM for hygiene issues. Use the manage-crm skill with action=clean. Pull the full contact + deal list from my connected CRM (HubSpot / Salesforce / Attio / Pipedrive / Close via Composio). Detect dupes, missing required fields (per the playbook's qualification framework), stage mismatches, and stale deals. Write the diff list to crm-reports/clean-{YYYY-MM-DD}.md. I wait for per-row approval before mutating.",
+      "description": "I detect dupes, missing required fields, stale deals, and stage mismatches (deal in Stage N with Stage N-1 exit criteria unmet) in your connected CRM. Nothing mutates until you approve per row.",
+      "outcome": "Diff list at crm-reports/clean-{date}.md awaiting per-row approval.",
+      "skill": "manage-crm",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio",
+          "pipedrive",
+          "close"
+        ],
+        "dev": [
+          "linear"
+        ],
+        "docs": [
+          "notion"
+        ]
+      }
+    },
+    {
+      "category": "CRM",
+      "title": "Ask a natural-language question of the CRM",
+      "blurb": "'Deals closing this month?' → answer + query.",
+      "prompt": "How many deals are in Stage 2?",
+      "fullPrompt": "Answer my natural-language question of the CRM. Use the manage-crm skill with action=query. Parse the question into a read-only query, run it against my connected CRM, and return the answer + the query it ran (so I can adjust). Save to crm-reports/query-{YYYY-MM-DD}.md.",
+      "description": "I translate your question into a read-only CRM query, run it, and return the answer plus the query I ran — so you can adjust if needed. No mutations.",
+      "outcome": "Answer + query at crm-reports/query-{date}.md.",
+      "skill": "manage-crm",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio",
+          "pipedrive",
+          "close"
+        ],
+        "dev": [
+          "linear"
+        ],
+        "docs": [
+          "notion"
+        ]
+      }
+    },
+    {
+      "category": "CRM",
+      "title": "Queue a follow-up task for a deal",
+      "blurb": "Push to Linear / Notion / Asana — who, what, when.",
+      "prompt": "Queue a follow-up on {Acme} for {date}.",
+      "fullPrompt": "Queue a follow-up on {Acme} for {date}. Use the manage-crm skill with action=queue-followup. Parse who + what + when from the ask, push the task into my connected task tool (Linear / Notion / Asana-style via Composio), and log to tasks/{YYYY-MM-DD}.md. Capture the task URL.",
+      "description": "I push a task into your connected task tool (Linear / Notion / Asana-style) — who, what, when, linked deal — and log it locally.",
+      "outcome": "Task pushed + logged to tasks/{date}.md with the task URL.",
+      "skill": "manage-crm",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio",
+          "pipedrive",
+          "close"
+        ],
+        "dev": [
+          "linear"
+        ],
+        "docs": [
+          "notion"
+        ]
+      }
+    },
+    {
+      "category": "CRM",
+      "title": "Score every open deal on health",
+      "blurb": "Time-in-stage · qualification · touch recency.",
+      "prompt": "Score my open deals on health — which are slipping?",
+      "fullPrompt": "Score my open deals on health. Use the score skill with subject=deal-health. For each open deal in deals.json + connected CRM, score three drivers: time-in-stage vs playbook baseline, qualification-pillar coverage, touch recency. Return per-deal GREEN / YELLOW / RED with drivers named. Save to scores/deal-health-{YYYY-MM-DD}.md and update deals.json.",
+      "description": "Three-driver score per open deal: time-in-stage vs playbook baseline · qualification-pillar coverage · touch recency. Each row shows the driver that tipped it — no black-box numbers.",
+      "outcome": "Scored deals at scores/deal-health-{date}.md + updated deals.json.",
+      "skill": "score",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "billing": [
+          "stripe"
+        ],
+        "analytics": [
+          "posthog"
+        ]
+      }
+    },
+    {
+      "category": "CRM",
+      "title": "Build this week's forecast — Commit / Best / Pipeline",
+      "blurb": "Classify deals vs playbook exit criteria.",
+      "prompt": "Build this week's forecast.",
+      "fullPrompt": "Build this week's forecast. Use the run-forecast skill. Pull open deals from my connected CRM, classify each against the playbook's deal-stage exit criteria into Commit / Best / Pipeline / Omit buckets, roll up ARR per bucket, and compare to last week's forecast to flag slippage. Save to forecasts/{YYYY-WNN}.md.",
+      "description": "Classify every open deal against the playbook's deal-stage exit criteria into Commit / Best / Pipeline / Omit. Roll up ARR. Flag slippage vs last week.",
+      "outcome": "Forecast at forecasts/{YYYY-WNN}.md with slippage highlighted.",
+      "skill": "run-forecast"
+    },
+    {
+      "category": "CRM",
+      "title": "Pipeline snapshot — find the leakiest stage",
+      "blurb": "Stage counts · ARR · velocity · worst transition.",
+      "prompt": "Give me a pipeline snapshot.",
+      "fullPrompt": "Give me a pipeline snapshot. Use the analyze skill with subject=pipeline. Pull the open-deal snapshot from my connected CRM. Per stage: count, ARR, average time-in-stage, stage-to-next conversion. Flag the leakiest transition. Save to analyses/pipeline-{YYYY-MM-DD}.md and mirror the table to pipeline-reports/{YYYY-WNN}.md.",
+      "description": "I pull the open-deal snapshot from your connected CRM and compute count · ARR · avg time-in-stage · stage-to-next conversion per stage. One leakiest transition flagged.",
+      "outcome": "Snapshot at analyses/pipeline-{date}.md + table at pipeline-reports/{week}.md.",
+      "skill": "analyze",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ]
+      }
+    },
+    {
+      "category": "Retention",
+      "title": "Plan onboarding for a new customer",
+      "blurb": "Kickoff agenda · locked success metric · 90-day plan.",
+      "prompt": "Plan onboarding for {customer}.",
+      "fullPrompt": "Plan onboarding for {customer}. Use the plan-onboarding skill. Build a kickoff agenda, lock one concrete success metric with the customer, and sequence a 90-day time-to-value timeline with milestones and risks. Save to customers/{slug}/onboarding-plan.md.",
+      "description": "Kickoff agenda · one locked success metric · 90-day time-to-value timeline with milestones and risks — the anchor every later QBR and renewal pulls from.",
+      "outcome": "Plan at customers/{slug}/onboarding-plan.md.",
+      "skill": "plan-onboarding"
+    },
+    {
+      "category": "Retention",
+      "title": "Score customer health — who's red?",
+      "blurb": "Usage · NPS · support · billing. Top 2 drivers.",
+      "prompt": "Score customer health — who's red in my book?",
+      "fullPrompt": "Score customer health. Use the score skill with subject=customer-health. Pull every current customer from customers.json + connected CRM. Compute drivers: usage trend via connected PostHog / Mixpanel / Amplitude, NPS / CSAT if captured, support-ticket volume, billing signal via Stripe. Apply the health thresholds. Name the top 2 drivers per row. Save to scores/customer-health-{YYYY-MM-DD}.md.",
+      "description": "Every current customer scored on usage trend · NPS · support tickets · billing signal (via PostHog + Stripe). Top 2 drivers named per row — no magic numbers.",
+      "outcome": "Scored customers at scores/customer-health-{date}.md.",
+      "skill": "score",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "billing": [
+          "stripe"
+        ],
+        "analytics": [
+          "posthog"
+        ]
+      }
+    },
+    {
+      "category": "Retention",
+      "title": "Prep a QBR pack",
+      "blurb": "Outcomes · usage · open asks · risks · next goal.",
+      "prompt": "Prep the QBR for {customer}.",
+      "fullPrompt": "Prep the QBR for {customer}. Use the prep-meeting skill with type=qbr. Read the customer row + any prior QBR. Pull usage trend via PostHog, billing state via Stripe, open support tickets. Compile: outcomes shipped (vs the locked success metric), usage trend QoQ, open asks, risks (from latest customer-health score), next-quarter goal, renewal runway. Save to customers/{slug}/qbr-{YYYY-QN}.md.",
+      "description": "QBR pack grounded in the success metric locked at kickoff: outcomes (with numbers) · QoQ usage trend · open asks · risks from latest health score · next-quarter goal · renewal runway.",
+      "outcome": "QBR at customers/{slug}/qbr-{YYYY-QN}.md.",
+      "skill": "prep-meeting",
+      "tools": {
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "calendar": [
+          "googlecalendar"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ],
+        "analytics": [
+          "posthog"
+        ]
+      }
+    },
+    {
+      "category": "Retention",
+      "title": "Surface expansion opportunities in your book",
+      "blurb": "Usage spikes · team growth · feature-request patterns.",
+      "prompt": "Any expansion opportunities in my book?",
+      "fullPrompt": "Surface expansion opportunities in my book. Use the surface-expansion skill. Scan GREEN customers for usage spikes, team growth, feature-request patterns, and rank opportunities by ARR upside. Save to expansion/{YYYY-MM-DD}.md.",
+      "description": "I scan your GREEN customers for usage spikes, team growth, and feature-request patterns, then rank opportunities by ARR upside — no generic upsell pitches.",
+      "outcome": "Ranked opportunities at expansion/{date}.md.",
+      "skill": "surface-expansion"
+    },
+    {
+      "category": "Retention",
+      "title": "Draft a renewal note without overcommitting",
+      "blurb": "Outcomes · expansion · pricing — stays inside policy.",
+      "prompt": "Draft the renewal note for {customer}.",
+      "fullPrompt": "Draft the renewal note for {customer}. Use the draft-outreach skill with stage=renewal. Read customers/{slug}/ history (onboarding plan, QBRs, health scores). Bundle outcomes shipped (with numbers) + expansion levers + pricing reasoning (from playbook — never commit outside the pricing stance). End with a dated next step. Save to customers/{slug}/renewal-{YYYY-MM-DD}.md.",
+      "description": "Renewal draft bundling outcomes shipped (with numbers) + expansion levers + pricing reasoning — stays inside your playbook's pricing stance. Never commits a number outside policy.",
+      "outcome": "Renewal at customers/{slug}/renewal-{date}.md.",
+      "skill": "draft-outreach",
+      "tools": {
+        "inbox": [
+          "gmail",
+          "outlook"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ],
+        "billing": [
+          "stripe"
+        ]
+      }
+    },
+    {
+      "category": "Retention",
+      "title": "Save a downgrade without the guilt trip",
+      "blurb": "Name the signal · offer one concrete remedy.",
+      "prompt": "Draft a save for {customer} — they just downgraded.",
+      "fullPrompt": "Draft a save for {customer}. Use the draft-outreach skill with stage=churn-save. Pull the downgrade / cancel / usage-drop signal from Stripe (via Composio) or what I paste. Structure: name the specific signal verbatim → one concrete remedy (pause, downgrade further, concierge help, refund — the genuine option that matches the signal) → proposed dated next step. No guilt tactics. Save to customers/{slug}/save-{YYYY-MM-DD}.md.",
+      "description": "Non-defensive save that names the specific signal (downgrade, usage drop, support escalation) and offers one concrete remedy matching it — pause, downgrade further, concierge help, or refund. No guilt tactics.",
+      "outcome": "Save at customers/{slug}/save-{date}.md.",
+      "skill": "draft-outreach",
+      "tools": {
+        "inbox": [
+          "gmail",
+          "outlook"
+        ],
+        "crm": [
+          "hubspot",
+          "salesforce",
+          "attio"
+        ],
+        "meetings": [
+          "gong",
+          "fireflies"
+        ],
+        "billing": [
+          "stripe"
+        ]
+      }
+    }
+  ]
+}

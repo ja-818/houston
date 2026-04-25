@@ -5,6 +5,9 @@ dist/
 *.tsbuildinfo
 target/
 .agents/
+# Open agent library lives in /agents — its .agents/skills/ trees ARE source.
+!/agents/agents/*/.agents/
+!/agents/agents/*/.agents/**
 .claude/skills/
 .windsurf/
 skills-lock.json
