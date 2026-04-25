@@ -62,6 +62,8 @@ export interface AIBoardProps {
   toolLabels?: ToolsAndCardsProps["toolLabels"]
   /** Render prop for an end-of-turn summary (e.g., list of edited files). Forwarded to ChatPanel. */
   renderTurnSummary?: import("@houston-ai/chat").ChatPanelProps["renderTurnSummary"]
+  /** Custom renderer for user messages. Forwarded to ChatPanel. */
+  renderUserMessage?: import("@houston-ai/chat").ChatPanelProps["renderUserMessage"]
   /** Emitted by ChatPanel to surface short notices to the user
    *  (e.g. duplicate-file drop). Forwarded as-is; app decides display. */
   onNotice?: (message: string) => void
@@ -96,6 +98,12 @@ export interface AIBoardProps {
   onDraftChange?: (sessionKey: string, text: string) => void
   /** Translated label overrides for per-card copy (Approve button + delete confirm). */
   cardLabels?: KanbanCardLabels
+  /**
+   * When set, replaces the chat composer with this node. Forwarded to
+   * ChatPanel. Apps use it to take over the composer space with a
+   * focused interaction surface (e.g. an action-input form).
+   */
+  composerOverride?: ReactNode
 }
 
 const DEFAULT_COLUMNS: KanbanColumn[] = [
@@ -141,11 +149,13 @@ export function AIBoard({
   renderToolResult,
   toolLabels,
   renderTurnSummary,
+  renderUserMessage,
   onNotice,
   onOpenLink,
   renderLink,
   footer,
   cardLabels,
+  composerOverride,
 }: AIBoardProps) {
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [newPanelOpen, setNewPanelOpen] = useState(false)
@@ -227,7 +237,14 @@ export function AIBoard({
         await onSendMessage(sessionKeyFor(selectedItem.id), text, files)
       } else if (newPanelOpen && onCreateConversation) {
         const activityId = await onCreateConversation(text, files)
-        setNewPanelOpen(false)
+        // Select the new activity so the feed renders. We deliberately
+        // leave `newPanelOpen` truthy: there's a brief race where the
+        // freshly-created activity isn't yet in `items` (the parent
+        // invalidates the activity query asynchronously) and during
+        // that window `selectedItem` is still null. Closing
+        // `newPanelOpen` here would collapse `showPanel` to false and
+        // dismiss the panel mid-create. `newPanelOpen` resets naturally
+        // on the next opener call, card select, or outside-click close.
         setSelectedId(activityId)
       }
     },
@@ -271,9 +288,21 @@ export function AIBoard({
       if (!target) return
       if (boardRef.current?.contains(target)) return
       if (panelRef.current?.contains(target)) return
-      // Radix portals (dropdowns, popovers) render outside the panel DOM.
-      // Don't close the panel when interacting with them.
-      if (target instanceof Element && target.closest("[data-radix-popper-content-wrapper]")) return
+      if (target instanceof Element) {
+        // Radix popovers/dropdowns/menus render outside the panel DOM.
+        if (target.closest("[data-radix-popper-content-wrapper]")) return
+        // Radix Dialog content + overlay also live in a portal outside both
+        // refs. Clicking inside a dialog (or its overlay) is the user
+        // interacting with a modal we just opened FROM the panel, not an
+        // intent to dismiss the panel.
+        if (target.closest("[data-slot='dialog-content']")) return
+        if (target.closest("[data-slot='dialog-overlay']")) return
+        // Generic opt-out: any ancestor with `data-keep-panel-open` is
+        // treated as part of the panel's interaction surface (e.g. the
+        // top-bar "New mission" button which transitions the panel
+        // between selected-chat and new-conversation states).
+        if (target.closest("[data-keep-panel-open]")) return
+      }
       closePanel()
     }
     document.addEventListener("mousedown", handler)
@@ -325,10 +354,12 @@ export function AIBoard({
           renderToolResult={renderToolResult}
           toolLabels={toolLabels}
           renderTurnSummary={renderTurnSummary}
+          renderUserMessage={renderUserMessage}
           onNotice={onNotice}
           onOpenLink={onOpenLink}
           renderLink={renderLink}
           footer={typeof footer === "function" ? footer({ hasMessages: activeFeed.length > 0 }) : footer}
+          composerOverride={composerOverride}
         />
       </div>
     </KanbanDetailPanel>

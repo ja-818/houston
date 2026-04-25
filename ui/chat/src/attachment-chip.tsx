@@ -5,7 +5,6 @@
  */
 
 import {
-  AudioLinesIcon,
   FileSpreadsheetIcon,
   FileTextIcon,
   ImageIcon,
@@ -110,7 +109,13 @@ export interface ComposerTrailingProps {
   onStop?: () => void;
 }
 
-/** Trailing button row: dictate (idle) + voice mode (idle, no content) or submit. */
+/**
+ * Trailing button row: dictate (idle, optional) + always-visible submit.
+ *
+ * The submit button is rendered as `disabled` when there's no content to
+ * send, which keeps the affordance stable in the same spot. The previous
+ * "voice mode" wave icon was removed because it wasn't wired to anything.
+ */
 export function ComposerTrailing({ status, hasContent, onStop }: ComposerTrailingProps) {
   return (
     <div className="flex items-center gap-1.5 [grid-area:trailing]">
@@ -123,17 +128,11 @@ export function ComposerTrailing({ status, hasContent, onStop }: ComposerTrailin
           <MicIcon className="size-5" />
         </button>
       )}
-      {!hasContent && status === "ready" ? (
-        <button
-          type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors"
-          aria-label="Voice mode"
-        >
-          <AudioLinesIcon className="size-5" />
-        </button>
-      ) : (
-        <PromptInputSubmit status={status} onStop={onStop} />
-      )}
+      <PromptInputSubmit
+        status={status}
+        onStop={onStop}
+        disabled={status === "ready" && !hasContent}
+      />
     </div>
   );
 }

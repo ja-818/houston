@@ -7,6 +7,7 @@ Load on demand. Style: caveman.
 | [architecture.md](architecture.md) | 6 products + 3 code libraries, Engine standalone story, crate list |
 | [design-system.md](design-system.md) | Colors, typography, spacing, components, animation |
 | [files-first.md](files-first.md) | `.houston/` layout, atomic writes, schemas, AI-native reactivity |
+| [actions.md](actions.md) | Skills on disk / "Actions" in the UI — frontmatter schema, picker rendering, invocation marker |
 | [agent-manifest.md](agent-manifest.md) | Three tiers, manifest shape, workspace templates, sidebar |
 | [engine-protocol.md](engine-protocol.md) | HTTP + WS wire contract every client speaks (REST, envelope, auth) |
 | [engine-server.md](engine-server.md) | `houston-engine` binary — config, startup handshake, supervision, deployment |

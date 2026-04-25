@@ -42,6 +42,86 @@ pub struct SkillSummary {
     pub tags: Vec<String>,
     pub created: Option<String>,
     pub last_used: Option<String>,
+    /// Optional user-facing category (e.g. "Email", "Research"). Skills in
+    /// the "new mission" picker are grouped by this value; those without one
+    /// fall under "Other".
+    pub category: Option<String>,
+    /// Whether this skill should surface on the picker's Featured tab.
+    /// Parsed from frontmatter `featured: yes|true|1`. Defaults to false.
+    pub featured: bool,
+    /// Composio toolkit slugs this skill uses (e.g. `["gmail", "slack"]`).
+    /// Drives the logo row on skill cards so non-technical users can see
+    /// which integrations a skill touches before running it.
+    pub integrations: Vec<String>,
+    /// Optional image. Either a full URL (e.g. an Unsplash photo) or a
+    /// Microsoft Fluent 3D Emoji slug like `rocket` / `magnifying-glass-tilted-left`
+    /// resolved by the frontend.
+    pub image: Option<String>,
+    /// Declared user inputs for this action. When non-empty, the frontend
+    /// renders an inline form with one labeled field per input instead of
+    /// a free-text composer prefill. The user's values are interpolated
+    /// into `prompt_template` before the message is sent.
+    pub inputs: Vec<SkillInput>,
+    /// Prompt template with `{{name}}` placeholders matching `inputs[].name`.
+    /// Multi-line YAML is supported via the `|` block scalar:
+    ///
+    /// ```yaml
+    /// prompt_template: |
+    ///   Research the company at {{company_url}}.
+    ///   Focus areas: {{focus}}
+    /// ```
+    ///
+    /// When omitted, a default prompt is synthesised from the labels +
+    /// values (e.g. `Use the X action.\n\nLabel: value\n…`).
+    pub prompt_template: Option<String>,
+}
+
+/// Declared input on a skill. Skill authors describe each variable they
+/// want filled by the user; the frontend renders these as labeled form
+/// fields in the chat panel and interpolates them into `prompt_template`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SkillInput {
+    /// Variable name used inside `{{...}}` in `prompt_template`. Required.
+    pub name: String,
+    /// User-facing label shown above the input (e.g. "Company to research").
+    pub label: String,
+    /// Optional placeholder text shown inside the field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub placeholder: Option<String>,
+    /// Field kind. Defaults to `text`.
+    #[serde(default, rename = "type")]
+    pub kind: SkillInputKind,
+    /// Whether the field must be filled before "Start" is enabled.
+    /// Defaults to `true` so authors only opt out explicitly.
+    #[serde(default = "default_required")]
+    pub required: bool,
+    /// Optional default value the field starts populated with.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default: Option<String>,
+    /// Choices for `kind: select`. Ignored for text/textarea kinds.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub options: Vec<String>,
+}
+
+fn default_required() -> bool {
+    true
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum SkillInputKind {
+    /// Single-line text input.
+    Text,
+    /// Multi-line textarea for longer notes.
+    Textarea,
+    /// Dropdown selection from a fixed list of `options`.
+    Select,
+}
+
+impl Default for SkillInputKind {
+    fn default() -> Self {
+        SkillInputKind::Text
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -173,6 +253,12 @@ pub fn create_skill(skills_dir: &Path, input: CreateSkillInput) -> Result<(), Sk
         tags: input.tags,
         created: Some(today.clone()),
         last_used: Some(today),
+        category: None,
+        featured: false,
+        integrations: Vec::new(),
+        image: None,
+        inputs: Vec::new(),
+        prompt_template: None,
     };
     let content = format::serialize(&summary, &input.content);
     let skill_md = skill_dir.join("SKILL.md");

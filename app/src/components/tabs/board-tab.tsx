@@ -13,25 +13,16 @@ import {
   useActivity,
   useDeleteActivity,
   useUpdateActivity,
-  useConnectedToolkits,
-  useConnections,
 } from "../../hooks/queries";
+import { useAgentChatPanel } from "../use-agent-chat-panel";
 import { tauriActivity, tauriChat, tauriAttachments, tauriSystem, tauriWorktree, tauriShell, tauriTerminal, tauriConfig, tauriPreferences, withAttachmentPaths } from "../../lib/tauri";
 import { createMission } from "../../lib/create-mission";
 import { queryKeys } from "../../lib/query-keys";
-import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
-import {
-  ComposioLinkCard,
-  parseComposioToolkitFromHref,
-} from "../composio-link-card";
 import { analytics } from "../../lib/analytics";
 import type { TabProps } from "../../lib/types";
 import { useDetailPanelContainer } from "../shell/detail-panel-context";
 import { HoustonHelmet, HoustonThinkingIndicator } from "../shell/experience-card";
 import { resolveAgentColor } from "../../lib/agent-colors";
-import { useWorkspaceStore } from "../../stores/workspaces";
-import { ChatModelSelector } from "../chat-model-selector";
-import { getDefaultModel } from "../../lib/providers";
 
 // Stable empty reference so the feed store selector doesn't return a new
 // object every render when this agent has no feeds yet (which would otherwise
@@ -79,7 +70,6 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   const path = agent.folderPath;
   const agentModes = agentDef.config.agents;
   const [pendingAgentMode, setPendingAgentMode] = useState<string | null>(null);
-  const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(path);
   const { data: rawItems } = useActivity(path);
   const deleteActivity = useDeleteActivity(path);
   const updateActivity = useUpdateActivity(path);
@@ -97,51 +87,6 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     tauriSystem.openUrl(url).catch(console.error);
   }, []);
 
-  // --- Model selector: three-tier resolution ---
-  const workspace = useWorkspaceStore((s) => s.current);
-  const wsProvider = workspace?.provider ?? "anthropic";
-  const wsModel = workspace?.model ?? getDefaultModel(wsProvider);
-  const [agentProvider, setAgentProvider] = useState<string | null>(null);
-  const [agentModel, setAgentModel] = useState<string | null>(null);
-  useEffect(() => {
-    tauriConfig.read(path).then((cfg) => {
-      setAgentProvider((cfg.provider as string) ?? null);
-      setAgentModel((cfg.model as string) ?? null);
-    }).catch(() => {});
-  }, [path]);
-  const [chatProvider, setChatProvider] = useState<string | null>(null);
-  const [chatModel, setChatModel] = useState<string | null>(null);
-  const effectiveProvider = chatProvider ?? agentProvider ?? wsProvider;
-  const effectiveModel = chatModel ?? agentModel ?? wsModel;
-  const handleModelSelect = useCallback((prov: string, mod: string) => {
-    setChatProvider(prov);
-    setChatModel(mod);
-  }, []);
-
-  // Connection state for inline Composio connect cards. Mirrors the
-  // wiring in chat-tab.tsx — both surfaces read from the same shared
-  // TanStack Query cache.
-  const { data: composioStatus } = useConnections();
-  const isSignedIn = composioStatus?.status === "ok";
-  const { data: connectedList } = useConnectedToolkits(isSignedIn);
-  const connectedSet = useMemo(
-    () => new Set(connectedList ?? []),
-    [connectedList],
-  );
-  const renderLink = useCallback(
-    ({ href, onOpen }: { href: string; onOpen: () => void }) => {
-      const toolkit = parseComposioToolkitFromHref(href);
-      if (!toolkit) return undefined;
-      return (
-        <ComposioLinkCard
-          toolkit={toolkit}
-          isConnected={connectedSet.has(toolkit)}
-          onOpen={onOpen}
-        />
-      );
-    },
-    [connectedSet],
-  );
   const openerRef = useRef<(() => void) | null>(null);
 
   const items: KanbanItem[] = (rawItems ?? []).map((t) => {
@@ -175,6 +120,26 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       clearPending(null);
     }
   }, [pendingId, clearPending, selectedId, missionPanelOpen]);
+
+  // Per-agent session key for the currently selected card. Drives the
+  // panel hook's action-form routing (mid-conversation send vs new
+  // conversation create).
+  const selectedSessionKey = useMemo(() => {
+    if (!selectedId) return null;
+    const item = (rawItems ?? []).find((t) => t.id === selectedId);
+    return item?.session_key ?? `activity-${selectedId}`;
+  }, [selectedId, rawItems]);
+
+  // All the per-agent panel features (skill cards, action form, model
+  // selector, Actions button, tool/link renderers) come from this hook
+  // so the cross-agent Mission Control view can reuse them.
+  const panel = useAgentChatPanel({
+    agent,
+    agentDef,
+    selectedSessionKey,
+    onSelectSession: setSelectedId,
+  });
+  const { chatProvider, chatModel } = panel;
 
   // Scope to this agent only — cross-agent bleeding is structurally blocked
   // because AIBoard can only see this agent's slice of the feed store.
@@ -457,56 +422,57 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
 
   return (
     <div className="flex flex-col h-full">
-    <AIBoard
-      items={items}
-      columns={boardColumns}
-      selectedId={selectedId}
-      onSelect={setSelectedId}
-      panelContainer={panelContainer}
-      feedItems={feedItems}
-      isLoading={effectiveLoading}
-      sessionKeyFor={sessionKeyFor}
-      onDelete={handleDelete}
-      onApprove={handleApprove}
-      onRename={(item, newTitle) => {
-        tauriActivity.update(path, item.id, { title: newTitle }).catch(console.error);
-      }}
-      onCreateConversation={handleCreateConversation}
-      onSendMessage={handleSendMessage}
-      onLoadHistory={loadHistory}
-      onHistoryLoaded={handleHistoryLoaded}
-      onNewPanelOpenerReady={handleOpenerReady}
-      onPanelOpenChange={setMissionPanelOpen}
-      onStopSession={handleStopSession}
-      drafts={boardDrafts}
-      onDraftChange={handleDraftChange}
-      isSpecialTool={isSpecialTool}
-      renderToolResult={renderToolResult}
-      renderTurnSummary={renderTurnSummary}
-      onNotice={handleNotice}
-      onOpenLink={handleOpenLink}
-      renderLink={renderLink}
-      actions={agentModes ? cardActions : undefined}
-      panelActions={panelActions}
-      cardAvatar={<HoustonHelmet color={resolveAgentColor(agent.color)} size={14} />}
-      thinkingIndicator={<HoustonThinkingIndicator />}
-      footer={({ hasMessages }) => (
-        <ChatModelSelector
-          provider={effectiveProvider}
-          model={effectiveModel}
-          onSelect={handleModelSelect}
-          lockedProvider={hasMessages ? effectiveProvider : null}
-        />
-      )}
-      panelAgentName={agent.name}
-      panelAvatar={
-        <PanelAvatar
-          color={agent.color}
-          isRunning={(rawItems ?? []).some((a) => a.id === selectedId && a.status === "running")}
-        />
-      }
-      cardLabels={cardLabels}
-    />
+      <AIBoard
+        items={items}
+        columns={boardColumns}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        panelContainer={panelContainer}
+        feedItems={feedItems}
+        isLoading={effectiveLoading}
+        sessionKeyFor={sessionKeyFor}
+        onDelete={handleDelete}
+        onApprove={handleApprove}
+        onRename={(item, newTitle) => {
+          tauriActivity.update(path, item.id, { title: newTitle }).catch(console.error);
+        }}
+        onCreateConversation={handleCreateConversation}
+        onSendMessage={handleSendMessage}
+        onLoadHistory={loadHistory}
+        onHistoryLoaded={handleHistoryLoaded}
+        onNewPanelOpenerReady={handleOpenerReady}
+        onPanelOpenChange={setMissionPanelOpen}
+        onStopSession={handleStopSession}
+        drafts={boardDrafts}
+        onDraftChange={handleDraftChange}
+        onNotice={handleNotice}
+        onOpenLink={handleOpenLink}
+        actions={agentModes ? cardActions : undefined}
+        panelActions={panelActions}
+        cardAvatar={<HoustonHelmet color={resolveAgentColor(agent.color)} size={14} />}
+        thinkingIndicator={<HoustonThinkingIndicator />}
+        panelAgentName={agent.name}
+        panelAvatar={
+          <PanelAvatar
+            color={agent.color}
+            isRunning={(rawItems ?? []).some((a) => a.id === selectedId && a.status === "running")}
+          />
+        }
+        cardLabels={cardLabels}
+        // Per-agent panel features (skill cards, action form, model
+        // selector, Actions button, tool/link renderers) all come
+        // from the shared `useAgentChatPanel` hook so Mission Control
+        // and the per-agent BoardTab share one implementation.
+        chatEmptyState={panel.chatEmptyState}
+        composerOverride={panel.composerOverride}
+        footer={panel.footer}
+        renderUserMessage={panel.renderUserMessage}
+        isSpecialTool={panel.isSpecialTool}
+        renderToolResult={panel.renderToolResult}
+        renderTurnSummary={panel.renderTurnSummary}
+        renderLink={panel.renderLink}
+      />
+      {panel.pickerDialog}
     </div>
   );
 }

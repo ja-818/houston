@@ -18,13 +18,23 @@
     "description": "Build your AI team and ship the impossible.",
     "cta": "New Agent"
   },
-  "newMissionDialog": {
-    "title": "New conversation",
-    "description": "Pick an agent and describe what it should do.",
+  "agentPicker": {
+    "title": "Which agent should run this?",
+    "description": "Pick an agent to open a fresh conversation."
+  },
+  "actionPicker": {
+    "title": "Pick an action",
+    "description": "Browse the actions this agent already knows how to do.",
+    "descriptionWithAgent": "Browse the actions {{name}} already knows how to do.",
     "agentLabel": "Agent",
     "agentPlaceholder": "Select an agent...",
-    "promptLabel": "Prompt",
-    "promptPlaceholder": "What should the agent work on?",
-    "submit": "Start conversation"
+    "blank": "Blank conversation",
+    "blankDescription": "Open a new chat and type your own prompt.",
+    "featuredTab": "Featured",
+    "otherTab": "Other",
+    "featuredEmpty": "No featured actions yet.",
+    "pickAgentFirst": "Pick an agent to see its actions.",
+    "skillsLoading": "Loading actions...",
+    "skillsEmpty": "No actions in this category yet."
   }
 }

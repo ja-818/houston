@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanColumnConfig } from "@houston-ai/board";
@@ -18,10 +18,13 @@ import { HoustonLogo } from "./shell/experience-card";
 import { HoustonHelmet } from "./shell/experience-card";
 import { resolveAgentColor } from "../lib/agent-colors";
 import { useAgentStore } from "../stores/agents";
+import { useAgentCatalogStore } from "../stores/agent-catalog";
 import { useUIStore } from "../stores/ui";
 import { tauriChat } from "../lib/tauri";
 import { useMissionControl } from "./use-mission-control";
-import { MissionControlNewDialog } from "./mission-control-new-dialog";
+import { AgentPickerDialog } from "./agent-picker-dialog";
+import { useAgentChatPanel } from "./use-agent-chat-panel";
+import type { Agent } from "../lib/types";
 import { useDetailPanelContainer } from "./shell/detail-panel-context";
 import { AgentMiniAvatar, HoustonThinkingIndicator } from "./shell/experience-card";
 
@@ -44,13 +47,33 @@ export function Dashboard() {
   };
   const panelContainer = useDetailPanelContainer();
   const agents = useAgentStore((s) => s.agents);
+  const getAgentDef = useAgentCatalogStore((s) => s.getById);
   const setDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
   const setMissionPanelOpen = useUIStore((s) => s.setMissionPanelOpen);
 
   const [filterPath, setFilterPath] = useState("");
-  const [newDialogOpen, setNewDialogOpen] = useState(false);
+  const [agentPickerOpen, setAgentPickerOpen] = useState(false);
+  // Agent the user just picked for "New Mission". Stays in scope until
+  // the new conversation is created (and selectedItem takes over) or
+  // the user clicks a different card.
+  const [pendingAgent, setPendingAgent] = useState<Agent | null>(null);
+  const openerRef = useRef<(() => void) | null>(null);
 
   const mc = useMissionControl(agents);
+
+  // Picking an agent from the "New mission" modal stays on Mission
+  // Control: we set the pending agent so the right panel scopes its
+  // actions/model/etc. to that agent, then ask AIBoard to open the
+  // empty new-conversation panel.
+  const handlePickAgent = (agent: Agent) => {
+    setPendingAgent(agent);
+    mc.setSelectedId(null);
+    openerRef.current?.();
+  };
+
+  const handleOpenerReady = useCallback((opener: () => void) => {
+    openerRef.current = opener;
+  }, []);
 
   const handleStopSession = useCallback(
     (sessionKey: string) => {
@@ -85,10 +108,35 @@ export function Dashboard() {
   const selectedItem = mc.selectedId
     ? mc.items.find((i) => i.id === mc.selectedId)
     : null;
-  const selectedColorRaw = selectedItem
-    ? colorByPath[selectedItem.metadata?.agentPath as string]
-    : undefined;
-  const selectedColor = resolveAgentColor(selectedColorRaw);
+
+  // The agent currently scoping the right panel: either the agent the
+  // selected card belongs to, or the agent the user picked for a new
+  // mission. Drives the per-agent composer features (skills, action
+  // form, model selector) provided by `useAgentChatPanel`.
+  const activeAgent = useMemo<Agent | null>(() => {
+    if (selectedItem) {
+      const path = selectedItem.metadata?.agentPath as string | undefined;
+      return agents.find((a) => a.folderPath === path) ?? null;
+    }
+    return pendingAgent;
+  }, [selectedItem, pendingAgent, agents]);
+  // Panel avatar color tracks the active agent so a new-mission card
+  // for picked agent A uses A's color, not the selectedItem fallback.
+  const selectedColor = resolveAgentColor(activeAgent?.color);
+  const activeAgentDef = activeAgent ? getAgentDef(activeAgent.configId) ?? null : null;
+  const selectedSessionKey = selectedItem
+    ? (selectedItem.metadata?.sessionKey as string | undefined) ?? `activity-${selectedItem.id}`
+    : null;
+  const onActionCreated = useCallback(
+    (id: string) => mc.setSelectedId(id),
+    [mc],
+  );
+  const panel = useAgentChatPanel({
+    agent: activeAgent,
+    agentDef: activeAgentDef,
+    selectedSessionKey,
+    onSelectSession: onActionCreated,
+  });
 
   if (agents.length === 0) {
     return (
@@ -123,7 +171,7 @@ export function Dashboard() {
       <Button
         className="mt-4 rounded-full gap-1.5"
         size="sm"
-        onClick={() => setNewDialogOpen(true)}
+        onClick={() => setAgentPickerOpen(true)}
       >
         <HoustonLogo size={16} />
         {t("dashboard:empty.newMission")}
@@ -142,7 +190,7 @@ export function Dashboard() {
           <div className="ml-auto flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-full h-8 gap-1.5">
+                <Button variant="outline" className="rounded-full gap-1.5">
                   {filterPath
                     ? agents.find((a) => a.folderPath === filterPath)?.name ?? t("dashboard:filter.allAgents")
                     : t("dashboard:filter.allAgents")}
@@ -166,9 +214,8 @@ export function Dashboard() {
               </DropdownMenuContent>
             </DropdownMenu>
             <Button
-              size="sm"
-              className="rounded-full gap-1.5 h-8"
-              onClick={() => setNewDialogOpen(true)}
+              data-keep-panel-open
+              onClick={() => setAgentPickerOpen(true)}
             >
               <HoustonLogo size={16} />
               New mission
@@ -192,11 +239,12 @@ export function Dashboard() {
           onSendMessage={mc.handleSendMessage}
           onLoadHistory={mc.loadHistory}
           onHistoryLoaded={mc.handleHistoryLoaded}
+          onNewPanelOpenerReady={handleOpenerReady}
           emptyState={emptyBoard}
           panelContainer={panelContainer}
           onPanelOpenChange={setMissionPanelOpen}
           onStopSession={handleStopSession}
-          panelAgentName={selectedItem?.subtitle}
+          panelAgentName={activeAgent?.name ?? selectedItem?.subtitle}
           panelAvatar={
             selectedItem?.status === "running" ? (
               <span className="size-10 rounded-full flex items-center justify-center shrink-0 card-running-glow">
@@ -213,14 +261,28 @@ export function Dashboard() {
           }
           thinkingIndicator={<HoustonThinkingIndicator />}
           cardLabels={cardLabels}
+          // Per-agent panel features pulled from the shared hook so
+          // Mission Control's right panel matches the BoardTab right
+          // panel exactly. Active when `activeAgent` is set (a card is
+          // selected OR the user just picked an agent for new mission).
+          chatEmptyState={panel.chatEmptyState}
+          composerOverride={panel.composerOverride}
+          footer={panel.footer}
+          renderUserMessage={panel.renderUserMessage}
+          isSpecialTool={panel.isSpecialTool}
+          renderToolResult={panel.renderToolResult}
+          renderTurnSummary={panel.renderTurnSummary}
+          renderLink={panel.renderLink}
         />
       </div>
 
-      <MissionControlNewDialog
-        open={newDialogOpen}
-        onOpenChange={setNewDialogOpen}
+      {panel.pickerDialog}
+
+      <AgentPickerDialog
+        open={agentPickerOpen}
+        onOpenChange={setAgentPickerOpen}
         agents={agents}
-        onSubmit={mc.handleCreate}
+        onPick={handlePickAgent}
       />
     </div>
   );

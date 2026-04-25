@@ -8,7 +8,7 @@
 import { useCallback, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { ChatPanel, type FeedItem } from "@houston-ai/chat";
+import { ChatPanel, decodeActionMessage, type FeedItem } from "@houston-ai/chat";
 import { HoustonAvatar } from "@houston-ai/core";
 import type { Agent, ConversationEntry } from "@houston-ai/engine-client";
 import {
@@ -22,6 +22,7 @@ import {
 } from "../hooks/use-conversations";
 import { useAgents } from "../hooks/use-agents";
 import { useVisualViewport } from "../hooks/use-keyboard-height";
+import { UserActionMessage } from "./user-action-message";
 
 export function ChatView() {
   const nav = useNavigate();
@@ -109,6 +110,11 @@ export function ChatView() {
           onSend={handleSend}
           isLoading={sendMutation.isPending || createMission.isPending}
           placeholder="Message…"
+          renderUserMessage={(msg) => {
+            const invocation = decodeActionMessage(msg.content);
+            if (!invocation) return undefined;
+            return <UserActionMessage invocation={invocation} />;
+          }}
         />
       </div>
     </div>

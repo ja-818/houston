@@ -69,6 +69,9 @@ export interface ChatPanelProps {
   /** Custom renderer for system messages. Return a node to replace the default,
    *  or undefined to use the default italic text. */
   renderSystemMessage?: (msg: import("./feed-to-messages").ChatMessage) => ReactNode | undefined;
+  /** Custom renderer for user messages. Return a node to replace the
+   *  default user bubble, or `undefined` to keep the markdown body. */
+  renderUserMessage?: (msg: import("./feed-to-messages").ChatMessage) => ReactNode | undefined;
   /** Node rendered after the last message (inside the scroll container).
    *  Useful for inline end-of-feed cards like auth reconnect prompts. */
   afterMessages?: ReactNode;
@@ -90,6 +93,14 @@ export interface ChatPanelProps {
    * render as the default `onOpenLink` button.
    */
   renderLink?: ChatMessagesProps["renderLink"];
+  /**
+   * Replaces the composer entirely with this node. Apps use it to render
+   * a focused interaction surface (e.g. an action-input form) that should
+   * own the bottom of the panel until the user submits or cancels. While
+   * `composerOverride` is set, the textarea, file picker, and footer are
+   * not rendered.
+   */
+  composerOverride?: ReactNode;
 }
 
 function deriveStatus(items: FeedItem[], isLoading: boolean): ChatStatus {
@@ -129,6 +140,7 @@ export function ChatPanel({
   renderToolResult,
   renderMessageAvatar,
   renderSystemMessage,
+  renderUserMessage,
   afterMessages,
   renderTurnSummary,
   onOpenLink,
@@ -139,6 +151,7 @@ export function ChatPanel({
   onAttachmentsChange,
   onNotice,
   footer,
+  composerOverride,
 }: ChatPanelProps) {
   const status = statusProp ?? deriveStatus(feedItems, isLoading);
   const messages = useMemo(() => feedItemsToMessages(feedItems), [feedItems]);
@@ -202,6 +215,7 @@ export function ChatPanel({
           renderToolResult={renderToolResult}
           renderMessageAvatar={renderMessageAvatar}
           renderSystemMessage={renderSystemMessage}
+          renderUserMessage={renderUserMessage}
           afterMessages={afterMessages}
           renderTurnSummary={renderTurnSummary}
           onOpenLink={onOpenLink}
@@ -213,18 +227,24 @@ export function ChatPanel({
         </div>
       )}
 
-      <ChatInput
-        onSend={handleSend}
-        onStop={onStop}
-        status={status}
-        placeholder={placeholder}
-        value={value}
-        onValueChange={onValueChange}
-        attachments={files}
-        onAttachmentsChange={setFiles}
-        onNotice={onNotice}
-        footer={footer}
-      />
+      {composerOverride ? (
+        <div className="shrink-0 px-4 pb-6 pt-2">
+          <div className="max-w-3xl mx-auto">{composerOverride}</div>
+        </div>
+      ) : (
+        <ChatInput
+          onSend={handleSend}
+          onStop={onStop}
+          status={status}
+          placeholder={placeholder}
+          value={value}
+          onValueChange={onValueChange}
+          attachments={files}
+          onAttachmentsChange={setFiles}
+          onNotice={onNotice}
+          footer={footer}
+        />
+      )}
     </div>
   );
 }

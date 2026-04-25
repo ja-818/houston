@@ -38,6 +38,7 @@ Need specific knowledge? Load on demand:
 - Repo shape, products, engine story → `knowledge-base/architecture.md`
 - Colors, typography, components, animation → `knowledge-base/design-system.md`
 - `.houston/` layout, schemas, reactivity → `knowledge-base/files-first.md`
+- Skills on disk / "Actions" in UI, picker, invocation marker → `knowledge-base/actions.md`
 - Agent manifest, tiers, sidebar, workspaces → `knowledge-base/agent-manifest.md`
 - Engine wire protocol (REST + WS) → `knowledge-base/engine-protocol.md`
 - `houston-engine` binary ops → `knowledge-base/engine-server.md`
