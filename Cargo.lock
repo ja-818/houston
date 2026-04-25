@@ -2293,7 +2293,7 @@ dependencies = [
 
 [[package]]
 name = "houston-agent-files"
-version = "0.3.2"
+version = "0.4.1"
 dependencies = [
  "chrono",
  "serde",
@@ -2307,7 +2307,7 @@ dependencies = [
 
 [[package]]
 name = "houston-agents-conversations"
-version = "0.3.2"
+version = "0.4.1"
 dependencies = [
  "houston-db",
  "houston-terminal-manager",
@@ -2320,7 +2320,7 @@ dependencies = [
 
 [[package]]
 name = "houston-app"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "chrono",
  "dirs 5.0.1",
@@ -2344,7 +2344,7 @@ dependencies = [
 
 [[package]]
 name = "houston-composio"
-version = "0.3.2"
+version = "0.4.1"
 dependencies = [
  "base64 0.22.1",
  "dirs 5.0.1",
@@ -2361,7 +2361,7 @@ dependencies = [
 
 [[package]]
 name = "houston-db"
-version = "0.3.2"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2373,7 +2373,7 @@ dependencies = [
 
 [[package]]
 name = "houston-engine-core"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2401,7 +2401,7 @@ dependencies = [
 
 [[package]]
 name = "houston-engine-protocol"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "chrono",
  "houston-terminal-manager",
@@ -2413,7 +2413,7 @@ dependencies = [
 
 [[package]]
 name = "houston-engine-server"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2448,7 +2448,7 @@ dependencies = [
 
 [[package]]
 name = "houston-events"
-version = "0.3.2"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2462,7 +2462,7 @@ dependencies = [
 
 [[package]]
 name = "houston-file-watcher"
-version = "0.3.2"
+version = "0.4.1"
 dependencies = [
  "houston-ui-events",
  "notify",
@@ -2473,7 +2473,7 @@ dependencies = [
 
 [[package]]
 name = "houston-scheduler"
-version = "0.3.2"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2487,12 +2487,13 @@ dependencies = [
 
 [[package]]
 name = "houston-skills"
-version = "0.3.2"
+version = "0.4.1"
 dependencies = [
  "chrono",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "serde_yml",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
@@ -2501,7 +2502,7 @@ dependencies = [
 
 [[package]]
 name = "houston-tauri"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "houston-agent-files",
  "houston-agents-conversations",
@@ -2519,7 +2520,7 @@ dependencies = [
 
 [[package]]
 name = "houston-terminal-manager"
-version = "0.3.2"
+version = "0.4.1"
 dependencies = [
  "dirs 5.0.1",
  "serde",
@@ -2530,7 +2531,7 @@ dependencies = [
 
 [[package]]
 name = "houston-tunnel"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2550,7 +2551,7 @@ dependencies = [
 
 [[package]]
 name = "houston-ui-events"
-version = "0.3.2"
+version = "0.4.1"
 dependencies = [
  "houston-terminal-manager",
  "serde",
@@ -3405,6 +3406,16 @@ dependencies = [
  "tracing",
  "uuid",
  "zerocopy 0.7.35",
+]
+
+[[package]]
+name = "libyml"
+version = "0.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3302702afa434ffa30847a83305f0a69d6abd74293b6554c18ec85c7ef30c980"
+dependencies = [
+ "anyhow",
+ "version_check",
 ]
 
 [[package]]
@@ -5777,6 +5788,21 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "serde_yml"
+version = "0.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59e2dd588bf1597a252c3b920e0143eb99b0f76e4e082f4c92ce34fbc9e71ddd"
+dependencies = [
+ "indexmap 2.13.0",
+ "itoa",
+ "libyml",
+ "memchr",
+ "ryu",
+ "serde",
+ "version_check",
 ]
 
 [[package]]

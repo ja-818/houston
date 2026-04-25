@@ -44,6 +44,14 @@ export interface ChatMessagesProps {
   /** Custom renderer for system messages. Return a node to replace the default,
    *  or undefined to use the default italic text. */
   renderSystemMessage?: (msg: ChatMessage) => ReactNode | undefined;
+  /**
+   * Custom renderer for user messages. Return a node to replace the
+   * default user bubble (e.g. to render a structured action-invocation
+   * card), or `undefined` to fall through to the default markdown body.
+   * The `Message` wrapper still renders around the returned node so
+   * speaker attribution stays consistent.
+   */
+  renderUserMessage?: (msg: ChatMessage) => ReactNode | undefined;
   /** Node rendered after the last message (inside the scroll container).
    *  Useful for inline end-of-feed cards like auth reconnect prompts. */
   afterMessages?: ReactNode;
@@ -90,6 +98,7 @@ export function ChatMessages({
   renderMessageAvatar,
   renderTurnSummary,
   renderSystemMessage,
+  renderUserMessage,
   afterMessages,
   onOpenLink,
   renderLink,
@@ -140,6 +149,10 @@ export function ChatMessages({
                   />
                 )}
                 {msg.content && (() => {
+                  if (msg.from === "user" && renderUserMessage) {
+                    const custom = renderUserMessage(msg);
+                    if (custom !== undefined) return custom;
+                  }
                   const transformed = msg.from === "assistant" && transformContent
                     ? transformContent(msg.content)
                     : null;

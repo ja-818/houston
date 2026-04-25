@@ -75,6 +75,12 @@ export interface CreateMissionOptions {
   providerOverride?: string;
   /** Model override forwarded to tauriChat.send. */
   modelOverride?: string;
+  /**
+   * Explicit activity title. Overrides the default `autoTitleFromText(text)`.
+   * Used by action invocations where `text` is a structured marker that
+   * should not bleed into the kanban card title.
+   */
+  title?: string;
 }
 
 export interface CreateMissionResult {
@@ -97,7 +103,7 @@ export async function createMission(
   text: string,
   opts: CreateMissionOptions = {},
 ): Promise<CreateMissionResult> {
-  const title = autoTitleFromText(text);
+  const title = opts.title ?? autoTitleFromText(text);
   const description = text;
 
   const item = await tauriActivity.create(

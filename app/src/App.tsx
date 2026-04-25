@@ -184,7 +184,7 @@ export default function App() {
                       setViewMode(tab);
                     }}
                     actions={
-                      <div className="flex items-center gap-2">
+                      <div data-keep-panel-open className="flex items-center gap-2">
                         {onStartMission && (
                           <Button
                             onClick={() => {

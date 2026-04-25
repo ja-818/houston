@@ -173,6 +173,13 @@ export type { ProgressStep, StepStatus } from "./use-progress-steps";
 export { ProgressPanel } from "./progress-panel";
 export type { ProgressPanelProps } from "./progress-panel";
 
+// === Action Messages ===
+// Encoded user-message marker that signals "this message is the user
+// running an action". Decoded into a structured payload so consumers
+// (desktop, mobile) can render the same card.
+export { decodeActionMessage, resolveActionImage } from "./action-message";
+export type { ActionInvocation, ActionInvocationField } from "./action-message";
+
 // === Utilities ===
 export { Typewriter } from "./typewriter";
 export { mergeFeedItem } from "./feed-merge";

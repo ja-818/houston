@@ -24,33 +24,60 @@ and conform to it exactly.** Missing required fields or wrong enum values will \
 break the UI. If you need a new data shape, propose it as a schema change rather \
 than writing ad-hoc JSON.";
 
-/// Self-improvement guidance — skills + learnings protocol.
+/// Self-improvement guidance — skills (Actions in the UI) + learnings protocol.
 pub const SELF_IMPROVEMENT_GUIDANCE: &str = r#"
 ## Self-Improvement
 
 You have persistent skills and learnings that survive across sessions.
 
-### Skills (.agents/skills/)
+### Skills (.agents/skills/) — shown to users as "Actions"
 
-Skills are reusable procedures you've learned from experience. Each skill is a directory with a SKILL.md file.
+The on-disk concept is "skill" (matches Claude Code / industry naming). The Houston UI surfaces these to non-technical users as **"Actions"**. When the user asks you to "create a new action", "add an action", or anything similar, they mean a skill — write the file to `.agents/skills/<name>/SKILL.md`.
 
-**Before starting complex work:** Check if a relevant skill exists by reading `.agents/skills/` directory.
+Skills are reusable procedures. Each skill is a directory with a SKILL.md file. The frontmatter drives both Claude's tool discovery (via `name` + `description`) AND the Houston UI's Action picker (via `category`, `featured`, `image`, `integrations`, `inputs`, `prompt_template`).
+
+**Before starting complex work:** Check if a relevant skill exists by reading the `.agents/skills/` directory.
 
 **Create a skill when:**
+- The user asks you to "create an action" / "save this as an action"
 - A task took 5+ steps and the procedure would be reusable
 - You fixed a tricky error through trial and error
 - You discovered a non-trivial workflow
 - The user asks you to remember a procedure
 
-To create: make a directory under `.agents/skills/<skill-name>/` and write a SKILL.md with this format:
+To create: make a directory under `.agents/skills/<skill-name>/` and write a SKILL.md. Use this **full schema** so the action shows up correctly in the UI:
+
 ```
 ---
-name: skill-name
-description: One-line description
+name: research-company
+description: Deep-dive on a company's positioning, pricing, and recent news
 version: 1
-tags: [tag1, tag2]
+tags: [research, sales]
 created: YYYY-MM-DD
 last_used: YYYY-MM-DD
+category: research                       # groups the action under a tab in the picker
+featured: yes                            # surfaces it on the empty-chat showcase
+image: magnifying-glass-tilted-left      # Microsoft Fluent 3D Emoji slug, OR a full https URL
+integrations: [tavily, gmail]            # Composio toolkit slugs (lowercase)
+inputs:                                  # optional. when present, the UI shows a form
+  - name: company_url
+    label: Company to research
+    placeholder: e.g. https://stripe.com
+    required: true
+  - name: focus
+    label: What should I focus on?
+    type: textarea                       # text | textarea | select
+    required: false
+    default: Pricing, recent news
+  - name: tone
+    label: Tone
+    type: select
+    options: [Casual, Formal, Punchy]
+    default: Casual
+prompt_template: |                       # `{{name}}` placeholders match `inputs[].name`
+  Research the company at {{company_url}}.
+  Focus areas: {{focus}}
+  Tone: {{tone}}
 ---
 
 ## Procedure
@@ -59,6 +86,13 @@ Step-by-step instructions...
 ## Pitfalls
 Known issues and workarounds...
 ```
+
+**Frontmatter notes:**
+- `image`: prefer a Fluent emoji slug (browse https://github.com/microsoft/fluentui-emoji/tree/main/assets — folder name lowercased, spaces → dashes, e.g. "Money bag" → `money-bag`). Full https URLs also work.
+- `featured: yes` makes the action visible on the chat empty-state cards.
+- `inputs` is **optional**. Without it the action runs immediately when the user clicks Start. With it, the UI renders a labelled form and interpolates the values into `prompt_template`.
+- `prompt_template` is multi-line via the YAML pipe (`|`) block scalar. `{{var}}` placeholders must match `inputs[].name`.
+- The user-facing message is the rendered template; you'll also see an explicit `Use the <skill> skill.` prefix that the desktop adds so invocation stays deterministic.
 
 **Update a skill when:** You're using one and find a step that's wrong or incomplete. Fix it immediately.
 

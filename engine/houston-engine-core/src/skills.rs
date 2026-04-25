@@ -27,6 +27,28 @@ pub struct SkillSummaryResponse {
     pub tags: Vec<String>,
     pub created: Option<String>,
     pub last_used: Option<String>,
+    pub category: Option<String>,
+    pub featured: bool,
+    pub integrations: Vec<String>,
+    pub image: Option<String>,
+    pub inputs: Vec<SkillInputResponse>,
+    pub prompt_template: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillInputResponse {
+    pub name: String,
+    pub label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub placeholder: Option<String>,
+    #[serde(rename = "type")]
+    pub kind: String,
+    pub required: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub options: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -159,6 +181,28 @@ pub fn list(workspace_path: &str) -> CoreResult<Vec<SkillSummaryResponse>> {
             tags: s.tags,
             created: s.created,
             last_used: s.last_used,
+            category: s.category,
+            featured: s.featured,
+            integrations: s.integrations,
+            image: s.image,
+            inputs: s
+                .inputs
+                .into_iter()
+                .map(|i| SkillInputResponse {
+                    name: i.name,
+                    label: i.label,
+                    placeholder: i.placeholder,
+                    kind: match i.kind {
+                        houston_skills::SkillInputKind::Text => "text".into(),
+                        houston_skills::SkillInputKind::Textarea => "textarea".into(),
+                        houston_skills::SkillInputKind::Select => "select".into(),
+                    },
+                    required: i.required,
+                    default: i.default,
+                    options: i.options,
+                })
+                .collect(),
+            prompt_template: s.prompt_template,
         })
         .collect())
 }

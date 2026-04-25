@@ -60,6 +60,8 @@ All writes: temp file + rename. Path-traversal safe via `houston-agent-files::sa
 ## Skills discovery
 Skills live at `.agents/skills/<name>/SKILL.md`. Houston mirrors to `.claude/skills/<name>` via symlink (Claude Code reads). Flat `.md` under `.agents/skills/` auto-migrated to `<name>/SKILL.md` on next `list_skills`.
 
+Same files surface in the UI as **"Actions"** (per-user vocabulary). Frontmatter drives card image, category tabs, featured-state showcase, integration logos, and an inline form (with input fields + a `prompt_template`). Full schema + render pipeline → [`actions.md`](actions.md).
+
 ## SQLite (minimal)
 Only two tables:
 - `chat_feed` — keyed by `claude_session_id`. UI conversation replay on restart.

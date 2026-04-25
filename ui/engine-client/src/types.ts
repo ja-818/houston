@@ -246,6 +246,29 @@ export interface SkillSummary {
   tags: string[];
   created: string | null;
   lastUsed: string | null;
+  /** Optional user-facing category. Drives grouping in the "New mission" picker. */
+  category: string | null;
+  /** Surface this skill on the Featured tab of the "New mission" picker. */
+  featured: boolean;
+  /** Composio toolkit slugs this skill touches (e.g. ["gmail", "slack"]). */
+  integrations: string[];
+  /** Image URL or Microsoft Fluent 3D Emoji slug (e.g. "rocket"). */
+  image: string | null;
+  /** Declared user inputs for this action. Empty = free-form composer. */
+  inputs: SkillInputDef[];
+  /** Prompt template with `{{name}}` placeholders matched against `inputs[].name`. */
+  promptTemplate: string | null;
+}
+
+export interface SkillInputDef {
+  name: string;
+  label: string;
+  placeholder?: string;
+  type: "text" | "textarea" | "select";
+  required: boolean;
+  default?: string;
+  /** Options for `type: select`. Empty for text/textarea. */
+  options?: string[];
 }
 
 export interface SkillDetail {

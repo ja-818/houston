@@ -17,5 +17,19 @@
   },
   "toasts": {
     "attached": "Anexou: {{names}}"
+  },
+  "chatEmpty": {
+    "heading": "Em que posso ajudar?",
+    "subheading": "Toque uma ação para começar, ou escreva o que você precisa abaixo.",
+    "seeMore_one": "Ver mais {{count}} ação",
+    "seeMore_other": "Ver mais {{count}} ações"
+  },
+  "composerAction": {
+    "browse": "Ações"
+  },
+  "actionForm": {
+    "start": "Começar",
+    "cancel": "Fechar",
+    "optional": "(opcional)"
   }
 }

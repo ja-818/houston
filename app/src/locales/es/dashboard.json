@@ -18,13 +18,23 @@
     "description": "Arma tu equipo de IA y haz lo imposible.",
     "cta": "Nuevo agente"
   },
-  "newMissionDialog": {
-    "title": "Nueva conversación",
-    "description": "Elige un agente y describe qué debe hacer.",
+  "agentPicker": {
+    "title": "¿Qué agente debería ejecutar esto?",
+    "description": "Elige un agente para abrir una nueva conversación."
+  },
+  "actionPicker": {
+    "title": "Elige una acción",
+    "description": "Explora las acciones que este agente ya sabe hacer.",
+    "descriptionWithAgent": "Explora las acciones que {{name}} ya sabe hacer.",
     "agentLabel": "Agente",
     "agentPlaceholder": "Selecciona un agente...",
-    "promptLabel": "Indicación",
-    "promptPlaceholder": "¿En qué quieres que trabaje el agente?",
-    "submit": "Iniciar conversación"
+    "blank": "Conversación en blanco",
+    "blankDescription": "Abre un chat nuevo y escribe tu propia indicación.",
+    "featuredTab": "Destacadas",
+    "otherTab": "Otras",
+    "featuredEmpty": "Aún no hay acciones destacadas.",
+    "pickAgentFirst": "Elige un agente para ver sus acciones.",
+    "skillsLoading": "Cargando acciones...",
+    "skillsEmpty": "Aún no hay acciones en esta categoría."
   }
 }
