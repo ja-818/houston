@@ -1,15 +1,16 @@
 import { Input, cn } from "@houston-ai/core";
 import { Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { AgentDefinition, AgentCategory, StoreListing } from "../../lib/types";
 import { AgentCard, StoreAgentCard } from "./experience-card";
 
-const categories: { id: "all" | AgentCategory; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "productivity", label: "Productivity" },
-  { id: "development", label: "Development" },
-  { id: "research", label: "Research" },
-  { id: "creative", label: "Creative" },
-  { id: "business", label: "Business" },
+const CATEGORY_KEYS: { id: "all" | AgentCategory; labelKey: string }[] = [
+  { id: "all", labelKey: "categoryAll" },
+  { id: "productivity", labelKey: "categoryProductivity" },
+  { id: "development", labelKey: "categoryDevelopment" },
+  { id: "research", labelKey: "categoryResearch" },
+  { id: "creative", labelKey: "categoryCreative" },
+  { id: "business", labelKey: "categoryBusiness" },
 ];
 
 interface StoreStepProps {
@@ -39,6 +40,7 @@ export function StoreStep({
   onSelect,
   onInstall,
 }: StoreStepProps) {
+  const { t } = useTranslation("shell");
   // Filter store listings that aren't already in builtin/community lists
   const localIds = new Set([
     ...houstonAgents.map((d) => d.config.id),
@@ -70,14 +72,14 @@ export function StoreStep({
           <Input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search the store..."
+            placeholder={t("store.searchPlaceholder")}
             className="pl-9 rounded-full bg-secondary border-border focus:bg-background"
           />
         </div>
       </div>
 
       <div className="shrink-0 flex items-center gap-5 px-6 border-b border-border">
-        {categories.map((cat) => {
+        {CATEGORY_KEYS.map((cat) => {
           const isActive = category === cat.id;
           return (
             <button
@@ -90,7 +92,7 @@ export function StoreStep({
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {cat.label}
+              {t(`store.${cat.labelKey}`)}
               {isActive && (
                 <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full" />
               )}
@@ -101,7 +103,7 @@ export function StoreStep({
 
       <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
         {houstonAgents.length > 0 && (
-          <StoreSection label="By Houston">
+          <StoreSection label={t("store.sectionHoustonAgents")}>
             {houstonAgents.map((def) => (
               <AgentCard
                 key={def.config.id}
@@ -113,7 +115,7 @@ export function StoreStep({
         )}
 
         {communityAgents.length > 0 && (
-          <StoreSection label="Community">
+          <StoreSection label={t("store.sectionCommunityAgents")}>
             {communityAgents.map((def) => (
               <AgentCard
                 key={def.config.id}
@@ -125,7 +127,7 @@ export function StoreStep({
         )}
 
         {filteredStore.length > 0 && (
-          <StoreSection label="Houston Store">
+          <StoreSection label={t("store.sectionStore")}>
             {filteredStore.map((listing) => (
               <StoreAgentCard
                 key={listing.id}
@@ -141,7 +143,7 @@ export function StoreStep({
         {totalResults === 0 && !hasResults && (
           <div className="flex items-center justify-center py-16">
             <p className="text-sm text-muted-foreground">
-              No agents match your search
+              {t("store.noResults")}
             </p>
           </div>
         )}

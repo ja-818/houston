@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, CircleDashed, ExternalLink, Terminal, ChevronDown } from "lucide-react";
 import {
   Spinner,
@@ -157,6 +158,7 @@ function ProviderCard({
   onSelect: () => void;
   onExpand: () => void;
 }) {
+  const { t } = useTranslation("providers");
   const handleClick = () => {
     onSelect();
     // Always settle the expansion state — the parent decides whether this
@@ -174,7 +176,9 @@ function ProviderCard({
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
-      aria-label={`${provider.name} — ${connected ? "Connected" : "Not connected"}`}
+      aria-label={connected
+        ? t("card.ariaLabelConnected", { name: provider.name })
+        : t("card.ariaLabelNotConnected", { name: provider.name })}
       aria-pressed={selected}
       className={`
         relative rounded-xl p-5 transition-all flex flex-col items-center gap-3 cursor-pointer
@@ -211,12 +215,12 @@ function ProviderCard({
         {connected ? (
           <>
             <Check className="h-3 w-3 text-[#00a240]" />
-            <span className="text-[#00a240] font-medium">Connected</span>
+            <span className="text-[#00a240] font-medium">{t("card.connected")}</span>
           </>
         ) : (
           <>
             <CircleDashed className="h-3 w-3 text-muted-foreground" />
-            <span className="text-muted-foreground">Not connected</span>
+            <span className="text-muted-foreground">{t("card.notConnected")}</span>
           </>
         )}
       </div>
@@ -237,7 +241,7 @@ function ProviderCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-64">
               <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-                Model
+                {t("card.modelDropdownLabel")}
               </DropdownMenuLabel>
               {provider.models.map((m) => {
                 const isActive = m.id === selectedModel;
@@ -282,6 +286,7 @@ function SetupGuidance({
   isSelected: boolean;
   onRefresh: () => void;
 }) {
+  const { t } = useTranslation("providers");
   const installed = status?.cli_installed ?? false;
   const authenticated = status?.authenticated ?? false;
   const [loginLaunched, setLoginLaunched] = useState(false);
@@ -304,18 +309,18 @@ function SetupGuidance({
 
   return (
     <div className="rounded-xl border border-black/[0.08] bg-secondary/50 p-4 space-y-3">
-      <p className="text-sm font-medium text-foreground">Set up {provider.name}</p>
+      <p className="text-sm font-medium text-foreground">{t("setup.headline", { provider: provider.name })}</p>
 
       <div className="space-y-2">
         <StatusRow
           ok={installed}
-          okLabel={`${provider.cliName} CLI installed`}
-          notOkLabel={`${provider.cliName} CLI not found`}
+          okLabel={t("setup.cliInstalled", { cli: provider.cliName })}
+          notOkLabel={t("setup.cliNotFound", { cli: provider.cliName })}
         />
         <StatusRow
           ok={authenticated}
-          okLabel="Signed in"
-          notOkLabel="Not signed in"
+          okLabel={t("setup.signedIn")}
+          notOkLabel={t("setup.notSignedIn")}
         />
       </div>
 
@@ -323,12 +328,12 @@ function SetupGuidance({
         <div className="flex items-start gap-2 text-sm">
           <Terminal className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
           <div className="text-muted-foreground">
-            Install the {provider.cliName} CLI —{" "}
+            {t("setup.installHint", { cli: provider.cliName })}{" "}
             <button
               onClick={() => tauriSystem.openUrl(provider.installUrl)}
               className="text-foreground underline underline-offset-2 font-medium"
             >
-              Installation guide
+              {t("setup.installGuide")}
               <ExternalLink className="inline h-3 w-3 ml-0.5 -mt-0.5" />
             </button>
           </div>
@@ -341,7 +346,7 @@ function SetupGuidance({
           className="rounded-full"
           size="sm"
         >
-          Sign in with {provider.name}
+          {t("setup.signInWith", { provider: provider.name })}
         </Button>
       )}
 
@@ -349,20 +354,20 @@ function SetupGuidance({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Spinner className="h-3.5 w-3.5" />
-            <span>Waiting for browser sign-in...</span>
+            <span>{t("setup.waiting")}</span>
           </div>
           <button
             onClick={handleSignIn}
             className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
           >
-            Open browser again
+            {t("setup.openBrowserAgain")}
           </button>
         </div>
       )}
 
       {loginError && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2.5 text-xs text-destructive">
-          <div className="font-medium mb-0.5">Couldn't launch {provider.cliName}</div>
+          <div className="font-medium mb-0.5">{t("setup.launchErrorTitle", { cli: provider.cliName })}</div>
           <div className="text-destructive/80">{loginError}</div>
         </div>
       )}
@@ -372,13 +377,13 @@ function SetupGuidance({
           onClick={onRefresh}
           className="inline-flex items-center gap-1 h-7 px-3 rounded-full border border-border bg-background text-foreground text-xs font-medium hover:bg-secondary transition-colors"
         >
-          I've installed it — check again
+          {t("setup.installedCheckAgain")}
         </button>
       )}
 
       {isSelected && (
         <p className="text-xs text-muted-foreground">
-          You can continue without connecting — but you'll need the CLI set up before using agents.
+          {t("setup.canContinueHint")}
         </p>
       )}
     </div>

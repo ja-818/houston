@@ -9,9 +9,28 @@ import { Upload } from "lucide-react"
 import type { FileEntry } from "./types"
 import { useDropZone } from "./drop-zone"
 import { FileRow, FolderSection, COL_GRID } from "./file-row"
+import type { FileMenuLabels } from "./file-menu"
 import { NewFolderInput } from "./new-folder-input"
 import { buildTree } from "./tree"
 import { sortTree, type SortKey, type SortDirection } from "./utils"
+
+export interface FilesBrowserLabels {
+  columnName?: string
+  columnDateModified?: string
+  columnSize?: string
+  columnKind?: string
+  loading?: string
+  browseFiles?: string
+}
+
+const DEFAULT_LABELS: Required<FilesBrowserLabels> = {
+  columnName: "Name",
+  columnDateModified: "Date Modified",
+  columnSize: "Size",
+  columnKind: "Kind",
+  loading: "Loading\u2026",
+  browseFiles: "Browse files",
+}
 
 export interface FilesBrowserProps {
   files: FileEntry[]
@@ -31,6 +50,10 @@ export interface FilesBrowserProps {
   emptyDescription?: string
   /** Optional action rendered in the bottom status bar (e.g. "Open in Finder" link) */
   statusBarAction?: React.ReactNode
+  /** Overrides for chrome labels (column headers, loading, browse CTA). */
+  labels?: FilesBrowserLabels
+  /** Overrides for the right-click context-menu labels. */
+  menuLabels?: FileMenuLabels
 }
 
 export function FilesBrowser({
@@ -39,7 +62,10 @@ export function FilesBrowser({
   emptyTitle = "No files yet",
   emptyDescription = "When agents create files, they\u2019ll appear here.",
   statusBarAction,
+  labels,
+  menuLabels,
 }: FilesBrowserProps) {
+  const l = { ...DEFAULT_LABELS, ...labels }
   // Internal selection state — used when consumer doesn't control selection
   const [internalSelected, setInternalSelected] = useState<string | null>(null)
   const selectedPath = controlledSelected !== undefined ? controlledSelected : internalSelected
@@ -108,7 +134,7 @@ export function FilesBrowser({
         </div>
         {onBrowse && (
           <Button variant="default" size="sm" onClick={onBrowse}>
-            <Upload className="size-4 mr-1.5" /> Browse files
+            <Upload className="size-4 mr-1.5" /> {l.browseFiles}
           </Button>
         )}
       </div>
@@ -122,10 +148,10 @@ export function FilesBrowser({
     >
       <div className="h-[24px] shrink-0 border-b border-[#e5e5e5] bg-[#fafafa] select-none flex items-center rounded-t-xl">
         <div className="flex-1 min-w-0 items-center h-full" style={{ display: "grid", gridTemplateColumns: COL_GRID }}>
-          <HeaderCell label="Name" col="name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="pl-7" />
-          <HeaderCell label="Date Modified" col="dateModified" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-          <HeaderCell label="Size" col="size" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-          <HeaderCell label="Kind" col="kind" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} last />
+          <HeaderCell label={l.columnName} col="name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="pl-7" />
+          <HeaderCell label={l.columnDateModified} col="dateModified" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+          <HeaderCell label={l.columnSize} col="size" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+          <HeaderCell label={l.columnKind} col="kind" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} last />
         </div>
       </div>
 
@@ -150,7 +176,7 @@ export function FilesBrowser({
       >
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <p className="text-sm text-muted-foreground/50">Loading\u2026</p>
+            <p className="text-sm text-muted-foreground/50">{l.loading}</p>
           </div>
         ) : (
           <>
@@ -169,6 +195,7 @@ export function FilesBrowser({
                     onOpen={onOpen} onReveal={onReveal} onDelete={onDelete}
                     onRename={onRename}
                     onFilesDropped={onFilesDropped} onDragActive={onDragActive} onMove={onMove}
+                    menuLabels={menuLabels}
                   />
                 ) : (
                   <FileRow
@@ -176,6 +203,7 @@ export function FilesBrowser({
                     selected={selectedPath === child.entry.path}
                     onSelect={handleSelect} onOpen={onOpen}
                     onReveal={onReveal} onDelete={onDelete} onRename={onRename} onMove={onMove}
+                    menuLabels={menuLabels}
                   />
                 ),
               )}

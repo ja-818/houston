@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ExternalLink, Download, Loader2 } from "lucide-react";
 import {
   Empty, EmptyHeader, EmptyTitle, EmptyDescription,
@@ -6,6 +7,7 @@ import {
 import { HoustonLogo } from "../shell/experience-card";
 
 export function LoadingState() {
+  const { t } = useTranslation("integrations");
   const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,9 +22,9 @@ export function LoadingState() {
     <Empty className="border-0">
       <HoustonLogo size={48} className="mb-2 animate-pulse" />
       <EmptyHeader>
-        <EmptyTitle>Loading your integrations</EmptyTitle>
+        <EmptyTitle>{t("loading.title")}</EmptyTitle>
         <EmptyDescription>
-          Checking Composio state…
+          {t("loading.body")}
         </EmptyDescription>
       </EmptyHeader>
       <div className="w-48 h-[2px] rounded-full bg-black/10 overflow-hidden">
@@ -39,7 +41,7 @@ export function LoadingState() {
 /**
  * Composio CLI is not installed yet. Ask the user to install it.
  * The install step is a one-time ~80 MB download from Composio's
- * official installer — Houston shells out to it under the hood.
+ * official installer, Houston shells out to it under the hood.
  */
 export function NotInstalledState({
   onInstall,
@@ -48,14 +50,13 @@ export function NotInstalledState({
   onInstall: () => void;
   installing: boolean;
 }) {
+  const { t } = useTranslation("integrations");
   return (
     <Empty className="border-0">
       <EmptyHeader>
-        <EmptyTitle>Connect your apps</EmptyTitle>
+        <EmptyTitle>{t("notInstalled.title")}</EmptyTitle>
         <EmptyDescription>
-          Houston uses the Composio CLI to let your agent use Gmail, Slack,
-          Google Drive, and 100+ other services on your behalf. One-time
-          install, about 80 MB.
+          {t("notInstalled.body")}
         </EmptyDescription>
       </EmptyHeader>
       <button
@@ -66,12 +67,12 @@ export function NotInstalledState({
         {installing ? (
           <>
             <Loader2 className="size-3 animate-spin" />
-            Installing…
+            {t("notInstalled.installing")}
           </>
         ) : (
           <>
             <Download className="size-3" />
-            Install Composio
+            {t("notInstalled.install")}
           </>
         )}
       </button>
@@ -80,20 +81,20 @@ export function NotInstalledState({
 }
 
 export function NeedsAuthState({ onAuth }: { onAuth: () => void }) {
+  const { t } = useTranslation("integrations");
   return (
     <Empty className="border-0">
       <EmptyHeader>
-        <EmptyTitle>Connect to Composio</EmptyTitle>
+        <EmptyTitle>{t("needsAuth.title")}</EmptyTitle>
         <EmptyDescription>
-          Sign in to Composio so your agent can use Gmail, Slack, Google
-          Drive, and 100+ other services on your behalf.
+          {t("needsAuth.body")}
         </EmptyDescription>
       </EmptyHeader>
       <button
         onClick={onAuth}
         className="inline-flex items-center gap-1 h-7 px-3 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors duration-200"
       >
-        Sign in to Composio
+        {t("needsAuth.signIn")}
       </button>
     </Empty>
   );
@@ -108,11 +109,12 @@ export function ErrorState({
   onRetry: () => void;
   onReconnect: () => void;
 }) {
+  const { t } = useTranslation("integrations");
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-4">
       <div className="space-y-2 text-center max-w-md">
         <h1 className="text-2xl font-semibold text-foreground tracking-tight">
-          Couldn't load integrations
+          {t("error.title")}
         </h1>
         <p className="text-sm text-muted-foreground">{message}</p>
       </div>
@@ -121,17 +123,16 @@ export function ErrorState({
           onClick={onRetry}
           className="inline-flex items-center gap-1 h-7 px-3 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors duration-200"
         >
-          Retry
+          {t("error.retry")}
         </button>
         <button
           onClick={onReconnect}
           className="inline-flex items-center gap-1 h-7 px-3 rounded-full border border-border bg-background text-foreground text-xs font-medium hover:bg-secondary transition-colors duration-200"
         >
-          Open Composio dashboard
+          {t("error.openDashboard")}
           <ExternalLink className="size-3" />
         </button>
       </div>
     </div>
   );
 }
-

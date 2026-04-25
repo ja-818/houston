@@ -114,7 +114,7 @@ Built in `engine/houston-engine-core/src/agents/prompt.rs::build_agent_context`:
 
 `CLAUDE.md` is read by the CLI (claude/codex) itself at startup, not injected by the engine.
 
-Users cannot edit the product prompt — it's compiled into the app binary. Per-agent surfaces that ARE user-editable: `CLAUDE.md` (job description), `.agents/skills/` (skills), `.houston/memory/LEARNINGS.md` (learnings), `.houston/prompts/modes/*.md` (mode overrides).
+Users cannot edit the product prompt — it's compiled into the app binary. Per-agent surfaces that ARE user-editable: `CLAUDE.md` (job description), `.agents/skills/` (skills), `.houston/learnings/learnings.json` (learnings), `.houston/prompts/modes/*.md` (mode overrides).
 
 ## Board / Activity tab
 `@houston-ai/board::AIBoard` = `KanbanBoard` + `KanbanDetailPanel` + `ChatPanel`. Each card = activity from `.houston/activity/activity.json`. Click → opens chat w/ conversation history. App `board-tab.tsx` ~140 lines, thin store wrapper.

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,7 @@ import { RefreshCw } from "lucide-react";
 import { useAgentCatalogStore } from "../../stores/agent-catalog";
 
 export function AgentUpdateBanner() {
+  const { t } = useTranslation(["shell", "common"]);
   const updatedRepos = useAgentCatalogStore((s) => s.updatedRepos);
   const dismiss = useAgentCatalogStore((s) => s.dismissUpdates);
 
@@ -23,13 +25,13 @@ export function AgentUpdateBanner() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <RefreshCw className="size-4" />
-            Agent update available
+            {t("shell:agentUpdate.title")}
           </DialogTitle>
           <DialogDescription>
             {names.length === 1
-              ? `${names[0]} has a new version available.`
-              : `${names.join(", ")} have new versions available.`}
-            {" "}The update has been downloaded. Reload to apply it.
+              ? t("shell:agentUpdate.descriptionOne", { name: names[0] })
+              : t("shell:agentUpdate.descriptionMany", { names: names.join(", ") })}
+            {" "}{t("shell:agentUpdate.descriptionSuffix")}
           </DialogDescription>
         </DialogHeader>
         <div className="flex gap-2 pt-2">
@@ -37,14 +39,14 @@ export function AgentUpdateBanner() {
             onClick={() => window.location.reload()}
             className="rounded-full flex-1"
           >
-            Reload now
+            {t("shell:agentUpdate.reloadNow")}
           </Button>
           <Button
             variant="outline"
             onClick={dismiss}
             className="rounded-full"
           >
-            Later
+            {t("common:actions.later")}
           </Button>
         </div>
       </DialogContent>

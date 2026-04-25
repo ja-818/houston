@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
-import { LayoutDashboard, Blend, Settings } from "lucide-react";
-import { ConfirmDialog } from "@houston-ai/core";
+import { useTranslation } from "react-i18next";
+import { LayoutDashboard, Blend, Settings, Smartphone } from "lucide-react";
+import { Badge, ConfirmDialog } from "@houston-ai/core";
 import { AppSidebar, WorkspaceSwitcher } from "@houston-ai/layout";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useAgentStore } from "../../stores/agents";
@@ -10,14 +11,11 @@ import { analytics } from "../../lib/analytics";
 import { AgentMiniAvatar } from "./experience-card";
 import { UpdateChecker } from "./update-checker";
 import { UserMenu } from "./user-menu";
-// Mobile companion app not shipping yet — hide the sidebar entry point
-// so we don't surface a feature that isn't ready. Re-enable once the
-// pairing flow ships end-to-end.
-// import { MobileSyncButton } from "./mobile-sync";
-import { useSyncResponder } from "../../hooks/use-sync-responder";
+import { PairDeviceDialog } from "./pair-device-dialog";
 import { CreateWorkspaceDialog } from "../../App";
 
 export function Sidebar({ children }: { children: ReactNode }) {
+  const { t } = useTranslation(["shell", "common"]);
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const currentWorkspace = useWorkspaceStore((s) => s.current);
   const setCurrentWorkspace = useWorkspaceStore((s) => s.setCurrent);
@@ -30,14 +28,12 @@ export function Sidebar({ children }: { children: ReactNode }) {
   const deleteAgent = useAgentStore((s) => s.delete);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [createWsOpen, setCreateWsOpen] = useState(false);
+  const [pairOpen, setPairOpen] = useState(false);
 
   const getById = useAgentCatalogStore((s) => s.getById);
   const viewMode = useUIStore((s) => s.viewMode);
   const setViewMode = useUIStore((s) => s.setViewMode);
   const setDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
-
-  // Sync responder — always active regardless of view
-  useSyncResponder();
 
   const sorted = [...agents].sort((a, b) => {
     const aTime = a.lastOpenedAt ?? a.createdAt;
@@ -95,19 +91,20 @@ export function Sidebar({ children }: { children: ReactNode }) {
     <ConfirmDialog
       open={pendingDeleteId !== null}
       onOpenChange={(open) => { if (!open) setPendingDeleteId(null); }}
-      title="Delete agent?"
-      description="This will permanently delete the agent and all its data. This cannot be undone."
-      confirmLabel="Delete"
+      title={t("shell:agentDelete.title")}
+      description={t("shell:agentDelete.description")}
+      confirmLabel={t("common:actions.delete")}
       onConfirm={confirmDelete}
     />
     <CreateWorkspaceDialog open={createWsOpen} onOpenChange={setCreateWsOpen} />
+    <PairDeviceDialog isOpen={pairOpen} onClose={() => setPairOpen(false)} />
     <div className="flex h-full flex-1 min-w-0">
       <AppSidebar
         header={
           <WorkspaceSwitcher
             workspaces={workspaces}
             currentId={currentWorkspace?.id ?? null}
-            currentName={currentWorkspace?.name ?? "Select workspace"}
+            currentName={currentWorkspace?.name ?? t("shell:sidebar.selectWorkspace")}
             onSwitch={handleWorkspaceSwitch}
             onCreate={handleCreateWorkspace}
           />
@@ -115,25 +112,39 @@ export function Sidebar({ children }: { children: ReactNode }) {
         navItems={[
           {
             id: "dashboard",
-            label: "Mission Control",
+            label: t("shell:sidebar.missionControl"),
             icon: <LayoutDashboard className="h-4 w-4" />,
             onClick: () => setViewMode("dashboard"),
           },
           {
             id: "connections",
-            label: "Integrations",
+            label: t("shell:sidebar.integrations"),
             icon: <Blend className="h-4 w-4" />,
             onClick: () => setViewMode("connections"),
           },
           {
             id: "settings",
-            label: "Settings",
+            label: t("shell:sidebar.settings"),
             icon: <Settings className="h-4 w-4" />,
             onClick: () => setViewMode("settings"),
           },
+          {
+            id: "connect-phone",
+            label: t("shell:sidebar.connectPhone"),
+            icon: <Smartphone className="h-4 w-4" />,
+            trailing: (
+              <Badge
+                variant="outline"
+                className="h-4 px-1.5 text-[9px] font-semibold tracking-wider text-muted-foreground"
+              >
+                BETA
+              </Badge>
+            ),
+            onClick: () => setPairOpen(true),
+          },
         ]}
         activeNavId={isTopLevel ? viewMode : undefined}
-        sectionLabel="Your Agents"
+        sectionLabel={t("shell:sidebar.yourAgents")}
         items={items}
         selectedId={!isTopLevel ? currentAgent?.id ?? null : null}
         onSelect={handleSelectAgent}

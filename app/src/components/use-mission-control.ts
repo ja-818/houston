@@ -98,6 +98,38 @@ export function useMissionControl(agents: Agent[]) {
     [],
   );
 
+  const handleRename = useCallback(
+    async (item: KanbanItem, newTitle: string) => {
+      const agentPath = pathMapRef.current[item.id];
+      if (!agentPath) return;
+      await tauriActivity.update(agentPath, item.id, { title: newTitle });
+    },
+    [],
+  );
+
+  const setFeed = useFeedStore((s) => s.setFeed);
+  const handleHistoryLoaded = useCallback(
+    (sessionKey: string, history: FeedItem[]) => {
+      // Mirror board-tab's hydration: when AIBoard loads persisted chat
+      // for an activity, drop the server slice into the feed store so
+      // the ChatPanel renders it. Without this Mission Control would
+      // open a conversation and show an empty chat (history was loaded
+      // but had nowhere to land).
+      const activityId = sessionKey.replace("activity-", "");
+      const agentPath = pathMapRef.current[activityId];
+      if (!agentPath) return;
+      const current = useFeedStore.getState().items[agentPath]?.[sessionKey] ?? [];
+      // Server history is authoritative for what's persisted; anything
+      // currently in `current` that isn't on the server is either an
+      // optimistic overlay we pushed or a WS event that landed
+      // mid-load. Append those after the server slice.
+      const serverIds = new Set(history.map((it) => JSON.stringify(it)));
+      const tail = current.filter((it) => !serverIds.has(JSON.stringify(it)));
+      setFeed(agentPath, sessionKey, [...history, ...tail]);
+    },
+    [setFeed],
+  );
+
   const handleSendMessage = useCallback(
     async (sessionKey: string, text: string, files: File[]) => {
       const activityId = sessionKey.replace("activity-", "");
@@ -137,8 +169,10 @@ export function useMissionControl(agents: Agent[]) {
     loading,
     feedItems,
     loadHistory,
+    handleHistoryLoaded,
     handleDelete,
     handleApprove,
+    handleRename,
     handleSendMessage,
     handleCreate,
   };

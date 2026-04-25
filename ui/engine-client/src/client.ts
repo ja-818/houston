@@ -58,8 +58,10 @@ import type {
   SkillSummary,
   StoreListing,
   SummarizeResult,
-  SyncInfo,
-  SyncMessage,
+  TunnelStatus,
+  PairingCode,
+  PairedDevice,
+  PushRegisterRequest,
   UpdateProvider,
   VersionResponse,
   Workspace,
@@ -440,19 +442,28 @@ export class HoustonClient {
     return this.request("POST", "/shell", req);
   }
 
-  // ---------- sync ----------
+  // ---------- tunnel (mobile pairing + device-token management) ----------
 
-  startSync(relayUrl?: string): Promise<SyncInfo> {
-    return this.request("POST", "/sync", relayUrl ? { relayUrl } : {});
+  tunnelStatus(): Promise<TunnelStatus> {
+    return this.request("GET", "/tunnel/status");
   }
-  stopSync(): Promise<void> {
-    return this.request("DELETE", "/sync");
+  mintPairingCode(): Promise<PairingCode> {
+    return this.request("POST", "/tunnel/pairing");
   }
-  syncStatus(): Promise<SyncInfo | null> {
-    return this.request("GET", "/sync");
+  listPairedDevices(): Promise<PairedDevice[]> {
+    return this.request("GET", "/tunnel/devices");
   }
-  sendSyncMessage(message: SyncMessage): Promise<void> {
-    return this.request("POST", "/sync/messages", message);
+  revokePairedDevice(hash: string): Promise<void> {
+    return this.request("POST", `/tunnel/devices/${encodeURIComponent(hash)}/revoke`);
+  }
+
+  // ---------- push (mobile notification registration) ----------
+
+  registerPushDevice(req: PushRegisterRequest): Promise<{ ok: boolean }> {
+    return this.request("POST", "/push/register", req);
+  }
+  unregisterPushDevice(deviceToken: string): Promise<{ ok: boolean }> {
+    return this.request("DELETE", "/push/unregister", { deviceToken });
   }
 
   // ---------- sessions ----------

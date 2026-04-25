@@ -5,8 +5,31 @@
  */
 
 import { tauriActivity, tauriChat } from "./tauri";
-import { sessionKeyForActivity, nowIso, type Conversation } from "@houston-ai/sync-protocol";
 import { logger } from "./logger";
+
+/** Build a session key for a given activity id. */
+function sessionKeyForActivity(activityId: string): string {
+  return `activity-${activityId}`;
+}
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+/**
+ * Minimal Conversation shape consumed by createMission. Loosely based on
+ * the legacy `@houston-ai/sync-protocol` type; kept local so the desktop
+ * compiles without the deleted package.
+ */
+export interface Conversation {
+  id: string;
+  title: string;
+  description?: string;
+  agentName: string;
+  agentColor?: string;
+  status: string;
+  updatedAt: string;
+  agentPath: string;
+}
 
 const TITLE_MAX = 40;
 

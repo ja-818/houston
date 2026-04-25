@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
   cn,
   Dialog,
@@ -20,12 +21,12 @@ import { GithubImportView } from "./github-import-view";
 
 type View = "store" | "github";
 
-const TABS: { id: View; label: string }[] = [
-  { id: "store", label: "Houston Store" },
-  { id: "github", label: "GitHub" },
-];
-
 export function CreateAgentDialog() {
+  const { t } = useTranslation("shell");
+  const TABS: { id: View; labelKey: "tabStore" | "tabGithub" }[] = [
+    { id: "store", labelKey: "tabStore" },
+    { id: "github", labelKey: "tabGithub" },
+  ];
   const open = useUIStore((s) => s.createAgentDialogOpen);
   const setOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
   const agentDefs = useAgentCatalogStore((s) => s.agents);
@@ -146,9 +147,9 @@ export function CreateAgentDialog() {
         {step === 1 ? (
           <>
             <DialogHeader className="shrink-0 px-6 pt-6 pb-3">
-              <DialogTitle>New agent</DialogTitle>
+              <DialogTitle>{t("newAgent.dialogTitle")}</DialogTitle>
               <DialogDescription>
-                Browse the store or import from GitHub.
+                {t("newAgent.dialogDescription")}
               </DialogDescription>
             </DialogHeader>
 
@@ -164,7 +165,7 @@ export function CreateAgentDialog() {
                       : "text-muted-foreground hover:bg-accent hover:text-foreground",
                   )}
                 >
-                  {tab.label}
+                  {t(`newAgent.${tab.labelKey}`)}
                 </button>
               ))}
             </div>

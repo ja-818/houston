@@ -1,0 +1,21 @@
+{
+  "cardActions": {
+    "run": "Ejecutar",
+    "openTerminal": "Abrir la terminal en el worktree",
+    "approve": "Mover a Listo",
+    "approveTooltip": "Mover a Listo",
+    "renameTooltip": "Cambiar título",
+    "deleteTooltip": "Eliminar"
+  },
+  "deleteCard": {
+    "titleWithName": "¿Eliminar \"{{name}}\"?",
+    "description": "Este elemento y su historial se eliminarán de forma permanente."
+  },
+  "empty": {
+    "title": "Aún no hay conversaciones",
+    "description": "Inicia una conversación nueva para delegarle trabajo a un agente."
+  },
+  "toasts": {
+    "attached": "Adjuntó: {{names}}"
+  }
+}

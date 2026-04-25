@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, FileText } from "lucide-react";
 import type { TabProps, AgentMode } from "../../lib/types";
@@ -26,6 +27,7 @@ function useSavePromptFile(agentPath: string, modeName: string) {
 }
 
 function PromptCard({ agentPath, mode }: { agentPath: string; mode: AgentMode }) {
+  const { t } = useTranslation("agents");
   const [open, setOpen] = useState(false);
   const { data: content } = usePromptFile(agentPath, mode.promptFile);
   const save = useSavePromptFile(agentPath, mode.promptFile);
@@ -41,7 +43,7 @@ function PromptCard({ agentPath, mode }: { agentPath: string; mode: AgentMode })
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground">{mode.name}</p>
           <p className="text-xs text-muted-foreground/60 truncate">
-            {mode.promptFile} — {lineCount} lines
+            {t("promptCards.modeSummary", { file: mode.promptFile, count: lineCount })}
           </p>
         </div>
         <ChevronDown
@@ -50,7 +52,7 @@ function PromptCard({ agentPath, mode }: { agentPath: string; mode: AgentMode })
       </button>
       {open && (
         <div className="px-4 pb-4">
-          <AutoSaveTextarea value={content ?? ""} onSave={save} placeholder={`System prompt for ${mode.name}...`} />
+          <AutoSaveTextarea value={content ?? ""} onSave={save} placeholder={t("configure.agentPrompts.placeholder", { name: mode.name })} />
         </div>
       )}
     </div>
@@ -58,6 +60,7 @@ function PromptCard({ agentPath, mode }: { agentPath: string; mode: AgentMode })
 }
 
 function ProjectContextCard({ agentPath }: { agentPath: string }) {
+  const { t } = useTranslation("agents");
   const [open, setOpen] = useState(false);
   const { data: content } = useInstructions(agentPath);
   const save = useSaveInstructions(agentPath);
@@ -71,9 +74,9 @@ function ProjectContextCard({ agentPath }: { agentPath: string }) {
       >
         <FileText className="size-4 text-muted-foreground shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground">Project Context</p>
+          <p className="text-sm font-medium text-foreground">{t("promptCards.projectContext")}</p>
           <p className="text-xs text-muted-foreground/60 truncate">
-            CLAUDE.md — {lineCount} lines
+            {t("promptCards.claudeMdSummary", { count: lineCount })}
           </p>
         </div>
         <ChevronDown
@@ -85,7 +88,7 @@ function ProjectContextCard({ agentPath }: { agentPath: string }) {
           <AutoSaveTextarea
             value={content ?? ""}
             onSave={(c) => save.mutateAsync({ name: "CLAUDE.md", content: c })}
-            placeholder="Project context, coding conventions, architecture notes..."
+            placeholder={t("configure.projectContext.placeholder")}
           />
         </div>
       )}

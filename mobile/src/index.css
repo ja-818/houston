@@ -1,6 +1,15 @@
 /* Import the Houston design system — all tokens, animations, base styles */
 @import "@houston-ai/core/src/globals.css";
 
+/* Tailwind v4 skips `node_modules/` by default, so utility classes used
+   inside @houston-ai/* workspace packages (`hidden`, `sr-only`, …)
+   never land in the final mobile CSS. Without these the chat
+   composer's hidden <input type="file"> renders native iOS controls.
+   Point the scanner at each package source explicitly. */
+@source "../../ui/core/src";
+@source "../../ui/chat/src";
+@source "../../ui/engine-client/src";
+
 /* Override desktop-only styles from globals.css */
 body {
   overflow: auto !important;
@@ -85,11 +94,22 @@ body {
   max-width: 100% !important;
 }
 
-/* Composer: safe-area bottom padding for iPhone home indicator */
+/* Composer: in Safari browser mode the address bar lives BELOW our
+   viewport anyway, so any `safe-area-inset-bottom` padding is just
+   dead gutter between the input and the browser chrome. Zero it out
+   in browser mode; keep the safe-area clearance only when running
+   as a standalone PWA (where iOS draws a home-indicator into our
+   viewport and we need to clear it). */
 .mobile-chat > div > div:last-child {
-  padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 8px) !important;
+  padding-bottom: 2px !important;
+  padding-top: 4px !important;
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
+}
+@media (display-mode: standalone) {
+  .mobile-chat > div > div:last-child {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 2px) !important;
+  }
 }
 
 /* User message bubbles: slightly wider on mobile */

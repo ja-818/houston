@@ -14,6 +14,7 @@ async fn spawn() -> (SocketAddr, String) {
         docs_dir: std::env::temp_dir(),
         app_system_prompt: String::new(),
         app_onboarding_prompt: String::new(),
+        tunnel_url: "http://test.invalid".into(),
     };
     let listener = TcpListener::bind(cfg.bind).await.unwrap();
     let addr = listener.local_addr().unwrap();

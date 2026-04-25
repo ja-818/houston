@@ -1,124 +1,183 @@
-import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+// Chat view — live session against the engine over the tunnel.
+//
+// The outer container is pinned to the visual viewport (height +
+// offsetTop) so iOS Safari's URL bar + keyboard don't shift the
+// header off screen. Header sticks to the top, composer to the
+// bottom, messages scroll between them.
+
+import { useCallback, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { ChatPanel, Shimmer } from "@houston-ai/chat";
+import { ChatPanel, type FeedItem } from "@houston-ai/chat";
+import { HoustonAvatar } from "@houston-ai/core";
+import type { Agent, ConversationEntry } from "@houston-ai/engine-client";
 import {
-  SYNC_MSG_TYPES,
-  newMsgId,
-  sessionKeyForActivity,
-} from "@houston-ai/sync-protocol";
-import { useMobileStore } from "@/lib/store";
-import { syncClient } from "@/lib/sync-client";
-import { useKeyboardHeight } from "@/hooks/use-keyboard-height";
-import { HoustonAvatar } from "./houston-avatar";
-import { ConnectionIndicator } from "./connection-indicator";
+  useChatHistory,
+  useCreateMission,
+  useSendMessage,
+} from "../hooks/use-chat";
+import {
+  useAllConversations,
+  useCurrentWorkspace,
+} from "../hooks/use-conversations";
+import { useAgents } from "../hooks/use-agents";
+import { useVisualViewport } from "../hooks/use-keyboard-height";
 
 export function ChatView() {
-  const navigate = useNavigate();
-  const { convoId } = useParams<{ convoId: string }>();
+  const nav = useNavigate();
+  const { sessionKey } = useParams<{ sessionKey: string }>();
+  const [params] = useSearchParams();
+  const agentPath = params.get("agent") ?? "";
 
-  const conversations = useMobileStore((s) => s.conversations);
-  const chatHistory = useMobileStore((s) => s.chatHistory);
-  const connectionState = useMobileStore((s) => s.connectionState);
-  const isConnected = useMobileStore((s) => s.isConnected);
-  const connected = isConnected();
-  const setCurrentConvo = useMobileStore((s) => s.setCurrentConvo);
-  const setChatHistory = useMobileStore((s) => s.setChatHistory);
-  const appendFeedItem = useMobileStore((s) => s.appendFeedItem);
-  const pushOptimisticMessage = useMobileStore((s) => s.pushOptimisticMessage);
+  // Draft mode: NewMissionSheet hands us a `draft-<uuid>` key so the
+  // composer is available without an activity existing on the engine
+  // yet. The activity (and therefore the desktop board row) is only
+  // created on the first real send. Bail before sending = no server
+  // state, no orphan.
+  const isDraft = sessionKey?.startsWith("draft-") ?? false;
+  // When draft, skip history fetch + per-session WS subscribe.
+  const querySessionKey = isDraft ? null : sessionKey ?? null;
 
-  const convo = conversations.find((c) => c.id === convoId);
+  const ws = useCurrentWorkspace();
+  const { data: agents } = useAgents(ws?.id ?? null);
+  const { data: conversations } = useAllConversations();
+  const convo = conversations?.find((c) => c.session_key === sessionKey);
+  const agent = agents?.find((a) => a.folderPath === agentPath);
+
+  // Single source of truth for "agent is working": server activity
+  // status. Optimistic client flags would linger past completion.
   const isRunning = convo?.status === "running";
 
-  const keyboardHeight = useKeyboardHeight();
+  const sendMutation = useSendMessage(agentPath, querySessionKey ?? "");
+  const createMission = useCreateMission(agentPath);
+  const { data: history } = useChatHistory(agentPath, querySessionKey, {
+    isActive: isRunning,
+  });
 
+  const handleSend = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      if (!isDraft) {
+        sendMutation.mutate(trimmed);
+        return;
+      }
+      if (!agentPath || createMission.isPending) return;
+      try {
+        const { sessionKey: newKey } = await createMission.mutateAsync(trimmed);
+        nav(
+          `/session/${encodeURIComponent(newKey)}?agent=${encodeURIComponent(agentPath)}`,
+          { replace: true },
+        );
+      } catch (e) {
+        console.error("[chat-view] draft send failed", e);
+      }
+    },
+    [isDraft, sendMutation, createMission, agentPath, nav],
+  );
+
+  // Scroll the message list to the bottom when the route changes —
+  // so arriving at an existing session lands on the latest message.
   useEffect(() => {
-    if (convoId) {
-      setCurrentConvo(convoId);
-      setChatHistory([]);
-      syncClient.send(SYNC_MSG_TYPES.REQUEST_CHAT_HISTORY, {
-        agentId: convoId,
-        sessionKey: sessionKeyForActivity(convoId),
-      });
-    }
-    return () => setCurrentConvo(null);
-  }, [convoId, setCurrentConvo, setChatHistory]);
+    window.scrollTo({ top: document.body.scrollHeight });
+  }, [sessionKey]);
 
-  function handleSend(text: string) {
-    if (!convoId) return;
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    if (!connected) return;
-
-    const msgId = newMsgId();
-    pushOptimisticMessage({ msgId, text: trimmed, sentAt: Date.now() });
-    appendFeedItem({ feed_type: "user_message", data: trimmed });
-
-    syncClient.send(SYNC_MSG_TYPES.SEND_MESSAGE, {
-      agentId: convoId,
-      sessionKey: sessionKeyForActivity(convoId),
-      text: trimmed,
-      msgId,
-    });
-  }
-
-  const placeholder = connected
-    ? "Tell your agent what to do..."
-    : "Reconnecting…";
+  const vv = useVisualViewport();
+  const feedItems = (history ?? []) as unknown as FeedItem[];
 
   return (
     <div
-      className="mobile-chat flex h-full flex-col bg-background safe-top"
+      className="mobile-chat fixed left-0 right-0 flex flex-col bg-background"
       style={{
-        // Lift the whole chat column above the on-screen keyboard so the
-        // composer never hides behind it.
-        paddingBottom: keyboardHeight ? `${keyboardHeight}px` : undefined,
-        transition: "padding-bottom 120ms ease",
+        top: `${vv.offsetTop}px`,
+        height: `${vv.height}px`,
       }}
     >
-      {/* Header — matches conversation row style */}
-      <header className="flex items-center gap-3 border-b border-border px-4 py-2.5 shrink-0">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="touchable flex h-9 w-9 shrink-0 items-center justify-center rounded-lg active:bg-accent"
-          aria-label="Go back"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-
-        <HoustonAvatar
-          color={convo?.agentColor}
-          ringSize={36}
-          glyphSize={18}
-        />
-
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">
-            {convo?.agentName ?? "Agent"}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">
-            {convo?.title}
-          </p>
-        </div>
-        <ConnectionIndicator state={connectionState} compact />
-      </header>
-
-      {/* Subtle running indicator — below header when the agent is working. */}
-      {isRunning && (
-        <div className="px-4 py-1.5 text-[11px] shrink-0">
-          <Shimmer>Thinking…</Shimmer>
-        </div>
-      )}
-
-      {/* ChatPanel — the real component, with mobile CSS overrides */}
-      <ChatPanel
-        sessionKey={convoId ?? "default"}
-        feedItems={chatHistory}
-        onSend={(text) => handleSend(text)}
-        isLoading={isRunning}
-        placeholder={placeholder}
+      <ChatHeader
+        convo={convo}
+        agent={agent}
+        agentPath={agentPath}
+        isDraft={isDraft}
+        isRunning={isRunning}
+        onBack={() => nav("/")}
       />
+
+      <div className="flex-1 min-h-0 flex flex-col">
+        <ChatPanel
+          sessionKey={sessionKey ?? "default"}
+          feedItems={feedItems}
+          onSend={handleSend}
+          isLoading={sendMutation.isPending || createMission.isPending}
+          placeholder="Message…"
+        />
+      </div>
     </div>
+  );
+}
+
+interface ChatHeaderProps {
+  convo: ConversationEntry | undefined;
+  agent: Agent | undefined;
+  agentPath: string;
+  isDraft: boolean;
+  isRunning: boolean;
+  onBack: () => void;
+}
+
+function ChatHeader({
+  convo,
+  agent,
+  agentPath,
+  isDraft,
+  isRunning,
+  onBack,
+}: ChatHeaderProps) {
+  // Draft chat uses the agent's name as the title — no mission exists
+  // yet to derive one from. After first send the URL replaces to the
+  // real session and the convo lookup takes over.
+  const title = isDraft
+    ? agent?.name ?? "New mission"
+    : convo?.title ?? agent?.name ?? "Session";
+  const subtitle = isDraft
+    ? "Type a message to start"
+    : agent?.name ?? agentPath;
+
+  return (
+    <header
+      className="shrink-0 flex items-center gap-3 border-b border-border/80 bg-background/95 backdrop-blur px-3 py-2"
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)" }}
+    >
+      <button
+        onClick={onBack}
+        className="touchable h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent -ml-1"
+        aria-label="Back"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </button>
+
+      <HoustonAvatar
+        color={agent?.color}
+        diameter={36}
+        running={isRunning}
+      />
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold leading-tight">{title}</p>
+        {isRunning ? (
+          <p className="truncate text-[11px] text-muted-foreground leading-tight italic flex items-center gap-1">
+            typing
+            <span className="inline-flex items-end h-2 gap-[2px] ml-0.5">
+              <span className="typing-dot inline-block size-[3px] rounded-full bg-current" />
+              <span className="typing-dot inline-block size-[3px] rounded-full bg-current" />
+              <span className="typing-dot inline-block size-[3px] rounded-full bg-current" />
+            </span>
+          </p>
+        ) : (
+          <p className="truncate text-[11px] text-muted-foreground leading-tight">
+            {subtitle}
+          </p>
+        )}
+      </div>
+    </header>
   );
 }

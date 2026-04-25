@@ -6,12 +6,17 @@ import {
 } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { I18nextProvider } from "react-i18next";
+import { TooltipProvider } from "@houston-ai/core";
 import { queryClient } from "./lib/query-client";
 import App from "./App";
 import "./styles/globals.css";
 import { useUIStore } from "./stores/ui";
 import { initFrontendLogging, logger } from "./lib/logger";
 import { whenEngineReady, isEngineReady } from "./lib/engine";
+import i18n from "./lib/i18n";
+import { DisclaimerGate } from "./components/shell/disclaimer-gate";
+import { LanguageGate } from "./components/shell/language-gate";
 
 // Initialize file-based logging — patches console.error/warn to write to
 // ~/.houston/logs/frontend.log (or ~/.dev-houston/logs/frontend.log in dev).
@@ -97,7 +102,14 @@ function EngineGate({ children }: { children: ReactNode }) {
     };
   }, [ready]);
 
+  // Locale resolution moved to <LanguageGate>, which both reads the
+  // persisted pref and handles the first-run picker. That gate sits
+  // inside <I18nextProvider> and owns the full locale story.
+
   if (!ready) {
+    // Use the i18n singleton directly — this renders OUTSIDE
+    // <I18nextProvider>, so useTranslation would have no context.
+    // The singleton is already initialized synchronously in i18n.ts.
     return (
       <div
         style={{
@@ -110,7 +122,7 @@ function EngineGate({ children }: { children: ReactNode }) {
           fontSize: 14,
         }}
       >
-        Starting Houston engine…
+        {i18n.t("shell:engineGate.starting")}
       </div>
     );
   }
@@ -124,9 +136,17 @@ function EngineGate({ children }: { children: ReactNode }) {
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
-      <EngineGate>
-        <App />
-      </EngineGate>
+      <TooltipProvider>
+        <EngineGate>
+          <I18nextProvider i18n={i18n}>
+            <LanguageGate>
+              <DisclaimerGate>
+                <App />
+              </DisclaimerGate>
+            </LanguageGate>
+          </I18nextProvider>
+        </EngineGate>
+      </TooltipProvider>
     </ErrorBoundary>
   </QueryClientProvider>,
 );

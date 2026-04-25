@@ -1,0 +1,37 @@
+{
+  "title": "Configurações",
+  "workspace": {
+    "title": "Espaço de trabalho",
+    "nameLabel": "Nome"
+  },
+  "provider": {
+    "title": "Provedor de IA",
+    "description": "O Houston usa <emph>sua própria</emph> assinatura. Nunca vemos suas credenciais."
+  },
+  "timezone": {
+    "title": "Fuso horário",
+    "description": "Usado quando suas rotinas disparam, 9h significa 9h neste fuso.",
+    "label": "Fuso IANA",
+    "placeholder": "ex. America/Sao_Paulo",
+    "useDetected": "Usar o detectado ({{zone}})"
+  },
+  "appearance": {
+    "title": "Aparência",
+    "light": "Claro",
+    "dark": "Escuro"
+  },
+  "dangerZone": {
+    "title": "Zona de perigo",
+    "description": "Exclui este espaço de trabalho e todos os seus agentes de forma permanente.",
+    "deleteButton": "Excluir espaço de trabalho",
+    "createAnotherFirst": "Crie outro espaço de trabalho antes de excluir este.",
+    "confirmTitle": "Excluir \"{{name}}\"?",
+    "confirmDescription": "Isso exclui este espaço de trabalho e todos os seus agentes de forma permanente. Não dá para desfazer.",
+    "confirmLabel": "Excluir"
+  },
+  "toasts": {
+    "workspaceRenamed": "Espaço de trabalho renomeado",
+    "providerSwitched": "Mudou para {{provider}} ({{model}})",
+    "timezoneSet": "Fuso horário definido como {{zone}}"
+  }
+}

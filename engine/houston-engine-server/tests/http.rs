@@ -14,6 +14,7 @@ async fn spawn_test_server() -> (SocketAddr, String) {
         docs_dir: std::env::temp_dir(),
         app_system_prompt: String::new(),
         app_onboarding_prompt: String::new(),
+        tunnel_url: "http://test.invalid".into(),
     };
     let listener = TcpListener::bind(cfg.bind).await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -109,6 +110,7 @@ mod ws_helpers {
             docs_dir: std::env::temp_dir(),
             app_system_prompt: String::new(),
             app_onboarding_prompt: String::new(),
+        tunnel_url: "http://test.invalid".into(),
         };
         let listener = TcpListener::bind(cfg.bind).await.unwrap();
         let addr = listener.local_addr().unwrap();

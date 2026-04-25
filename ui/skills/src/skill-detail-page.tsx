@@ -18,11 +18,38 @@ import {
 import { ArrowLeft, MoreHorizontal, Trash2 } from "lucide-react"
 import type { Skill } from "./types"
 
+export interface SkillDetailPageLabels {
+  notFound?: string
+  backAria?: string
+  saveChanges?: string
+  savingChanges?: string
+  moreActions?: string
+  delete?: string
+  deleteTitle?: (name: string) => string
+  deleteDescription?: string
+  deleteConfirmLabel?: string
+  instructionsPlaceholder?: string
+}
+
+const DEFAULT_LABELS: Required<SkillDetailPageLabels> = {
+  notFound: "Skill not found",
+  backAria: "Back to skills",
+  saveChanges: "Save changes",
+  savingChanges: "Saving…",
+  moreActions: "More actions",
+  delete: "Delete skill",
+  deleteTitle: (name) => `Delete "${name}"?`,
+  deleteDescription: "This removes the skill from your agent. You can reinstall it later.",
+  deleteConfirmLabel: "Delete",
+  instructionsPlaceholder: "Instructions for this skill…",
+}
+
 export interface SkillDetailPageProps {
   skill: Skill | undefined
   onBack: () => void
   onSave: (skillName: string, instructions: string) => Promise<void>
   onDelete: (skillName: string) => Promise<void>
+  labels?: SkillDetailPageLabels
 }
 
 export function SkillDetailPage({
@@ -30,7 +57,9 @@ export function SkillDetailPage({
   onBack,
   onSave,
   onDelete,
+  labels,
 }: SkillDetailPageProps) {
+  const l = { ...DEFAULT_LABELS, ...labels }
   const [instructions, setInstructions] = useState("")
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -65,7 +94,7 @@ export function SkillDetailPage({
   if (!skill) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-sm text-muted-foreground">Skill not found</p>
+        <p className="text-sm text-muted-foreground">{l.notFound}</p>
       </div>
     )
   }
@@ -81,7 +110,7 @@ export function SkillDetailPage({
             variant="ghost"
             size="icon-sm"
             onClick={onBack}
-            aria-label="Back to skills"
+            aria-label={l.backAria}
           >
             <ArrowLeft className="size-4" />
           </Button>
@@ -96,14 +125,14 @@ export function SkillDetailPage({
               onClick={handleSave}
               disabled={!isDirty || saving || deleting}
             >
-              {saving ? "Saving…" : "Save changes"}
+              {saving ? l.savingChanges : l.saveChanges}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="More actions"
+                  aria-label={l.moreActions}
                   disabled={deleting}
                 >
                   <MoreHorizontal className="size-4" />
@@ -115,7 +144,7 @@ export function SkillDetailPage({
                   onClick={() => setConfirmOpen(true)}
                 >
                   <Trash2 className="size-3.5" />
-                  Delete skill
+                  {l.delete}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -126,9 +155,9 @@ export function SkillDetailPage({
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={`Delete "${skill.name}"?`}
-        description="This removes the skill from your agent. You can reinstall it later."
-        confirmLabel="Delete"
+        title={l.deleteTitle(skill.name)}
+        description={l.deleteDescription}
+        confirmLabel={l.deleteConfirmLabel}
         onConfirm={handleConfirmDelete}
       />
 
@@ -145,7 +174,7 @@ export function SkillDetailPage({
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
               rows={18}
-              placeholder="Instructions for this skill…"
+              placeholder={l.instructionsPlaceholder}
               className={cn(
                 "w-full px-4 py-3 text-sm text-foreground leading-relaxed font-mono",
                 "placeholder:text-muted-foreground/60",

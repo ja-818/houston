@@ -6,6 +6,8 @@ export interface SidebarNavItemProps {
   label: string;
   active?: boolean;
   onClick: () => void;
+  /** Optional right-aligned slot (e.g. a "Beta" badge, a count). */
+  trailing?: ReactNode;
 }
 
 export function SidebarNavItem({
@@ -13,6 +15,7 @@ export function SidebarNavItem({
   label,
   active,
   onClick,
+  trailing,
 }: SidebarNavItemProps) {
   return (
     <button
@@ -25,7 +28,8 @@ export function SidebarNavItem({
       )}
     >
       {icon}
-      {label}
+      <span className="flex-1 text-left">{label}</span>
+      {trailing}
     </button>
   );
 }

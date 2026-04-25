@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanItem } from "@houston-ai/board";
@@ -57,6 +58,23 @@ function PanelAvatar({ color, isRunning }: { color?: string; isRunning: boolean 
 }
 
 export default function BoardTab({ agent, agentDef }: TabProps) {
+  const { t } = useTranslation(["board", "dashboard"]);
+  const cardLabels = {
+    approve: t("board:cardActions.approve"),
+    approveTooltip: t("board:cardActions.approveTooltip"),
+    renameTooltip: t("board:cardActions.renameTooltip"),
+    deleteTooltip: t("board:cardActions.deleteTooltip"),
+    deleteTitle: (name: string) => t("board:deleteCard.titleWithName", { name }),
+    deleteDescription: t("board:deleteCard.description"),
+  };
+  // Mirror Mission Control's columns so the tab and dashboard stay in
+  // sync. Without an explicit `columns` prop AIBoard falls back to its
+  // hardcoded English defaults.
+  const boardColumns = [
+    { id: "running", label: t("dashboard:columns.running"), statuses: ["running"] },
+    { id: "needs_you", label: t("dashboard:columns.needsYou"), statuses: ["needs_you"] },
+    { id: "done", label: t("dashboard:columns.done"), statuses: ["done", "cancelled"] },
+  ];
   const panelContainer = useDetailPanelContainer();
   const path = agent.folderPath;
   const agentModes = agentDef.config.agents;
@@ -181,6 +199,28 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     [],
   );
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
+  const setFeed = useFeedStore((s) => s.setFeed);
+  const handleHistoryLoaded = useCallback(
+    (sessionKey: string, items: FeedItem[]) => {
+      // Seed the feed store with persisted history when the user opens
+      // an activity. After this, the store is the single source of
+      // truth — live WS events append cleanly and no "liveFeed wins if
+      // non-empty" hack is needed. Any items already in the bucket
+      // from WS events that arrived between activity creation and
+      // selection are preserved by merging the server history with
+      // the current bucket and dropping exact duplicates by position.
+      const current = useFeedStore.getState().items[path]?.[sessionKey] ?? [];
+      // Server history is authoritative for everything persisted up to
+      // load time. Anything currently in `current` that isn't in the
+      // server history must be either an optimistic overlay we pushed
+      // or an event that landed mid-load. Append those after the
+      // server slice.
+      const serverIds = new Set(items.map((it) => JSON.stringify(it)));
+      const tail = current.filter((it) => !serverIds.has(JSON.stringify(it)));
+      setFeed(path, sessionKey, [...items, ...tail]);
+    },
+    [path, setFeed],
+  );
   const [loadingState, setLoading] = useState<Record<string, boolean>>({});
   // A session is "loading" from the user's perspective whenever its activity
   // is running — not just when WE started it from this component. This catches
@@ -336,9 +376,10 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       const activity = (rawItems ?? []).find(
         (t) => (t.session_key ?? `activity-${t.id}`) === sessionKey,
       );
-      if (activity) {
-        tauriActivity.update(path, activity.id, { status: "running" }).catch(console.error);
-      }
+      // Activity status flip (→ "running") is owned by the engine now —
+      // `sessions::start` writes it atomically and emits ActivityChanged
+      // so every client (desktop, mobile, third-party) sees the same
+      // transition. Don't pre-write from the UI.
       const scopeId = activity ? `activity-${activity.id}` : sessionKey;
       const paths = await tauriAttachments.save(scopeId, files);
       const prompt = withAttachmentPaths(text, paths);
@@ -376,14 +417,14 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         <button
           onClick={(e) => { e.stopPropagation(); handleRunInTerminal(item); }}
           className="flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-secondary text-foreground text-[10px] font-medium hover:bg-accent transition-colors duration-200"
-          title="Open terminal in worktree"
+          title={t("cardActions.openTerminal")}
         >
           <Terminal className="size-2.5" />
-          Run
+          {t("cardActions.run")}
         </button>
       );
     },
-    [handleRunInTerminal],
+    [handleRunInTerminal, t],
   );
 
   const panelActions = useCallback(
@@ -403,21 +444,22 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           <button
             onClick={() => handleRunInTerminal(item)}
             className="flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-secondary text-foreground text-[10px] font-medium hover:bg-accent transition-colors duration-200"
-            title="Open terminal in worktree"
+            title={t("cardActions.openTerminal")}
           >
             <Terminal className="size-2.5" />
-            Run
+            {t("cardActions.run")}
           </button>
         </div>
       );
     },
-    [handleRunInTerminal],
+    [handleRunInTerminal, t],
   );
 
   return (
     <div className="flex flex-col h-full">
     <AIBoard
       items={items}
+      columns={boardColumns}
       selectedId={selectedId}
       onSelect={setSelectedId}
       panelContainer={panelContainer}
@@ -432,6 +474,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       onCreateConversation={handleCreateConversation}
       onSendMessage={handleSendMessage}
       onLoadHistory={loadHistory}
+      onHistoryLoaded={handleHistoryLoaded}
       onNewPanelOpenerReady={handleOpenerReady}
       onPanelOpenChange={setMissionPanelOpen}
       onStopSession={handleStopSession}
@@ -462,6 +505,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           isRunning={(rawItems ?? []).some((a) => a.id === selectedId && a.status === "running")}
         />
       }
+      cardLabels={cardLabels}
     />
     </div>
   );

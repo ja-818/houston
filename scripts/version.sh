@@ -15,9 +15,15 @@ for f in package.json app/package.json; do
   jq --arg v "$VERSION" '.version = $v' "$f" > tmp.json && mv tmp.json "$f"
 done
 
-# Rust crates
+# Rust crates — replace ONLY the first `^version = ...` line in each
+# file. That's the `[package]` version. Without `1,` sed would also
+# rewrite dependency `version = ...` lines declared in the `[dependencies.foo]`
+# table form, bricking crates like:
+#   [dependencies.thiserror]
+#   version = "1"
+# into the app version, causing cargo "failed to select version" errors.
 for toml in engine/*/Cargo.toml app/houston-tauri/Cargo.toml app/src-tauri/Cargo.toml; do
-  sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" "$toml"
+  sed -i '' "1,/^version = \".*\"$/s//version = \"$VERSION\"/" "$toml"
 done
 
 # Root Cargo.toml workspace dependencies

@@ -12,8 +12,19 @@
 use std::path::PathBuf;
 
 /// Absolute path to the composio binary the installer drops.
+///
+/// Composio's installer drops `composio` on Unix and `composio.exe` on
+/// Windows; we resolve to whichever is appropriate for the current
+/// target so `is_installed()` and PATH lookups match.
 pub fn cli_path() -> PathBuf {
-    home_dir().join(".composio").join("composio")
+    #[cfg(windows)]
+    {
+        home_dir().join(".composio").join("composio.exe")
+    }
+    #[cfg(not(windows))]
+    {
+        home_dir().join(".composio").join("composio")
+    }
 }
 
 /// Directory that contains the composio binary + its support files.
@@ -59,6 +70,21 @@ pub fn is_installed() -> bool {
 /// `tokio::process::Command::output()` hang observed on macOS inside
 /// Tauri `.app` bundles — the same fix applied to `start_login()` in
 /// `composio_cli.rs`.
+#[cfg(windows)]
+pub async fn install() -> Result<PathBuf, String> {
+    // The upstream installer is a POSIX `curl | bash` one-liner. Composio
+    // publishes Windows binaries but the install path is different; until
+    // we wire it up, surface a clear error so the UI can direct the user.
+    // Tracked in `knowledge-base/platform-matrix.md`.
+    Err(
+        "Composio CLI auto-install is not supported on Windows yet. \
+         Install `composio` manually (https://composio.dev/install) and \
+         ensure it's on PATH, then retry."
+            .to_string(),
+    )
+}
+
+#[cfg(not(windows))]
 pub async fn install() -> Result<PathBuf, String> {
     tracing::info!("[composio:install] running install script…");
 
@@ -141,7 +167,7 @@ pub async fn install() -> Result<PathBuf, String> {
 }
 
 fn home_dir() -> PathBuf {
-    std::env::var("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_default()
+    // Cross-platform: macOS/Linux set HOME, Windows sets USERPROFILE. The
+    // `dirs` crate papers over both.
+    dirs::home_dir().unwrap_or_default()
 }

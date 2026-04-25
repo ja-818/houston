@@ -18,7 +18,6 @@ pub mod sessions;
 pub mod skills;
 pub mod state;
 pub mod store;
-pub mod sync;
 pub mod worktree;
 pub mod workspaces;
 

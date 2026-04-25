@@ -1,6 +1,6 @@
 [package]
 name = "houston-engine-server"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 description = "Houston Engine HTTP+WS server — axum binary speaking the Houston wire protocol"
 license = "MIT"
@@ -28,8 +28,9 @@ futures-util = "0.3"
 houston-engine-protocol = { version = "0.4.0", path = "../houston-engine-protocol" }
 houston-engine-core = { version = "0.4.0", path = "../houston-engine-core" }
 houston-composio = { workspace = true }
-houston-sync = { workspace = true }
+houston-tunnel = { workspace = true }
 houston-db = { workspace = true }
+async-trait = { workspace = true }
 houston-skills = { workspace = true, features = ["remote"] }
 houston-ui-events = { workspace = true }
 houston-terminal-manager = { workspace = true }

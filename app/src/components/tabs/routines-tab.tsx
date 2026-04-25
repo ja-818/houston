@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { RoutinesGrid, RoutineEditor } from "@houston-ai/routines";
 import type { RoutineFormData, RoutineRun } from "@houston-ai/routines";
 import {
@@ -38,6 +39,7 @@ function formMatchesRoutine(
 }
 
 export default function RoutinesTab({ agent }: TabProps) {
+  const { t } = useTranslation("routines");
   const path = agent.folderPath;
   const tz = useTimezonePreference();
 
@@ -141,7 +143,7 @@ export default function RoutinesTab({ agent }: TabProps) {
   if (!tz.loaded || !tz.timezone) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-sm text-muted-foreground animate-pulse">Loading…</p>
+        <p className="text-sm text-muted-foreground animate-pulse">{t("loading")}</p>
       </div>
     );
   }
@@ -182,6 +184,13 @@ export default function RoutinesTab({ agent }: TabProps) {
       onSelect={openEditor}
       onCreate={handleCreate}
       onToggle={handleToggle}
+      labels={{
+        loading: t("loading"),
+        emptyTitle: t("grid.emptyTitle"),
+        emptyDescription: t("grid.emptyDescription"),
+        descriptionShort: t("grid.descriptionShort"),
+        newRoutine: t("grid.newRoutine"),
+      }}
     />
   );
 }

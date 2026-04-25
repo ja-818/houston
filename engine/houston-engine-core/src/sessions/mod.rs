@@ -125,6 +125,32 @@ pub async fn start(
         provider,
     );
 
+    let agent_path = agent_dir.to_string_lossy().to_string();
+
+    // Flip the matching board activity to "running" synchronously, before
+    // the CLI subprocess spawns. Desktop UI pre-wrote this from the send
+    // handler; moving it here means mobile (and any other client that
+    // calls `startSession`) gets the same behavior without duplicating
+    // logic. `ActivityChanged` fans out to every WS subscriber so every
+    // mounted client invalidates its activity cache.
+    match crate::agents::activity::set_status_by_session_key(
+        &agent_dir,
+        &session_key,
+        "running",
+    ) {
+        Ok(Some(_)) => {
+            events.emit(HoustonEvent::ActivityChanged {
+                agent_path: agent_path.clone(),
+            });
+        }
+        Ok(None) => { /* no matching activity — ad-hoc session, nothing to flip */ }
+        Err(e) => {
+            tracing::warn!(
+                "[sessions] failed to flip activity to running: {e} (session_key={session_key})"
+            );
+        }
+    }
+
     let persist = Some(PersistOptions {
         db,
         source,
@@ -132,11 +158,10 @@ pub async fn start(
         claude_session_id: None,
     });
 
-    let agent_path = agent_dir.to_string_lossy().to_string();
-
-    session_runner::spawn_and_monitor(
+    let events_for_end = events.clone();
+    let handle = session_runner::spawn_and_monitor(
         events,
-        agent_path,
+        agent_path.clone(),
         session_key.clone(),
         prompt,
         resume_id,
@@ -149,12 +174,60 @@ pub async fn start(
         model,
     );
 
+    // Own the end-of-session activity flip engine-side. Before this, the
+    // desktop UI listened for SessionStatus::Completed and wrote
+    // `needs_you` from the client — which meant phone-only users (or
+    // anyone with the desktop unfocused) got stuck on "running" forever.
+    // Doing it here makes every client identical: await the runner's
+    // join handle, pick a terminal status, write the file, emit the
+    // change event for live UI refresh.
+    let agent_dir_for_end = agent_dir.clone();
+    let session_key_for_end = session_key.clone();
+    let agent_path_for_end = agent_path;
+    tokio::spawn(async move {
+        let next_status = match handle.await {
+            Ok(result) if result.error.is_none() => "needs_you",
+            Ok(_) => "error",
+            Err(e) => {
+                tracing::warn!(
+                    "[sessions] session runner panicked for session_key={session_key_for_end}: {e}"
+                );
+                "error"
+            }
+        };
+        match crate::agents::activity::set_status_by_session_key(
+            &agent_dir_for_end,
+            &session_key_for_end,
+            next_status,
+        ) {
+            Ok(Some(_)) => {
+                tracing::info!(
+                    "[sessions] end flip: session_key={session_key_for_end} status={next_status}"
+                );
+                events_for_end.emit(HoustonEvent::ActivityChanged {
+                    agent_path: agent_path_for_end,
+                });
+            }
+            Ok(None) => {
+                tracing::info!(
+                    "[sessions] end flip: no matching activity for session_key={session_key_for_end} (ad-hoc session — skipped)"
+                );
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "[sessions] failed to flip activity to {next_status}: {e} (session_key={session_key_for_end})"
+                );
+            }
+        }
+    });
+
     Ok(session_key)
 }
 
-/// Cancel a running session. Sends `SIGTERM` to the Claude CLI process and
-/// emits a `Stopped by user` feed item + `completed` session status so the
-/// UI can reconcile.
+/// Cancel a running session. On Unix sends `SIGTERM` to the Claude CLI
+/// process; on Windows issues `taskkill /PID <pid> /T /F` (terminates the
+/// process tree). Emits a `Stopped by user` feed item + `completed`
+/// session status so the UI can reconcile.
 ///
 /// Returns `true` if a process was found and signaled, `false` if no session
 /// was running under that key.
@@ -169,22 +242,39 @@ pub async fn cancel(
     };
     tracing::info!("[sessions] cancel session_key={session_key} pid={pid}");
 
-    // SIGTERM the CLI. Don't block on kill(1) in tests where the PID may be
-    // stale — tokio Command::output().await can hang on Tauri macOS (see
+    // Terminate the CLI. Don't block on the shell-out in tests where the
+    // PID may be stale — tokio Command can hang on Tauri macOS (see
     // tauri_subprocess_hang memory). A short timeout is cheap and safe.
-    #[cfg(unix)]
-    {
-        use tokio::time::{timeout, Duration};
-        let _ = timeout(Duration::from_millis(500), async {
+    use tokio::time::{timeout, Duration};
+    let _ = timeout(Duration::from_millis(500), async {
+        #[cfg(unix)]
+        {
             let _ = tokio::process::Command::new("kill")
                 .arg("-TERM")
                 .arg(pid.to_string())
                 .kill_on_drop(true)
                 .status()
                 .await;
-        })
-        .await;
-    }
+        }
+        #[cfg(windows)]
+        {
+            // `taskkill /PID <pid> /T /F` — `/T` kills the whole tree
+            // (Claude/Codex spawn node subprocesses), `/F` is forceful.
+            // Windows has no graceful-termination primitive akin to
+            // SIGTERM that works across console applications without a
+            // shared Ctrl-C signal group; forceful is what Task Manager
+            // and `stop` buttons elsewhere do.
+            let _ = tokio::process::Command::new("taskkill")
+                .arg("/PID")
+                .arg(pid.to_string())
+                .arg("/T")
+                .arg("/F")
+                .kill_on_drop(true)
+                .status()
+                .await;
+        }
+    })
+    .await;
 
     events.emit(HoustonEvent::FeedItem {
         agent_path: agent_path.to_string(),

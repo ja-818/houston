@@ -167,6 +167,17 @@ pub fn spawn_and_monitor(
                     if let Some(ref mut opts) = persist {
                         opts.claude_session_id = Some(sid.clone());
                         if let Some(user_msg) = opts.user_message.take() {
+                            // Emit a FeedItem event for the user message so
+                            // other connected clients (mobile → desktop
+                            // echo, multi-window) pick it up over the
+                            // session:{key} WS topic immediately. Without
+                            // this, cross-client echo only happens after a
+                            // full history reload.
+                            sink.emit(HoustonEvent::FeedItem {
+                                agent_path: agent_path_for_events.clone(),
+                                session_key: key.clone(),
+                                item: FeedItem::UserMessage(user_msg.clone()),
+                            });
                             let db = opts.db.clone();
                             let src = opts.source.clone();
                             let sid_clone = sid.clone();

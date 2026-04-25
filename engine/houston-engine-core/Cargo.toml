@@ -1,6 +1,6 @@
 [package]
 name = "houston-engine-core"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 description = "Runtime container for Houston Engine — owns DB, event sinks, paths, and domain logic shared by HTTP routes and CLI tools"
 license = "MIT"
@@ -22,7 +22,6 @@ houston-agent-files = { workspace = true }
 houston-skills = { workspace = true, features = ["remote"] }
 houston-engine-protocol = { workspace = true }
 houston-agents-conversations = { workspace = true }
-houston-sync = { workspace = true }
 dirs-next = "2"
 dirs = "5"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }

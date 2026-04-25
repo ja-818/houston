@@ -1,7 +1,34 @@
 import { useState, useRef, useEffect } from "react"
-import { cn, ConfirmDialog } from "@houston-ai/core"
-import { Trash2, CheckCircle, Pencil } from "lucide-react"
+import {
+  cn,
+  ConfirmDialog,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@houston-ai/core"
+import { Trash2, Check, Pencil } from "lucide-react"
 import type { KanbanItem } from "./types"
+
+export interface KanbanCardLabels {
+  /** @deprecated kept for backward-compat. Was the visible Approve pill text;
+   *  the action is now an icon-only button with `approveTooltip`. */
+  approve?: string
+  approveTooltip?: string
+  renameTooltip?: string
+  deleteTooltip?: string
+  /** Delete confirm title, `{name}` substituted with `item.title`. */
+  deleteTitle?: (name: string) => string
+  deleteDescription?: string
+}
+
+const DEFAULT_LABELS: Required<KanbanCardLabels> = {
+  approve: "Move to done",
+  approveTooltip: "Move to done",
+  renameTooltip: "Change title",
+  deleteTooltip: "Delete",
+  deleteTitle: (name) => `Delete "${name}"?`,
+  deleteDescription: "This item and its history will be permanently removed.",
+}
 
 export interface KanbanCardProps {
   item: KanbanItem
@@ -13,6 +40,7 @@ export interface KanbanCardProps {
   approveStatuses?: string[]
   actions?: React.ReactNode
   avatar?: React.ReactNode
+  labels?: KanbanCardLabels
 }
 
 export function KanbanCard({
@@ -25,7 +53,9 @@ export function KanbanCard({
   approveStatuses = ["needs_you"],
   actions,
   avatar,
+  labels,
 }: KanbanCardProps) {
+  const l = { ...DEFAULT_LABELS, ...labels }
   const isRunning = runningStatuses.includes(item.status)
   const isNeedsApproval = approveStatuses.includes(item.status)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -89,23 +119,47 @@ export function KanbanCard({
             )}
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
+            {!actions && isNeedsApproval && onApprove && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onApprove() }}
+                    className="p-1 rounded-md text-muted-foreground/40 hover:text-[#00a240] hover:bg-[#00a240]/10 transition-colors duration-200"
+                    aria-label={l.approveTooltip}
+                  >
+                    <Check className="size-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{l.approveTooltip}</TooltipContent>
+              </Tooltip>
+            )}
             {onRename && (
-              <button
-                onClick={handleRenameClick}
-                className="p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-colors duration-200"
-                aria-label={`Rename ${item.title}`}
-              >
-                <Pencil className="size-3" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleRenameClick}
+                    className="p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-colors duration-200"
+                    aria-label={l.renameTooltip}
+                  >
+                    <Pencil className="size-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{l.renameTooltip}</TooltipContent>
+              </Tooltip>
             )}
             {onDelete && (
-              <button
-                onClick={handleDeleteClick}
-                className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors duration-200"
-                aria-label={`Delete ${item.title}`}
-              >
-                <Trash2 className="size-3" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleDeleteClick}
+                    className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors duration-200"
+                    aria-label={l.deleteTooltip}
+                  >
+                    <Trash2 className="size-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{l.deleteTooltip}</TooltipContent>
+              </Tooltip>
             )}
           </div>
         </div>
@@ -137,8 +191,10 @@ export function KanbanCard({
           </p>
         )}
 
-        {/* Footer: tags + actions */}
-        {(item.tags?.length || actions || (isNeedsApproval && onApprove)) && (
+        {/* Footer: tags + custom actions. The Approve action moved to the
+           top-right icon row (see above) so it's visually consistent with
+           Rename / Delete and the tooltip explains exactly what it does. */}
+        {(item.tags?.length || actions) && (
           <div className="flex items-center justify-between mt-2.5">
             <div className="flex items-center gap-1 flex-wrap min-w-0">
               {item.tags?.map((tag) => (
@@ -152,18 +208,6 @@ export function KanbanCard({
             </div>
             <div className="shrink-0">
               {actions}
-              {!actions && isNeedsApproval && onApprove && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onApprove()
-                  }}
-                  className="flex items-center gap-0.5 h-5 pl-1 pr-2 rounded-full bg-primary text-primary-foreground text-[10px] font-medium hover:bg-primary/85 transition-colors duration-200"
-                >
-                  <CheckCircle className="size-2.5" />
-                  Approve
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -172,8 +216,8 @@ export function KanbanCard({
       <ConfirmDialog
         open={showConfirm}
         onOpenChange={setShowConfirm}
-        title={`Delete "${item.title}"?`}
-        description="This item and its history will be permanently removed."
+        title={l.deleteTitle(item.title)}
+        description={l.deleteDescription}
         onConfirm={confirmDelete}
       />
     </>

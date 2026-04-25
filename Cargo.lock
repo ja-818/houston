@@ -2384,6 +2384,7 @@ name = "houston-composio"
 version = "0.3.2"
 dependencies = [
  "base64 0.22.1",
+ "dirs 5.0.1",
  "houston-db",
  "houston-ui-events",
  "reqwest 0.12.28",
@@ -2423,7 +2424,6 @@ dependencies = [
  "houston-db",
  "houston-engine-protocol",
  "houston-skills",
- "houston-sync",
  "houston-terminal-manager",
  "houston-ui-events",
  "reqwest 0.12.28",
@@ -2453,6 +2453,7 @@ name = "houston-engine-server"
 version = "0.4.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum 0.7.9",
  "base64 0.22.1",
  "chrono",
@@ -2463,8 +2464,8 @@ dependencies = [
  "houston-engine-protocol",
  "houston-file-watcher",
  "houston-skills",
- "houston-sync",
  "houston-terminal-manager",
+ "houston-tunnel",
  "houston-ui-events",
  "rand 0.8.5",
  "reqwest 0.12.28",
@@ -2536,22 +2537,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "houston-sync"
-version = "0.3.3"
-dependencies = [
- "chrono",
- "futures-util",
- "hex",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "tokio",
- "tokio-tungstenite",
- "tracing",
- "url",
-]
-
-[[package]]
 name = "houston-tauri"
 version = "0.4.0"
 dependencies = [
@@ -2573,10 +2558,31 @@ dependencies = [
 name = "houston-terminal-manager"
 version = "0.3.2"
 dependencies = [
+ "dirs 5.0.1",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "houston-tunnel"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "bytes",
+ "futures-util",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-tungstenite",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]

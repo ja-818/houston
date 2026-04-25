@@ -42,9 +42,10 @@ Need specific knowledge? Load on demand:
 - Engine wire protocol (REST + WS) → `knowledge-base/engine-protocol.md`
 - `houston-engine` binary ops → `knowledge-base/engine-server.md`
 - Custom frontend on `houston-engine` (integration reference) → `examples/smartbooks/README.md`
-- Desktop ↔ Mobile WS contract → `knowledge-base/sync-protocol.md`
+- Mobile PWA (tunnel, pairing, reactivity) → `docs/mobile-architecture.md` + `docs/relay-operations.md`
 - Updater, analytics, Sentry, env vars, CI → `knowledge-base/production-infra.md`
 - Supabase auth, Google SSO, Keychain → `knowledge-base/auth.md`
+- Translating UI strings, namespaces, ui/ labels prop pattern, `t()` rules → `knowledge-base/i18n.md`
 
 Design work? Skills: `/critique` before, `/polish` after. Else `/clarify` (copy), `/distill` (overloaded screen), `/animate` (micro-interactions), `/audit` (a11y).
 
@@ -107,6 +108,13 @@ Ask: "Ready to commit? (yes/no/skip)" **STOP.** Yes → stage specific files, co
 | ui/ | `pnpm typecheck` | — | — |
 | engine/ | — | `cargo test --workspace` | `cargo build --workspace` |
 | app/ | `cd app && pnpm tsc --noEmit` | `cd app/src-tauri && cargo check` | `cd app && pnpm tauri build` |
+| app/ i18n | `cd app && pnpm check-locales` | — | — |
+
+### Engine sidecar staleness (dev only)
+
+`pnpm tauri dev` spawns the engine as a subprocess from `app/src-tauri/binaries/houston-engine-<triple>`, which `build.rs` stages from `target/{debug,release}/houston-engine`. Tauri does NOT rebuild the engine on its own — frontend HMR works fine but the sidecar is whatever binary was last compiled.
+
+**Rule**: any time a PR touches `engine/**` (including merges that bring engine changes from `main`), run `cargo build -p houston-engine-server` BEFORE the next `pnpm tauri dev` and restart it. Symptoms of a stale sidecar: 404s on routes that exist in the current source, missing event types, schema mismatches. Production users never hit this — release CI builds the engine from scratch on every tag.
 
 ---
 
@@ -130,6 +138,17 @@ Ask: "Ready to commit? (yes/no/skip)" **STOP.** Yes → stage specific files, co
 - All `.houston/` fetching → TanStack Query + event invalidation. No load-on-mount-only.
 - Agent writes emit events. File watcher catches bypass writes. Both architecturally required.
 - Never build "agent can do X but UI won't show until refresh."
+
+### Internationalization (frontend)
+- Houston ships **en / es / pt**. Every user-facing string flows through `t()` from `react-i18next`. No literal English in JSX text, props, placeholders, aria-labels, toast titles, error messages, or `<Empty>` defaults.
+- New screen / new strings → pick the right namespace under `app/src/locales/<lang>/<ns>.json` (or create one + register in `app/src/lib/i18n.ts` + augment `app/src/types/react-i18next.d.ts`). en is source of truth; es and pt mirror the structure.
+- **`ui/@houston-ai/*` stays i18n-agnostic** per the library boundary. Components take optional `labels?` props with English defaults; the consumer in `app/` passes `t()` results in. Don't import `react-i18next` in `ui/`.
+- Variables: `t("key", { name })`, never string concat. Plurals: `count` API with `_one` / `_other` keys. Embedded markup: `<Trans components={{...}}>`.
+- **No em dashes (`—`)** in user-facing copy. Commas or sentence breaks. Validator enforces this.
+- Spanish = Latin-American neutral (computador, tú). Portuguese = Brazilian (você).
+- Keys are type-checked via `app/src/types/react-i18next.d.ts` augmentation — typos fail at compile time.
+- Pre-commit: `pnpm tsc --noEmit` AND `pnpm check-locales` (catches missing keys, shape drift, placeholder parity, em dashes).
+- See `knowledge-base/i18n.md` for patterns, glossary, and the wiring checklist.
 
 ### Internal code = no backwards compat
 - Types, APIs, Rust modules, TS fns: change = change. No "just in case" keeps.
@@ -159,20 +178,24 @@ Never "You're absolutely right!" if better approach exists. Say it.
 
 ---
 
-## Git
+## Git — Worktree workflow (ALWAYS)
+
+User ALWAYS runs Claude in a per-task worktree. Each task = isolated branch in `.claude/worktrees/<name>/`. Main stays clean.
 
 Branch model:
 - `main` — releasable, protected, PRs only
-- `claude/wip` — working branch, all Claude commits here
-- `feature/*` — optional, big isolated features
+- `claude/<worktree-name>` — the worktree's own branch (auto-created on worktree spawn); commits go here
 
-Before every commit:
-1. `git branch --show-current` → must be `claude/wip`. If `main`, `git checkout claude/wip`.
+End-to-end flow (run without asking, unless a step is destructive and not pre-authorized):
+1. `git branch --show-current` → confirm it's the worktree branch (e.g. `claude/crazy-pare-b3d43d`). Never switch to `claude/wip` or `main`.
 2. Stage specific files. Never `git add -A`.
 3. Conventional commit (`feat:` `fix:` `docs:` `chore:` `refactor:` `style:` `test:`).
-4. `git push origin claude/wip`.
+4. `git push -u origin <worktree-branch>`.
+5. `gh pr create --base main --title "…" --body "…"` — summarise changes, list affected files.
+6. Merge the PR yourself: `gh pr merge --squash --delete-branch`. User does NOT review — they rely on the phase protocol + tests + typecheck to catch issues before commit.
+7. Cleanup (from the main repo checkout, not the worktree): `git worktree remove <path>` is handled by the harness on exit; just ensure the remote branch is deleted by `--delete-branch`.
 
-Merge to main: PR `claude/wip` → `main`, squash. After merge: `git checkout claude/wip && git reset --hard main`.
+Never `git reset --hard` on `main`, never force-push to `main`, never merge without the PR step (even for trivial changes — PR is the audit trail).
 
 ---
 

@@ -1,0 +1,24 @@
+{
+  "page": {
+    "title": "Habilidades",
+    "description": "Instruções reutilizáveis que os agentes podem usar."
+  },
+  "grid": {
+    "loading": "Carregando habilidades…",
+    "emptyTitle": "Sem habilidades instaladas",
+    "emptyDescription": "Habilidades são procedimentos reutilizáveis em que seu agente pode se apoiar.",
+    "addSkill": "Adicionar habilidade",
+    "descriptionShort": "Procedimentos reutilizáveis em que seu agente pode se apoiar."
+  },
+  "detail": {
+    "notFound": "Habilidade não encontrada",
+    "backAria": "Voltar para habilidades",
+    "moreActions": "Mais ações",
+    "saveChanges": "Salvar alterações",
+    "savingChanges": "Salvando…",
+    "delete": "Excluir habilidade",
+    "deleteTitle": "Excluir \"{{name}}\"?",
+    "deleteDescription": "Isso remove a habilidade do seu agente. Você pode reinstalar depois.",
+    "instructionsPlaceholder": "Instruções para esta habilidade…"
+  }
+}

@@ -6,7 +6,6 @@ import { useFeedStore } from "../stores/feeds";
 import { useUIStore } from "../stores/ui";
 import { useWorkspaceStore } from "../stores/workspaces";
 import { useAgentStore } from "../stores/agents";
-import { tauriActivity } from "../lib/tauri";
 import { subscribeHoustonEvents, listenOsEvent } from "../lib/events";
 import { logger } from "../lib/logger";
 
@@ -145,16 +144,15 @@ export function useSessionEvents() {
             const agentName = agent?.name ?? "Agent";
             let nav: { agentId: string; activityId: string } | undefined;
 
-            // Move activity to "needs_you" — the ActivityChanged event
-            // emitted by the Rust update command will auto-invalidate queries.
-            // Skip routine-* sessions — the routine runner handles their lifecycle.
+            // Activity status flip (→ "needs_you") is owned by the
+            // engine now — `sessions::start` spawns a task that writes
+            // the terminal status after the runner finishes and emits
+            // `ActivityChanged`. That way phone-only users (and
+            // anything else that skips this webview) see the same
+            // transition. We still need the activityId for the
+            // notification nav target.
             if (session_key.startsWith("activity-") && !session_key.startsWith("routine-")) {
               const activityId = session_key.replace("activity-", "");
-              // Use the event's agent_path so we update the right agent even
-              // if the user has since navigated away from it.
-              tauriActivity.update(agent_path, activityId, { status: "needs_you" }).catch((e) =>
-                console.error("[session] Failed to update activity status:", e),
-              );
               // Only navigate if the completed session belongs to the currently-open agent.
               if (agent?.id && agent.folderPath === agent_path) {
                 nav = { agentId: agent.id, activityId };

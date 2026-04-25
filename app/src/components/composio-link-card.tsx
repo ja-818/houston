@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, ExternalLink, Loader2 } from "lucide-react";
 import { useComposioApps } from "../hooks/queries";
 import { useComposioRefetchOnReturn } from "../hooks/use-composio-refetch-on-return";
@@ -38,6 +39,7 @@ export function ComposioLinkCard({
   isConnected,
   onOpen,
 }: ComposioLinkCardProps) {
+  const { t } = useTranslation("chat");
   const [opening, setOpening] = useState(false);
   const { data: apiApps } = useComposioApps();
   const markWaitingForAuth = useComposioRefetchOnReturn();
@@ -60,7 +62,7 @@ export function ComposioLinkCard({
     return {
       toolkit,
       name: toolkit,
-      description: "Composio integration",
+      description: t("composio.integration"),
       logoUrl: fallbackLogo(toolkit),
     };
   })();
@@ -85,13 +87,13 @@ export function ComposioLinkCard({
             {app.name}
           </span>
           <span className="text-[11px] text-muted-foreground truncate">
-            {isConnected ? "Already connected" : app.description}
+            {isConnected ? t("composio.alreadyConnected") : app.description}
           </span>
         </span>
         {isConnected ? (
           <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium shrink-0">
             <Check className="size-3" />
-            Connected
+            {t("composio.connected")}
           </span>
         ) : (
           <button
@@ -104,7 +106,7 @@ export function ComposioLinkCard({
               <Loader2 className="size-3 animate-spin" />
             ) : (
               <>
-                Connect
+                {t("composio.connect")}
                 <ExternalLink className="size-3" />
               </>
             )}

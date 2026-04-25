@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { ArrowLeft } from "lucide-react";
+import { useTranslation, Trans } from "react-i18next";
 import { Button, Input } from "@houston-ai/core";
 import { ProviderPicker } from "./provider-picker";
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function WorkspaceSetupFlow({ mode, onComplete }: Props) {
+  const { t } = useTranslation(["setup", "common"]);
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("Personal");
   const [provider, setProvider] = useState<string | null>(null);
@@ -40,9 +42,9 @@ export function WorkspaceSetupFlow({ mode, onComplete }: Props) {
         <div className={isPage ? "w-full max-w-sm" : "space-y-4 pt-2"}>
           {isPage && (
             <div className="text-center mb-6">
-              <h2 className="text-lg font-semibold mb-1">Name your workspace</h2>
+              <h2 className="text-lg font-semibold mb-1">{t("setup:name.title")}</h2>
               <p className="text-sm text-muted-foreground">
-                Workspaces keep your agents organized — one for personal, one for work, etc.
+                {t("setup:name.description")}
               </p>
             </div>
           )}
@@ -51,7 +53,7 @@ export function WorkspaceSetupFlow({ mode, onComplete }: Props) {
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Personal, Work, Acme Corp"
+              placeholder={t("setup:name.placeholder")}
             />
             <div className={isPage ? "flex justify-center" : "flex justify-end"}>
               <Button
@@ -59,7 +61,7 @@ export function WorkspaceSetupFlow({ mode, onComplete }: Props) {
                 disabled={!name.trim()}
                 className="rounded-full"
               >
-                Continue
+                {t("common:actions.continue")}
               </Button>
             </div>
           </form>
@@ -78,14 +80,19 @@ export function WorkspaceSetupFlow({ mode, onComplete }: Props) {
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Back
+            {t("common:actions.back")}
           </button>
           <h2 className={isPage ? "text-lg font-semibold mb-1" : "text-base font-medium mb-1"}>
-            Connect your AI
+            {t("setup:provider.title")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Houston uses <strong className="text-foreground font-medium">your own</strong> subscription.
-            We never see your credentials.
+            <Trans
+              i18nKey="setup:provider.description"
+              defaults="Houston uses <emph>your own</emph> subscription. We never see your credentials."
+              components={{
+                emph: <strong className="text-foreground font-medium" />,
+              }}
+            />
           </p>
         </div>
 
@@ -99,7 +106,9 @@ export function WorkspaceSetupFlow({ mode, onComplete }: Props) {
             disabled={!provider || !model}
             onClick={handleFinish}
           >
-            {mode === "page" ? "Get started" : "Create workspace"}
+            {mode === "page"
+              ? t("setup:provider.finishPage")
+              : t("setup:provider.finishDialog")}
           </Button>
         </div>
       </div>

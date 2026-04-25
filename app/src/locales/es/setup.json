@@ -1,0 +1,18 @@
+{
+  "welcome": {
+    "title": "Bienvenido a Houston",
+    "tagline": "Haz lo imposible.",
+    "getStarted": "Empezar"
+  },
+  "name": {
+    "title": "Nombra tu espacio de trabajo",
+    "description": "Los espacios de trabajo mantienen tus agentes organizados: uno personal, uno de trabajo, etc.",
+    "placeholder": "p. ej. Personal, Trabajo, Acme Corp"
+  },
+  "provider": {
+    "title": "Conecta tu IA",
+    "description": "Houston usa <emph>tu propia</emph> suscripción. Nunca vemos tus credenciales.",
+    "finishPage": "Empezar",
+    "finishDialog": "Crear espacio de trabajo"
+  }
+}

@@ -47,6 +47,25 @@ impl Database {
             .await
             .ok();
 
+        // engine_tokens — device-scoped bearer tokens minted during pairing.
+        // Stored as SHA-256 hash (never the plaintext). `revoked_at` null
+        // means live. The bootstrap token (from HOUSTON_ENGINE_TOKEN or the
+        // auto-gen in config) is NOT in this table — it's checked separately.
+        self.conn()
+            .execute_batch(
+                "CREATE TABLE IF NOT EXISTS engine_tokens (
+                    token_hash TEXT PRIMARY KEY,
+                    device_label TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    revoked_at TEXT,
+                    last_seen_at TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_engine_tokens_active
+                    ON engine_tokens(revoked_at);",
+            )
+            .await
+            .ok();
+
         Ok(())
     }
 }

@@ -10,8 +10,9 @@ Load on demand. Style: caveman.
 | [agent-manifest.md](agent-manifest.md) | Three tiers, manifest shape, workspace templates, sidebar |
 | [engine-protocol.md](engine-protocol.md) | HTTP + WS wire contract every client speaks (REST, envelope, auth) |
 | [engine-server.md](engine-server.md) | `houston-engine` binary — config, startup handshake, supervision, deployment |
-| [sync-protocol.md](sync-protocol.md) | Desktop↔mobile WebSocket contract, envelope, dedupe |
 | [production-infra.md](production-infra.md) | Auto-updater, analytics, Sentry, env vars, CI/CD |
+
+Mobile-specific docs live under `/docs/`: [mobile-architecture.md](../docs/mobile-architecture.md), [relay-operations.md](../docs/relay-operations.md).
 
 **Custom-frontend integration** → [`examples/smartbooks/README.md`](../examples/smartbooks/README.md) (lives with the code so it stays honest). Includes gotchas every third-party consumer of `houston-engine` hits: start the file watcher, subscribe to WS topics before sessions, feed-item streaming reducer, binary file download workaround.
 

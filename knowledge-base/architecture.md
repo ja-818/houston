@@ -7,7 +7,7 @@ Houston = open platform. Organized as **6 products + 3 code libraries**.
 | Product | Dir | What |
 |---------|-----|------|
 | Houston App | `app/` | Desktop app (Tauri 2). Non-technical users create agents, run parallel terminal sessions. |
-| Houston Mobile | `mobile/` | Mobile companion. Mirrors desktop. |
+| Houston Mobile | `mobile/` | React PWA served from `tunnel.gethouston.ai`. No native app — pure web, same origin as the relay. |
 | Houston Store | `store/` | Registry of pre-built agents. One-click install. |
 | Houston Website | `website/` | gethouston.ai landing. |
 | Houston Always On | `always-on/` | One-click deploy Engine to VPS/microVM. Agents 24/7. **TBD.** |
@@ -33,17 +33,17 @@ Houston = open platform. Organized as **6 products + 3 code libraries**.
 
 | Dir | What |
 |-----|------|
-| `desktop-mobile-bridge/` | Cloudflare Worker + Durable Object. Rendezvous server for Desktop↔Mobile (NAT traversal). Deploys separately. Only App-family infra. |
+| `houston-relay/` | Cloudflare Worker + Durable Object at `tunnel.gethouston.ai`. Reverse-tunnel proxy (desktop engine dials outbound; mobile traffic multiplexes over that link) AND static host for the mobile PWA. One origin for both so Safari sees first-party traffic. Deploys separately. |
 | `examples/` | Reference consumers of `houston-engine` for third-party devs. First entry: `examples/smartbooks/` — a custom React frontend, own brand, zero `@houston-ai/*` UI deps. Lives in the monorepo (not a separate repo) so it stays in sync with protocol changes. |
 | `knowledge-base/` | These caveman docs. Loaded on demand. |
 | `scripts/` | Version bump, release, CLI binary fetch. |
 
 ## Engine crates (`engine/`)
 
-14 crates. All pure libraries. No frontend assumptions. Full list in
+13 crates. All pure libraries. No frontend assumptions. Full list in
 the workspace root `Cargo.toml`.
 
-- `houston-db` — libSQL. Only `chat_feed` + `preferences` tables.
+- `houston-db` — libSQL. `chat_feed`, `preferences`, `engine_tokens` tables.
 - `houston-terminal-manager` — Claude/Codex subprocess manager, parser, streaming
 - `houston-events` — hook/webhook/lifecycle queue
 - `houston-scheduler` — cron + heartbeat
@@ -52,11 +52,11 @@ the workspace root `Cargo.toml`.
 - `houston-ui-events` — typed event bus + `EventSink` trait (Tauri/broadcast impls, frontend-neutral)
 - `houston-file-watcher` — `notify` on `.houston/`, emits events
 - `houston-composio` — Composio MCP server lifecycle
-- `houston-sync` — WebSocket sync envelope (desktop↔mobile pairing; engine WS lives in `houston-engine-server`)
+- `houston-tunnel` — outbound reverse tunnel client; desktop engine dials the relay so mobile can reach it through NAT. Heartbeat + watchdog + identity re-allocation on persistent auth failure.
 - `houston-skills` — skill discovery + management
 - `houston-engine-core` — runtime container (`EngineState`, paths, `workspaces::*`, `agents::{activity,routines,routine_runs,config,conversations,files,prompt,self_improvement}`, `sessions::{history,provider,summarize}`, `routines::{runner,runs,scheduler,engine_dispatcher}`, `store`, `sync`, `worktree`, `provider`, `attachments`, `preferences`, `conversations`, `skills`, `agent_configs`). Domain logic relocated from the Tauri adapter.
 - `houston-engine-protocol` — wire types (REST DTOs, WS envelope, error codes, `PROTOCOL_VERSION`). Matches `ui/engine-client/src/types.ts`.
-- `houston-engine-server` — axum HTTP+WS binary `houston-engine`. The process every client talks to. Full REST surface live — 17 route modules, ~80 endpoints (workspaces, agents CRUD, sessions, agent data + files, routines + scheduler, skills, store, composio, sync, worktrees, shell, attachments, preferences, providers, agent-configs, conversations, watcher). See `knowledge-base/engine-protocol.md` for the complete table.
+- `houston-engine-server` — axum HTTP+WS binary `houston-engine`. The process every client talks to. Full REST surface live — 16 route modules covering workspaces, agents CRUD, sessions, agent data + files, routines + scheduler, skills, store, composio, tunnel + pairing, worktrees, shell, attachments, preferences, providers, agent-configs, conversations, watcher. See `knowledge-base/engine-protocol.md` for the complete table.
 
 **Standalone engine, shipped:** the desktop app spawns `houston-engine`
 as a subprocess on startup (sidecar via Tauri `externalBin`), parses
@@ -80,9 +80,8 @@ OS-native glue remains in `app/src-tauri/src/commands/`.
 
 ## UI packages (`ui/`)
 
-12 packages under `@houston-ai/`: `core, chat, board, layout, events,
-routines, skills, review, agent, agent-schemas, sync-protocol,
-engine-client`.
+11 packages under `@houston-ai/`: `core, chat, board, layout, events,
+routines, skills, review, agent, agent-schemas, engine-client`.
 
 Mostly internal. `@houston-ai/engine-client` is the one package we
 expect third-party devs to install — it's the TypeScript front door to
@@ -103,6 +102,7 @@ the typed `.houston/<type>/<type>.json` layout.
 | Teams / Cloud | 🟡 Identity foundation shipped (Supabase Google SSO + Keychain sessions — see `knowledge-base/auth.md`); Cloud API surface TBD |
 | Store populated | ❌ placeholder |
 | Binary file read route (xlsx, pdf download through HTTP) | ❌ workaround: use `/v1/shell` with `open`/`xdg-open` to hand binary files to host OS |
+| Windows support (Rust engine layer) | ✅ `cargo check --target x86_64-pc-windows-gnu` clean across the workspace; platform-specific branches (taskkill vs kill, PATH separator, symlink_dir) covered. See `knowledge-base/platform-matrix.md`. |
 
 ## Direction of work
 - **library-first** — new reusable capability → ui/ or engine/, then consumed by app/

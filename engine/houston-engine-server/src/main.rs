@@ -6,6 +6,7 @@
 
 use houston_engine_protocol::{ENGINE_VERSION, PROTOCOL_VERSION};
 use houston_engine_server::{build_router, ServerConfig, ServerState};
+use houston_tunnel::{EngineEndpoint, TunnelClient, TunnelConfig};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::net::SocketAddr;
@@ -56,11 +57,41 @@ async fn main() {
         actual
     );
 
-    let state = Arc::new(
-        ServerState::new(cfg)
-            .await
-            .expect("engine state init failed"),
-    );
+    // Tunnel identity: cached in `<home>/tunnel.json`, or allocated on
+    // first boot via `POST {relay}/allocate`. Failure is non-fatal — the
+    // engine keeps serving local traffic; mobile companion + push stay
+    // dormant until the next boot succeeds.
+    let tunnel_identity =
+        match houston_tunnel::ensure(&cfg.home_dir, &cfg.tunnel_url).await {
+            Ok(identity) => {
+                tracing::info!(
+                    target: "houston_tunnel",
+                    tunnel_id = %identity.tunnel_id,
+                    host = %identity.public_host,
+                    "tunnel identity loaded"
+                );
+                Some(identity)
+            }
+            Err(e) => {
+                tracing::warn!(
+                    target: "houston_tunnel",
+                    error = %e,
+                    "tunnel allocation failed — running local-only, pairing disabled until next boot"
+                );
+                None
+            }
+        };
+
+    let state = ServerState::new(cfg, tunnel_identity)
+        .await
+        .expect("engine state init failed");
+
+    let state = Arc::new(state);
+
+    // Spawn the tunnel client if identity allocated. Needs the engine
+    // port, which we know now.
+    spawn_tunnel_if_allocated(state.clone(), actual.port());
+
     let app = build_router(state);
 
     // Block on PATH resolution just before serving. DB init usually
@@ -76,6 +107,23 @@ async fn main() {
         tracing::error!("server error: {err}");
         std::process::exit(1);
     }
+}
+
+fn spawn_tunnel_if_allocated(state: Arc<ServerState>, engine_port: u16) {
+    let Some(identity) = state.tunnel_identity.clone() else { return };
+    let cfg = TunnelConfig {
+        home_dir: state.config.home_dir.clone(),
+        tunnel_url: state.config.tunnel_url.clone(),
+        identity,
+        endpoint: EngineEndpoint::new(engine_port),
+    };
+    let client = TunnelClient::new(cfg, Arc::new(state.pair_store.clone()));
+    state
+        .tunnel_running
+        .store(true, std::sync::atomic::Ordering::Relaxed);
+    tokio::spawn(async move {
+        client.run().await;
+    });
 }
 
 fn init_tracing() {

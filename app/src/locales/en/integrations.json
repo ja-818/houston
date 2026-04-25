@@ -1,0 +1,52 @@
+{
+  "title": "Integrations",
+  "loading": {
+    "title": "Loading your integrations",
+    "body": "Checking Composio state…"
+  },
+  "notInstalled": {
+    "title": "Connect your apps",
+    "body": "Houston uses the Composio CLI to let your agent use Gmail, Slack, Google Drive, and 100+ other services on your behalf. One-time install, about 80 MB.",
+    "install": "Install Composio",
+    "installing": "Installing…"
+  },
+  "needsAuth": {
+    "title": "Connect to Composio",
+    "body": "Sign in to Composio so your agent can use Gmail, Slack, Google Drive, and 100+ other services on your behalf.",
+    "signIn": "Sign in to Composio"
+  },
+  "error": {
+    "title": "Couldn't load integrations",
+    "retry": "Retry",
+    "openDashboard": "Open Composio dashboard"
+  },
+  "connected": {
+    "title": "Connected",
+    "count_one": "{{count}} app",
+    "count_other": "{{count}} apps",
+    "manageOn": "Manage {{name}} on Composio",
+    "dotAria": "Connected"
+  },
+  "browse": {
+    "title": "Browse all apps",
+    "count_one": "{{count}} app",
+    "count_other": "{{count}} apps",
+    "searchPlaceholder": "Search apps...",
+    "allCategories": "All categories",
+    "noResults": "No matching apps found.",
+    "loadMoreWithRemaining": "Load more ({{count}} remaining)",
+    "connectTitle": "Connect {{name}}"
+  },
+  "authDialog": {
+    "title": "Connecting to Composio",
+    "description": "Complete the sign-in in your browser, then return here.",
+    "waiting": "Waiting for you to approve in the browser…",
+    "openInBrowser": "Open link in browser"
+  },
+  "linkCard": {
+    "integration": "Composio integration",
+    "alreadyConnected": "Already connected",
+    "connected": "Connected",
+    "connect": "Connect"
+  }
+}

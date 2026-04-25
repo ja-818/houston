@@ -21,7 +21,9 @@
  * - `agent:{agent_path}` — ActivityChanged, SkillsChanged, FilesChanged,
  *    ConfigChanged, ContextChanged, LearningsChanged, ConversationsChanged
  * - `composio` — ComposioCliReady, ComposioCliFailed
- * - `sync` — SyncConnection, SyncMessage
+ *
+ * (The legacy `sync` topic was removed — mobile now uses the same WS
+ * directly through the reverse tunnel.)
  */
 
 import type { EngineEnvelope } from "./types";
@@ -42,16 +44,24 @@ export const topics = {
   events: "events",
   scheduler: "scheduler",
   composio: "composio",
-  sync: "sync",
 } as const;
+
+type ReconnectHandler = () => void;
 
 export class EngineWebSocket {
   private socket: WebSocket | null = null;
   private envelopeHandlers: Set<EnvelopeHandler> = new Set();
   private eventHandlers: Set<EventHandler> = new Set();
+  private reconnectHandlers: Set<ReconnectHandler> = new Set();
   private reconnectAttempts = 0;
   private shouldRun = false;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Set on the FIRST `onopen` so we can distinguish initial connect
+   * from a reconnect. Reconnect → consumers must refetch any data they
+   * cached, since they may have missed events while the socket was
+   * down. (CF idle timeout, tunnel watchdog, mobile tab suspension —
+   * all routine causes.) */
+  private hasConnectedOnce = false;
   /** Topics the caller wants subscribed. Re-sent on every reconnect. */
   private subscribed: Set<string> = new Set();
 
@@ -83,6 +93,19 @@ export class EngineWebSocket {
   onEvent(handler: EventHandler): () => void {
     this.eventHandlers.add(handler);
     return () => this.eventHandlers.delete(handler);
+  }
+
+  /**
+   * Fired AFTER a reconnect succeeds (not on the first connect). Use
+   * this to refetch any cached data — events emitted while the socket
+   * was down were never delivered and won't be replayed. Examples:
+   * a chat session completed during a 30s mobile tab suspension; the
+   * `SessionStatus::Completed` event was lost; without a refetch the
+   * UI shows "thinking..." until the user manually reloads.
+   */
+  onReconnect(handler: ReconnectHandler): () => void {
+    this.reconnectHandlers.add(handler);
+    return () => this.reconnectHandlers.delete(handler);
   }
 
   send(envelope: EngineEnvelope): void {
@@ -131,6 +154,17 @@ export class EngineWebSocket {
       if (this.subscribed.size > 0) {
         this.sendSub(Array.from(this.subscribed));
       }
+      if (this.hasConnectedOnce) {
+        for (const h of this.reconnectHandlers) {
+          try {
+            h();
+          } catch (e) {
+            // A bad handler must not poison the others or the socket.
+            console.error("[ws] onReconnect handler threw:", e);
+          }
+        }
+      }
+      this.hasConnectedOnce = true;
     };
 
     ws.onmessage = (ev) => {

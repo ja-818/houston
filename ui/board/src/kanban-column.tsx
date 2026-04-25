@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion"
 import { Plus } from "lucide-react"
 import type { KanbanItem } from "./types"
-import { KanbanCard } from "./kanban-card"
+import { KanbanCard, type KanbanCardLabels } from "./kanban-card"
 
 export interface KanbanColumnProps {
   label: string
@@ -17,6 +17,7 @@ export interface KanbanColumnProps {
   renderCard?: (item: KanbanItem) => React.ReactNode
   actions?: (item: KanbanItem) => React.ReactNode
   avatar?: React.ReactNode
+  cardLabels?: KanbanCardLabels
 }
 
 export function KanbanColumn({
@@ -32,6 +33,7 @@ export function KanbanColumn({
   renderCard,
   actions,
   avatar,
+  cardLabels,
 }: KanbanColumnProps) {
   return (
     <div className="min-w-[180px] flex-1 flex flex-col h-full min-h-0 rounded-xl bg-secondary">
@@ -80,6 +82,7 @@ export function KanbanColumn({
                   approveStatuses={approveStatuses}
                   actions={actions?.(item)}
                   avatar={avatar}
+                  labels={cardLabels}
                 />
               )}
             </motion.div>

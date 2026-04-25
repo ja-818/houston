@@ -48,5 +48,18 @@ export function mergeFeedItem(items: FeedItem[], item: FeedItem): FeedItem[] {
     }
   }
 
+  // Collapse consecutive identical user_messages. Desktop's send handler
+  // pushes an optimistic user_message the instant the user hits send, and
+  // the engine also persists + broadcasts the same text via a FeedItem
+  // event. Without this, every send from the desktop UI doubles up. The
+  // edge case — a user legitimately sending the same text twice back-to-
+  // back with no agent response between — is rare and visually harmless
+  // (the second appears after the agent replies).
+  if (item.feed_type === "user_message" && last?.feed_type === "user_message") {
+    if (last.data === item.data) {
+      return items;
+    }
+  }
+
   return [...items, item];
 }

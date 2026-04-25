@@ -1,0 +1,18 @@
+{
+  "welcome": {
+    "title": "Bem-vindo ao Houston",
+    "tagline": "Realize o impossível.",
+    "getStarted": "Começar"
+  },
+  "name": {
+    "title": "Dê um nome ao seu espaço de trabalho",
+    "description": "Espaços de trabalho mantêm seus agentes organizados: um pessoal, um do trabalho, etc.",
+    "placeholder": "ex. Pessoal, Trabalho, Acme Corp"
+  },
+  "provider": {
+    "title": "Conecte sua IA",
+    "description": "O Houston usa <emph>sua própria</emph> assinatura. Nunca vemos suas credenciais.",
+    "finishPage": "Começar",
+    "finishDialog": "Criar espaço de trabalho"
+  }
+}

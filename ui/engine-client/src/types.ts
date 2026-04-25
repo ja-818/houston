@@ -307,6 +307,32 @@ export interface PreferenceValue {
   value: string | null;
 }
 
+/**
+ * Known preference keys. Free-form strings are still allowed — this alias
+ * just documents the well-known keys and gives consumers completion.
+ *
+ * Keep in sync with `houston-engine-core::preferences` constants.
+ */
+export type KnownPreferenceKey =
+  | "timezone"
+  | "locale"
+  | "legal_acceptance";
+
+/**
+ * Persisted record that the user has accepted a given version of the
+ * in-app security disclaimer. Stored as the JSON-encoded value of the
+ * `"legal_acceptance"` preference. The frontend re-prompts whenever the
+ * stored `version` is lower than the current in-app constant.
+ */
+export interface LegalAcceptance {
+  version: number;
+  /** RFC3339 timestamp captured at the moment of acceptance. */
+  acceptedAt: string;
+}
+
+/** Preference key for the JSON-encoded [`LegalAcceptance`]. */
+export const LEGAL_ACCEPTANCE_KEY = "legal_acceptance";
+
 // ---------- Store ----------
 
 export interface StoreListing {
@@ -337,18 +363,39 @@ export interface ImportedWorkspace {
   agentIds: string[];
 }
 
-// ---------- Sync ----------
+// ---------- Tunnel (mobile pairing + paired-device management) ----------
 
-export interface SyncInfo {
-  token: string;
-  pairingUrl: string;
+export interface TunnelStatus {
+  connected: boolean;
+  tunnelId: string | null;
+  publicHost: string | null;
+  lastPingMs: number | null;
 }
 
-export interface SyncMessage {
-  type: string;
-  from: string;
-  ts: string;
-  payload: unknown;
+export interface PairingCode {
+  /** Full code mobile must send to `{relay}/pair/<code>` — already
+   * prefixed with `tunnelId-`. Do not split on the dash before sending.
+   */
+  code: string;
+  userCode: string;
+  expiresAt: string;
+}
+
+export interface PairedDevice {
+  hash: string;
+  label: string;
+  createdAt: string;
+  lastSeenAt: string | null;
+}
+
+// ---------- Push (mobile notification registration) ----------
+
+export interface PushRegisterRequest {
+  deviceToken: string;
+  platform: "apns" | "fcm";
+  installationId?: string;
+  appVersion?: string;
+  appEnv?: "prod" | "sandbox";
 }
 
 // ---------- Worktree / shell ----------

@@ -148,7 +148,6 @@ pub fn event_topic(event: &HoustonEvent) -> String {
         HoustonEvent::ComposioCliReady | HoustonEvent::ComposioCliFailed { .. } => {
             "composio".into()
         }
-        HoustonEvent::SyncConnection { .. } | HoustonEvent::SyncMessage { .. } => "sync".into(),
     }
 }
 

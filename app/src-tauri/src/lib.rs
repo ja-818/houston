@@ -193,6 +193,14 @@ pub fn run() {
             if let Some(user_id) = auth::persisted_user_id() {
                 engine_env.push(("HOUSTON_APP_USER_ID".into(), user_id));
             }
+            // Pass through `HOUSTON_TUNNEL_URL` for local relay dev
+            // (`wrangler dev` on localhost:8787). Production uses the
+            // engine's baked-in default (`tunnel.gethouston.ai`).
+            if let Ok(v) = std::env::var("HOUSTON_TUNNEL_URL") {
+                if !v.is_empty() {
+                    engine_env.push(("HOUSTON_TUNNEL_URL".into(), v));
+                }
+            }
             // 30s banner timeout: first-run Gatekeeper scan on a notarized
             // sidecar can take 15–20s on slow machines.
             let slot = spawn_supervisor(binary, Duration::from_secs(30), engine_env, cb)
