@@ -167,9 +167,9 @@ module.
 **Store (agent registry + GitHub import)**
 | Method | Path | Description |
 |---|---|---|
-| GET | `/v1/store/catalog` | Curated listing |
+| GET | `/v1/store/catalog` | Curated listing. Uses release-bundled `store/catalog.json` when available; remote API fallback remains for future hosted Store. |
 | GET | `/v1/store/search?q=` | Search catalog |
-| POST | `/v1/store/installs` | Install by `{repo, agentId}` |
+| POST | `/v1/store/installs` | Install by `{repo, agentId}`. `repo: "houston-store/<id>"` installs bundled package incl. skills. GitHub repo form remains supported. |
 | DELETE | `/v1/store/installs/:agent_id` | Uninstall |
 | POST | `/v1/agents/install-from-github` | One-off install by URL |
 | POST | `/v1/agents/check-updates` | Which installed agents have new versions |

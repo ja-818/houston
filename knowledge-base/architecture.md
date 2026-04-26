@@ -8,7 +8,7 @@ Houston = open platform. Organized as **6 products + 3 code libraries**.
 |---------|-----|------|
 | Houston App | `app/` | Desktop app (Tauri 2). Non-technical users create agents, run parallel terminal sessions. |
 | Houston Mobile | `mobile/` | React PWA served from `tunnel.gethouston.ai`. No native app — pure web, same origin as the relay. |
-| Houston Store | `store/` | Registry of pre-built agents. One-click install. |
+| Houston Store | `store/` | Release-bundled registry of pre-built Houston agents. One-click install. |
 | Houston Website | `website/` | gethouston.ai landing. |
 | Houston Always On | `always-on/` | One-click deploy Engine to VPS/microVM. Agents 24/7. **TBD.** |
 | Houston Teams | `teams/` | Hosted multi-tenant agent pool w/ perms. **TBD.** |
@@ -108,7 +108,7 @@ the typed `.houston/<type>/<type>.json` layout.
 | Reference custom-frontend integration | ✅ `examples/smartbooks/` — Vite + React, own brand, ~400 LOC TSX, proven end-to-end |
 | Always On | ✅ Dockerfile + compose + systemd unit + README all shipped |
 | Teams / Cloud | 🟡 Identity foundation shipped (Supabase Google SSO + Keychain sessions — see `knowledge-base/auth.md`); Cloud API surface TBD |
-| Store populated | ❌ placeholder |
+| Store populated | 🟡 release-bundled MVP: `store/catalog.json` + `store/agents/*`; community sharing TBD |
 | Binary file read route (xlsx, pdf download through HTTP) | ❌ workaround: use `/v1/shell` with `open`/`xdg-open` to hand binary files to host OS |
 | Windows support (Rust engine layer) | ✅ `cargo check --target x86_64-pc-windows-gnu` clean across the workspace; platform-specific branches (taskkill vs kill, PATH separator, symlink_dir) covered. See `knowledge-base/platform-matrix.md`. |
 

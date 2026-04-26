@@ -44,7 +44,18 @@ async fn install(
     State(st): State<Arc<ServerState>>,
     Json(req): Json<InstallAgent>,
 ) -> Result<(), ApiError> {
+    let bundled_agent_id = req
+        .repo
+        .strip_prefix("houston-store/")
+        .map(ToOwned::to_owned);
     store::install_agent(&st.engine.paths.agents_dir(), req).await?;
+    if let Some(agent_id) = bundled_agent_id {
+        store::sync_bundled_agent_instances(
+            st.engine.paths.docs(),
+            &st.engine.paths.agents_dir(),
+            &agent_id,
+        )?;
+    }
     Ok(())
 }
 
@@ -65,12 +76,19 @@ async fn install_from_github(
     Ok(Json(serde_json::json!({ "agentId": agent_id })))
 }
 
-async fn check_updates(
-    State(st): State<Arc<ServerState>>,
-) -> Result<Json<Vec<String>>, ApiError> {
-    Ok(Json(
-        store::check_agent_updates(&st.engine.paths.agents_dir()).await?,
-    ))
+async fn check_updates(State(st): State<Arc<ServerState>>) -> Result<Json<Vec<String>>, ApiError> {
+    let updated = store::check_agent_updates(&st.engine.paths.agents_dir()).await?;
+    for agent_id in &updated {
+        if agent_id.contains('/') {
+            continue;
+        }
+        store::sync_bundled_agent_instances(
+            st.engine.paths.docs(),
+            &st.engine.paths.agents_dir(),
+            agent_id,
+        )?;
+    }
+    Ok(Json(updated))
 }
 
 async fn install_workspace_from_github(

@@ -36,7 +36,7 @@ export function useMissionControl(agents: Agent[]) {
     [agents],
   );
 
-  const { data: convos } = useAllConversations(paths);
+  const { data: convos, isFetched } = useAllConversations(paths);
 
   const agentColorMap = useMemo(() => {
     const m: Record<string, string | undefined> = {};
@@ -167,6 +167,7 @@ export function useMissionControl(agents: Agent[]) {
     selectedId,
     setSelectedId,
     loading,
+    isLoaded: isFetched,
     feedItems,
     loadHistory,
     handleHistoryLoaded,

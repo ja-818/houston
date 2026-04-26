@@ -63,6 +63,7 @@ export interface AgentConfig {
   category?: AgentCategory;
   author?: string;         // e.g. "Houston" for official, user name for community
   tags?: string[];         // Searchable tags
+  integrations?: string[]; // Composio toolkit slugs used by bundled agents
   tabs: AgentTab[];
   defaultTab?: string;     // Tab ID to show by default, defaults to first tab
   claudeMd?: string;       // CLAUDE.md content template
@@ -180,7 +181,11 @@ export interface StoreListing {
   author: string;
   tags: string[];
   icon_url: string;
+  integrations?: string[];
   repo: string;
   installs: number;
   registered_at: string;
+  version?: string;
+  content_hash?: string;
+  bundled?: boolean;
 }

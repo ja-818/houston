@@ -48,23 +48,8 @@
     "downloading": "Downloading... {{progress}}%",
     "restart": "Restart to update"
   },
-  "githubImport": {
-    "placeholder": "owner/repo",
-    "next": "Next",
-    "hint": "Enter a public GitHub repo in owner/repo format",
-    "fetching": "Fetching agent..."
-  },
   "store": {
     "searchPlaceholder": "Search the store...",
-    "categoryAll": "All",
-    "categoryProductivity": "Productivity",
-    "categoryDevelopment": "Development",
-    "categoryResearch": "Research",
-    "categoryCreative": "Creative",
-    "categoryBusiness": "Business",
-    "sectionHoustonAgents": "By Houston",
-    "sectionCommunityAgents": "Community",
-    "sectionStore": "Houston Store",
     "noResults": "No agents match your search"
   },
   "naming": {
@@ -76,10 +61,7 @@
     "createAgent": "Create Agent"
   },
   "newAgent": {
-    "dialogTitle": "New agent",
-    "dialogDescription": "Browse the store or import from GitHub.",
-    "tabStore": "Houston Store",
-    "tabGithub": "GitHub"
+    "dialogTitle": "New agent"
   },
   "engineGate": {
     "starting": "Starting Houston engine…"

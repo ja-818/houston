@@ -25,15 +25,20 @@ export const useAgentCatalogStore = create<AgentCatalogState>((set, get) => ({
   dismissUpdates: () => set({ updatedRepos: [] }),
 
   loadConfigs: async () => {
-    set({ loading: true });
-    try {
+    const refreshInstalledConfigs = async () => {
       const agents = await loadAllConfigs();
       const installedIds = new Set(
         agents
           .filter((a) => a.source === "installed")
           .map((a) => a.config.id),
       );
-      set({ agents, installedIds, loading: false });
+      set({ agents, installedIds });
+    };
+
+    set({ loading: true });
+    try {
+      await refreshInstalledConfigs();
+      set({ loading: false });
 
       // Fetch store catalog in background (don't block the UI)
       tauriStore
@@ -44,10 +49,11 @@ export const useAgentCatalogStore = create<AgentCatalogState>((set, get) => ({
       // Check installed agents for GitHub updates (background)
       tauriStore
         .checkUpdates()
-        .then((repos) => {
+        .then(async (repos) => {
           if (repos.length > 0) {
             console.info("[agent-catalog] Updates found:", repos);
             set({ updatedRepos: repos });
+            await refreshInstalledConfigs();
           }
         })
         .catch((e) => console.warn("[agent-catalog] Update check failed:", e));

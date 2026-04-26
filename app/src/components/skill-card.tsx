@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { cn } from "@houston-ai/core";
 import { SkillIcon } from "./skill-icon";
 import { IntegrationLogos } from "./integration-logos";
 
@@ -10,8 +12,14 @@ interface Props {
   description?: string;
   /** Composio toolkit slugs rendered as a small logo row at the bottom. */
   integrations?: string[];
+  /** Optional custom media for callers that already have an avatar component. */
+  media?: ReactNode;
+  /** Optional cap for dense integration rows. */
+  maxIntegrations?: number;
+  className?: string;
   onClick: () => void;
   disabled?: boolean;
+  busy?: boolean;
 }
 
 /**
@@ -27,17 +35,29 @@ export function SkillCard({
   title,
   description,
   integrations,
+  media,
+  maxIntegrations,
+  className,
   onClick,
   disabled,
+  busy,
 }: Props) {
+  const visibleIntegrations = maxIntegrations
+    ? integrations?.slice(0, maxIntegrations)
+    : integrations;
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex items-center gap-4 rounded-2xl bg-secondary p-4 text-left transition-colors duration-200 hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed w-full"
+      aria-busy={busy || undefined}
+      className={cn(
+        "flex items-center gap-4 rounded-2xl bg-secondary p-4 text-left transition-colors duration-200 hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed w-full",
+        className,
+      )}
     >
-      <SkillIcon image={image} />
+      {media ?? <SkillIcon image={image} />}
       <div className="flex flex-col gap-1.5 min-w-0 flex-1">
         <span className="text-sm font-semibold text-foreground">{title}</span>
         {description && (
@@ -45,8 +65,8 @@ export function SkillCard({
             {description}
           </span>
         )}
-        {integrations && integrations.length > 0 && (
-          <IntegrationLogos toolkits={integrations} />
+        {visibleIntegrations && visibleIntegrations.length > 0 && (
+          <IntegrationLogos toolkits={visibleIntegrations} />
         )}
       </div>
     </button>

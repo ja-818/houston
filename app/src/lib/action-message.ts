@@ -44,10 +44,12 @@ export function encodeActionMessage(
     image: skill.image,
     description: skill.description,
     integrations: skill.integrations,
-    fields: skill.inputs.map((i) => ({
-      label: i.label,
-      value: (values[i.name] ?? "").trim(),
-    })),
+    fields: skill.inputs
+      .map((i) => ({
+        label: i.label,
+        value: (values[i.name] ?? "").trim(),
+      }))
+      .filter((f) => f.value.length > 0),
   };
   const json = JSON.stringify(payload);
   return `${MARKER_PREFIX}${json}${MARKER_SUFFIX}\n\n${claudePrompt}`;

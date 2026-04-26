@@ -1,28 +1,15 @@
-import { Input, cn } from "@houston-ai/core";
+import { useMemo } from "react";
+import { Input } from "@houston-ai/core";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { AgentDefinition, AgentCategory, StoreListing } from "../../lib/types";
+import type { AgentDefinition, StoreListing } from "../../lib/types";
 import { AgentCard, StoreAgentCard } from "./experience-card";
-
-const CATEGORY_KEYS: { id: "all" | AgentCategory; labelKey: string }[] = [
-  { id: "all", labelKey: "categoryAll" },
-  { id: "productivity", labelKey: "categoryProductivity" },
-  { id: "development", labelKey: "categoryDevelopment" },
-  { id: "research", labelKey: "categoryResearch" },
-  { id: "creative", labelKey: "categoryCreative" },
-  { id: "business", labelKey: "categoryBusiness" },
-];
 
 interface StoreStepProps {
   search: string;
   onSearchChange: (value: string) => void;
-  category: "all" | AgentCategory;
-  onCategoryChange: (cat: "all" | AgentCategory) => void;
-  houstonAgents: AgentDefinition[];
-  communityAgents: AgentDefinition[];
+  agents: AgentDefinition[];
   storeCatalog: StoreListing[];
-  installedIds: Set<string>;
-  hasResults: boolean;
   onSelect: (id: string) => void;
   onInstall: (listing: StoreListing) => Promise<void>;
 }
@@ -30,43 +17,46 @@ interface StoreStepProps {
 export function StoreStep({
   search,
   onSearchChange,
-  category,
-  onCategoryChange,
-  houstonAgents,
-  communityAgents,
+  agents,
   storeCatalog,
-  installedIds,
-  hasResults,
   onSelect,
   onInstall,
 }: StoreStepProps) {
   const { t } = useTranslation("shell");
-  // Filter store listings that aren't already in builtin/community lists
-  const localIds = new Set([
-    ...houstonAgents.map((d) => d.config.id),
-    ...communityAgents.map((d) => d.config.id),
-  ]);
 
-  const filteredStore = storeCatalog.filter((s) => {
-    if (localIds.has(s.id)) return false;
-    if (category !== "all" && s.category !== category) return false;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      return (
-        s.name.toLowerCase().includes(q) ||
-        s.description.toLowerCase().includes(q) ||
-        s.tags.some((t) => t.toLowerCase().includes(q))
-      );
-    }
-    return true;
-  });
+  const storeIds = useMemo(
+    () => new Set(storeCatalog.map((listing) => listing.id)),
+    [storeCatalog],
+  );
+  const query = search.trim().toLowerCase();
 
-  const totalResults =
-    houstonAgents.length + communityAgents.length + filteredStore.length;
+  const filteredAgents = useMemo(
+    () =>
+      agents.filter((d) => {
+        if (d.source === "installed" && d.config.author === "Houston") {
+          return false;
+        }
+        if (storeIds.has(d.config.id)) return false;
+        if (!query) return true;
+        return matchesAgent(d, query);
+      }),
+    [agents, query, storeIds],
+  );
+
+  const filteredStore = useMemo(
+    () =>
+      storeCatalog.filter((listing) => {
+        if (!query) return true;
+        return matchesListing(listing, query);
+      }),
+    [query, storeCatalog],
+  );
+
+  const totalResults = filteredAgents.length + filteredStore.length;
 
   return (
     <>
-      <div className="shrink-0 px-6 space-y-4">
+      <div className="shrink-0 px-6 pb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
@@ -78,95 +68,58 @@ export function StoreStep({
         </div>
       </div>
 
-      <div className="shrink-0 flex items-center gap-5 px-6 border-b border-border">
-        {CATEGORY_KEYS.map((cat) => {
-          const isActive = category === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => onCategoryChange(cat.id)}
-              className={cn(
-                "relative pb-2.5 pt-3 text-sm transition-colors duration-200",
-                isActive
-                  ? "text-foreground font-medium"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t(`store.${cat.labelKey}`)}
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
-        {houstonAgents.length > 0 && (
-          <StoreSection label={t("store.sectionHoustonAgents")}>
-            {houstonAgents.map((def) => (
+      <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+        {totalResults > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filteredAgents.map((def) => (
               <AgentCard
                 key={def.config.id}
                 config={def.config}
                 onSelect={onSelect}
               />
             ))}
-          </StoreSection>
-        )}
-
-        {communityAgents.length > 0 && (
-          <StoreSection label={t("store.sectionCommunityAgents")}>
-            {communityAgents.map((def) => (
-              <AgentCard
-                key={def.config.id}
-                config={def.config}
-                onSelect={onSelect}
-              />
-            ))}
-          </StoreSection>
-        )}
-
-        {filteredStore.length > 0 && (
-          <StoreSection label={t("store.sectionStore")}>
             {filteredStore.map((listing) => (
               <StoreAgentCard
                 key={listing.id}
                 listing={listing}
-                isInstalled={installedIds.has(listing.id)}
                 onInstall={onInstall}
                 onSelect={onSelect}
               />
             ))}
-          </StoreSection>
-        )}
-
-        {totalResults === 0 && !hasResults && (
+          </div>
+        ) : (
           <div className="flex items-center justify-center py-16">
             <p className="text-sm text-muted-foreground">
               {t("store.noResults")}
             </p>
           </div>
         )}
-
       </div>
     </>
   );
 }
 
-function StoreSection({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function matchesAgent(def: AgentDefinition, query: string): boolean {
+  const config = def.config;
   return (
-    <section>
-      <p className="text-xs font-medium text-muted-foreground mb-3">
-        {label}
-      </p>
-      <div className="grid grid-cols-2 gap-3">{children}</div>
-    </section>
+    config.name.toLowerCase().includes(query) ||
+    config.description.toLowerCase().includes(query) ||
+    config.tags?.some((tag) => tag.toLowerCase().includes(query)) ||
+    config.integrations?.some((toolkit) =>
+      toolkit.toLowerCase().includes(query),
+    ) ||
+    false
   );
 }
 
+function matchesListing(listing: StoreListing, query: string): boolean {
+  return (
+    listing.name.toLowerCase().includes(query) ||
+    listing.description.toLowerCase().includes(query) ||
+    listing.tags.some((tag) => tag.toLowerCase().includes(query)) ||
+    listing.integrations?.some((toolkit) =>
+      toolkit.toLowerCase().includes(query),
+    ) ||
+    false
+  );
+}

@@ -48,23 +48,8 @@
     "downloading": "Baixando... {{progress}}%",
     "restart": "Reinicie para atualizar"
   },
-  "githubImport": {
-    "placeholder": "usuario/repo",
-    "next": "Próximo",
-    "hint": "Digite um repositório público do GitHub no formato usuario/repo",
-    "fetching": "Buscando o agente..."
-  },
   "store": {
     "searchPlaceholder": "Buscar na loja...",
-    "categoryAll": "Tudo",
-    "categoryProductivity": "Produtividade",
-    "categoryDevelopment": "Desenvolvimento",
-    "categoryResearch": "Pesquisa",
-    "categoryCreative": "Criatividade",
-    "categoryBusiness": "Negócios",
-    "sectionHoustonAgents": "Pelo Houston",
-    "sectionCommunityAgents": "Comunidade",
-    "sectionStore": "Loja Houston",
     "noResults": "Nenhum agente corresponde à sua busca"
   },
   "naming": {
@@ -76,10 +61,7 @@
     "createAgent": "Criar agente"
   },
   "newAgent": {
-    "dialogTitle": "Novo agente",
-    "dialogDescription": "Veja a loja ou importe do GitHub.",
-    "tabStore": "Loja Houston",
-    "tabGithub": "GitHub"
+    "dialogTitle": "Novo agente"
   },
   "engineGate": {
     "starting": "Iniciando o motor do Houston…"

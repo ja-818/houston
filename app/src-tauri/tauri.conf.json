@@ -46,7 +46,8 @@
     "targets": ["app", "dmg"],
     "externalBin": ["binaries/houston-engine"],
     "resources": {
-      "resources/bin": "bin"
+      "resources/bin": "bin",
+      "../../store": "store"
     },
     "macOS": {
       "signingIdentity": "-",

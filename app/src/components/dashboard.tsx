@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AIBoard } from "@houston-ai/board";
 import type { KanbanColumnConfig } from "@houston-ai/board";
@@ -50,29 +50,34 @@ export function Dashboard() {
   const getAgentDef = useAgentCatalogStore((s) => s.getById);
   const setDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
   const setMissionPanelOpen = useUIStore((s) => s.setMissionPanelOpen);
+  const missionPanelOpen = useUIStore((s) => s.missionPanelOpen);
 
   const [filterPath, setFilterPath] = useState("");
   const [agentPickerOpen, setAgentPickerOpen] = useState(false);
+  const [newPanelOpenerReady, setNewPanelOpenerReady] = useState(false);
   // Agent the user just picked for "New Mission". Stays in scope until
   // the new conversation is created (and selectedItem takes over) or
   // the user clicks a different card.
   const [pendingAgent, setPendingAgent] = useState<Agent | null>(null);
   const openerRef = useRef<(() => void) | null>(null);
+  const emptyAutoOpenKeyRef = useRef<string | null>(null);
 
   const mc = useMissionControl(agents);
+  const setMissionControlSelectedId = mc.setSelectedId;
 
   // Picking an agent from the "New mission" modal stays on Mission
   // Control: we set the pending agent so the right panel scopes its
   // actions/model/etc. to that agent, then ask AIBoard to open the
   // empty new-conversation panel.
-  const handlePickAgent = (agent: Agent) => {
+  const handlePickAgent = useCallback((agent: Agent) => {
     setPendingAgent(agent);
-    mc.setSelectedId(null);
+    setMissionControlSelectedId(null);
     openerRef.current?.();
-  };
+  }, [setMissionControlSelectedId]);
 
   const handleOpenerReady = useCallback((opener: () => void) => {
     openerRef.current = opener;
+    setNewPanelOpenerReady(true);
   }, []);
 
   const handleStopSession = useCallback(
@@ -104,6 +109,36 @@ export function Dashboard() {
       icon: <AgentMiniAvatar color={colorByPath[item.metadata?.agentPath as string]} />,
     }));
   }, [mc.items, filterPath, colorByPath]);
+  const visibleAgents = useMemo(
+    () => (filterPath ? agents.filter((a) => a.folderPath === filterPath) : agents),
+    [agents, filterPath],
+  );
+
+  useEffect(() => {
+    if (!mc.isLoaded) return;
+    const emptyKey = filterPath || "all";
+    if (filteredItems.length > 0) {
+      if (emptyAutoOpenKeyRef.current === emptyKey) emptyAutoOpenKeyRef.current = null;
+      return;
+    }
+    if (!newPanelOpenerReady || missionPanelOpen || agentPickerOpen) return;
+    if (emptyAutoOpenKeyRef.current === emptyKey) return;
+    emptyAutoOpenKeyRef.current = emptyKey;
+    if (visibleAgents.length === 1) {
+      handlePickAgent(visibleAgents[0]);
+    } else if (visibleAgents.length > 1) {
+      setAgentPickerOpen(true);
+    }
+  }, [
+    agentPickerOpen,
+    filterPath,
+    filteredItems.length,
+    handlePickAgent,
+    mc.isLoaded,
+    missionPanelOpen,
+    newPanelOpenerReady,
+    visibleAgents,
+  ]);
 
   const selectedItem = mc.selectedId
     ? mc.items.find((i) => i.id === mc.selectedId)

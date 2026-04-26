@@ -88,6 +88,8 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   }, []);
 
   const openerRef = useRef<(() => void) | null>(null);
+  const emptyAutoOpenKeyRef = useRef<string | null>(null);
+  const [newPanelOpenerReady, setNewPanelOpenerReady] = useState(false);
 
   const items: KanbanItem[] = (rawItems ?? []).map((t) => {
     const mode = agentModes?.find((m) => m.id === t.agent);
@@ -208,6 +210,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   const handleOpenerReady = useCallback(
     (opener: () => void) => {
       openerRef.current = opener;
+      setNewPanelOpenerReady(true);
       // Default "New mission" button — always registered
       setOnStartMission(() => {
         if (agentModes?.length) setPendingAgentMode(agentModes[0].id);
@@ -229,6 +232,26 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     },
     [setOnStartMission, setBoardActions, agentModes],
   );
+
+  useEffect(() => {
+    if (!rawItems) return;
+    if (rawItems.length > 0) {
+      if (emptyAutoOpenKeyRef.current === path) emptyAutoOpenKeyRef.current = null;
+      return;
+    }
+    if (!newPanelOpenerReady || missionPanelOpen || selectedId) return;
+    if (emptyAutoOpenKeyRef.current === path) return;
+    emptyAutoOpenKeyRef.current = path;
+    if (agentModes?.length) setPendingAgentMode(agentModes[0].id);
+    openerRef.current?.();
+  }, [
+    agentModes,
+    missionPanelOpen,
+    newPanelOpenerReady,
+    path,
+    rawItems,
+    selectedId,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {

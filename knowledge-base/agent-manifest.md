@@ -38,12 +38,63 @@ interface AgentTab {
 ```
 
 ## Locations
-- **Built-in:** `app/src/agents/builtin/` — currently one `blankAgent` (start-from-scratch). The richer catalog lives in Houston Store.
-- **Installed:** `~/.houston/agents/{id}/houston.json` — downloaded from GitHub.
+- **Built-in:** `app/src/agents/builtin/` — currently one `blankAgent` (start-from-scratch). The richer catalog lives in Houston Store under `store/agents/*`.
+- **Installed:** `~/.houston/agents/{id}/houston.json` — installed from bundled Houston Store or downloaded from GitHub.
 - **Override rule:** installed definition with same id as builtin → overrides builtin (dedup in `app/src/stores/agent-configs.ts`).
 
-## Import flow
-"New Agent > GitHub" dialog. User pastes `owner/repo`. Houston downloads `houston.json`, `CLAUDE.md`, `icon.png`, `bundle.js` → `~/.houston/agents/{id}/`.
+## Store install flow
+
+Houston-owned Store agents are release-bundled:
+
+```
+store/
+  catalog.json
+    agents/<agent-id>/
+      houston.json
+      CLAUDE.md
+      icon.png
+      .agents/skills/<skill>/SKILL.md
+```
+
+`GET /v1/store/catalog` reads this bundled catalog when available.
+`POST /v1/store/installs` with `repo: "houston-store/<agent-id>"`
+copies the package to `~/.houston/agents/<agent-id>/` and writes
+`.source.json` with `source: "houston-store"`, `version`, and
+`content_hash`. Creating a workspace agent from that installed
+definition copies packaged `.agents/skills/*` into the user's agent
+root so chat Actions are available immediately.
+
+Store agents must not use custom Overview dashboards or manifest
+`useCases` for starter workflows. If a workflow should be visible to
+users, package it as a real skill under `.agents/skills/*/SKILL.md`.
+Every Store-packaged skill must include `inputs` and `prompt_template`
+frontmatter so the chat Action picker can render a form instead of
+exposing raw prompt placeholders. Use a generic optional `request`
+textarea only when the action genuinely has no structured fields.
+Store manifests must also not seed `.houston/activity.json` or
+`.houston/activity/activity.json`; fresh Store agents start with an empty
+board and the app points users at New Mission. The engine ignores stale
+activity seeds during create, and Store update sync clears the known
+default intro card from existing Store agents only when it is the sole
+board item.
+
+Update checks compare installed `.source.json` to the bundled catalog
+and refresh installed definitions when a newer app release carries a
+newer package. The desktop catalog reloads after updates so existing
+workspace agents pick up new tabs/defaults from the refreshed manifest.
+
+After a bundled package update, Houston copies newly-added packaged
+Actions into existing workspace agents with the same `config_id`.
+Existing Action bodies are not overwritten; user edits win. Matching
+Action frontmatter is refreshed from the bundled package so descriptions,
+integrations, images, inputs, and prompt templates can update with a
+release.
+
+## GitHub import flow
+Engine route remains for developer/manual import. A caller posts an
+`owner/repo` URL and Houston downloads `houston.json`, `CLAUDE.md`,
+`icon.png`, `bundle.js` → `~/.houston/agents/{id}/`. The desktop
+New Agent modal is Store-only for non-technical users.
 
 ## Agent creation
 Seeds agent CLAUDE.md from manifest `claudeMd` field or manifest's `CLAUDE.md` file. Fallback: generic template.

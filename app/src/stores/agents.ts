@@ -7,7 +7,6 @@ import type { Agent } from "../lib/types";
 
 export interface CreatedAgent {
   agent: Agent;
-  onboardingActivityId: string | null;
 }
 
 interface AgentState {
@@ -58,7 +57,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   create: async (workspaceId: string, name: string, configId: string, color?: string, claudeMd?: string, installedPath?: string, seeds?: Record<string, string>, existingPath?: string) => {
     const result = await tauriAgents.create(workspaceId, name, configId, color, claudeMd, installedPath, seeds, existingPath);
     analytics.track("agent_created", { config_id: configId });
-    const { agent, onboardingActivityId } = result;
+    const { agent } = result;
     set((s) => ({
       agents: [...s.agents, agent],
       current: agent,
@@ -68,7 +67,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     tauriWatcher.start(agent.folderPath).catch((e) =>
       console.error("[watcher] Failed to start:", e),
     );
-    return { agent, onboardingActivityId };
+    return { agent };
   },
 
   delete: async (workspaceId, id) => {

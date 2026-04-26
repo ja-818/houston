@@ -108,7 +108,6 @@ export interface CreateAgent {
 
 export interface CreateAgentResult {
   agent: Agent;
-  onboardingActivityId: string | null;
 }
 
 // ---------- Agents / agent-data files ----------
@@ -381,9 +380,13 @@ export interface StoreListing {
   author: string;
   tags: string[];
   icon_url: string;
+  integrations?: string[];
   repo: string;
   installs: number;
   registered_at: string;
+  version?: string;
+  content_hash?: string;
+  bundled?: boolean;
 }
 
 export interface InstallAgent {

@@ -10,6 +10,10 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+mod bundled;
+pub(crate) use bundled::copy_dir_all;
+use bundled::{bundled_catalog, install_bundled_agent};
+
 const STORE_API_DEFAULT: &str = "https://store.gethouston.ai/api";
 
 fn store_api() -> String {
@@ -25,9 +29,17 @@ pub struct StoreListing {
     pub author: String,
     pub tags: Vec<String>,
     pub icon_url: String,
+    #[serde(default)]
+    pub integrations: Vec<String>,
     pub repo: String,
     pub installs: i64,
     pub registered_at: String,
+    #[serde(default)]
+    pub version: Option<String>,
+    #[serde(default)]
+    pub content_hash: Option<String>,
+    #[serde(default)]
+    pub bundled: bool,
 }
 
 #[derive(Deserialize)]
@@ -61,6 +73,10 @@ fn net(e: impl std::fmt::Display) -> CoreError {
 }
 
 pub async fn fetch_catalog() -> CoreResult<Vec<StoreListing>> {
+    if let Some(agents) = bundled_catalog()? {
+        return Ok(agents);
+    }
+
     let url = format!("{}/catalog", store_api());
     let resp = reqwest::get(&url).await.map_err(net)?;
     if !resp.status().is_success() {
@@ -74,6 +90,28 @@ pub async fn fetch_catalog() -> CoreResult<Vec<StoreListing>> {
 }
 
 pub async fn search(query: &str) -> CoreResult<Vec<StoreListing>> {
+    if let Some(agents) = bundled_catalog()? {
+        let q = query.trim().to_lowercase();
+        if q.is_empty() {
+            return Ok(agents);
+        }
+        return Ok(agents
+            .into_iter()
+            .filter(|listing| {
+                listing.name.to_lowercase().contains(&q)
+                    || listing.description.to_lowercase().contains(&q)
+                    || listing
+                        .tags
+                        .iter()
+                        .any(|tag| tag.to_lowercase().contains(&q))
+                    || listing
+                        .integrations
+                        .iter()
+                        .any(|toolkit| toolkit.to_lowercase().contains(&q))
+            })
+            .collect());
+    }
+
     let url = format!("{}/search?q={}", store_api(), urlencoded(query));
     let resp = reqwest::get(&url).await.map_err(net)?;
     if !resp.status().is_success() {
@@ -87,6 +125,10 @@ pub async fn search(query: &str) -> CoreResult<Vec<StoreListing>> {
 }
 
 pub async fn install_agent(agents_dir: &Path, req: InstallAgent) -> CoreResult<()> {
+    if let Some(agent_id) = req.repo.strip_prefix("houston-store/") {
+        return install_bundled_agent(agents_dir, agent_id, Some(&req.agent_id));
+    }
+
     let dir = agents_dir.join(&req.agent_id);
     fs::create_dir_all(&dir)?;
 
@@ -139,6 +181,14 @@ pub async fn install_agent(agents_dir: &Path, req: InstallAgent) -> CoreResult<(
     Ok(())
 }
 
+pub fn sync_bundled_agent_instances(
+    docs_dir: &Path,
+    agents_dir: &Path,
+    agent_id: &str,
+) -> CoreResult<usize> {
+    bundled::sync_bundled_agent_instances(docs_dir, agents_dir, agent_id)
+}
+
 pub fn uninstall_agent(agents_dir: &Path, agent_id: &str) -> CoreResult<()> {
     let dir = agents_dir.join(agent_id);
     if dir.exists() {
@@ -147,10 +197,7 @@ pub fn uninstall_agent(agents_dir: &Path, agent_id: &str) -> CoreResult<()> {
     Ok(())
 }
 
-pub async fn install_agent_from_github(
-    agents_dir: &Path,
-    github_url: &str,
-) -> CoreResult<String> {
+pub async fn install_agent_from_github(agents_dir: &Path, github_url: &str) -> CoreResult<String> {
     let (owner, repo) = parse_github_ref(github_url)?;
 
     let config_bytes: Vec<u8> = fetch_github_raw(&owner, &repo, "houston.json")
@@ -202,6 +249,7 @@ pub async fn check_agent_updates(agents_dir: &Path) -> CoreResult<Vec<String>> {
     }
 
     let mut updated = Vec::new();
+    let bundled = bundled_catalog()?.unwrap_or_default();
     let entries = fs::read_dir(agents_dir)?;
 
     for entry in entries.flatten() {
@@ -220,6 +268,26 @@ pub async fn check_agent_updates(agents_dir: &Path) -> CoreResult<Vec<String>> {
             Ok(v) => v,
             Err(_) => continue,
         };
+        if source["source"].as_str() == Some("houston-store") {
+            let agent_id = match source["agent_id"].as_str() {
+                Some(id) => id,
+                None => continue,
+            };
+            let Some(listing) = bundled.iter().find(|l| l.id == agent_id) else {
+                continue;
+            };
+            let local_hash = source["content_hash"].as_str();
+            let remote_hash = listing.content_hash.as_deref();
+            let local_version = source["version"].as_str();
+            let remote_version = listing.version.as_deref();
+            if local_hash == remote_hash && local_version == remote_version {
+                continue;
+            }
+            install_bundled_agent(agents_dir, agent_id, Some(agent_id))?;
+            updated.push(agent_id.to_string());
+            continue;
+        }
+
         let repo = match source["repo"].as_str() {
             Some(r) => r.to_string(),
             None => continue,
@@ -239,7 +307,9 @@ pub async fn check_agent_updates(agents_dir: &Path) -> CoreResult<Vec<String>> {
 
         let config_changed = local_config.trim() != remote_config.trim();
 
-        let local_bundle_len = fs::metadata(path.join("bundle.js")).map(|m| m.len()).unwrap_or(0);
+        let local_bundle_len = fs::metadata(path.join("bundle.js"))
+            .map(|m| m.len())
+            .unwrap_or(0);
         let remote_bundle = fetch_github_raw(owner, repo_name, "bundle.js").await;
         let bundle_changed = match &remote_bundle {
             Ok(Some(bytes)) => bytes.len() as u64 != local_bundle_len,
@@ -325,9 +395,7 @@ pub async fn install_workspace_from_github(
         let config: serde_json::Value = match serde_json::from_slice(&config_bytes) {
             Ok(v) => v,
             Err(e) => {
-                tracing::warn!(
-                    "[workspace-import] skipping {agent_folder}: invalid JSON: {e}"
-                );
+                tracing::warn!("[workspace-import] skipping {agent_folder}: invalid JSON: {e}");
                 continue;
             }
         };
@@ -458,7 +526,9 @@ pub fn parse_github_ref(input: &str) -> CoreResult<(String, String)> {
         if parts.len() >= 2 && !parts[0].is_empty() && !parts[1].is_empty() {
             return Ok((parts[0].to_string(), parts[1].to_string()));
         }
-        return Err(CoreError::BadRequest(format!("invalid GitHub URL: {input}")));
+        return Err(CoreError::BadRequest(format!(
+            "invalid GitHub URL: {input}"
+        )));
     }
     let parts: Vec<&str> = trimmed.splitn(3, '/').collect();
     if parts.len() == 2 && !parts[0].is_empty() && !parts[1].is_empty() {
@@ -469,11 +539,7 @@ pub fn parse_github_ref(input: &str) -> CoreResult<(String, String)> {
     )))
 }
 
-async fn fetch_github_raw(
-    owner: &str,
-    repo: &str,
-    filename: &str,
-) -> CoreResult<Option<Vec<u8>>> {
+async fn fetch_github_raw(owner: &str, repo: &str, filename: &str) -> CoreResult<Option<Vec<u8>>> {
     let url = format!("https://raw.githubusercontent.com/{owner}/{repo}/main/{filename}");
     let client = reqwest::Client::new();
     let resp = client
@@ -501,7 +567,11 @@ pub fn default_agents_dir() -> PathBuf {
     if let Ok(p) = std::env::var("HOUSTON_AGENTS_DIR") {
         return PathBuf::from(p);
     }
-    let subdir = if cfg!(debug_assertions) { ".dev-houston" } else { ".houston" };
+    let subdir = if cfg!(debug_assertions) {
+        ".dev-houston"
+    } else {
+        ".houston"
+    };
     dirs::home_dir()
         .map(|h| h.join(subdir).join("agents"))
         .unwrap_or_else(|| PathBuf::from(format!("{subdir}/agents")))

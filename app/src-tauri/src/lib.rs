@@ -185,6 +185,13 @@ pub fn run() {
                 ("HOUSTON_HOME".into(), houston.display().to_string()),
                 ("HOUSTON_DOCS".into(), docs_dir.display().to_string()),
             ];
+            if let Some(store_dir) = resource_dir
+                .as_ref()
+                .map(|dir| dir.join("store"))
+                .filter(|dir| dir.join("catalog.json").exists())
+            {
+                engine_env.push(("HOUSTON_STORE_DIR".into(), store_dir.display().to_string()));
+            }
             // If a Supabase session is already persisted in Keychain (user
             // signed in on a previous launch), stamp the subprocess with the
             // user_id so future cloud-side operations can attribute work to

@@ -80,7 +80,6 @@ export const tauriWorkspaces = {
 
 export interface CreateAgentResult {
   agent: Agent;
-  onboardingActivityId: string | null;
 }
 
 function toAgent(a: import("@houston-ai/engine-client").Agent): Agent {
@@ -123,7 +122,6 @@ export const tauriAgents = {
       });
       return {
         agent: toAgent(r.agent),
-        onboardingActivityId: r.onboardingActivityId,
       };
     }),
   delete: (workspaceId: string, id: string) =>

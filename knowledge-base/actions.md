@@ -12,6 +12,16 @@ Why the split: skill is jargon for non-technical users. Action is a verb they in
                                      # auto-created by engine on `list_skills`
 ```
 
+Houston Store agent packages may also include `.agents/skills/*`.
+Install copies the package to `~/.houston/agents/<id>/`; creating a
+workspace agent from that definition copies those packaged skills into
+the user's agent root so Actions appear in chat immediately.
+Store-packaged Actions must include `inputs` and `prompt_template`.
+Prompt placeholders like `{company}` or `{YYYY-MM}` belong in
+frontmatter as form fields, then in the template as `{{company}}` /
+`{{period}}`. If an Action has no structured fields, use an optional
+`request` textarea so all Store Actions follow the same form flow.
+
 The body is a regular markdown file Claude Code uses as the procedure when the action runs. The frontmatter drives both **tool discovery** (Claude reads `name` + `description`) and **UI rendering** (everything else).
 
 ## Frontmatter schema

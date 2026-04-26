@@ -62,7 +62,6 @@ pub struct CreateAgent {
 #[serde(rename_all = "camelCase")]
 pub struct CreateAgentResult {
     pub agent: Agent,
-    pub onboarding_activity_id: Option<String>,
 }
 
 fn houston_dir(folder: &Path) -> PathBuf {
@@ -152,6 +151,13 @@ fn seed_json_if_missing(houston: &Path, filename: &str, content: &str) -> CoreRe
     Ok(())
 }
 
+fn is_activity_seed_path(path: &str) -> bool {
+    matches!(
+        path,
+        ".houston/activity.json" | ".houston/activity/activity.json"
+    )
+}
+
 /// List agents within a workspace folder.
 pub fn list(root: &Path, workspace_id: &str) -> CoreResult<Vec<Agent>> {
     let ws_dir = resolve_ws_folder(root, workspace_id)?;
@@ -227,10 +233,21 @@ pub fn create(root: &Path, workspace_id: &str, req: CreateAgent) -> CoreResult<C
     };
 
     fs::create_dir_all(folder.join(".agents/skills"))?;
+    if let Some(installed_path) = req.installed_path.as_ref() {
+        let packaged_skills = PathBuf::from(installed_path).join(".agents").join("skills");
+        if packaged_skills.exists() {
+            crate::store::copy_dir_all(&packaged_skills, &folder.join(".agents/skills"))?;
+        }
+    }
+
     let now = now_iso();
     let meta = AgentMeta {
         id: Uuid::new_v4().to_string(),
-        name: if is_linked { Some(req.name.clone()) } else { None },
+        name: if is_linked {
+            Some(req.name.clone())
+        } else {
+            None
+        },
         config_id: req.config_id.clone(),
         color: req.color,
         created_at: now.clone(),
@@ -253,6 +270,9 @@ pub fn create(root: &Path, workspace_id: &str, req: CreateAgent) -> CoreResult<C
 
     if let Some(seed_files) = req.seeds {
         for (path, content) in &seed_files {
+            if is_activity_seed_path(path) {
+                continue;
+            }
             let target = folder.join(path);
             if !target.exists() {
                 if let Some(parent) = target.parent() {
@@ -266,38 +286,11 @@ pub fn create(root: &Path, workspace_id: &str, req: CreateAgent) -> CoreResult<C
     crate::agents::prompt::seed_agent(&folder).map_err(CoreError::Internal)?;
 
     let houston = houston_dir(&folder);
-    let mut onboarding_activity_id: Option<String> = None;
-    if meta.config_id == "blank" {
-        let activity_id = Uuid::new_v4().to_string();
-        // `session_key` is MANDATORY for `sessions::set_status_by_session_key`
-        // to find this row and flip it to `needs_you` on completion. Without
-        // it the onboarding session runs, finishes, and the board sticks on
-        // "Running" forever — exactly the "first chat got stuck" bug we hit.
-        // Mirror the convention used everywhere else in the codebase:
-        // `activity-{id}`.
-        let session_key = format!("activity-{activity_id}");
-        let onboarding = serde_json::json!([{
-            "id": activity_id,
-            "title": "Set up your agent",
-            "description": "I'll walk you through configuring your job description, connecting tools, and setting up routines.",
-            "status": "running",
-            "session_key": session_key,
-            "updated_at": &meta.created_at
-        }]);
-        seed_json_if_missing(
-            &houston,
-            "activity.json",
-            &serde_json::to_string(&onboarding).unwrap_or_else(|_| "[]".to_string()),
-        )?;
-        onboarding_activity_id = Some(activity_id);
-    } else {
-        seed_json_if_missing(&houston, "activity.json", "[]")?;
-    }
+    seed_json_if_missing(&houston, "activity.json", "[]")?;
     seed_json_if_missing(&houston, "config.json", "{}")?;
 
     Ok(CreateAgentResult {
         agent: meta_to_agent(&folder, &meta),
-        onboarding_activity_id,
     })
 }
 
@@ -379,10 +372,44 @@ mod tests {
         )
         .unwrap();
         assert_eq!(res.agent.name, "first");
-        assert!(res.onboarding_activity_id.is_some());
+        assert_eq!(
+            fs::read_to_string(d.path().join("alpha/first/.houston/activity.json")).unwrap(),
+            "[]"
+        );
 
         let all = list(d.path(), &ws_id).unwrap();
         assert_eq!(all.len(), 1);
+    }
+
+    #[test]
+    fn create_ignores_template_activity_seed() {
+        let d = TempDir::new().unwrap();
+        let ws_id = setup_ws(d.path());
+        let mut seeds = HashMap::new();
+        seeds.insert(
+            ".houston/activity.json".to_string(),
+            r#"[{"id":"seeded","title":"Start anywhere - I'll ask for what I need","description":"No upfront onboarding.","status":"needs_you"}]"#.to_string(),
+        );
+
+        create(
+            d.path(),
+            &ws_id,
+            CreateAgent {
+                name: "store-agent".into(),
+                config_id: "engineering".into(),
+                color: None,
+                claude_md: None,
+                installed_path: None,
+                seeds: Some(seeds),
+                existing_path: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            fs::read_to_string(d.path().join("alpha/store-agent/.houston/activity.json")).unwrap(),
+            "[]"
+        );
     }
 
     #[test]
