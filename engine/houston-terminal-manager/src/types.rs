@@ -62,6 +62,7 @@ pub enum ClaudeEvent {
     Result {
         subtype: Option<String>,
         result: Option<String>,
+        is_error: Option<bool>,
         cost_usd: Option<f64>,
         duration_ms: Option<u64>,
         session_id: Option<String>,

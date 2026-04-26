@@ -57,9 +57,15 @@ import { ActionForm } from "./action-form";
 import { SkillCard } from "./skill-card";
 import { NewMissionPickerDialog } from "./new-mission-picker-dialog";
 import { UserActionMessage } from "./user-action-message";
+import { ProviderReconnectCard } from "./shell/provider-reconnect-card";
+import {
+  filterProviderAuthFeedItems,
+  isProviderAuthMessage,
+  providerAuthSignalKey,
+} from "./tabs/provider-auth-feed";
 
 import type { AIBoardProps } from "@houston-ai/board";
-import type { ChatPanelProps } from "@houston-ai/chat";
+import type { ChatMessage, ChatPanelProps, FeedItem } from "@houston-ai/chat";
 import type { Agent, AgentDefinition, SkillSummary } from "../lib/types";
 
 interface UseAgentChatPanelArgs {
@@ -86,6 +92,9 @@ interface AgentChatPanelProps {
   isSpecialTool: ChatPanelProps["isSpecialTool"];
   renderToolResult: ChatPanelProps["renderToolResult"];
   renderTurnSummary: ChatPanelProps["renderTurnSummary"];
+  renderSystemMessage: AIBoardProps["renderSystemMessage"];
+  mapFeedItems: AIBoardProps["mapFeedItems"];
+  afterMessages: AIBoardProps["afterMessages"];
   /** Custom Composio inline-link rendering. */
   renderLink: AIBoardProps["renderLink"];
   /** Hidden picker dialog mounted in the consumer. */
@@ -308,6 +317,30 @@ export function useAgentChatPanel({
     },
     [],
   );
+  const renderSystemMessage = useCallback(
+    (msg: ChatMessage) => {
+      if (isProviderAuthMessage(msg.content)) return null;
+      return undefined;
+    },
+    [],
+  );
+  const mapFeedItems = useCallback(
+    ({ items }: { sessionKey: string; items: FeedItem[] }) =>
+      filterProviderAuthFeedItems(items),
+    [],
+  );
+  const afterMessages = useCallback(
+    ({ feedItems }: { sessionKey: string; feedItems: FeedItem[] }) => {
+      const signalKey = providerAuthSignalKey(feedItems);
+      return (
+        <ProviderReconnectCard
+          providerId={signalKey ? effectiveProvider : undefined}
+          signalKey={signalKey ?? undefined}
+        />
+      );
+    },
+    [effectiveProvider],
+  );
 
   const composerOverride = useMemo<AIBoardProps["composerOverride"]>(() => {
     if (!agent || !activeAction) return undefined;
@@ -404,6 +437,9 @@ export function useAgentChatPanel({
     isSpecialTool,
     renderToolResult,
     renderTurnSummary,
+    renderSystemMessage,
+    mapFeedItems,
+    afterMessages,
     renderLink,
     pickerDialog,
     effectiveProvider,

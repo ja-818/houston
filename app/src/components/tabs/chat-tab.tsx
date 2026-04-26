@@ -25,6 +25,11 @@ import { HoustonThinkingIndicator } from "../shell/experience-card";
 import { ChatModelSelector } from "../chat-model-selector";
 import { getDefaultModel } from "../../lib/providers";
 import { ProviderReconnectCard } from "../shell/provider-reconnect-card";
+import {
+  filterProviderAuthFeedItems,
+  isProviderAuthMessage,
+  providerAuthSignalKey,
+} from "./provider-auth-feed";
 
 export default function ChatTab({ agent }: TabProps) {
   const { t } = useTranslation("chat");
@@ -86,6 +91,14 @@ export default function ChatTab({ agent }: TabProps) {
   // Effective = chat override > agent config > workspace default
   const effectiveProvider = chatProvider ?? agentProvider ?? wsProvider;
   const effectiveModel = chatModel ?? agentModel ?? wsModel;
+  const authSignalKey = useMemo(
+    () => providerAuthSignalKey(feedItems ?? []),
+    [feedItems],
+  );
+  const visibleFeedItems = useMemo(
+    () => filterProviderAuthFeedItems(feedItems ?? []),
+    [feedItems],
+  );
 
   const handleModelSelect = useCallback((prov: string, mod: string) => {
     setChatProvider(prov);
@@ -180,7 +193,7 @@ export default function ChatTab({ agent }: TabProps) {
     <div className="h-full w-full flex flex-col">
       <ChatPanel
         sessionKey={sessionKey}
-        feedItems={feedItems ?? []}
+        feedItems={visibleFeedItems}
         isLoading={isLoading}
         onSend={handleSend}
         onStop={handleStop}
@@ -189,7 +202,21 @@ export default function ChatTab({ agent }: TabProps) {
         isSpecialTool={isSpecialTool}
         renderToolResult={renderToolResult}
         renderTurnSummary={renderTurnSummary}
-        afterMessages={<ProviderReconnectCard />}
+        renderSystemMessage={(msg) => {
+          if (isProviderAuthMessage(msg.content)) {
+            return null;
+          }
+          if (authSignalKey && msg.content.startsWith("Session error:")) {
+            return null;
+          }
+          return undefined;
+        }}
+        afterMessages={
+          <ProviderReconnectCard
+            providerId={authSignalKey ? effectiveProvider : undefined}
+            signalKey={authSignalKey ?? undefined}
+          />
+        }
         thinkingIndicator={<HoustonThinkingIndicator />}
         placeholder={t("composer.placeholder")}
         value={composerText}
@@ -202,7 +229,7 @@ export default function ChatTab({ agent }: TabProps) {
             provider={effectiveProvider}
             model={effectiveModel}
             onSelect={handleModelSelect}
-            lockedProvider={(feedItems ?? []).length > 0 ? effectiveProvider : null}
+            lockedProvider={visibleFeedItems.length > 0 ? effectiveProvider : null}
           />
         }
         emptyState={

@@ -98,3 +98,15 @@ create trigger on_auth_user_created after insert on auth.users
 - Mobile (Capacitor) — Supabase JS works there too; deep-link scheme registered separately per platform.
 - In-app NPS — PostHog has it built in; configure later.
 - Teams / orgs, Stripe billing — future Supabase schema extensions.
+
+## Provider CLI re-auth (Claude Code / Codex)
+
+Separate from Houston account auth. Claude Code and Codex keep their own CLI
+sessions. When those sessions expire mid-chat, `houston-terminal-manager`
+classifies auth-shaped stderr/stdout (`401`, `unauthorized`, `not authenticated`,
+expired OAuth/API-key messages) and `houston-agents-conversations` emits
+`HoustonEvent::AuthRequired`. Desktop listens in `use-session-events.ts`, sets
+`authRequired`, and `ProviderReconnectCard` renders inside chat via
+`ChatPanel.afterMessages`. The card opens `claude auth login --claudeai` or
+`codex login` through `/v1/providers/:name/login` and polls provider status
+until the CLI reports authenticated.

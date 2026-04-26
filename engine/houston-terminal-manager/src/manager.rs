@@ -1,5 +1,6 @@
 use super::session_io;
 use super::types::{FeedItem, Provider, SessionStatus};
+use crate::auth_error::is_auth_error;
 use std::process::Stdio;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
@@ -41,15 +42,29 @@ impl SessionManager {
             match provider {
                 Provider::Anthropic => {
                     spawn_claude(
-                        &tx, prompt, resume_session_id, working_dir, model, effort,
-                        system_prompt, mcp_config, disable_builtin_tools, disable_all_tools,
-                    ).await;
+                        &tx,
+                        prompt,
+                        resume_session_id,
+                        working_dir,
+                        model,
+                        effort,
+                        system_prompt,
+                        mcp_config,
+                        disable_builtin_tools,
+                        disable_all_tools,
+                    )
+                    .await;
                 }
                 Provider::OpenAI => {
                     spawn_codex(
-                        &tx, prompt, resume_session_id, working_dir, model,
+                        &tx,
+                        prompt,
+                        resume_session_id,
+                        working_dir,
+                        model,
                         system_prompt,
-                    ).await;
+                    )
+                    .await;
                 }
             }
         });
@@ -163,7 +178,8 @@ async fn spawn_codex(
     // Codex has no --system-prompt flag; this is the supported injection point.
     if let Some(ref sp) = system_prompt {
         let json_val = serde_json::to_string(sp).unwrap_or_else(|_| format!("\"{sp}\""));
-        cmd.arg("-c").arg(format!("developer_instructions={json_val}"));
+        cmd.arg("-c")
+            .arg(format!("developer_instructions={json_val}"));
     }
 
     if let Some(ref m) = model {
@@ -238,9 +254,7 @@ async fn run_cli_process(
 
     if let Some(stderr) = stderr {
         let tx2 = tx.clone();
-        io_set.spawn(async move {
-            Some(session_io::read_stderr_lines(stderr, tx2).await)
-        });
+        io_set.spawn(async move { Some(session_io::read_stderr_lines(stderr, tx2).await) });
     }
     if let Some(stdout) = stdout {
         let tx2 = tx.clone();
@@ -274,12 +288,7 @@ async fn run_cli_process(
                 let _ = tx.send(SessionUpdate::Status(SessionStatus::Completed));
             } else {
                 // Check if stderr indicates an auth failure (e.g. Codex 401 retries).
-                let has_auth_error = stderr_lines.iter().any(|l| {
-                    let lower = l.to_lowercase();
-                    lower.contains("401")
-                        || lower.contains("unauthorized")
-                        || lower.contains("not authenticated")
-                });
+                let has_auth_error = stderr_lines.iter().any(|l| is_auth_error(l));
 
                 if has_auth_error {
                     // Clean error — no noisy stderr dump.

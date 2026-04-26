@@ -62,6 +62,12 @@ export interface AIBoardProps {
   toolLabels?: ToolsAndCardsProps["toolLabels"]
   /** Render prop for an end-of-turn summary (e.g., list of edited files). Forwarded to ChatPanel. */
   renderTurnSummary?: import("@houston-ai/chat").ChatPanelProps["renderTurnSummary"]
+  /** Custom renderer for system messages. Forwarded to ChatPanel. */
+  renderSystemMessage?: import("@houston-ai/chat").ChatPanelProps["renderSystemMessage"]
+  /** Map active feed items before rendering. */
+  mapFeedItems?: (ctx: { sessionKey: string; items: FeedItem[] }) => FeedItem[]
+  /** Node rendered after the last chat message. */
+  afterMessages?: ReactNode | ((ctx: { sessionKey: string; feedItems: FeedItem[] }) => ReactNode)
   /** Custom renderer for user messages. Forwarded to ChatPanel. */
   renderUserMessage?: import("@houston-ai/chat").ChatPanelProps["renderUserMessage"]
   /** Emitted by ChatPanel to surface short notices to the user
@@ -149,6 +155,9 @@ export function AIBoard({
   renderToolResult,
   toolLabels,
   renderTurnSummary,
+  renderSystemMessage,
+  mapFeedItems,
+  afterMessages,
   renderUserMessage,
   onNotice,
   onOpenLink,
@@ -250,8 +259,17 @@ export function AIBoard({
     },
     [selectedItem, onSendMessage, sessionKeyFor, newPanelOpen, onCreateConversation, setSelectedId, onDraftChange, activeDraftKey],
   )
-  const activeFeed = activeSessionKey ? (feedItems[activeSessionKey] ?? []) : []
+  const rawActiveFeed = activeSessionKey ? (feedItems[activeSessionKey] ?? []) : []
+  const activeFeed = activeSessionKey && mapFeedItems
+    ? mapFeedItems({ sessionKey: activeSessionKey, items: rawActiveFeed })
+    : rawActiveFeed
   const activeLoading = activeSessionKey ? (isLoading[activeSessionKey] ?? false) : false
+  const renderedAfterMessages = typeof afterMessages === "function"
+    ? afterMessages({
+      sessionKey: activeSessionKey ?? "new-conversation",
+      feedItems: rawActiveFeed,
+    })
+    : afterMessages
 
   const showPanel = selectedItem || newPanelOpen
   const panelTitle = selectedItem?.title ?? "New conversation"
@@ -354,7 +372,9 @@ export function AIBoard({
           renderToolResult={renderToolResult}
           toolLabels={toolLabels}
           renderTurnSummary={renderTurnSummary}
+          renderSystemMessage={renderSystemMessage}
           renderUserMessage={renderUserMessage}
+          afterMessages={renderedAfterMessages}
           onNotice={onNotice}
           onOpenLink={onOpenLink}
           renderLink={renderLink}

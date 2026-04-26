@@ -3,6 +3,7 @@
 //! Maps Codex events to the same `FeedItem` variants used by the Claude parser,
 //! so the rest of the stack (session_runner, frontend) is provider-agnostic.
 
+use super::auth_error::{AUTH_RETRY_MARKER, is_auth_retry_noise};
 use super::types::FeedItem;
 use serde::Deserialize;
 
@@ -122,9 +123,7 @@ pub fn parse_codex_event(line: &str, acc: &mut CodexAccumulator) -> Vec<FeedItem
                 )));
             }
             if !acc.thinking_buffer.is_empty() {
-                items.push(FeedItem::Thinking(std::mem::take(
-                    &mut acc.thinking_buffer,
-                )));
+                items.push(FeedItem::Thinking(std::mem::take(&mut acc.thinking_buffer)));
             }
             // Emit usage as FinalResult
             if let Some(usage) = &event.usage {
@@ -146,13 +145,10 @@ pub fn parse_codex_event(line: &str, acc: &mut CodexAccumulator) -> Vec<FeedItem
             tracing::info!("[codex] error/turn.failed: {msg}");
             // Auth retry noise (e.g. "Reconnecting... 1/5 (unexpected status 401 Unauthorized...)")
             // Show a single friendly "Checking connection..." instead of raw retries.
-            let lower = msg.to_lowercase();
-            let is_auth_retry = (lower.contains("401") || lower.contains("unauthorized") || lower.contains("not authenticated"))
-                && (lower.contains("reconnecting") || lower.contains("retrying"));
-            if is_auth_retry {
+            if is_auth_retry_noise(&msg) {
                 tracing::info!("[codex] auth retry detected — suppressing raw error");
                 // Return a marker so session_runner can track it, but don't show raw noise.
-                vec![FeedItem::SystemMessage("__auth_retry__".to_string())]
+                vec![FeedItem::SystemMessage(AUTH_RETRY_MARKER.to_string())]
             } else {
                 vec![FeedItem::SystemMessage(format!("Error: {msg}"))]
             }
@@ -285,7 +281,9 @@ fn parse_item_completed(event: &CodexEvent, acc: &mut CodexAccumulator) -> Vec<F
             }]
         }
         "error" => {
-            let msg = item.message.as_deref()
+            let msg = item
+                .message
+                .as_deref()
                 .or(item.text.as_deref())
                 .unwrap_or("Unknown error");
             // Codex emits a transient error when the model changes mid-session
@@ -327,7 +325,8 @@ mod tests {
 
     #[test]
     fn parse_thread_started() {
-        let line = r#"{"type":"thread.started","thread_id":"0199a213-81c0-7800-8aa1-bbab2a035a53"}"#;
+        let line =
+            r#"{"type":"thread.started","thread_id":"0199a213-81c0-7800-8aa1-bbab2a035a53"}"#;
         let items = parse_codex_event(line, &mut acc());
         assert!(items.is_empty());
         assert_eq!(
@@ -447,14 +446,21 @@ mod tests {
     }
 
     #[test]
-    fn parse_turn_failed() {
-        let line =
-            r#"{"type":"turn.failed","error":{"message":"Context window exceeded"}}"#;
+    fn parse_codex_auth_failure_remains_detectable() {
+        let line = r#"{"type":"turn.failed","error":{"message":"unexpected status 401 Unauthorized: Missing bearer"}}"#;
         let items = parse_codex_event(line, &mut acc());
         assert_eq!(items.len(), 1);
         assert!(
-            matches!(&items[0], FeedItem::SystemMessage(m) if m.contains("Context window"))
+            matches!(&items[0], FeedItem::SystemMessage(m) if crate::auth_error::is_auth_error(m))
         );
+    }
+
+    #[test]
+    fn parse_turn_failed() {
+        let line = r#"{"type":"turn.failed","error":{"message":"Context window exceeded"}}"#;
+        let items = parse_codex_event(line, &mut acc());
+        assert_eq!(items.len(), 1);
+        assert!(matches!(&items[0], FeedItem::SystemMessage(m) if m.contains("Context window")));
     }
 
     #[test]

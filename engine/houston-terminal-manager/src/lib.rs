@@ -3,6 +3,7 @@
 //! Provides session spawning, NDJSON stream parsing, event pumping,
 //! concurrency control, and PATH resolution for AI CLI tools.
 
+pub mod auth_error;
 pub mod claude_path;
 pub mod codex_parser;
 pub mod concurrency;
@@ -13,7 +14,7 @@ pub mod session_pump;
 pub mod types;
 
 // Re-export key types for convenience.
+pub use codex_parser::{CodexAccumulator, extract_thread_id, parse_codex_event};
 pub use manager::{SessionHandle, SessionManager, SessionUpdate};
-pub use parser::{parse_event, extract_session_id, StreamAccumulator};
-pub use codex_parser::{parse_codex_event, extract_thread_id, CodexAccumulator};
+pub use parser::{StreamAccumulator, extract_session_id, parse_event};
 pub use types::{ClaudeEvent, ContentBlock, FeedItem, Provider, SessionFeedBuffer, SessionStatus};

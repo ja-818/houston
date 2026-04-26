@@ -104,8 +104,7 @@ impl StreamAccumulator {
                 // Finalize a tool_use block.
                 if let Some(tool) = self.tools.remove(&index) {
                     let json_str: String = tool.json_parts.concat();
-                    let input =
-                        serde_json::from_str(&json_str).unwrap_or(serde_json::Value::Null);
+                    let input = serde_json::from_str(&json_str).unwrap_or(serde_json::Value::Null);
                     return vec![FeedItem::ToolCall {
                         name: tool.name,
                         input,
@@ -156,11 +155,19 @@ pub fn parse_event(line: &str, acc: &mut StreamAccumulator) -> Vec<FeedItem> {
         }
         ClaudeEvent::User { message, .. } => parse_user_event(message),
         ClaudeEvent::Result {
+            subtype,
             result,
+            is_error,
             cost_usd,
             duration_ms,
             ..
         } => {
+            if subtype.as_deref() == Some("error") || is_error == Some(true) {
+                return vec![FeedItem::SystemMessage(format!(
+                    "Error: {}",
+                    result.unwrap_or_else(|| "Unknown error".to_string()),
+                ))];
+            }
             vec![FeedItem::FinalResult {
                 result: result.unwrap_or_default(),
                 cost_usd,
@@ -299,8 +306,17 @@ mod tests {
     }
 
     #[test]
+    fn parse_result_error_as_system_message() {
+        let line = r#"{"type":"result","subtype":"error","is_error":true,"result":"Claude Code is not authenticated. Run claude auth login"}"#;
+        let items = parse_event(line, &mut acc());
+        assert_eq!(items.len(), 1);
+        assert!(matches!(&items[0], FeedItem::SystemMessage(m) if m.contains("not authenticated")));
+    }
+
+    #[test]
     fn parse_assistant_text() {
-        let line = r#"{"type":"assistant","message":{"content":[{"type":"text","text":"Hello world"}]}}"#;
+        let line =
+            r#"{"type":"assistant","message":{"content":[{"type":"text","text":"Hello world"}]}}"#;
         let items = parse_event(line, &mut acc());
         assert_eq!(items.len(), 1);
         assert!(matches!(&items[0], FeedItem::AssistantText(t) if t == "Hello world"));

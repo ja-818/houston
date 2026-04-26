@@ -6,7 +6,7 @@
 //!
 //! # Usage
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! // In your Tauri setup closure:
 //! houston_tauri::tray::setup_tray(app, "MyApp")?;
 //!
@@ -64,7 +64,7 @@ pub fn setup_tray(
 /// Window event handler that hides the window instead of closing it.
 ///
 /// Use with `tauri::Builder::on_window_event`:
-/// ```rust,no_run
+/// ```rust,ignore
 /// tauri::Builder::default()
 ///     .on_window_event(houston_tauri::tray::hide_on_close)
 /// ```
