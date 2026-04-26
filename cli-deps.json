@@ -1,11 +1,12 @@
 {
   "$schema": "./cli-deps.schema.json",
-  "$comment": "Pinned CLI versions shipped with Houston. Codex + Composio are bundled in the .app. Claude Code is downloaded at runtime (proprietary license prevents bundling).",
+  "$comment": "Pinned versions for every CLI Houston ships or runtime-installs. Bundled (codex, composio) ride inside the .app under Contents/Resources/bin. claude-code cannot be bundled (proprietary license) so the runtime installer downloads it on first launch via houston-claude-installer using the URLs + sha256 below. Bumping a version: run `./scripts/bump-cli.sh <name> <version>`, then `./scripts/fetch-cli-deps.sh both` to refresh the staged copies + print the new checksums; pin the printed sha256 back into this file.",
   "claude-code": {
     "version": "2.1.92",
     "bundled": false,
     "binary_name": "claude",
     "license": "PROPRIETARY",
+    "install_target": "$HOME/.local/bin/claude",
     "urls": {
       "darwin-arm64": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/{version}/darwin-arm64/claude",
       "darwin-x64": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/{version}/darwin-x64/claude",
@@ -21,12 +22,15 @@
     "bundled": true,
     "binary_name": "codex",
     "license": "Apache-2.0",
+    "ship_layout": "lipo-universal",
+    "$ship_layout_comment": "Both arch binaries are downloaded and combined with `lipo -create` into a single Mach-O fat binary at Contents/Resources/bin/codex.",
     "urls": {
       "darwin-arm64": "https://github.com/openai/codex/releases/download/rust-v{version}/codex-aarch64-apple-darwin.tar.gz",
       "darwin-x64": "https://github.com/openai/codex/releases/download/rust-v{version}/codex-x86_64-apple-darwin.tar.gz"
     },
     "checksums": {
-      "darwin-arm64": "60f7039e63a7de8ae474136ac6f593ec1a913e1ddca0df59ade1f6d6eb5f7fd0"
+      "darwin-arm64": "60f7039e63a7de8ae474136ac6f593ec1a913e1ddca0df59ade1f6d6eb5f7fd0",
+      "darwin-x64": "94e6ba8a552d4625beee857f513fb12bc20e560b9427c4a93733dbd86619f415"
     }
   },
   "composio": {
@@ -34,6 +38,8 @@
     "bundled": true,
     "binary_name": "composio",
     "license": "MIT",
+    "ship_layout": "per-arch-dir",
+    "$ship_layout_comment": "Composio is a Bun-bundled JS app with arch-specific runtime + sibling .mjs/services files; cannot lipo. Each arch ships at Contents/Resources/bin/composio-{aarch64|x86_64}/ and the engine resolves at runtime via std::env::consts::ARCH. Cross-platform acp-adapters that the resolved arch can never execute are pruned at fetch time to keep the .app honest in size.",
     "urls": {
       "darwin-arm64": "https://github.com/ComposioHQ/composio/releases/download/@composio/cli@{version}/composio-darwin-aarch64.zip",
       "darwin-x64": "https://github.com/ComposioHQ/composio/releases/download/@composio/cli@{version}/composio-darwin-x64.zip"

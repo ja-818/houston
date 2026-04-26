@@ -13,6 +13,28 @@ use std::time::Duration;
 
 pub const DEFAULT_PROVIDER_KEY: &str = "default_provider";
 
+/// Where the resolved CLI binary came from. Surfaced to the UI so users
+/// understand which version of `claude` / `codex` is in play (matches
+/// the "bundled by Houston vs. your existing install" UX clarification
+/// users have asked for).
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum InstallSource {
+    /// Shipped inside the Houston `.app` (`Contents/Resources/bin/`).
+    /// Codex falls in this bucket on production builds; composio too;
+    /// claude-code never (proprietary license).
+    Bundled,
+    /// Downloaded by Houston at runtime to a Houston-managed location
+    /// (`~/.local/bin/claude` etc.). Claude-code falls in this bucket
+    /// after the first-launch installer completes.
+    Managed,
+    /// Found on the user's PATH outside Houston's control (homebrew,
+    /// npm, manual install, …). Houston uses it as-is.
+    Path,
+    /// Not installed anywhere Houston knows about.
+    Missing,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderStatus {
@@ -20,6 +42,11 @@ pub struct ProviderStatus {
     pub cli_installed: bool,
     pub authenticated: bool,
     pub cli_name: String,
+    /// Where Houston found the CLI binary. Used for UI labelling.
+    pub install_source: InstallSource,
+    /// Absolute path to the binary that will be spawned. `None` when
+    /// `install_source == Missing`.
+    pub cli_path: Option<String>,
 }
 
 /// Parse a provider name string, mapping errors onto `CoreError::BadRequest`.
@@ -75,14 +102,42 @@ pub fn launch_login(provider: Provider) -> CoreResult<()> {
 }
 
 async fn check_claude_status() -> ProviderStatus {
-    let cli_installed = claude_path::is_command_available("claude");
-    let authenticated = if cli_installed { check_claude_auth().await } else { false };
+    let (install_source, cli_path) = resolve_claude();
+    let cli_installed = !matches!(install_source, InstallSource::Missing);
+    let authenticated = if cli_installed {
+        check_claude_auth().await
+    } else {
+        false
+    };
     ProviderStatus {
         provider: "anthropic".into(),
         cli_installed,
         authenticated,
         cli_name: "claude".into(),
+        install_source,
+        cli_path: cli_path.map(|p| p.to_string_lossy().into_owned()),
     }
+}
+
+/// Resolve the active claude binary in priority order:
+///   1. **Managed** — installed by `houston-claude-installer` at the
+///      Houston-controlled location. We trust this most because we
+///      sha256-verified the download against the pinned manifest.
+///   2. **Path** — anything else on PATH (homebrew, npm, manual). Used
+///      verbatim; Houston does NOT validate the version when the
+///      binary is user-managed.
+///
+/// Claude is never bundled (proprietary license), so the `Bundled`
+/// branch is intentionally absent here — see the `cli-bundle` module
+/// doc for the policy reasoning.
+fn resolve_claude() -> (InstallSource, Option<PathBuf>) {
+    if houston_claude_installer::is_installed() {
+        return (InstallSource::Managed, Some(houston_claude_installer::cli_path()));
+    }
+    if let Some(path) = which_on_path("claude") {
+        return (InstallSource::Path, Some(path));
+    }
+    (InstallSource::Missing, None)
 }
 
 /// `claude --version` succeeds without auth; `claude auth status` returns
@@ -112,7 +167,8 @@ async fn check_claude_auth() -> bool {
 }
 
 async fn check_codex_status() -> ProviderStatus {
-    let cli_installed = claude_path::is_command_available("codex");
+    let (install_source, cli_path) = resolve_codex();
+    let cli_installed = !matches!(install_source, InstallSource::Missing);
     let authenticated = if cli_installed {
         let home = std::env::var("HOME").unwrap_or_default();
         if check_codex_auth(&home) {
@@ -130,7 +186,48 @@ async fn check_codex_status() -> ProviderStatus {
         cli_installed,
         authenticated,
         cli_name: "codex".into(),
+        install_source,
+        cli_path: cli_path.map(|p| p.to_string_lossy().into_owned()),
     }
+}
+
+/// Resolve the active codex binary:
+///   1. **Bundled** — universal Mach-O at `Resources/bin/codex` shipped
+///      with the Houston `.app`. Production users never hit anything
+///      else.
+///   2. **Path** — user-installed copy (homebrew, manual). Allowed for
+///      developers who want to test against a newer codex than the
+///      pinned bundled version.
+fn resolve_codex() -> (InstallSource, Option<PathBuf>) {
+    if let Some(p) = houston_cli_bundle::bundled_codex_path() {
+        return (InstallSource::Bundled, Some(p));
+    }
+    if let Some(path) = which_on_path("codex") {
+        return (InstallSource::Path, Some(path));
+    }
+    (InstallSource::Missing, None)
+}
+
+/// Walk the resolved PATH (login shell + Houston-augmented dirs) for a
+/// command. Returns the first hit's absolute path.
+fn which_on_path(command: &str) -> Option<PathBuf> {
+    let shell_path = claude_path::shell_path();
+    for dir in std::env::split_paths(&shell_path) {
+        let candidate = dir.join(command);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+        #[cfg(windows)]
+        {
+            for ext in ["exe", "cmd", "bat", "ps1"] {
+                let c = dir.join(format!("{command}.{ext}"));
+                if c.is_file() {
+                    return Some(c);
+                }
+            }
+        }
+    }
+    None
 }
 
 fn check_codex_auth(home: &str) -> bool {
@@ -189,5 +286,17 @@ mod tests {
         assert!(parse("gemini").is_err());
         assert!(parse("anthropic").is_ok());
         assert!(parse("openai").is_ok());
+    }
+
+    #[test]
+    fn install_source_serializes_lowercase() {
+        let s = serde_json::to_string(&InstallSource::Bundled).unwrap();
+        assert_eq!(s, "\"bundled\"");
+        let s = serde_json::to_string(&InstallSource::Managed).unwrap();
+        assert_eq!(s, "\"managed\"");
+        let s = serde_json::to_string(&InstallSource::Path).unwrap();
+        assert_eq!(s, "\"path\"");
+        let s = serde_json::to_string(&InstallSource::Missing).unwrap();
+        assert_eq!(s, "\"missing\"");
     }
 }

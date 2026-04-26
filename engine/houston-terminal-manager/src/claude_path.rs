@@ -59,6 +59,19 @@ pub fn init() {
         let mut final_path =
             shell_resolved.unwrap_or_else(|| std::env::var_os("PATH").unwrap_or_default());
 
+        // Bundled-CLI directories — codex (single binary) and composio
+        // (per-arch directory). These ride inside the signed `.app` so
+        // subprocess spawns must be able to resolve them without any
+        // user-side shell config (PATH manipulation in `~/.zshrc`,
+        // homebrew, nvm, etc.). Returned in priority order; we
+        // `prepend_path` so the bundled copies WIN over any same-named
+        // binaries from the user's shell — production users get the
+        // exact version we shipped + signed, not whatever happens to be
+        // first on their PATH.
+        for dir in houston_cli_bundle::bundled_path_entries() {
+            prepend_path(&mut final_path, &dir);
+        }
+
         // Expand `~` against the user home directory using the cross-platform
         // `dirs` resolver (HOME on Unix, USERPROFILE on Windows). Falls back
         // to the raw prefix if home can't be resolved — the directory check
@@ -133,6 +146,26 @@ pub fn is_command_available(command: &str) -> bool {
         }
     }
     false
+}
+
+/// Prepend `dir` to `base` so it wins over any same-named binary later
+/// in PATH. Used for bundled CLIs — the production-shipped version must
+/// take precedence over whatever the user has installed via
+/// homebrew/npm/nvm. Idempotent: if `dir` is already first, no change;
+/// if present elsewhere it's moved to the front.
+fn prepend_path(base: &mut OsString, dir: &std::path::Path) {
+    let mut parts: Vec<PathBuf> = std::env::split_paths(base).collect();
+    // Drop any existing occurrence so we don't double-list.
+    parts.retain(|p| p != dir);
+    parts.insert(0, dir.to_path_buf());
+    if let Ok(joined) = std::env::join_paths(&parts) {
+        *base = joined;
+    } else {
+        tracing::debug!(
+            "[claude_path] prepend_path/join_paths failed for {}",
+            dir.display()
+        );
+    }
 }
 
 /// Append `dir` to `base` using the platform-appropriate PATH separator
@@ -280,5 +313,47 @@ mod tests {
         assert!(!is_command_available(
             "definitely-not-a-real-binary-xyz-zzz-houston-test"
         ));
+    }
+
+    #[test]
+    fn prepend_path_moves_existing_to_front() {
+        let mut p = if cfg!(windows) {
+            OsString::from("C:\\a;C:\\b;C:\\c")
+        } else {
+            OsString::from("/a:/b:/c")
+        };
+        let middle = if cfg!(windows) {
+            PathBuf::from("C:\\b")
+        } else {
+            PathBuf::from("/b")
+        };
+        prepend_path(&mut p, &middle);
+        let expected = if cfg!(windows) {
+            OsString::from("C:\\b;C:\\a;C:\\c")
+        } else {
+            OsString::from("/b:/a:/c")
+        };
+        assert_eq!(p, expected);
+    }
+
+    #[test]
+    fn prepend_path_inserts_new_dir_at_front() {
+        let mut p = if cfg!(windows) {
+            OsString::from("C:\\a")
+        } else {
+            OsString::from("/a")
+        };
+        let new_dir = if cfg!(windows) {
+            PathBuf::from("C:\\b")
+        } else {
+            PathBuf::from("/b")
+        };
+        prepend_path(&mut p, &new_dir);
+        let expected = if cfg!(windows) {
+            OsString::from("C:\\b;C:\\a")
+        } else {
+            OsString::from("/b:/a")
+        };
+        assert_eq!(p, expected);
     }
 }

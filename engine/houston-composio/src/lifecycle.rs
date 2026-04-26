@@ -1,17 +1,29 @@
-//! Composio CLI lifecycle — auto-install and auto-upgrade.
+//! Composio CLI lifecycle — bundle-aware install + upgrade.
 //!
-//! Called once during app startup as a background task:
-//! 1. If the CLI is missing → install it automatically (no user button).
-//! 2. If Houston's version changed since the last check → run `composio upgrade`.
+//! Called once during engine startup as a background task:
 //!
-//! Emits `HoustonEvent::ComposioCliReady` on success so the frontend can
-//! invalidate the connections query and update the integrations tab.
+//! - **Bundled build**: detect the bundled CLI, emit `ComposioCliReady`,
+//!   record the Houston version marker, return. No install, no upgrade
+//!   — the bundled binary is the version we shipped, and overwriting it
+//!   with `composio upgrade` would either fail (read-only `.app`) or
+//!   silently write to `~/.composio/` and confuse the resolver next
+//!   boot.
+//!
+//! - **Standalone build**: install the CLI if missing (one-time
+//!   `curl | bash`), then run `composio upgrade` whenever Houston's
+//!   version changes since the last successful check (so security fixes
+//!   in the upstream CLI roll out alongside Houston releases without
+//!   requiring user action).
+//!
+//! Emits `HoustonEvent::ComposioCliReady` on success so the frontend
+//! invalidates the connections query and the integrations tab refreshes.
 
 use crate::install;
-use houston_ui_events::{DynEventSink, HoustonEvent};
 use houston_db::db::Database;
+use houston_ui_events::{DynEventSink, HoustonEvent};
 
-/// Preferences key storing the Houston version that last ensured the CLI.
+/// Preferences key storing the Houston version that last successfully
+/// ensured the standalone CLI. Skipped entirely for bundled builds.
 const PREF_CLI_VERSION: &str = "composio_cli_houston_version";
 
 /// Current Houston version (read from Cargo.toml at compile time).
@@ -20,9 +32,16 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Run the full lifecycle check: install if missing, upgrade if Houston
 /// version changed. Emits events so the frontend reacts.
 pub async fn ensure_and_upgrade(sink: DynEventSink, db: Database) {
-    let installed = install::is_installed();
+    if install::is_bundled() {
+        tracing::info!(
+            "[composio:lifecycle] bundled CLI detected at {} — skipping install/upgrade",
+            install::cli_path().display()
+        );
+        sink.emit(HoustonEvent::ComposioCliReady);
+        return;
+    }
 
-    if !installed {
+    if !install::is_installed() {
         tracing::info!("[composio:lifecycle] CLI not found — auto-installing");
         match install::install().await {
             Ok(path) => {
@@ -39,7 +58,8 @@ pub async fn ensure_and_upgrade(sink: DynEventSink, db: Database) {
         }
     }
 
-    // Upgrade if Houston's version changed since last check.
+    // Upgrade if Houston's version changed since last check. Bundled
+    // builds never reach this branch — they returned early above.
     let last_version = db
         .get_preference(PREF_CLI_VERSION)
         .await
@@ -50,7 +70,11 @@ pub async fn ensure_and_upgrade(sink: DynEventSink, db: Database) {
     if last_version != APP_VERSION && install::is_installed() {
         tracing::info!(
             "[composio:lifecycle] Houston version changed ({} → {}) — upgrading CLI",
-            if last_version.is_empty() { "none" } else { &last_version },
+            if last_version.is_empty() {
+                "none"
+            } else {
+                &last_version
+            },
             APP_VERSION
         );
         match run_upgrade().await {
@@ -58,12 +82,13 @@ pub async fn ensure_and_upgrade(sink: DynEventSink, db: Database) {
                 tracing::info!("[composio:lifecycle] CLI upgrade succeeded");
             }
             Err(e) => {
-                // Upgrade failure is non-fatal — the existing CLI still works.
+                // Upgrade failure is non-fatal — the existing CLI still
+                // works. We log + record the version anyway so we don't
+                // retry every launch; the next Houston update tries
+                // again.
                 tracing::warn!("[composio:lifecycle] CLI upgrade failed (non-fatal): {e}");
             }
         }
-        // Record the version even if upgrade failed — we don't want to
-        // retry every launch. The next Houston update will try again.
         if let Err(e) = db.set_preference(PREF_CLI_VERSION, APP_VERSION).await {
             tracing::warn!("[composio:lifecycle] failed to persist version marker: {e}");
         }
@@ -73,7 +98,9 @@ pub async fn ensure_and_upgrade(sink: DynEventSink, db: Database) {
 }
 
 /// Run `composio upgrade` via the same sync-Command + spawn_blocking
-/// pattern used by the install function.
+/// pattern used by the install function. Standalone-only — never called
+/// when the bundled CLI is present (would try to overwrite a read-only
+/// signed binary inside the `.app`).
 async fn run_upgrade() -> Result<(), String> {
     let bin = install::cli_path();
     let home = std::env::var("HOME").unwrap_or_default();

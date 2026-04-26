@@ -148,6 +148,9 @@ pub fn event_topic(event: &HoustonEvent) -> String {
         HoustonEvent::ComposioCliReady | HoustonEvent::ComposioCliFailed { .. } => {
             "composio".into()
         }
+        HoustonEvent::ClaudeCliInstalling { .. }
+        | HoustonEvent::ClaudeCliReady
+        | HoustonEvent::ClaudeCliFailed { .. } => "claude".into(),
     }
 }
 

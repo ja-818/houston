@@ -1,0 +1,15 @@
+[package]
+name = "houston-cli-bundle"
+version = "0.4.1"
+edition = "2021"
+description = "Resolve bundled CLI binaries (codex, composio) inside the Houston .app — runtime side"
+license = "MIT"
+repository = "https://github.com/ja-818/houston"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

@@ -92,6 +92,15 @@ async fn main() {
     // port, which we know now.
     spawn_tunnel_if_allocated(state.clone(), actual.port());
 
+    // Bundled-/runtime-CLI lifecycles. Fire-and-forget — both publish
+    // `HoustonEvent`s for the frontend to react to and never block the
+    // engine's HTTP server from coming up. Composio resolves to the
+    // bundled .app binary in production (no install step) or runs the
+    // upstream `curl | bash` installer for dev / unbundled builds.
+    // Claude Code is downloaded with sha256 verification using the
+    // pinned manifest in cli-deps.json.
+    spawn_cli_lifecycles(state.clone());
+
     let app = build_router(state);
 
     // Block on PATH resolution just before serving. DB init usually
@@ -106,6 +115,32 @@ async fn main() {
     if let Err(err) = axum::serve(listener, app).await {
         tracing::error!("server error: {err}");
         std::process::exit(1);
+    }
+}
+
+/// Kick off the bundled-/runtime-CLI lifecycles in the background.
+///
+/// Both run on independent tasks so a slow/failed claude-code download
+/// can't delay composio readiness (or vice versa). Each lifecycle emits
+/// its own ready/failed events; the frontend listens on the WS firehose
+/// and updates the relevant queries.
+///
+/// The DB and event sink are cloned into each task — both are cheap
+/// `Arc` clones internally.
+fn spawn_cli_lifecycles(state: Arc<ServerState>) {
+    {
+        let sink = state.engine.events.clone();
+        let db = state.engine.db.clone();
+        tokio::spawn(async move {
+            houston_composio::lifecycle::ensure_and_upgrade(sink, db).await;
+        });
+    }
+    {
+        let sink = state.engine.events.clone();
+        let db = state.engine.db.clone();
+        tokio::spawn(async move {
+            houston_claude_installer::ensure_and_upgrade(sink, db).await;
+        });
     }
 }
 
