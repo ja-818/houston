@@ -467,6 +467,9 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         composerOverride={panel.composerOverride}
         footer={panel.footer}
         renderUserMessage={panel.renderUserMessage}
+        renderSystemMessage={panel.renderSystemMessage}
+        mapFeedItems={panel.mapFeedItems}
+        afterMessages={panel.afterMessages}
         isSpecialTool={panel.isSpecialTool}
         renderToolResult={panel.renderToolResult}
         renderTurnSummary={panel.renderTurnSummary}

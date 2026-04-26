@@ -6,6 +6,7 @@
 use crate::session_id_tracker::SessionIdHandle;
 use crate::session_pids::SessionPidMap;
 use houston_db::Database;
+use houston_terminal_manager::auth_error::{is_auth_error, is_auth_retry_marker};
 use houston_terminal_manager::{FeedItem, Provider, SessionManager, SessionStatus, SessionUpdate};
 use houston_ui_events::{DynEventSink, HoustonEvent};
 use std::path::PathBuf;
@@ -53,6 +54,7 @@ pub fn spawn_and_monitor(
     // OnceLock inside init() makes this a no-op after the first call.
     houston_terminal_manager::claude_path::init();
 
+    let provider_kind = provider;
     let provider_str = provider.to_string();
 
     let (mut rx, _handle) = SessionManager::spawn_session(
@@ -61,7 +63,7 @@ pub fn spawn_and_monitor(
         resume_id,
         Some(working_dir),
         model,
-        None,  // effort
+        None, // effort
         system_prompt,
         None,  // mcp_config
         false, // disable_builtin_tools
@@ -78,6 +80,7 @@ pub fn spawn_and_monitor(
         let mut error: Option<String> = None;
         let mut saw_auth_error = false;
         let mut sent_auth_checking = false;
+        let mut sent_auth_required = false;
 
         while let Some(update) = rx.recv().await {
             match update {
@@ -103,17 +106,24 @@ pub fn spawn_and_monitor(
                     //   3. `not authenticated` / stderr-dumped auth errors.
                     //
                     // All three are auth noise, not user-visible content. We
-                    // suppress the raw message, track `saw_auth_error` so the
-                    // Status branch knows to emit AuthRequired + the reconnect
-                    // card marker, and emit "Checking connection..." exactly once.
+                    // suppress the raw message, emit AuthRequired once, and
+                    // emit "Checking connection..." exactly once.
                     if let FeedItem::SystemMessage(msg) = item {
-                        let lower = msg.to_lowercase();
-                        let is_auth_noise = msg == "__auth_retry__"
-                            || lower.contains("401")
-                            || lower.contains("unauthorized")
-                            || lower.contains("not authenticated");
+                        let is_auth_noise = is_auth_retry_marker(msg)
+                            || is_auth_error(msg)
+                            || is_opaque_claude_auth_error(provider_kind, msg);
                         if is_auth_noise {
                             saw_auth_error = true;
+                            if !sent_auth_required {
+                                sent_auth_required = true;
+                                tracing::info!(
+                                    "[session_runner] emitting AuthRequired for provider={provider_str} from feed"
+                                );
+                                sink.emit(HoustonEvent::AuthRequired {
+                                    provider: provider_str.clone(),
+                                    message: msg.clone(),
+                                });
+                            }
                             if !sent_auth_checking {
                                 sent_auth_checking = true;
                                 tracing::info!(
@@ -149,9 +159,8 @@ pub fn spawn_and_monitor(
                             let src = opts.source.clone();
                             let sid = sid.clone();
                             tokio::spawn(async move {
-                                let _ = db
-                                    .add_chat_feed_item_by_session(&sid, &ft, &dj, &src)
-                                    .await;
+                                let _ =
+                                    db.add_chat_feed_item_by_session(&sid, &ft, &dj, &src).await;
                             });
                         }
                     }
@@ -213,20 +222,17 @@ pub fn spawn_and_monitor(
                     // slot). No feed marker needed — the card is anchored to
                     // store state, not to a specific FeedItem.
                     if let SessionStatus::Error(ref e) = status {
-                        let lower = e.to_lowercase();
-                        let is_auth_error = saw_auth_error
-                            || lower.contains("401")
-                            || lower.contains("unauthorized")
-                            || lower.contains("authentication")
-                            || lower.contains("api key")
-                            || lower.contains("invalid_api_key")
-                            || lower.contains("not authenticated")
-                            || lower.contains("expired");
+                        let auth_error = saw_auth_error
+                            || is_auth_error(e)
+                            || is_opaque_claude_auth_error(provider_kind, e);
                         tracing::info!(
-                            "[session_runner] session error: {e:?} | saw_auth_error={saw_auth_error} | is_auth_error={is_auth_error} | provider={provider_str}"
+                            "[session_runner] session error: {e:?} | saw_auth_error={saw_auth_error} | is_auth_error={auth_error} | provider={provider_str}"
                         );
-                        if is_auth_error {
-                            tracing::info!("[session_runner] emitting AuthRequired for provider={provider_str}");
+                        if auth_error && !sent_auth_required {
+                            sent_auth_required = true;
+                            tracing::info!(
+                                "[session_runner] emitting AuthRequired for provider={provider_str}"
+                            );
                             sink.emit(HoustonEvent::AuthRequired {
                                 provider: provider_str.clone(),
                                 message: e.clone(),
@@ -272,7 +278,11 @@ fn serialize_for_persist(item: &FeedItem) -> Option<(String, String)> {
             Some(("tool_result".into(), data.to_string()))
         }
         FeedItem::SystemMessage(t) => Some(("system_message".into(), json_str(t))),
-        FeedItem::FinalResult { result, cost_usd, duration_ms } => {
+        FeedItem::FinalResult {
+            result,
+            cost_usd,
+            duration_ms,
+        } => {
             let data = serde_json::json!({
                 "result": result, "cost_usd": cost_usd, "duration_ms": duration_ms
             });
@@ -286,4 +296,29 @@ fn serialize_for_persist(item: &FeedItem) -> Option<(String, String)> {
 
 fn json_str(s: &str) -> String {
     serde_json::Value::String(s.to_string()).to_string()
+}
+
+fn is_opaque_claude_auth_error(provider: Provider, message: &str) -> bool {
+    provider == Provider::Anthropic && message.trim() == "Error: Unknown error"
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn treats_opaque_claude_result_error_as_auth() {
+        assert!(is_opaque_claude_auth_error(
+            Provider::Anthropic,
+            "Error: Unknown error"
+        ));
+    }
+
+    #[test]
+    fn does_not_treat_codex_unknown_error_as_auth() {
+        assert!(!is_opaque_claude_auth_error(
+            Provider::OpenAI,
+            "Error: Unknown error"
+        ));
+    }
 }

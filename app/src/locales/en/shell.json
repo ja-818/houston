@@ -41,7 +41,8 @@
     "body": "Your {{provider}} connection ended, this happens from time to time. Sign back in and you're good to go.",
     "reconnect": "Reconnect to {{provider}}",
     "waiting": "Waiting for browser sign-in...",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "launchError": "Could not open sign-in. Try again."
   },
   "updateChecker": {
     "available": "v{{version}} available",

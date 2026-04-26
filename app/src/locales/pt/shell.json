@@ -41,7 +41,8 @@
     "body": "Sua conexão com o {{provider}} encerrou, isso acontece de vez em quando. Entre de novo e está tudo certo.",
     "reconnect": "Reconectar ao {{provider}}",
     "waiting": "Aguardando o login no navegador...",
-    "tryAgain": "Tentar de novo"
+    "tryAgain": "Tentar de novo",
+    "launchError": "Não foi possível abrir o login. Tente de novo."
   },
   "updateChecker": {
     "available": "v{{version}} disponível",

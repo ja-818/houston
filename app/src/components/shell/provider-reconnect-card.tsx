@@ -5,88 +5,111 @@ import { useUIStore } from "../../stores/ui";
 import { tauriProvider } from "../../lib/tauri";
 import { getProvider } from "../../lib/providers";
 
-export function ProviderReconnectCard() {
+interface ProviderReconnectCardProps {
+  providerId?: string;
+  signalKey?: string;
+}
+
+export function ProviderReconnectCard({
+  providerId,
+  signalKey,
+}: ProviderReconnectCardProps) {
   const { t } = useTranslation(["shell", "common"]);
   const authRequired = useUIStore((s) => s.authRequired);
   const setAuthRequired = useUIStore((s) => s.setAuthRequired);
   const [loginLaunched, setLoginLaunched] = useState(false);
+  const [loginError, setLoginError] = useState(false);
+  const [resolvedSignal, setResolvedSignal] = useState<string | null>(null);
 
-  const provider = authRequired ? getProvider(authRequired) : null;
+  const activeProviderId = authRequired ?? (
+    signalKey && signalKey !== resolvedSignal ? providerId : null
+  );
+  const provider = activeProviderId ? getProvider(activeProviderId) : null;
 
   useEffect(() => {
-    if (!authRequired) return;
+    setLoginLaunched(false);
+    setLoginError(false);
+  }, [activeProviderId, authRequired, providerId, signalKey]);
+
+  useEffect(() => {
+    if (!activeProviderId) return;
     const interval = setInterval(async () => {
       try {
-        const status = await tauriProvider.checkStatus(authRequired);
+        const status = await tauriProvider.checkStatus(activeProviderId);
         if (status.cli_installed && status.authenticated) {
           setAuthRequired(null);
+          if (signalKey) setResolvedSignal(signalKey);
           setLoginLaunched(false);
         }
       } catch {
-        // ignore check failures
+        // Keep the reconnect card visible; the next poll may succeed.
       }
     }, 3000);
     return () => clearInterval(interval);
-  }, [authRequired, setAuthRequired]);
+  }, [activeProviderId, signalKey, setAuthRequired]);
 
   const handleSignIn = useCallback(async () => {
-    if (!authRequired) return;
+    if (!activeProviderId) return;
     try {
-      await tauriProvider.launchLogin(authRequired);
+      await tauriProvider.launchLogin(activeProviderId);
+      setLoginError(false);
       setLoginLaunched(true);
     } catch {
-      // CLI not available
+      setLoginLaunched(false);
+      setLoginError(true);
     }
-  }, [authRequired]);
+  }, [activeProviderId]);
 
-  if (!authRequired || !provider) return null;
+  if (!activeProviderId || !provider) return null;
 
   return (
     <div className="w-full px-1 py-2">
-      <div className="relative overflow-hidden rounded-2xl border border-black/[0.08] bg-gradient-to-br from-secondary via-white to-secondary">
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-foreground/15 to-transparent" />
+      <div className="flex items-start gap-4 rounded-2xl bg-secondary p-4 text-left">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background border border-border">
+          {activeProviderId === "anthropic" ? <ClaudeLogo /> : <OpenAILogo />}
+        </div>
 
-        <div className="p-5">
-          {/* Provider logo */}
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary border border-black/[0.06] mb-4">
-            {authRequired === "anthropic" ? <ClaudeLogo /> : <OpenAILogo />}
-          </div>
-
-          {/* Copy */}
-          <p className="text-[15px] font-semibold text-foreground mb-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <p className="text-sm font-semibold text-foreground">
             {t("shell:providerReconnect.title")}
           </p>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             {t("shell:providerReconnect.body", { provider: provider.subtitle })}
           </p>
 
-          {/* Action */}
-          {!loginLaunched ? (
-            <Button
-              onClick={handleSignIn}
-              className="rounded-full gap-2"
-              size="sm"
-            >
-              {authRequired === "anthropic" ? (
-                <ClaudeLogoSmall />
-              ) : (
-                <OpenAILogoSmall />
-              )}
-              {t("shell:providerReconnect.reconnect", { provider: provider.subtitle })}
-            </Button>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Spinner className="h-3.5 w-3.5" />
-                <span>{t("shell:providerReconnect.waiting")}</span>
-              </div>
-              <button
+          <div className="mt-2">
+            {!loginLaunched ? (
+              <Button
                 onClick={handleSignIn}
-                className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+                className="h-8 rounded-full gap-2 text-xs px-3"
+                size="sm"
               >
-                {t("common:actions.tryAgain")}
-              </button>
-            </div>
+                {activeProviderId === "anthropic" ? (
+                  <ClaudeLogoSmall />
+                ) : (
+                  <OpenAILogoSmall />
+                )}
+                {t("shell:authReconnect.signInWith", { provider: provider.name })}
+              </Button>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Spinner className="h-3.5 w-3.5" />
+                  <span>{t("shell:providerReconnect.waiting")}</span>
+                </div>
+                <button
+                  onClick={handleSignIn}
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t("common:actions.tryAgain")}
+                </button>
+              </div>
+            )}
+          </div>
+          {loginError && (
+            <p className="mt-2 text-xs text-destructive">
+              {t("shell:providerReconnect.launchError")}
+            </p>
           )}
         </div>
       </div>

@@ -41,7 +41,8 @@
     "body": "Tu conexión con {{provider}} se terminó, pasa de vez en cuando. Inicia sesión otra vez y listo.",
     "reconnect": "Reconectar a {{provider}}",
     "waiting": "Esperando el inicio de sesión en el navegador...",
-    "tryAgain": "Intentar de nuevo"
+    "tryAgain": "Intentar de nuevo",
+    "launchError": "No se pudo abrir el inicio de sesión. Intenta otra vez."
   },
   "updateChecker": {
     "available": "v{{version}} disponible",

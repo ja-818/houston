@@ -2,6 +2,7 @@ use super::codex_parser;
 use super::manager::SessionUpdate;
 use super::parser;
 use super::types::{FeedItem, Provider};
+use crate::auth_error::{AUTH_RETRY_MARKER, is_auth_retry_noise};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
 
@@ -18,12 +19,12 @@ pub async fn read_stderr_lines(
     while let Ok(Some(line)) = reader_lines.next_line().await {
         tracing::debug!("cli stderr: {line}");
         if is_auth_retry_noise(&line) {
-            // Show a single friendly message on the first auth retry;
-            // suppress subsequent retry lines entirely.
+            // Send one internal marker; session_runner owns user-visible copy
+            // and AuthRequired emission.
             if !sent_auth_checking {
                 sent_auth_checking = true;
                 let _ = tx.send(SessionUpdate::Feed(FeedItem::SystemMessage(
-                    "Checking connection...".to_string(),
+                    AUTH_RETRY_MARKER.to_string(),
                 )));
             }
         } else if is_meaningful_stderr(&line) {
@@ -56,13 +57,6 @@ fn is_meaningful_stderr(line: &str) -> bool {
         return false;
     }
     true
-}
-
-/// Detect auth retry lines that should not be surfaced to the user.
-fn is_auth_retry_noise(line: &str) -> bool {
-    let lower = line.to_lowercase();
-    (lower.contains("401") || lower.contains("unauthorized") || lower.contains("not authenticated"))
-        && (lower.contains("reconnecting") || lower.contains("retrying"))
 }
 
 /// Read all stdout lines, parsing each as NDJSON and sending parsed feed items
