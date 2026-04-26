@@ -119,6 +119,13 @@ bundled paths to the resolved login-shell PATH so subprocess
 spawns of `claude`/`codex`/`composio` find the bundled copies before
 anything on the user's PATH.
 
+Runtime-installed Claude has one extra trap: `claude_path::init()`
+caches PATH at engine boot, but the first-launch installer may create
+`~/.local/bin` after that cache is built. Provider auth/login must use
+the absolute path returned by `provider::resolve_claude()` for managed
+Claude installs. Do not gate login on a bare `claude` PATH lookup, or
+the UI can report "installed" while login says "not installed".
+
 ## Lifecycle — auto-install + auto-upgrade
 
 `engine/houston-engine-server/src/main.rs` spawns two background tasks at

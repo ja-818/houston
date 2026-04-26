@@ -8,6 +8,7 @@
 use crate::error::{CoreError, CoreResult};
 use houston_terminal_manager::{claude_path, Provider};
 use serde::{Deserialize, Serialize};
+use std::ffi::OsString;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -66,21 +67,18 @@ pub async fn check_status(provider: Provider) -> CoreResult<ProviderStatus> {
 /// browser for OAuth). Returns immediately — the frontend polls
 /// `check_status` to observe completion.
 pub fn launch_login(provider: Provider) -> CoreResult<()> {
-    let shell_path = claude_path::shell_path();
-
-    let (cmd, args): (&str, Vec<&'static str>) = match provider {
-        Provider::Anthropic => ("claude", vec!["auth", "login", "--claudeai"]),
-        Provider::OpenAI => ("codex", vec!["login"]),
-    };
-
-    if !claude_path::is_command_available(cmd) {
-        return Err(CoreError::BadRequest(format!("{cmd} CLI is not installed")));
-    }
+    let command = login_command(provider)?;
 
     tokio::spawn(async move {
+        let LoginCommand {
+            cli_name,
+            path,
+            args,
+            shell_path,
+        } = command;
         let result = tokio::time::timeout(
             Duration::from_secs(120),
-            tokio::process::Command::new(cmd)
+            tokio::process::Command::new(&path)
                 .args(&args)
                 .env("PATH", shell_path)
                 .stdin(std::process::Stdio::null())
@@ -92,20 +90,61 @@ pub fn launch_login(provider: Provider) -> CoreResult<()> {
         .await;
 
         match result {
-            Ok(Ok(status)) => tracing::info!("[houston:provider] {cmd} login exited: {status}"),
-            Ok(Err(e)) => tracing::warn!("[houston:provider] {cmd} login failed: {e}"),
-            Err(_) => tracing::warn!("[houston:provider] {cmd} login timed out after 120s"),
+            Ok(Ok(status)) => {
+                tracing::info!("[houston:provider] {cli_name} login exited: {status}")
+            }
+            Ok(Err(e)) => tracing::warn!(
+                "[houston:provider] {cli_name} login failed at {}: {e}",
+                path.display()
+            ),
+            Err(_) => tracing::warn!("[houston:provider] {cli_name} login timed out after 120s"),
         }
     });
 
     Ok(())
 }
 
+struct LoginCommand {
+    cli_name: &'static str,
+    path: PathBuf,
+    args: Vec<&'static str>,
+    shell_path: OsString,
+}
+
+fn login_command(provider: Provider) -> CoreResult<LoginCommand> {
+    let resolved_path = match provider {
+        Provider::Anthropic => resolve_claude().1,
+        Provider::OpenAI => resolve_codex().1,
+    };
+    build_login_command(provider, resolved_path, claude_path::shell_path())
+}
+
+fn build_login_command(
+    provider: Provider,
+    resolved_path: Option<PathBuf>,
+    shell_path: OsString,
+) -> CoreResult<LoginCommand> {
+    let (cli_name, args): (&'static str, Vec<&'static str>) = match provider {
+        Provider::Anthropic => ("claude", vec!["auth", "login", "--claudeai"]),
+        Provider::OpenAI => ("codex", vec!["login"]),
+    };
+
+    let path = resolved_path
+        .ok_or_else(|| CoreError::BadRequest(format!("{cli_name} CLI is not installed")))?;
+
+    Ok(LoginCommand {
+        cli_name,
+        path,
+        args,
+        shell_path,
+    })
+}
+
 async fn check_claude_status() -> ProviderStatus {
     let (install_source, cli_path) = resolve_claude();
     let cli_installed = !matches!(install_source, InstallSource::Missing);
-    let authenticated = if cli_installed {
-        check_claude_auth().await
+    let authenticated = if let Some(path) = cli_path.as_deref() {
+        check_claude_auth(path).await
     } else {
         false
     };
@@ -132,7 +171,10 @@ async fn check_claude_status() -> ProviderStatus {
 /// doc for the policy reasoning.
 fn resolve_claude() -> (InstallSource, Option<PathBuf>) {
     if houston_claude_installer::is_installed() {
-        return (InstallSource::Managed, Some(houston_claude_installer::cli_path()));
+        return (
+            InstallSource::Managed,
+            Some(houston_claude_installer::cli_path()),
+        );
     }
     if let Some(path) = which_on_path("claude") {
         return (InstallSource::Path, Some(path));
@@ -142,11 +184,11 @@ fn resolve_claude() -> (InstallSource, Option<PathBuf>) {
 
 /// `claude --version` succeeds without auth; `claude auth status` returns
 /// the real `loggedIn` signal as JSON.
-async fn check_claude_auth() -> bool {
+async fn check_claude_auth(cli_path: &std::path::Path) -> bool {
     let shell_path = claude_path::shell_path();
     let result = tokio::time::timeout(
         Duration::from_secs(5),
-        tokio::process::Command::new("claude")
+        tokio::process::Command::new(cli_path)
             .args(["auth", "status"])
             .env("PATH", &shell_path)
             .kill_on_drop(true)
@@ -298,5 +340,19 @@ mod tests {
         assert_eq!(s, "\"path\"");
         let s = serde_json::to_string(&InstallSource::Missing).unwrap();
         assert_eq!(s, "\"missing\"");
+    }
+
+    #[test]
+    fn login_command_uses_resolved_cli_path() {
+        let path = PathBuf::from("/tmp/houston-test-claude");
+        let command = build_login_command(
+            Provider::Anthropic,
+            Some(path.clone()),
+            OsString::from("/not/on/path"),
+        )
+        .unwrap();
+        assert_eq!(command.cli_name, "claude");
+        assert_eq!(command.path, path);
+        assert_eq!(command.args, vec!["auth", "login", "--claudeai"]);
     }
 }
