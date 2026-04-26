@@ -131,6 +131,68 @@ jobs:
           echo "$LIPO_INFO" | grep -q 'x86_64' \
             || { echo "::error::bundled codex missing x86_64 slice"; exit 1; }
 
+      # Import the Developer ID certificate into a temporary keychain so
+      # we can pre-sign the bundled CLI binaries (codex + composio) BEFORE
+      # tauri-action runs.
+      #
+      # Why pre-sign here:
+      #   tauri-action calls `codesign --force --deep` on the .app bundle,
+      #   which signs the main app + frameworks + helpers but does NOT
+      #   recurse into nested directories under `Resources/`. Result:
+      #   `Resources/bin/composio-aarch64/composio` (one level deeper than
+      #   `Resources/bin/codex`) ships UNSIGNED, and Apple notary rejects
+      #   the .app with "signature invalid / no secure timestamp / hardened
+      #   runtime not enabled" on those nested binaries.
+      #
+      # Pre-signing each Mach-O at stage time with Developer ID + hardened
+      # runtime + secure timestamp leaves a valid signature in place that
+      # tauri-action's deep sign won't disturb (it skips files inside
+      # nested Resources/ subdirs entirely).
+      - name: Import Apple Developer ID for pre-signing bundled CLIs
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN_PATH="$RUNNER_TEMP/houston-presign.keychain-db"
+          KEYCHAIN_PWD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+
+          CERT_FILE="$RUNNER_TEMP/houston-cert.p12"
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$CERT_FILE"
+          security import "$CERT_FILE" -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: \
+            -s -k "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+
+          # Add our keychain to the user search list so codesign finds the
+          # identity without needing --keychain on every call. We keep the
+          # existing user keychains in the list so tauri-action's own
+          # cert-import (which targets the default login keychain) still
+          # works unchanged.
+          USER_KEYCHAINS=$(security list-keychains -d user | sed 's/[" ]//g' | tr '\n' ' ')
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $USER_KEYCHAINS
+
+          rm -f "$CERT_FILE"
+
+      - name: Pre-sign bundled CLI binaries (Developer ID + hardened runtime + timestamp)
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          set -euo pipefail
+          BIN=app/src-tauri/resources/bin
+          for f in "$BIN/codex" \
+                   "$BIN/composio-aarch64/composio" \
+                   "$BIN/composio-x86_64/composio"; do
+            echo "=== Signing $f ==="
+            codesign --force --options runtime --timestamp \
+              --sign "$APPLE_SIGNING_IDENTITY" "$f"
+            codesign -dvv "$f" 2>&1 | grep -E '^(Authority|TeamIdentifier|Timestamp|CodeDirectory)' || true
+          done
+
       # Build the engine sidecar for BOTH macOS architectures BEFORE the
       # Tauri app build.
       #
