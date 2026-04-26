@@ -1,5 +1,5 @@
 export default function () {
   return {
-    downloadCode: process.env.DOWNLOAD_CODE || "",
+    downloadCode: process.env.DOWNLOAD_CODE || "getsh*tdone",
   };
 }
