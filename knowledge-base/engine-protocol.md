@@ -178,7 +178,7 @@ module.
 | Method | Path | Description |
 |---|---|---|
 | GET/PUT | `/v1/preferences/:key` | String KV (DB-backed) |
-| GET | `/v1/providers/:name/status` | `{cli_installed, authenticated}` |
+| GET | `/v1/providers/:name/status` | `{cli_installed, authenticated, install_source, cli_path}` |
 | POST | `/v1/providers/:name/login` | Launch CLI login |
 | GET | `/v1/agent-configs` | List installed agent definitions |
 
@@ -187,11 +187,18 @@ module.
 |---|---|---|
 | GET | `/v1/composio/status` | Full status bundle |
 | GET | `/v1/composio/cli-installed` | Bool |
-| POST | `/v1/composio/cli` | Install Composio CLI |
+| POST | `/v1/composio/cli` | Install Composio CLI (no-op when bundled — see `knowledge-base/cli-bundling.md`) |
 | POST | `/v1/composio/login` | Start OAuth |
 | POST | `/v1/composio/login/complete` | Finish OAuth w/ `cli_key` |
 | GET | `/v1/composio/apps` | Catalog |
 | GET/POST | `/v1/composio/connections` | List / start connect |
+
+**Claude Code (runtime install — proprietary CLI not bundled)**
+| Method | Path | Description |
+|---|---|---|
+| GET | `/v1/claude/cli-installed` | Bool |
+| GET | `/v1/claude/status` | `{installed, install_path, pinned_version, installed_version}` |
+| POST | `/v1/claude/install` | Trigger background download + sha256 verify; progress streams as `ClaudeCliInstalling` events on the WS firehose |
 
 **Worktrees + shell**
 | Method | Path | Description |

@@ -85,6 +85,52 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys
           echo "${{ secrets.APPLE_API_KEY_CONTENT }}" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
 
+      # Stage bundled CLI binaries (codex universal, composio per-arch)
+      # into `app/src-tauri/resources/bin/` so Tauri's `bundle.resources`
+      # picks them up. The fetch script:
+      #   - Downloads each CLI for both arches from URLs pinned in
+      #     cli-deps.json
+      #   - Verifies SHA-256 against pinned checksums (any mismatch
+      #     fails the release — release artifacts must be reproducible)
+      #   - lipos codex into a single universal Mach-O binary
+      #   - Prunes cross-platform composio acp-adapters that the
+      #     resolved arch can never execute (saves ~580 MB)
+      #   - Stages cli-deps.json itself so the runtime claude-code
+      #     installer can read pinned URLs + checksums offline
+      #
+      # macos-latest comes with curl + unzip + jq + lipo preinstalled.
+      # If a future runner image drops jq, install it explicitly
+      # rather than rewriting the script in a dep-free language; jq is
+      # the right tool for cli-deps.json.
+      - name: Stage bundled CLI dependencies (codex, composio)
+        run: |
+          set -euo pipefail
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::group::Installing jq (missing on runner)"
+            brew install jq
+            echo "::endgroup::"
+          fi
+          ./scripts/fetch-cli-deps.sh both
+
+          echo "=== Staged bundle ==="
+          ls -lah app/src-tauri/resources/bin/
+          echo "=== Sizes ==="
+          du -sh app/src-tauri/resources/bin/*
+
+          # Sanity: every shippable artifact must be present and the
+          # codex binary must be a fat (universal) Mach-O.
+          test -x app/src-tauri/resources/bin/codex
+          test -x app/src-tauri/resources/bin/composio-aarch64/composio
+          test -x app/src-tauri/resources/bin/composio-x86_64/composio
+          test -f app/src-tauri/resources/bin/cli-deps.json
+
+          LIPO_INFO=$(lipo -info app/src-tauri/resources/bin/codex)
+          echo "$LIPO_INFO"
+          echo "$LIPO_INFO" | grep -q 'arm64' \
+            || { echo "::error::bundled codex missing arm64 slice"; exit 1; }
+          echo "$LIPO_INFO" | grep -q 'x86_64' \
+            || { echo "::error::bundled codex missing x86_64 slice"; exit 1; }
+
       # Build the engine sidecar for BOTH macOS architectures BEFORE the
       # Tauri app build.
       #
@@ -211,6 +257,73 @@ jobs:
       # hardened-runtime-less sidecar — Gatekeeper would then quarantine-kill
       # it on first launch for upgraders and the app hangs at splash.
       # Fail the release if any of these invariants drifts.
+      # Bundled CLI invariants — codex, composio per-arch + the
+      # cli-deps.json manifest must all be present inside the
+      # `.app/Contents/Resources/bin/` tree, and every Mach-O must be
+      # signed with Developer ID + hardened runtime so Gatekeeper +
+      # subprocess execution work post-notarization.
+      #
+      # We assert every check that, if violated, would visibly break
+      # the user experience: missing files, ad-hoc signatures (Gatekeeper
+      # quarantine), missing arch slices, and broken codex universal
+      # layout. Any failure is fatal — a release where the bundled CLI
+      # works for half of users is worse than no release.
+      - name: Verify bundled CLI invariants
+        run: |
+          set -euo pipefail
+          APP="${{ steps.artifacts.outputs.app }}"
+          BIN="$APP/Contents/Resources/bin"
+
+          echo "=== 1. Bundle layout ==="
+          test -d "$BIN" || { echo "::error::Resources/bin/ missing"; exit 1; }
+          test -x "$BIN/codex" || { echo "::error::Resources/bin/codex missing or not executable"; exit 1; }
+          test -x "$BIN/composio-aarch64/composio" || { echo "::error::composio-aarch64/composio missing"; exit 1; }
+          test -x "$BIN/composio-x86_64/composio"  || { echo "::error::composio-x86_64/composio missing"; exit 1; }
+          test -f "$BIN/cli-deps.json" || { echo "::error::cli-deps.json manifest missing"; exit 1; }
+          ls -lah "$BIN"
+
+          echo "=== 2. codex is universal (arm64 + x86_64) ==="
+          LIPO=$(lipo -info "$BIN/codex")
+          echo "$LIPO"
+          echo "$LIPO" | grep -q 'arm64'  || { echo "::error::codex missing arm64 slice"; exit 1; }
+          echo "$LIPO" | grep -q 'x86_64' || { echo "::error::codex missing x86_64 slice"; exit 1; }
+
+          echo "=== 3. Mach-O binaries have Developer ID + hardened runtime ==="
+          # Walk every executable file under Resources/bin/ and assert
+          # signing invariants. We only care about Mach-O — `.mjs` /
+          # `services/` / json files don't need signatures.
+          fail=0
+          while IFS= read -r f; do
+            if file "$f" | grep -q 'Mach-O'; then
+              echo ""
+              echo "Checking: $f"
+              if ! codesign -vvv "$f" 2>&1; then
+                echo "::error::codesign verify failed: $f"
+                fail=1
+                continue
+              fi
+              AUTH=$(codesign -dvv "$f" 2>&1 | grep '^Authority=' | head -1 || echo "")
+              echo "  $AUTH"
+              if ! echo "$AUTH" | grep -q 'Developer ID Application'; then
+                echo "::error::Bundled binary not signed with Developer ID: $f"
+                codesign -dvv "$f" 2>&1 | sed 's/^/  /' || true
+                fail=1
+              fi
+              FLAGS=$(codesign -dv "$f" 2>&1 | grep -E '^CodeDirectory.*flags=' | head -1 || echo "")
+              echo "  $FLAGS"
+              if ! echo "$FLAGS" | grep -q 'runtime'; then
+                echo "::error::Bundled binary missing hardened runtime: $f"
+                fail=1
+              fi
+            fi
+          done < <(find "$BIN" -type f -perm -u+x)
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::One or more bundled CLI binaries failed signing checks"
+            exit 1
+          fi
+          echo "=== Bundled CLI checks passed ==="
+
       - name: Verify engine sidecar signing
         run: |
           APP="${{ steps.artifacts.outputs.app }}"

@@ -319,11 +319,26 @@ export interface CommunitySkill {
 
 // ---------- Providers / preferences ----------
 
+/**
+ * Where Houston found the CLI binary backing a provider. Surfaced so
+ * the UI can label whether the user is talking to a copy Houston shipped
+ * (`bundled`), one Houston downloaded for them (`managed`), one already
+ * on their PATH (`path`), or nothing at all (`missing`).
+ *
+ * Mirrors the Rust `houston_engine_core::provider::InstallSource` enum
+ * with `#[serde(rename_all = "lowercase")]`.
+ */
+export type CliInstallSource = "bundled" | "managed" | "path" | "missing";
+
 export interface ProviderStatus {
   provider: string;
   cliInstalled: boolean;
   authenticated: boolean;
   cliName: string;
+  installSource: CliInstallSource;
+  /** Absolute path to the CLI binary that will be spawned, or `null`
+   *  when `installSource === "missing"`. Useful for diagnostics UI. */
+  cliPath: string | null;
 }
 
 export interface PreferenceValue {

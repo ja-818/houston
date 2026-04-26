@@ -25,7 +25,29 @@ fn main() {
         println!("cargo:warning=houston-engine sidecar staging skipped: {e}");
     }
 
+    // Ensure the bundled-CLI staging directory exists. Tauri's `bundle.resources`
+    // points at `resources/bin` and its resource walker errors out if the
+    // directory is missing entirely (a real config error would still surface
+    // — empty walks are silent). CI populates this dir via
+    // `scripts/fetch-cli-deps.sh both` before invoking the bundler. Local
+    // `pnpm tauri dev` builds don't strictly need bundled CLIs (engine
+    // falls back to PATH lookup / `~/.composio` install), so we create
+    // an empty dir here to keep the config valid without forcing every
+    // developer to fetch ~700 MB of binaries on first checkout.
+    ensure_resources_bin_dir();
+
     tauri_build::build()
+}
+
+fn ensure_resources_bin_dir() {
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let dir = manifest.join("resources").join("bin");
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        println!(
+            "cargo:warning=could not create {} (Tauri bundle.resources may fail): {e}",
+            dir.display()
+        );
+    }
 }
 
 fn stage_engine_sidecar() -> Result<(), String> {

@@ -15,3 +15,8 @@ tracing = { workspace = true }
 # Windows). Used by `claude_path` to expand `~/...` entries in the common
 # install-dir list.
 dirs = "5"
+# Bundled-CLI resolver (codex, composio) for the Houston `.app`. Lets
+# `claude_path` prepend the bundled-bin directories to the resolved PATH
+# so subprocess spawns of `claude`/`codex`/`composio` find them without
+# any user-side shell config.
+houston-cli-bundle = { workspace = true }

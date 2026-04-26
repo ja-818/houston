@@ -42,6 +42,7 @@ Need specific knowledge? Load on demand:
 - Agent manifest, tiers, sidebar, workspaces → `knowledge-base/agent-manifest.md`
 - Engine wire protocol (REST + WS) → `knowledge-base/engine-protocol.md`
 - `houston-engine` binary ops → `knowledge-base/engine-server.md`
+- Bundled CLIs (codex universal, composio per-arch) + runtime claude-code installer → `knowledge-base/cli-bundling.md`
 - Custom frontend on `houston-engine` (integration reference) → `examples/smartbooks/README.md`
 - Mobile PWA (tunnel, pairing, reactivity) → `docs/mobile-architecture.md` + `docs/relay-operations.md`
 - Updater, analytics, Sentry, env vars, CI → `knowledge-base/production-infra.md`

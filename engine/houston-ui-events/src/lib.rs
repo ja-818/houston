@@ -127,6 +127,25 @@ pub enum HoustonEvent {
     ComposioCliReady,
     /// Composio CLI install or upgrade failed.
     ComposioCliFailed { message: String },
+
+    // ----- Claude Code CLI lifecycle -----
+    //
+    // Claude Code can't be bundled (proprietary license) so the engine
+    // downloads it on first launch via `houston-claude-installer`. The
+    // frontend uses these events to render the install progress banner
+    // and re-check provider auth status once ready.
+
+    /// Claude Code CLI download in progress. `progress_pct` is 0-100;
+    /// emitted at most every 10 percentage points so the channel isn't
+    /// flooded during a ~120 MB download.
+    ClaudeCliInstalling { progress_pct: u8 },
+    /// Claude Code CLI is installed (either freshly downloaded or
+    /// already at the pinned version). Frontend invalidates the
+    /// `provider_status` query so the Anthropic provider chip updates.
+    ClaudeCliReady,
+    /// Claude Code CLI install or upgrade failed. `message` is intended
+    /// to be user-readable (network/region/permissions/disk-space hints).
+    ClaudeCliFailed { message: String },
 }
 
 // ---------------------------------------------------------------------------

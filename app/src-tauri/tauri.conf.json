@@ -45,6 +45,9 @@
     "active": true,
     "targets": ["app", "dmg"],
     "externalBin": ["binaries/houston-engine"],
+    "resources": {
+      "resources/bin": "bin"
+    },
     "macOS": {
       "signingIdentity": "-",
       "entitlements": "entitlements.plist",
