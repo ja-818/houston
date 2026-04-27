@@ -110,6 +110,13 @@ module.
 | GET | `/v1/agents/:agent_path/sessions/:key/history` | Load chat history |
 | POST | `/v1/sessions/summarize` | Activity title/description |
 
+Session starts are exclusive per `workingDir`. If another chat or routine
+session is already running in the same directory, start returns
+`CONFLICT`. This keeps session file-change attribution correct. On
+successful completion, the engine may emit and persist a `FeedItem` with
+`feed_type: "file_changes"` and `data: { created: string[], modified:
+string[] }`; clients should render this as session-owned project artifacts.
+
 **Agent data** (`?agent_path=` query; writes emit event)
 | Method | Path | Description |
 |---|---|---|

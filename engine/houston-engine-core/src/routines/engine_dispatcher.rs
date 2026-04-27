@@ -35,6 +35,16 @@ pub struct EngineRoutineDispatcher {
 #[async_trait]
 impl RoutineDispatcher for EngineRoutineDispatcher {
     async fn dispatch(&self, ctx: DispatchContext<'_>) -> DispatchOutcome {
+        let _workdir_guard = match self.rt.try_acquire_workdir(ctx.working_dir).await {
+            Ok(guard) => guard,
+            Err(e) => {
+                return DispatchOutcome {
+                    response_text: String::new(),
+                    error: Some(e.to_string()),
+                };
+            }
+        };
+
         if let Err(e) = agent_prompt::seed_agent(ctx.working_dir) {
             return DispatchOutcome {
                 response_text: String::new(),

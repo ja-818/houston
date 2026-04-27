@@ -69,6 +69,20 @@ Only two tables:
 
 Everything else lives in files.
 
+## Session file-change attribution
+Chat sessions snapshot user-visible project files before and after the
+CLI run. The engine diffs those snapshots and persists a `file_changes`
+feed item with `created` and `modified` absolute paths. The visible-file
+filter is shared with the project file browser, so helper files such as
+Python scripts, JSON, Markdown, `.houston/`, `.agents/`, and dotdirs stay
+out of non-technical chat summaries.
+
+Attribution is strict only when one session owns a working directory. The
+engine enforces that by holding a per-`working_dir` guard for chat and
+routine sessions. Different worktrees/folders can run in parallel. A
+second session in the same folder gets a conflict instead of producing a
+false file summary.
+
 ## AI-native reactivity (MANDATORY)
 
 Users + LLMs equal participants. Both read/write all workspace data. All changes visible to both immediately.

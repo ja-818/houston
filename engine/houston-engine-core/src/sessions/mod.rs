@@ -21,16 +21,19 @@ pub mod file_changes;
 pub mod history;
 pub mod provider;
 pub mod summarize;
+mod workdir_locks;
 
 use crate::agents::prompt as agent_prompt;
 use crate::paths::EnginePaths;
+use crate::{CoreError, CoreResult};
 use houston_agents_conversations::session_id_tracker::SessionIdTracker;
 use houston_agents_conversations::session_pids::SessionPidMap;
 use houston_agents_conversations::session_runner::{self, PersistOptions};
 use houston_db::Database;
 use houston_terminal_manager::{FeedItem, Provider};
 use houston_ui_events::{DynEventSink, HoustonEvent};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use workdir_locks::{WorkdirLocks, WorkdirSessionGuard};
 
 pub use provider::{resolve_provider, ResolvedProvider};
 
@@ -39,6 +42,21 @@ pub use provider::{resolve_provider, ResolvedProvider};
 pub struct SessionRuntime {
     pub session_ids: SessionIdTracker,
     pub pid_map: SessionPidMap,
+    workdir_locks: WorkdirLocks,
+}
+
+impl SessionRuntime {
+    pub(crate) async fn try_acquire_workdir(
+        &self,
+        working_dir: &Path,
+    ) -> CoreResult<WorkdirSessionGuard> {
+        self.workdir_locks
+            .try_acquire(working_dir)
+            .await
+            .ok_or_else(|| {
+                CoreError::Conflict("another mission is already running in this folder".to_string())
+            })
+    }
 }
 
 /// Parameters for [`start`]. Mirrors the shape of the old Tauri `send_message`
@@ -88,6 +106,7 @@ pub async fn start(
     if !agent_dir.exists() {
         std::fs::create_dir_all(&agent_dir)?;
     }
+    let workdir_guard = rt.try_acquire_workdir(&working_dir).await?;
     agent_prompt::seed_agent(&agent_dir).map_err(crate::CoreError::Internal)?;
 
     // Final system prompt is always `<product_prompt>\n\n---\n\n<agent_context>`.
@@ -199,6 +218,7 @@ pub async fn start(
     let session_key_for_end = session_key.clone();
     let agent_path_for_end = agent_path;
     tokio::spawn(async move {
+        let _workdir_guard = workdir_guard;
         let session_result = handle.await;
         if let (Ok(result), Some(before)) = (&session_result, before_files.as_ref()) {
             if result.error.is_none() {
