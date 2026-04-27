@@ -45,7 +45,26 @@ test("keeps normal files in the summary", () => {
     agentPath,
   );
 
-  assert.deepEqual(items, [{ kind: "file", path: `${agentPath}/deck.pptx` }]);
+  assert.deepEqual(items, [
+    { kind: "file", path: `${agentPath}/deck.pptx`, change: "created" },
+  ]);
+});
+
+test("puts edited files under updates", () => {
+  const items = buildTurnSummaryItems(
+    [
+      {
+        name: "Edit",
+        input: { file_path: `${agentPath}/brief.txt` },
+        result: { content: "ok", is_error: false },
+      },
+    ],
+    agentPath,
+  );
+
+  assert.deepEqual(items, [
+    { kind: "file", path: `${agentPath}/brief.txt`, change: "modified" },
+  ]);
 });
 
 test("extracts labeled bash output paths", () => {
@@ -63,15 +82,46 @@ test("extracts labeled bash output paths", () => {
     agentPath,
   );
 
-  assert.deepEqual(items, [{ kind: "file", path: `${agentPath}/presentation.pptx` }]);
+  assert.deepEqual(items, [
+    { kind: "file", path: `${agentPath}/presentation.pptx`, change: "created" },
+  ]);
+});
+
+test("uses session file changes and ignores python helpers", () => {
+  const items = buildTurnSummaryItems(
+    [
+      {
+        name: "Write",
+        input: { file_path: `${agentPath}/make_deck.py` },
+        result: { content: "ok", is_error: false },
+      },
+    ],
+    agentPath,
+    [
+      { path: `${agentPath}/make_deck.py`, status: "created" },
+      { path: `${agentPath}/presentation.pptx`, status: "created" },
+      { path: `${agentPath}/notes.txt`, status: "modified" },
+    ],
+  );
+
+  assert.deepEqual(items, [
+    { kind: "file", path: `${agentPath}/presentation.pptx`, change: "created" },
+    { kind: "file", path: `${agentPath}/notes.txt`, change: "modified" },
+  ]);
 });
 
 test("groups semantic updates and files separately", () => {
   const groups = groupTurnSummaryItems([
     { kind: "semantic", update: "actions" },
-    { kind: "file", path: `${agentPath}/deck.pptx` },
+    { kind: "file", path: `${agentPath}/deck.pptx`, change: "created" },
+    { kind: "file", path: `${agentPath}/notes.txt`, change: "modified" },
   ]);
 
-  assert.deepEqual(groups.updates, [{ kind: "semantic", update: "actions" }]);
-  assert.deepEqual(groups.files, [{ kind: "file", path: `${agentPath}/deck.pptx` }]);
+  assert.deepEqual(groups.updates, [
+    { kind: "semantic", update: "actions" },
+    { kind: "file", path: `${agentPath}/notes.txt`, change: "modified" },
+  ]);
+  assert.deepEqual(groups.files, [
+    { kind: "file", path: `${agentPath}/deck.pptx`, change: "created" },
+  ]);
 });

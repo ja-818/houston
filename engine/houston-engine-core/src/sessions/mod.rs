@@ -17,6 +17,7 @@
 //! lives in the adapter today; it will move into `engine-core` in a later
 //! phase once `agent_store` is ported.
 
+pub mod file_changes;
 pub mod history;
 pub mod provider;
 pub mod summarize;
@@ -110,6 +111,16 @@ pub async fn start(
     };
 
     let source = source.unwrap_or_else(|| "desktop".to_string());
+    let before_files = match file_changes::snapshot(&working_dir) {
+        Ok(snapshot) => Some(snapshot),
+        Err(e) => {
+            tracing::warn!(
+                "[sessions] failed to snapshot files before run: {e} (working_dir={})",
+                working_dir.display()
+            );
+            None
+        }
+    };
     let agent_key = format!("{}:{}", working_dir.to_string_lossy(), session_key);
     let sid_handle = rt
         .session_ids
@@ -151,6 +162,8 @@ pub async fn start(
         }
     }
 
+    let db_for_file_changes = db.clone();
+    let source_for_file_changes = source.clone();
     let persist = Some(PersistOptions {
         db,
         source,
@@ -159,6 +172,7 @@ pub async fn start(
     });
 
     let events_for_end = events.clone();
+    let working_dir_for_end = working_dir.clone();
     let handle = session_runner::spawn_and_monitor(
         events,
         agent_path.clone(),
@@ -185,7 +199,58 @@ pub async fn start(
     let session_key_for_end = session_key.clone();
     let agent_path_for_end = agent_path;
     tokio::spawn(async move {
-        let next_status = match handle.await {
+        let session_result = handle.await;
+        if let (Ok(result), Some(before)) = (&session_result, before_files.as_ref()) {
+            if result.error.is_none() {
+                match file_changes::snapshot(&working_dir_for_end) {
+                    Ok(after) => {
+                        let changes = file_changes::diff(before, &after);
+                        if !changes.is_empty() {
+                            let item = FeedItem::FileChanges(changes.clone());
+                            events_for_end.emit(HoustonEvent::FeedItem {
+                                agent_path: agent_path_for_end.clone(),
+                                session_key: session_key_for_end.clone(),
+                                item,
+                            });
+                            events_for_end.emit(HoustonEvent::FilesChanged {
+                                agent_path: agent_path_for_end.clone(),
+                            });
+                            if let Some(sid) = result.claude_session_id.as_ref() {
+                                let db = db_for_file_changes.clone();
+                                let sid = sid.clone();
+                                let source = source_for_file_changes.clone();
+                                let data = serde_json::json!({
+                                    "created": changes.created,
+                                    "modified": changes.modified,
+                                })
+                                .to_string();
+                                tokio::spawn(async move {
+                                    if let Err(e) = db
+                                        .add_chat_feed_item_by_session(
+                                            &sid,
+                                            "file_changes",
+                                            &data,
+                                            &source,
+                                        )
+                                        .await
+                                    {
+                                        tracing::warn!(
+                                            "[sessions] failed to persist file changes: {e}"
+                                        );
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    Err(e) => tracing::warn!(
+                        "[sessions] failed to snapshot files after run: {e} (working_dir={})",
+                        working_dir_for_end.display()
+                    ),
+                }
+            }
+        }
+
+        let next_status = match session_result {
             Ok(result) if result.error.is_none() => "needs_you",
             Ok(_) => "error",
             Err(e) => {

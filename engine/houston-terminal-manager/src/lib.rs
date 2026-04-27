@@ -14,7 +14,9 @@ pub mod session_pump;
 pub mod types;
 
 // Re-export key types for convenience.
-pub use codex_parser::{CodexAccumulator, extract_thread_id, parse_codex_event};
+pub use codex_parser::{extract_thread_id, parse_codex_event, CodexAccumulator};
 pub use manager::{SessionHandle, SessionManager, SessionUpdate};
-pub use parser::{StreamAccumulator, extract_session_id, parse_event};
-pub use types::{ClaudeEvent, ContentBlock, FeedItem, Provider, SessionFeedBuffer, SessionStatus};
+pub use parser::{extract_session_id, parse_event, StreamAccumulator};
+pub use types::{
+    ClaudeEvent, ContentBlock, FeedItem, FileChanges, Provider, SessionFeedBuffer, SessionStatus,
+};

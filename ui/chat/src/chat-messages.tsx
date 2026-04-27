@@ -23,8 +23,9 @@ import type { ToolsAndCardsProps } from "./chat-helpers";
 import { ChatProcessBlock } from "./chat-process-block";
 import type { ChatProcessLabels } from "./chat-process-block";
 import { getChatDisplayItems } from "./chat-process-groups";
-import { computeTurnEndTools } from "./turn-tools";
-import type { ChatMessage, ToolEntry } from "./feed-to-messages";
+import { computeTurnEndSummary } from "./turn-tools";
+import type { TurnEndSummary } from "./turn-tools";
+import type { ChatMessage } from "./feed-to-messages";
 
 export interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -40,7 +41,7 @@ export interface ChatMessagesProps {
   processLabels?: ChatProcessLabels;
   getThinkingMessage?: ReasoningTriggerProps["getThinkingMessage"];
   renderMessageAvatar?: (msg: ChatMessage) => ReactNode | undefined;
-  renderTurnSummary?: (tools: ToolEntry[]) => ReactNode;
+  renderTurnSummary?: (summary: TurnEndSummary) => ReactNode;
   /** Custom renderer for system messages. Return a node to replace the default,
    *  or undefined to use the default italic text. */
   renderSystemMessage?: (msg: ChatMessage) => ReactNode | undefined;
@@ -78,8 +79,8 @@ export function ChatMessages({
   onOpenLink,
   renderLink,
 }: ChatMessagesProps) {
-  const turnEndTools = useMemo(
-    () => computeTurnEndTools(messages, status),
+  const turnEndSummaries = useMemo(
+    () => computeTurnEndSummary(messages, status),
     [messages, status],
   );
   const displayItems = useMemo(
@@ -111,9 +112,9 @@ export function ChatMessages({
                   />
                   {(() => {
                     if (!item.isTrailing || item.isActive || !renderTurnSummary) return null;
-                    const turnTools = turnEndTools.get(item.sourceIndex);
-                    if (!turnTools) return null;
-                    return renderTurnSummary(turnTools);
+                    const summary = turnEndSummaries.get(item.sourceIndex);
+                    if (!summary) return null;
+                    return renderTurnSummary(summary);
                   })()}
                 </div>
               </Message>
@@ -162,9 +163,9 @@ export function ChatMessages({
                 })()}
                 {(() => {
                   if (!renderTurnSummary) return null;
-                  const turnTools = turnEndTools.get(idx);
-                  if (!turnTools) return null;
-                  return renderTurnSummary(turnTools);
+                  const summary = turnEndSummaries.get(idx);
+                  if (!summary) return null;
+                  return renderTurnSummary(summary);
                 })()}
               </div>
             </Message>

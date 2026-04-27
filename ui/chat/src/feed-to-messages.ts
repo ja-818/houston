@@ -14,6 +14,11 @@ export interface ToolEntry {
   result?: { content: string; is_error: boolean };
 }
 
+export interface FileChangeEntry {
+  path: string;
+  status: "created" | "modified";
+}
+
 export interface ChatMessage {
   key: string;
   from: "user" | "assistant" | "system";
@@ -21,6 +26,7 @@ export interface ChatMessage {
   isStreaming: boolean;
   reasoning?: { content: string; isStreaming: boolean };
   tools: ToolEntry[];
+  fileChanges: FileChangeEntry[];
   /** Source channel if the message came from an external channel. */
   source?: string;
 }
@@ -49,9 +55,25 @@ export function feedItemsToMessages(items: FeedItem[]): ChatMessage[] {
         content: "",
         isStreaming: false,
         tools: [],
+        fileChanges: [],
       };
     }
     return cur;
+  };
+
+  const attachFileChanges = (changes: FileChangeEntry[]) => {
+    const target =
+      cur?.from === "assistant"
+        ? cur
+        : [...messages].reverse().find((msg) => msg.from === "assistant");
+    if (!target) return;
+
+    const seen = new Set(target.fileChanges.map((change) => change.path));
+    for (const change of changes) {
+      if (seen.has(change.path)) continue;
+      seen.add(change.path);
+      target.fileChanges.push(change);
+    }
   };
 
   for (const item of items) {
@@ -65,6 +87,7 @@ export function feedItemsToMessages(items: FeedItem[]): ChatMessage[] {
           content: text,
           isStreaming: false,
           tools: [],
+          fileChanges: [],
           source,
         });
         break;
@@ -163,7 +186,16 @@ export function feedItemsToMessages(items: FeedItem[]): ChatMessage[] {
           content: item.data,
           isStreaming: false,
           tools: [],
+          fileChanges: [],
         });
+        break;
+      }
+
+      case "file_changes": {
+        attachFileChanges([
+          ...item.data.created.map((path) => ({ path, status: "created" as const })),
+          ...item.data.modified.map((path) => ({ path, status: "modified" as const })),
+        ]);
         break;
       }
 

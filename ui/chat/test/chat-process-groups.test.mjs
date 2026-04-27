@@ -8,6 +8,7 @@ const assistant = (key, content, extras = {}) => ({
   content,
   isStreaming: false,
   tools: extras.tools ?? [],
+  fileChanges: extras.fileChanges ?? [],
   reasoning: extras.reasoning,
 });
 

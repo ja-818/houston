@@ -1,12 +1,12 @@
 import { useCallback, useMemo } from "react";
 import { ToolBlock } from "@houston-ai/chat";
-import type { ToolEntry } from "@houston-ai/chat";
+import type { ToolEntry, TurnEndSummary } from "@houston-ai/chat";
 import { FileCard } from "../components/file-card";
 import { TurnFileSummary } from "../components/turn-file-summary";
-import { buildTurnSummaryItems } from "../lib/turn-summary-items";
+import { buildTurnSummaryItems, isUserVisibleFilePath } from "../lib/turn-summary-items";
 
 /** Tool short names that produce files the user might want to open. */
-const FILE_TOOLS = new Set(["Write", "Edit"]);
+const FILE_TOOLS = new Set(["Write", "Edit", "MultiEdit"]);
 
 function shortName(name: string): string {
   return name.includes("__") ? name.split("__").pop()! : name;
@@ -32,7 +32,7 @@ export function useFileToolRenderer(agentPath: string) {
       return (
         <div key={index} className="space-y-2">
           <ToolBlock tool={tool} isActive={false} />
-          {filePath && !isError && (
+          {filePath && !isError && isUserVisibleFilePath(filePath) && (
             <FileCard filePath={filePath} agentPath={agentPath} />
           )}
         </div>
@@ -42,8 +42,12 @@ export function useFileToolRenderer(agentPath: string) {
   );
 
   const renderTurnSummary = useCallback(
-    (tools: ToolEntry[]) => {
-      const items = buildTurnSummaryItems(tools, agentPath);
+    (summary: TurnEndSummary) => {
+      const items = buildTurnSummaryItems(
+        summary.tools,
+        agentPath,
+        summary.fileChanges,
+      );
       if (items.length === 0) return null;
       return <TurnFileSummary items={items} agentPath={agentPath} />;
     },

@@ -288,6 +288,13 @@ fn serialize_for_persist(item: &FeedItem) -> Option<(String, String)> {
             });
             Some(("final_result".into(), data.to_string()))
         }
+        FeedItem::FileChanges(changes) => {
+            let data = serde_json::json!({
+                "created": changes.created,
+                "modified": changes.modified
+            });
+            Some(("file_changes".into(), data.to_string()))
+        }
         FeedItem::Thinking(t) => Some(("thinking".into(), json_str(t))),
         // Skip streaming items — they get replaced by finals.
         FeedItem::AssistantTextStreaming(_) | FeedItem::ThinkingStreaming(_) => None,

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { ToolsAndCardsProps } from "./chat-helpers";
 import type { ChatMessagesProps } from "./chat-messages";
-import type { ChatMessage, ToolEntry } from "./feed-to-messages";
+import type { ChatMessage } from "./feed-to-messages";
 import type { FeedItem } from "./types";
 
 export type ChatStatus = "ready" | "streaming" | "submitted";
@@ -33,7 +33,7 @@ export interface ChatPanelProps {
   renderSystemMessage?: (msg: ChatMessage) => ReactNode | undefined;
   renderUserMessage?: (msg: ChatMessage) => ReactNode | undefined;
   afterMessages?: ReactNode;
-  renderTurnSummary?: (tools: ToolEntry[]) => ReactNode;
+  renderTurnSummary?: ChatMessagesProps["renderTurnSummary"];
   onOpenLink?: (url: string) => void;
   renderLink?: ChatMessagesProps["renderLink"];
   composerOverride?: ReactNode;

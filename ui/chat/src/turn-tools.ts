@@ -1,11 +1,16 @@
 import type { ChatStatus } from "./chat-panel-types";
-import type { ChatMessage, ToolEntry } from "./feed-to-messages";
+import type { ChatMessage, FileChangeEntry, ToolEntry } from "./feed-to-messages";
 
-export function computeTurnEndTools(
+export interface TurnEndSummary {
+  tools: ToolEntry[];
+  fileChanges: FileChangeEntry[];
+}
+
+export function computeTurnEndSummary(
   messages: ChatMessage[],
   status: ChatStatus,
-): Map<number, ToolEntry[]> {
-  const result = new Map<number, ToolEntry[]>();
+): Map<number, TurnEndSummary> {
+  const summaries = new Map<number, TurnEndSummary>();
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
     if (msg.from !== "assistant") continue;
@@ -13,12 +18,14 @@ export function computeTurnEndTools(
     const isEndOfTurn = next ? next.from !== "assistant" : status === "ready";
     if (!isEndOfTurn) continue;
     const tools: ToolEntry[] = [];
+    const fileChanges: FileChangeEntry[] = [];
     for (let j = i; j >= 0; j--) {
       const m = messages[j];
       if (m.from !== "assistant") break;
       tools.unshift(...m.tools);
+      fileChanges.unshift(...m.fileChanges);
     }
-    result.set(i, tools);
+    summaries.set(i, { tools, fileChanges });
   }
-  return result;
+  return summaries;
 }

@@ -147,6 +147,19 @@ pub enum ContentBlock {
     Unknown,
 }
 
+/// Visible files created or modified during a session.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct FileChanges {
+    pub created: Vec<String>,
+    pub modified: Vec<String>,
+}
+
+impl FileChanges {
+    pub fn is_empty(&self) -> bool {
+        self.created.is_empty() && self.modified.is_empty()
+    }
+}
+
 /// Processed feed items for rendering in the UI.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "feed_type", content = "data", rename_all = "snake_case")]
@@ -176,6 +189,8 @@ pub enum FeedItem {
         cost_usd: Option<f64>,
         duration_ms: Option<u64>,
     },
+    /// Visible files created or changed during the session.
+    FileChanges(FileChanges),
 }
 
 /// In-memory buffer for a live session's feed items.

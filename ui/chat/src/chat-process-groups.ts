@@ -32,6 +32,7 @@ function contentOnly(message: ChatMessage): ChatMessage {
     key: `${message.key}-content`,
     reasoning: undefined,
     tools: [],
+    fileChanges: [],
   };
 }
 
