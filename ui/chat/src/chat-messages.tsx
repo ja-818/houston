@@ -6,7 +6,6 @@
 
 import { useMemo } from "react";
 import type { ReactNode } from "react";
-import { FilesIcon } from "lucide-react";
 import {
   Conversation,
   ConversationAutoScroll,
@@ -19,13 +18,12 @@ import {
   MessageResponse,
 } from "./ai-elements/message";
 import type { RenderLinkProps } from "./ai-elements/message";
-import {
-  Reasoning,
-  ReasoningContent,
-  ReasoningTrigger,
-} from "./ai-elements/reasoning";
-import { ToolsAndCards } from "./chat-helpers";
+import type { ReasoningTriggerProps } from "./ai-elements/reasoning";
 import type { ToolsAndCardsProps } from "./chat-helpers";
+import { ChatProcessBlock } from "./chat-process-block";
+import type { ChatProcessLabels } from "./chat-process-block";
+import { getChatDisplayItems } from "./chat-process-groups";
+import { computeTurnEndTools } from "./turn-tools";
 import type { ChatMessage, ToolEntry } from "./feed-to-messages";
 
 export interface ChatMessagesProps {
@@ -39,6 +37,8 @@ export interface ChatMessagesProps {
   toolLabels?: ToolsAndCardsProps["toolLabels"];
   isSpecialTool?: ToolsAndCardsProps["isSpecialTool"];
   renderToolResult?: ToolsAndCardsProps["renderToolResult"];
+  processLabels?: ChatProcessLabels;
+  getThinkingMessage?: ReasoningTriggerProps["getThinkingMessage"];
   renderMessageAvatar?: (msg: ChatMessage) => ReactNode | undefined;
   renderTurnSummary?: (tools: ToolEntry[]) => ReactNode;
   /** Custom renderer for system messages. Return a node to replace the default,
@@ -60,33 +60,6 @@ export interface ChatMessagesProps {
   renderLink?: (props: RenderLinkProps) => ReactNode;
 }
 
-/**
- * Build a map of message-index -> aggregated tools for that turn. Only set
- * on the *last* assistant message of a *complete* turn (next message is
- * non-assistant, OR it's the final message and the chat status is "ready").
- */
-function computeTurnEndTools(
-  messages: ChatMessage[],
-  status: "ready" | "streaming" | "submitted",
-): Map<number, ToolEntry[]> {
-  const result = new Map<number, ToolEntry[]>();
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i];
-    if (msg.from !== "assistant") continue;
-    const next = messages[i + 1];
-    const isEndOfTurn = next ? next.from !== "assistant" : status === "ready";
-    if (!isEndOfTurn) continue;
-    const tools: ToolEntry[] = [];
-    for (let j = i; j >= 0; j--) {
-      const m = messages[j];
-      if (m.from !== "assistant") break;
-      tools.unshift(...m.tools);
-    }
-    result.set(i, tools);
-  }
-  return result;
-}
-
 export function ChatMessages({
   messages,
   status,
@@ -95,6 +68,8 @@ export function ChatMessages({
   toolLabels,
   isSpecialTool,
   renderToolResult,
+  processLabels,
+  getThinkingMessage,
   renderMessageAvatar,
   renderTurnSummary,
   renderSystemMessage,
@@ -107,11 +82,46 @@ export function ChatMessages({
     () => computeTurnEndTools(messages, status),
     [messages, status],
   );
+  const displayItems = useMemo(
+    () => getChatDisplayItems(messages, status),
+    [messages, status],
+  );
   return (
     <Conversation className="flex-1 min-h-0">
       <ConversationAutoScroll status={status} />
       <ConversationContent className="max-w-3xl mx-auto">
-        {messages.map((msg, idx) => {
+        {displayItems.map((item) => {
+          if (item.kind === "process") {
+            return (
+              <Message
+                from="assistant"
+                key={item.key}
+                className="-my-6"
+                avatar={renderMessageAvatar?.(item.segments[0].message)}
+              >
+                <div>
+                  <ChatProcessBlock
+                    segments={item.segments}
+                    isActive={item.isActive}
+                    labels={processLabels}
+                    toolLabels={toolLabels}
+                    isSpecialTool={isSpecialTool}
+                    renderToolResult={renderToolResult}
+                    getThinkingMessage={getThinkingMessage}
+                  />
+                  {(() => {
+                    if (!item.isTrailing || item.isActive || !renderTurnSummary) return null;
+                    const turnTools = turnEndTools.get(item.sourceIndex);
+                    if (!turnTools) return null;
+                    return renderTurnSummary(turnTools);
+                  })()}
+                </div>
+              </Message>
+            );
+          }
+
+          const msg = item.message;
+          const idx = item.sourceIndex;
           if (msg.from === "system") {
             const custom = renderSystemMessage?.(msg);
             if (custom !== undefined) return <div key={msg.key}>{custom}</div>;
@@ -128,26 +138,6 @@ export function ChatMessages({
           return (
             <Message from={msg.from} key={msg.key} avatar={renderMessageAvatar?.(msg)}>
               <div>
-                {msg.reasoning && (
-                  <Reasoning
-                    isStreaming={msg.reasoning.isStreaming && isLastMsg}
-                    defaultOpen={msg.reasoning.isStreaming && isLastMsg}
-                  >
-                    <ReasoningTrigger />
-                    <ReasoningContent>
-                      {msg.reasoning.content}
-                    </ReasoningContent>
-                  </Reasoning>
-                )}
-                {msg.tools.length > 0 && (
-                  <ToolsAndCards
-                    tools={msg.tools}
-                    isStreaming={streaming}
-                    toolLabels={toolLabels}
-                    isSpecialTool={isSpecialTool}
-                    renderToolResult={renderToolResult}
-                  />
-                )}
                 {msg.content && (() => {
                   if (msg.from === "user" && renderUserMessage) {
                     const custom = renderUserMessage(msg);
@@ -191,32 +181,5 @@ export function ChatMessages({
       </ConversationContent>
       <ConversationScrollButton />
     </Conversation>
-  );
-}
-
-export interface ChatDropOverlayProps {
-  visible: boolean;
-}
-
-export function ChatDropOverlay({ visible }: ChatDropOverlayProps) {
-  if (!visible) return null;
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-white/80 backdrop-blur-sm"
-      aria-hidden="true"
-    >
-      <div className="flex w-full max-w-sm flex-col items-center gap-3 px-6 text-center -translate-y-12">
-        <FilesIcon
-          className="size-8 text-muted-foreground"
-          strokeWidth={1.5}
-        />
-        <div className="text-2xl font-semibold tracking-tight text-foreground">
-          Add anything
-        </div>
-        <p className="text-sm/relaxed text-muted-foreground">
-          Drop your files in here to add it to the conversation
-        </p>
-      </div>
-    </div>
   );
 }

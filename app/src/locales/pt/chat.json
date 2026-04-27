@@ -25,6 +25,10 @@
     "thoughtFor": "Pensou por {{count}} segundos",
     "thoughtForFew": "Pensou por alguns segundos"
   },
+  "process": {
+    "active": "Missão em andamento...",
+    "complete": "Registro da missão"
+  },
   "filesUpdated_one": "1 arquivo atualizado",
   "filesUpdated_other": "{{count}} arquivos atualizados"
 }

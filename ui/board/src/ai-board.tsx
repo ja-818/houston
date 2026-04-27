@@ -3,7 +3,7 @@ import { createPortal } from "react-dom"
 import type { ReactNode } from "react"
 
 import { ChatPanel } from "@houston-ai/chat"
-import type { FeedItem, ToolsAndCardsProps } from "@houston-ai/chat"
+import type { ChatPanelProps, FeedItem, ToolsAndCardsProps } from "@houston-ai/chat"
 import { SplitView } from "@houston-ai/layout"
 import { KanbanBoard } from "./kanban-board"
 import { KanbanDetailPanel } from "./kanban-detail-panel"
@@ -58,6 +58,10 @@ export interface AIBoardProps {
   isSpecialTool?: ToolsAndCardsProps["isSpecialTool"]
   /** Custom renderer for special tool results. */
   renderToolResult?: ToolsAndCardsProps["renderToolResult"]
+  /** Translated labels for the collapsed process/details block. */
+  processLabels?: ChatPanelProps["processLabels"]
+  /** Translated reasoning text inside the process/details block. */
+  getThinkingMessage?: ChatPanelProps["getThinkingMessage"]
   /** Custom tool name → human label mappings. */
   toolLabels?: ToolsAndCardsProps["toolLabels"]
   /** Render prop for an end-of-turn summary (e.g., list of edited files). Forwarded to ChatPanel. */
@@ -153,6 +157,8 @@ export function AIBoard({
   onDraftChange,
   isSpecialTool,
   renderToolResult,
+  processLabels,
+  getThinkingMessage,
   toolLabels,
   renderTurnSummary,
   renderSystemMessage,
@@ -370,6 +376,8 @@ export function AIBoard({
           onValueChange={onDraftChange ? (text: string) => onDraftChange(activeDraftKey, text) : undefined}
           isSpecialTool={isSpecialTool}
           renderToolResult={renderToolResult}
+          processLabels={processLabels}
+          getThinkingMessage={getThinkingMessage}
           toolLabels={toolLabels}
           renderTurnSummary={renderTurnSummary}
           renderSystemMessage={renderSystemMessage}

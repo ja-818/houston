@@ -58,6 +58,7 @@ import { SkillCard } from "./skill-card";
 import { NewMissionPickerDialog } from "./new-mission-picker-dialog";
 import { UserActionMessage } from "./user-action-message";
 import { ProviderReconnectCard } from "./shell/provider-reconnect-card";
+import { useChatDisplayLabels } from "./use-chat-display-labels";
 import {
   filterProviderAuthFeedItems,
   isProviderAuthMessage,
@@ -91,6 +92,8 @@ interface AgentChatPanelProps {
   /** Forwarded to AIBoard / ChatPanel for tool rendering. */
   isSpecialTool: ChatPanelProps["isSpecialTool"];
   renderToolResult: ChatPanelProps["renderToolResult"];
+  processLabels: ChatPanelProps["processLabels"];
+  getThinkingMessage: ChatPanelProps["getThinkingMessage"];
   renderTurnSummary: ChatPanelProps["renderTurnSummary"];
   renderSystemMessage: AIBoardProps["renderSystemMessage"];
   mapFeedItems: AIBoardProps["mapFeedItems"];
@@ -114,6 +117,7 @@ export function useAgentChatPanel({
   onSelectSession,
 }: UseAgentChatPanelArgs): AgentChatPanelProps {
   const { t } = useTranslation("board");
+  const { processLabels, getThinkingMessage } = useChatDisplayLabels();
   const queryClient = useQueryClient();
 
   const path = agent?.folderPath ?? null;
@@ -436,6 +440,8 @@ export function useAgentChatPanel({
     renderUserMessage,
     isSpecialTool,
     renderToolResult,
+    processLabels,
+    getThinkingMessage,
     renderTurnSummary,
     renderSystemMessage,
     mapFeedItems,

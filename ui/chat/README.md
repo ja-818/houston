@@ -1,6 +1,6 @@
 # @houston-ai/chat
 
-Full-featured AI chat interface. Streaming markdown, thinking blocks, tool activity, prompt input -- one component or pick individual pieces.
+Full-featured AI chat interface. Streaming markdown, grouped technical details, prompt input -- one component or pick individual pieces.
 
 ## Install
 
@@ -34,6 +34,8 @@ import "@houston-ai/chat/src/styles.css"
 ## How it works
 
 `ChatPanel` accepts an array of `FeedItem` discriminated unions (user messages, assistant text, thinking, tool calls, tool results, final results) and renders the full conversation. Status is derived automatically from the feed, or you can override it.
+
+Thinking and tool activity are grouped into a single technical-details accordion per assistant turn. The active group stays open while work is happening, then collapses when the assistant returns user-facing text or the session becomes ready.
 
 The AI Elements are composable -- use `ChatPanel` for the batteries-included experience, or build your own layout with the primitives.
 

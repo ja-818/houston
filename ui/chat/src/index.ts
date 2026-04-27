@@ -159,6 +159,7 @@ export type { SuggestionsProps, SuggestionProps } from "./ai-elements/suggestion
 // === Chat Components ===
 export { ChatPanel } from "./chat-panel";
 export type { ChatPanelProps } from "./chat-panel";
+export type { ChatProcessLabels } from "./chat-process-block";
 
 export { ChatInput } from "./chat-input";
 export type { ChatInputProps } from "./chat-input";

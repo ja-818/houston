@@ -23,6 +23,7 @@ import { analytics } from "../../lib/analytics";
 import type { TabProps } from "../../lib/types";
 import { HoustonThinkingIndicator } from "../shell/experience-card";
 import { ChatModelSelector } from "../chat-model-selector";
+import { useChatDisplayLabels } from "../use-chat-display-labels";
 import { getDefaultModel } from "../../lib/providers";
 import { ProviderReconnectCard } from "../shell/provider-reconnect-card";
 import {
@@ -33,6 +34,7 @@ import {
 
 export default function ChatTab({ agent }: TabProps) {
   const { t } = useTranslation("chat");
+  const { processLabels, getThinkingMessage } = useChatDisplayLabels();
   const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(agent.folderPath);
   // Free-form chat tab gets its own UUID-scoped session key per agent.
   // Must be stable across renders so streaming events land in the same bucket.
@@ -201,6 +203,8 @@ export default function ChatTab({ agent }: TabProps) {
         renderLink={renderLink}
         isSpecialTool={isSpecialTool}
         renderToolResult={renderToolResult}
+        processLabels={processLabels}
+        getThinkingMessage={getThinkingMessage}
         renderTurnSummary={renderTurnSummary}
         renderSystemMessage={(msg) => {
           if (isProviderAuthMessage(msg.content)) {

@@ -25,6 +25,10 @@
     "thoughtFor": "Thought for {{count}} seconds",
     "thoughtForFew": "Thought for a few seconds"
   },
+  "process": {
+    "active": "Mission in progress...",
+    "complete": "Mission log"
+  },
   "filesUpdated_one": "1 file updated",
   "filesUpdated_other": "{{count}} files updated"
 }

@@ -1,0 +1,40 @@
+import type { ReactNode } from "react";
+import type { ToolsAndCardsProps } from "./chat-helpers";
+import type { ChatMessagesProps } from "./chat-messages";
+import type { ChatMessage, ToolEntry } from "./feed-to-messages";
+import type { FeedItem } from "./types";
+
+export type ChatStatus = "ready" | "streaming" | "submitted";
+
+export interface ChatPanelProps {
+  sessionKey: string;
+  feedItems: FeedItem[];
+  onSend: (text: string, files: File[]) => void;
+  onStop?: () => void;
+  onBack?: () => void;
+  isLoading: boolean;
+  placeholder?: string;
+  emptyState?: ReactNode;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  attachments?: File[];
+  onAttachmentsChange?: (files: File[]) => void;
+  onNotice?: (message: string) => void;
+  footer?: ReactNode;
+  status?: ChatStatus;
+  thinkingIndicator?: ReactNode;
+  transformContent?: (content: string) => { content: string; extra?: ReactNode };
+  toolLabels?: ToolsAndCardsProps["toolLabels"];
+  isSpecialTool?: ToolsAndCardsProps["isSpecialTool"];
+  renderToolResult?: ToolsAndCardsProps["renderToolResult"];
+  processLabels?: ChatMessagesProps["processLabels"];
+  getThinkingMessage?: ChatMessagesProps["getThinkingMessage"];
+  renderMessageAvatar?: (msg: ChatMessage) => ReactNode | undefined;
+  renderSystemMessage?: (msg: ChatMessage) => ReactNode | undefined;
+  renderUserMessage?: (msg: ChatMessage) => ReactNode | undefined;
+  afterMessages?: ReactNode;
+  renderTurnSummary?: (tools: ToolEntry[]) => ReactNode;
+  onOpenLink?: (url: string) => void;
+  renderLink?: ChatMessagesProps["renderLink"];
+  composerOverride?: ReactNode;
+}
