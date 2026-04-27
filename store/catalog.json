@@ -84,7 +84,7 @@
     {
       "id": "legal",
       "name": "Legal",
-      "description": "Your full-stack AI Legal operator for solo founders at week 0  -  Delaware C-corp, Stripe, Google Workspace, no retained law firm. One agent that covers contracts, compliance (privacy / subprocessors / DSR), entity (Delaware franchise tax, board consent, 409A, 83(b)), IP (trademark knockout), and advisory (do-I-need-X memos, escalation briefs for real counsel). No upfront onboarding  -  I ask for what I need as we work. Drafts only  -  I never file, sign, send, or post.",
+      "description": "Your full-stack legal operator for solo founders. One assistant that handles contracts, compliance (privacy, vendor list, customer data requests), entity work (Delaware filings, board decisions, 409A, 83(b)), trademark checks, and quick legal questions. No upfront setup, I ask for what I need as we work. Drafts only, I never file, sign, send, or post.",
       "category": "business",
       "author": "Houston",
       "tags": [
@@ -114,8 +114,8 @@
       "repo": "houston-store/legal",
       "installs": 0,
       "registered_at": "2026-04-26",
-      "version": "0.1.4",
-      "content_hash": "f3f0a412ac35084d413ebd549878eabec39d4261c3f2f465d0fc0ed108df7dc1",
+      "version": "0.2.1",
+      "content_hash": "609876ff092b9f62186ddeb113a70385fd510c26816ded0895a5482d159a6d88",
       "bundled": true
     },
     {

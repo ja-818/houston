@@ -2,12 +2,284 @@ use super::StoreListing;
 use crate::error::{CoreError, CoreResult};
 use crate::workspaces;
 use serde::Deserialize;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Deserialize)]
 struct BundledCatalog {
     agents: Vec<StoreListing>,
+}
+
+/// One step in a bundled package's migration history. Captures the
+/// renames (and removals, in the future) that happened between two
+/// published versions of the same agent. Authors hand-write these in
+/// `store/agents/<id>/.migrations.json` whenever a published release
+/// renames or drops a packaged Action.
+///
+/// Example file:
+/// ```json
+/// [
+///   {
+///     "from": "0.1.4",
+///     "to": "0.2.0",
+///     "renames": {
+///       "respond-to-a-dsr-without-missing-the-clock":
+///         "answer-a-customer-data-request"
+///     }
+///   }
+/// ]
+/// ```
+///
+/// We apply these to user workspace-agent instances so existing
+/// installs converge to the new slug layout instead of accumulating
+/// old + new copies.
+#[derive(Deserialize, Debug, Clone)]
+pub(super) struct Migration {
+    /// Version this step migrates *from*. Currently informational —
+    /// included so authors document the chain end-to-end and so future
+    /// strict-chain validation can opt in. The active selection logic
+    /// uses `to` against the workspace's last-synced version.
+    #[allow(dead_code)]
+    pub from: String,
+    pub to: String,
+    #[serde(default)]
+    pub renames: BTreeMap<String, String>,
+}
+
+/// Read `<bundled-agent>/.migrations.json` if present. Missing file is
+/// not an error — it just means no migrations have been authored yet.
+pub(super) fn read_migrations(bundled_agent_dir: &Path) -> CoreResult<Vec<Migration>> {
+    let path = bundled_agent_dir.join(".migrations.json");
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let body = fs::read_to_string(&path)?;
+    let migrations: Vec<Migration> = serde_json::from_str(&body).map_err(|e| {
+        CoreError::Internal(format!(
+            ".migrations.json invalid in {}: {e}",
+            path.display()
+        ))
+    })?;
+    Ok(migrations)
+}
+
+/// Apply a single rename step to a workspace agent's `.agents/skills/`
+/// directory. Returns the number of skill folders changed (renamed or
+/// deleted). The old slug is no longer in the bundled package — it's
+/// orphaned, and every cross-reference (e.g. `Use the <X> skill` in
+/// other prompts, `data-schema.md` columns) points to the new slug,
+/// so leaving the old one alive only clutters the picker.
+///
+/// Three cases:
+/// 1. Old exists, new doesn't → rename old → new and rewrite the
+///    `name:` frontmatter so the directory and slug agree. The user's
+///    body content is preserved. The metadata refresh step that runs
+///    after this updates the rest of the frontmatter from the
+///    bundled package.
+/// 2. Old exists, new exists too → delete old. This happens when a
+///    workspace synced the new slug in a previous pass (before the
+///    `.migrations.json` shipped) and now has both. The old one is
+///    orphaned dead weight; the new one is what the agent actually
+///    uses.
+/// 3. Old absent → no-op. Migration is idempotent across reruns.
+pub(super) fn apply_rename_step(
+    workspace_skills_dir: &Path,
+    renames: &BTreeMap<String, String>,
+) -> CoreResult<usize> {
+    if !workspace_skills_dir.exists() || renames.is_empty() {
+        return Ok(0);
+    }
+    let mut applied = 0;
+    for (from_slug, to_slug) in renames {
+        if from_slug == to_slug {
+            continue;
+        }
+        let from_path = workspace_skills_dir.join(from_slug);
+        let to_path = workspace_skills_dir.join(to_slug);
+        if !from_path.exists() {
+            continue;
+        }
+        if to_path.exists() {
+            // Both old and new copies exist. Drop the old one — the
+            // bundled package no longer contains it and every
+            // cross-reference points at the new slug, so keeping the
+            // old around just adds a duplicate card to the picker.
+            tracing::info!(
+                "[store] removing orphaned old skill {} (new {} already present) in {}",
+                from_slug,
+                to_slug,
+                workspace_skills_dir.display()
+            );
+            fs::remove_dir_all(&from_path)?;
+            applied += 1;
+            continue;
+        }
+        fs::rename(&from_path, &to_path)?;
+        // The renamed directory still has the old SKILL.md with
+        // `name: <old-slug>` inside. Rewrite the `name:` line so the
+        // slug, directory, and frontmatter all agree. The body stays
+        // exactly as the user (or a previous sync) had it;
+        // sync_existing_skill_metadata refreshes the rest of the
+        // frontmatter on the same pass.
+        fix_skill_name_field(&to_path, to_slug)?;
+        applied += 1;
+    }
+    Ok(applied)
+}
+
+/// Rewrite just the `name:` frontmatter field of a moved skill so it
+/// matches its new directory slug. Preserves the rest of the file
+/// byte-for-byte; `sync_existing_skill_metadata` handles the wider
+/// metadata refresh on the same pass.
+fn fix_skill_name_field(skill_dir: &Path, slug: &str) -> CoreResult<()> {
+    let skill_md = skill_dir.join("SKILL.md");
+    if !skill_md.exists() {
+        return Ok(());
+    }
+    let body = fs::read_to_string(&skill_md)?;
+    let mut out = String::with_capacity(body.len());
+    let mut in_frontmatter = false;
+    let mut delim_seen = 0;
+    let mut rewrote = false;
+    for line in body.split_inclusive('\n') {
+        if !rewrote && delim_seen < 2 && line.trim_end() == "---" {
+            in_frontmatter = !in_frontmatter || delim_seen == 0;
+            delim_seen += 1;
+            out.push_str(line);
+            continue;
+        }
+        if in_frontmatter && !rewrote {
+            if let Some(rest) = line.strip_prefix("name:") {
+                let _ = rest;
+                out.push_str(&format!("name: {slug}\n"));
+                rewrote = true;
+                continue;
+            }
+        }
+        out.push_str(line);
+    }
+    if rewrote && out != body {
+        let tmp = skill_md.with_file_name("SKILL.md.tmp");
+        fs::write(&tmp, out)?;
+        fs::rename(&tmp, &skill_md)?;
+    }
+    Ok(())
+}
+
+/// Workspace-side marker file recording which bundled-package version
+/// this workspace agent was last synced against. Lives at
+/// `<workspace-agent>/.houston/bundled-package.json`. Reading it lets
+/// the next sync pass know which migration steps still need applying.
+const BUNDLED_PACKAGE_MARKER: &str = ".houston/bundled-package.json";
+
+#[derive(Deserialize, Default)]
+struct BundledPackageMarker {
+    #[serde(default)]
+    version: Option<String>,
+}
+
+fn read_bundled_marker_version(workspace_agent_dir: &Path) -> Option<String> {
+    let path = workspace_agent_dir.join(BUNDLED_PACKAGE_MARKER);
+    let body = fs::read_to_string(&path).ok()?;
+    let marker: BundledPackageMarker = serde_json::from_str(&body).ok()?;
+    marker.version
+}
+
+fn write_bundled_marker_version(
+    workspace_agent_dir: &Path,
+    version: &str,
+) -> CoreResult<()> {
+    let path = workspace_agent_dir.join(BUNDLED_PACKAGE_MARKER);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let body = serde_json::json!({
+        "version": version,
+        "synced_at": chrono::Utc::now().to_rfc3339(),
+    });
+    let tmp = path.with_extension("json.tmp");
+    fs::write(&tmp, serde_json::to_string_pretty(&body)?)?;
+    fs::rename(&tmp, &path)?;
+    Ok(())
+}
+
+/// Read `version` from the agent definition's `.source.json` (the file
+/// `install_bundled_agent` writes). Used as the "current bundled version"
+/// when picking which migration steps to apply during sync.
+fn read_definition_version(agents_dir: &Path, agent_id: &str) -> Option<String> {
+    let source_path = agents_dir.join(agent_id).join(".source.json");
+    let body = fs::read_to_string(source_path).ok()?;
+    let source: serde_json::Value = serde_json::from_str(&body).ok()?;
+    source
+        .get("version")
+        .and_then(|v| v.as_str())
+        .map(ToOwned::to_owned)
+}
+
+/// Pick the migration steps that need to run, given (a) the workspace
+/// agent's last-recorded synced version, and (b) the current bundled
+/// version. Migrations are applied in order; each step's `from` must be
+/// strictly older than the current target.
+///
+/// When the workspace has no recorded version (older installs from
+/// before this marker existed), we apply every migration whose `from`
+/// version is older than the current bundled version. The rename
+/// helpers are no-ops on already-current workspaces, so this is safe.
+fn migrations_to_apply<'a>(
+    migrations: &'a [Migration],
+    last_synced: Option<&str>,
+    target: &str,
+) -> Vec<&'a Migration> {
+    migrations
+        .iter()
+        .filter(|m| {
+            // Always skip steps not yet released into the target.
+            if !version_lte(&m.to, target) {
+                return false;
+            }
+            match last_synced {
+                Some(prev) => version_lt(prev, &m.to),
+                None => true,
+            }
+        })
+        .collect()
+}
+
+/// Lightweight semver-ish ordering for the dotted decimal versions
+/// we use in `houston.json` / `catalog.json`. Treats missing trailing
+/// components as zero. Avoids pulling in a full semver crate for
+/// what's effectively `0.x.y` strings.
+fn version_lt(a: &str, b: &str) -> bool {
+    cmp_versions(a, b) == std::cmp::Ordering::Less
+}
+
+fn version_lte(a: &str, b: &str) -> bool {
+    matches!(
+        cmp_versions(a, b),
+        std::cmp::Ordering::Less | std::cmp::Ordering::Equal
+    )
+}
+
+fn cmp_versions(a: &str, b: &str) -> std::cmp::Ordering {
+    let a_parts: Vec<u32> = a
+        .split('.')
+        .map(|p| p.parse().unwrap_or(0))
+        .collect();
+    let b_parts: Vec<u32> = b
+        .split('.')
+        .map(|p| p.parse().unwrap_or(0))
+        .collect();
+    let len = a_parts.len().max(b_parts.len());
+    for i in 0..len {
+        let av = a_parts.get(i).copied().unwrap_or(0);
+        let bv = b_parts.get(i).copied().unwrap_or(0);
+        match av.cmp(&bv) {
+            std::cmp::Ordering::Equal => continue,
+            other => return other,
+        }
+    }
+    std::cmp::Ordering::Equal
 }
 
 pub(super) fn bundled_catalog() -> CoreResult<Option<Vec<StoreListing>>> {
@@ -111,8 +383,14 @@ pub(super) fn sync_bundled_agent_instances(
     agents_dir: &Path,
     agent_id: &str,
 ) -> CoreResult<usize> {
-    let packaged_skills = agents_dir.join(agent_id).join(".agents").join("skills");
+    let agent_dir = agents_dir.join(agent_id);
+    let packaged_skills = agent_dir.join(".agents").join("skills");
     let has_packaged_skills = packaged_skills.exists();
+
+    // Migrations declared by the bundled package. Empty list when no
+    // `.migrations.json` exists, which is the common case.
+    let migrations = read_migrations(&agent_dir)?;
+    let target_version = read_definition_version(agents_dir, agent_id);
 
     let mut changed = 0;
     for workspace in workspaces::read_all(docs_dir)? {
@@ -140,6 +418,33 @@ pub(super) fn sync_bundled_agent_instances(
                 continue;
             }
             let mut instance_changed = false;
+
+            // 1. Apply rename / removal migrations BEFORE copying new
+            //    skills in. This way a renamed slug ends up at its new
+            //    name first; copy_missing_skill_dirs then sees the new
+            //    slug already present (preserving user-modified body)
+            //    instead of installing a fresh copy alongside the old.
+            if !migrations.is_empty() {
+                let last_synced = read_bundled_marker_version(&folder);
+                let target = target_version.as_deref().unwrap_or("");
+                let steps = migrations_to_apply(
+                    &migrations,
+                    last_synced.as_deref(),
+                    target,
+                );
+                if !steps.is_empty() {
+                    let workspace_skills = folder.join(".agents").join("skills");
+                    for step in steps {
+                        let renamed = apply_rename_step(&workspace_skills, &step.renames)?;
+                        if renamed > 0 {
+                            instance_changed = true;
+                        }
+                    }
+                }
+            }
+
+            // 2. Copy any net-new bundled skills, refresh metadata on
+            //    existing ones (preserves user-edited bodies).
             if has_packaged_skills {
                 let target = folder.join(".agents").join("skills");
                 if copy_missing_skill_dirs(&packaged_skills, &target)? {
@@ -149,6 +454,14 @@ pub(super) fn sync_bundled_agent_instances(
             if clear_seeded_intro_activity(&folder)? {
                 instance_changed = true;
             }
+
+            // 3. Stamp the marker so the next sync starts from this
+            //    version. Always write when we know the target version
+            //    so older installs without a marker get one created.
+            if let Some(target) = target_version.as_deref() {
+                let _ = write_bundled_marker_version(&folder, target);
+            }
+
             if instance_changed {
                 changed += 1;
             }
@@ -740,5 +1053,361 @@ User customized body
             rest = &rest[end + 2..];
         }
         placeholders
+    }
+
+    // ── Migration tests ───────────────────────────────────────────────
+
+    #[test]
+    fn version_ordering_handles_dotted_decimals() {
+        assert!(version_lt("0.1.4", "0.2.0"));
+        assert!(version_lt("0.1.4", "0.1.5"));
+        assert!(version_lt("0.1.4", "0.1.4.1"));
+        assert!(!version_lt("0.2.0", "0.1.4"));
+        assert!(!version_lt("1.0.0", "1.0.0"));
+        assert!(version_lte("0.1.4", "0.2.0"));
+        assert!(version_lte("1.0.0", "1.0.0"));
+        assert!(!version_lte("0.2.0", "0.1.4"));
+    }
+
+    #[test]
+    fn migrations_to_apply_skips_already_synced_steps() {
+        let migrations = vec![
+            Migration {
+                from: "0.1.0".into(),
+                to: "0.1.5".into(),
+                renames: BTreeMap::new(),
+            },
+            Migration {
+                from: "0.1.5".into(),
+                to: "0.2.0".into(),
+                renames: BTreeMap::new(),
+            },
+            Migration {
+                from: "0.2.0".into(),
+                to: "0.3.0".into(),
+                renames: BTreeMap::new(),
+            },
+        ];
+        // Workspace last synced at 0.1.5: skip the 0.1.0→0.1.5 step,
+        // apply 0.1.5→0.2.0 and 0.2.0→0.3.0.
+        let steps = migrations_to_apply(&migrations, Some("0.1.5"), "0.3.0");
+        assert_eq!(steps.len(), 2);
+        assert_eq!(steps[0].to, "0.2.0");
+        assert_eq!(steps[1].to, "0.3.0");
+    }
+
+    #[test]
+    fn migrations_to_apply_caps_at_target_version() {
+        let migrations = vec![
+            Migration {
+                from: "0.1.0".into(),
+                to: "0.2.0".into(),
+                renames: BTreeMap::new(),
+            },
+            Migration {
+                from: "0.2.0".into(),
+                to: "0.3.0".into(),
+                renames: BTreeMap::new(),
+            },
+        ];
+        // Target only 0.2.0: should not pick up the 0.2.0→0.3.0 step.
+        let steps = migrations_to_apply(&migrations, Some("0.1.0"), "0.2.0");
+        assert_eq!(steps.len(), 1);
+        assert_eq!(steps[0].to, "0.2.0");
+    }
+
+    #[test]
+    fn migrations_to_apply_with_no_marker_runs_all_relevant_steps() {
+        let migrations = vec![Migration {
+            from: "0.1.4".into(),
+            to: "0.2.0".into(),
+            renames: BTreeMap::new(),
+        }];
+        // Workspace has no marker yet (older install). Target is 0.2.0.
+        // We apply the step.
+        let steps = migrations_to_apply(&migrations, None, "0.2.0");
+        assert_eq!(steps.len(), 1);
+    }
+
+    #[test]
+    fn apply_rename_step_renames_directory_and_fixes_name_field() {
+        let dir = TempDir::new().unwrap();
+        let skills = dir.path();
+        let old = skills.join("old-slug");
+        fs::create_dir_all(&old).unwrap();
+        fs::write(
+            old.join("SKILL.md"),
+            "---\nname: old-slug\ndescription: a thing\nversion: 1\ntags: []\n---\n\n# Body\n",
+        )
+        .unwrap();
+
+        let mut renames = BTreeMap::new();
+        renames.insert("old-slug".into(), "new-slug".into());
+        let applied = apply_rename_step(skills, &renames).unwrap();
+
+        assert_eq!(applied, 1);
+        assert!(!skills.join("old-slug").exists());
+        assert!(skills.join("new-slug").exists());
+        let body = fs::read_to_string(skills.join("new-slug/SKILL.md")).unwrap();
+        assert!(body.contains("name: new-slug"));
+        assert!(!body.contains("name: old-slug"));
+    }
+
+    #[test]
+    fn apply_rename_step_deletes_old_when_target_already_exists() {
+        let dir = TempDir::new().unwrap();
+        let skills = dir.path();
+        let old = skills.join("old-slug");
+        let new = skills.join("new-slug");
+        fs::create_dir_all(&old).unwrap();
+        fs::create_dir_all(&new).unwrap();
+        fs::write(
+            old.join("SKILL.md"),
+            "---\nname: old-slug\ndescription: x\n---\nold body",
+        )
+        .unwrap();
+        fs::write(
+            new.join("SKILL.md"),
+            "---\nname: new-slug\ndescription: y\n---\nnew body",
+        )
+        .unwrap();
+
+        let mut renames = BTreeMap::new();
+        renames.insert("old-slug".into(), "new-slug".into());
+        let applied = apply_rename_step(skills, &renames).unwrap();
+
+        // Both already exist. The old one is orphaned (bundled
+        // package no longer ships it, every cross-reference points
+        // at the new slug). Delete it so the picker stops showing
+        // the duplicate card.
+        assert_eq!(applied, 1);
+        assert!(!skills.join("old-slug").exists());
+        assert!(skills.join("new-slug").exists());
+        // The new slug's body must be untouched.
+        let new_body = fs::read_to_string(skills.join("new-slug/SKILL.md")).unwrap();
+        assert!(new_body.contains("new body"));
+    }
+
+    #[test]
+    fn sync_applies_rename_migration_and_writes_marker() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let store = TempDir::new().unwrap();
+        let agents = TempDir::new().unwrap();
+        let docs = TempDir::new().unwrap();
+
+        // 1. Bundled v0.1.4 ships with `old-slug`.
+        write_bundled_agent_with_skills(
+            store.path(),
+            "demo",
+            "0.1.4",
+            &[("old-slug", "old body")],
+            None,
+        );
+        write_catalog(store.path(), "demo", "0.1.4", "hash-v1");
+        std::env::set_var("HOUSTON_STORE_DIR", store.path());
+        install_bundled_agent(agents.path(), "demo", Some("demo")).unwrap();
+
+        // 2. User creates a workspace agent and tweaks the body.
+        let ws = workspaces::create(
+            docs.path(),
+            CreateWorkspace {
+                name: "Acme".into(),
+                provider: None,
+                model: None,
+            },
+        )
+        .unwrap();
+        agents_crud::create(
+            docs.path(),
+            &ws.id,
+            CreateAgent {
+                name: "Ops".into(),
+                config_id: "demo".into(),
+                color: None,
+                claude_md: None,
+                installed_path: Some(agents.path().join("demo").to_string_lossy().to_string()),
+                seeds: None,
+                existing_path: None,
+            },
+        )
+        .unwrap();
+        let user_skill = docs.path().join("Acme/Ops/.agents/skills/old-slug/SKILL.md");
+        fs::write(
+            &user_skill,
+            "---\nname: old-slug\ndescription: my edits\n---\nuser edited body",
+        )
+        .unwrap();
+
+        // 3. Bundled jumps to v0.2.0: same skill renamed to `new-slug`,
+        //    declared in `.migrations.json`.
+        fs::remove_dir_all(store.path().join("agents/demo")).unwrap();
+        let migrations = r#"[
+  {"from": "0.1.4", "to": "0.2.0", "renames": {"old-slug": "new-slug"}}
+]"#;
+        write_bundled_agent_with_skills(
+            store.path(),
+            "demo",
+            "0.2.0",
+            &[("new-slug", "new bundled body")],
+            Some(migrations),
+        );
+        write_catalog(store.path(), "demo", "0.2.0", "hash-v2");
+        install_bundled_agent(agents.path(), "demo", Some("demo")).unwrap();
+
+        // 4. Sync.
+        let changed = sync_bundled_agent_instances(docs.path(), agents.path(), "demo").unwrap();
+
+        std::env::remove_var("HOUSTON_STORE_DIR");
+        assert_eq!(changed, 1, "workspace should report a sync change");
+        assert!(
+            !docs.path().join("Acme/Ops/.agents/skills/old-slug").exists(),
+            "old slug should have been renamed away"
+        );
+        let renamed_md = docs
+            .path()
+            .join("Acme/Ops/.agents/skills/new-slug/SKILL.md");
+        assert!(renamed_md.exists(), "new slug should be present");
+        let renamed_body = fs::read_to_string(&renamed_md).unwrap();
+        // The user-edited body content must still be in there.
+        assert!(
+            renamed_body.contains("user edited body"),
+            "user-edited body should be preserved across the rename"
+        );
+        // And the `name:` field must agree with the new slug.
+        assert!(renamed_body.contains("name: new-slug"));
+
+        // Marker recorded so the next sync skips the already-applied
+        // rename step.
+        let marker_body =
+            fs::read_to_string(docs.path().join("Acme/Ops/.houston/bundled-package.json"))
+                .expect("bundled-package.json should be written after sync");
+        assert!(marker_body.contains(r#""version": "0.2.0""#));
+    }
+
+    #[test]
+    fn sync_collapses_duplicates_when_workspace_already_synced_new_slug() {
+        // Reproduces the user-reported "75 actions in the picker" case:
+        // a workspace agent installed at v0.1.4 received the v0.2.0
+        // bundled-package update *before* `.migrations.json` shipped,
+        // so the new slug got copied alongside the old one. Now both
+        // exist. After the migration ships and sync runs, the old
+        // slug should disappear.
+        let _guard = ENV_LOCK.lock().unwrap();
+        let store = TempDir::new().unwrap();
+        let agents = TempDir::new().unwrap();
+        let docs = TempDir::new().unwrap();
+
+        write_bundled_agent_with_skills(
+            store.path(),
+            "demo",
+            "0.1.4",
+            &[("old-slug", "v1 body")],
+            None,
+        );
+        write_catalog(store.path(), "demo", "0.1.4", "hash-v1");
+        std::env::set_var("HOUSTON_STORE_DIR", store.path());
+        install_bundled_agent(agents.path(), "demo", Some("demo")).unwrap();
+
+        let ws = workspaces::create(
+            docs.path(),
+            CreateWorkspace {
+                name: "Acme".into(),
+                provider: None,
+                model: None,
+            },
+        )
+        .unwrap();
+        agents_crud::create(
+            docs.path(),
+            &ws.id,
+            CreateAgent {
+                name: "Ops".into(),
+                config_id: "demo".into(),
+                color: None,
+                claude_md: None,
+                installed_path: Some(agents.path().join("demo").to_string_lossy().to_string()),
+                seeds: None,
+                existing_path: None,
+            },
+        )
+        .unwrap();
+
+        // Simulate the buggy state we want to recover from: workspace
+        // has both `old-slug` (from v0.1.4 install) AND `new-slug`
+        // (copied in by the v0.2.0 update before the migration shipped).
+        let workspace_skills = docs.path().join("Acme/Ops/.agents/skills");
+        fs::create_dir_all(workspace_skills.join("new-slug")).unwrap();
+        fs::write(
+            workspace_skills.join("new-slug/SKILL.md"),
+            "---\nname: new-slug\ndescription: synced from bundled\nversion: 1\ntags: []\ninputs:\n  - name: x\n    label: X\nprompt_template: |\n  use {{x}}\n---\n\nnew body\n",
+        )
+        .unwrap();
+
+        // Now publish v0.2.0 with a `.migrations.json` that maps
+        // old-slug → new-slug.
+        fs::remove_dir_all(store.path().join("agents/demo")).unwrap();
+        let migrations = r#"[
+  {"from": "0.1.4", "to": "0.2.0", "renames": {"old-slug": "new-slug"}}
+]"#;
+        write_bundled_agent_with_skills(
+            store.path(),
+            "demo",
+            "0.2.0",
+            &[("new-slug", "new body")],
+            Some(migrations),
+        );
+        write_catalog(store.path(), "demo", "0.2.0", "hash-v2");
+        install_bundled_agent(agents.path(), "demo", Some("demo")).unwrap();
+
+        let changed = sync_bundled_agent_instances(docs.path(), agents.path(), "demo").unwrap();
+
+        std::env::remove_var("HOUSTON_STORE_DIR");
+        assert_eq!(changed, 1);
+        // The old slug should be gone.
+        assert!(
+            !workspace_skills.join("old-slug").exists(),
+            "old-slug should have been deleted as orphaned"
+        );
+        // The new slug should still be present.
+        assert!(workspace_skills.join("new-slug").exists());
+    }
+
+    fn write_bundled_agent_with_skills(
+        root: &Path,
+        id: &str,
+        version: &str,
+        skills: &[(&str, &str)],
+        migrations: Option<&str>,
+    ) {
+        let dir = root.join("agents").join(id);
+        fs::create_dir_all(dir.join(".agents/skills")).unwrap();
+        fs::write(
+            dir.join("houston.json"),
+            format!(
+                r#"{{
+  "id": "{id}",
+  "name": "Demo",
+  "description": "Demo agent",
+  "version": "{version}",
+  "tabs": [{{"id": "chat", "label": "Chat", "builtIn": "chat"}}]
+}}"#
+            ),
+        )
+        .unwrap();
+        fs::write(dir.join("CLAUDE.md"), "## Demo").unwrap();
+        for (slug, body) in skills {
+            let skill_dir = dir.join(".agents/skills").join(slug);
+            fs::create_dir_all(&skill_dir).unwrap();
+            fs::write(
+                skill_dir.join("SKILL.md"),
+                format!(
+                    "---\nname: {slug}\ndescription: a thing\nversion: 1\ntags: []\ninputs:\n  - name: x\n    label: X\nprompt_template: |\n  use {{{{x}}}}\n---\n\n{body}\n"
+                ),
+            )
+            .unwrap();
+        }
+        if let Some(migrations_body) = migrations {
+            fs::write(dir.join(".migrations.json"), migrations_body).unwrap();
+        }
     }
 }

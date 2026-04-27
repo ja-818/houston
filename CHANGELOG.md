@@ -27,10 +27,32 @@ only touch the engine note the engine crate version in parentheses.
   subscribe before firing sessions, feed-item streaming reducer, use
   `/v1/shell` with `open`/`xdg-open` for binary files until a
   first-class binary-read route lands
+- **System-prompt user-voice rules** — every agent now follows explicit
+  rules about how it talks to the user: no file/JSON/path/CLI/schema
+  mentions, no narration of how things are done, only surface missing
+  info or the result, short sentences in plain language. Lives in
+  `app/src-tauri/src/houston_prompt.rs::HOUSTON_SYSTEM_PROMPT`.
+- **Store-package migrations (`.migrations.json`).** Bundled packages
+  can now declare per-version rename steps so existing users converge
+  to new slugs on update instead of accumulating old-and-new copies
+  in their picker. Engine applies renames per-workspace on the next
+  sync, preserving each user's edited skill body content. Tracked via
+  a new `.houston/bundled-package.json` marker per workspace agent.
+  See `store/README.md` for the format.
 
 ### Changed
 - README points devs at `examples/smartbooks/` as the template for
   building on top of `houston-engine`
+- **Bundled Legal agent — full skill rewrite (v0.2.0).** All 40 Actions
+  renamed and rewritten so a non-technical founder can read the picker
+  cards and instantly know what each one does. Slugs replaced with
+  plain-English phrases ("Is this name free?", "Answer a customer data
+  request", "Calculate my Delaware franchise tax"). Descriptions and
+  form labels rewritten from internal jargon to founder voice. Internal
+  procedures unchanged.
+- **`knowledge-base/actions.md` — naming rules section added.** Slugs
+  must humanize cleanly; no insider acronyms; no `display_name`
+  override; descriptions and form labels are user-facing copy.
 
 ## [0.3.2] — 2026-04-21 (engine 0.4.0)
 

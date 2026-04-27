@@ -1,20 +1,12 @@
 ---
 name: audit-compliance
-description: "Use when you say 'audit my privacy' / 'update my subprocessor list' / 'what's stale in my templates'  -  I audit the `scope` you pick: `privacy-posture` scrapes landing + product via Firecrawl and cross-checks your deployed Privacy Policy for drift · `subprocessors` walks your integrations + landing-page for new vendors and refreshes the inventory · `template-library` flags templates > 12 months old against current law (AI-training, SCC versions, 2026 DPA standards). Surfaces diffs only  -  never auto-fixes."
+description: "Check that your legal compliance is still in good shape. Pick what to check: your privacy policy, your privacy vendor list, or your contract templates. I surface what's drifted or out of date and what to fix. I never change anything on my own."
 version: 1
-tags: [legal, audit, compliance]
-category: Legal
+tags: [legal, compliance]
+category: Compliance
 featured: yes
 image: scroll
 integrations: [googledocs, googledrive, stripe, firecrawl]
-inputs:
-  - name: request
-    label: "Request"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Request: {{request}}
 ---
 
 
@@ -26,7 +18,7 @@ One skill for all standing-state compliance checks. `scope` param picks inventor
 
 - `privacy-posture`  -  scrape landing + product via Firecrawl, cross-check deployed Privacy Policy, flag drift (new analytics tool undisclosed, subprocessor added no policy update, new cookie, purpose drift) with severity + recommended update. Writes `privacy-audits/{YYYY-MM-DD}.md`.
 - `subprocessors`  -  walk connected integrations + inferred vendors from landing-page scrape, capture role + data categories + transfer mechanism + DPA status + public DPA URL. Read-merge-write `subprocessor-inventory.json` at agent root + one-page delta report at `subprocessor-reviews/{YYYY-MM-DD}.md`.
-- `template-library`  -  read `domains.contracts.templateLibrary`, flag templates > 12 months old, check each vs current law refs (AI-training disclosure, SCC versions, 2026 DPA standards, CA/EU rights expansions). Writes refresh plan `template-reviews/{YYYY-MM-DD}.md`. Never auto-rewrites  -  founder approves each, kicks `draft-document` for rewrite.
+- `template-library`  -  read `domains.contracts.templateLibrary`, flag templates > 12 months old, check each vs current law refs (AI-training disclosure, SCC versions, 2026 DPA standards, CA/EU rights expansions). Writes refresh plan `template-reviews/{YYYY-MM-DD}.md`. Never auto-rewrites  -  founder approves each, kicks `draft-a-legal-document` for rewrite.
 
 User name scope plain English ("audit my privacy", "refresh templates", "update subprocessor list") → infer. Ambiguous → ask ONE question naming 3 options.
 
@@ -39,7 +31,7 @@ User name scope plain English ("audit my privacy", "refresh templates", "update 
 
 Read `config/context-ledger.json` first.
 
-- `universal.legalContext` + `context/legal-context.md`  -  required. Provides entity snapshot, risk posture, existing template stack (anchor for template-library scope). Missing → run `define-legal-context` skill first (or ask ONE targeted question to skip ahead).
+- `universal.legalContext` + `context/legal-context.md`  -  required. Provides entity snapshot, risk posture, existing template stack (anchor for template-library scope). Missing → run `set-up-my-legal-info` skill first (or ask ONE targeted question to skip ahead).
 - `universal.company.website`  -  required for `privacy-posture` + `subprocessors` (landing-page URL for Firecrawl).
 - `domains.compliance.landingPageUrl`  -  more specific than `universal.company.website` if differ; falls back to website.
 - `domains.compliance.deployedPolicies.privacyPolicyUrl`  -  required for `privacy-posture` (doc to diff against).
@@ -59,7 +51,7 @@ Required field missing → ask ONE targeted question with modality hint (connect
      2. Fetch deployed Privacy Policy (via URL from ledger or same scrape).
      3. Diff: tools observed on site not in policy, data categories collected not disclosed, new cookie categories, purpose drift (product description changed meaningfully since last policy update).
      4. Tag each finding severity (`critical`  -  regulatory exposure; `high`  -  customer trust risk; `medium`  -  housekeeping; `low`  -  FYI). Cite authority for every `critical` finding (GDPR Art. 13/14, CCPA §1798.100, 16 CFR Part 314 where applicable).
-     5. Write `privacy-audits/{YYYY-MM-DD}.md`: Executive summary → Diffs by severity → Recommended next step per finding (most often: chain to `draft-document` type=privacy-policy).
+     5. Write `privacy-audits/{YYYY-MM-DD}.md`: Executive summary → Diffs by severity → Recommended next step per finding (most often: chain to `draft-a-legal-document` type=privacy-policy).
    - `subprocessors`:
      1. Read current `subprocessor-inventory.json`.
      2. Walk connected integrations (via user's installed Composio connections)  -  each connected tool touching customer data = candidate subprocessor.
@@ -71,9 +63,9 @@ Required field missing → ask ONE targeted question with modality hint (connect
      1. Read `domains.contracts.templateLibrary`. Per template, check `lastUpdatedAt` (or file metadata); flag anything > 12 months.
      2. Per stale template, enumerate current-law changes to consider (AI-training disclosure for consulting / MSA / customer paper; SCC 2021 / 2025 version check for DPAs; 2026 DPA standards; CCPA cure-period language; EU AI Act disclosures for AI-touching features).
      3. Rank by exposure (customer paper > vendor paper > internal).
-     4. Write `template-reviews/{YYYY-MM-DD}.md`  -  refresh plan: (a) templates to refresh now, (b) review next quarter, (c) still current. Never auto-rewrites; recommends chaining `draft-document` per template.
+     4. Write `template-reviews/{YYYY-MM-DD}.md`  -  refresh plan: (a) templates to refresh now, (b) review next quarter, (c) still current. Never auto-rewrites; recommends chaining `draft-a-legal-document` per template.
 4. **Append to `outputs.json`**  -  read-merge-write atomically: `{ id, type: "privacy-audit" | "subprocessor-review" | "template-review", title, summary, path, status: "ready", domain: "compliance", createdAt, updatedAt, attorneyReviewRequired? }`. Set `attorneyReviewRequired: true` when `critical` finding implicates regulatory exposure.
-5. **Summarize.** One paragraph, top-2 findings + single recommended follow-up skill (e.g. "chain to `draft-document` type=privacy-policy to close the drift").
+5. **Summarize to user.** One short paragraph in plain language: top 2 findings and the single most useful next move (e.g. "Want me to draft an updated privacy policy that closes these gaps?"). Never name files, paths, or underlying procedures.
 
 ## What I never do
 

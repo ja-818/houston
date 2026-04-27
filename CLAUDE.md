@@ -4,6 +4,32 @@ Caveman style. Progressive discovery. Load on demand.
 
 ---
 
+## RULE 0 — NEVER TAKE SHORTCUTS
+
+**This is the highest rule. It outranks every phase, every dispatch, every "be efficient" instinct.**
+
+If a faster path and a better path both exist, the better path wins. Always. Even if "better" means 40 directory renames, 28 cross-reference fixes, a doc update, a test rewrite, and a hash bump. Volume of work is not a reason. "It would still work" is not a reason.
+
+**Watch for these shortcut patterns in your own thinking:**
+
+- "This avoids the rename / refactor / doc update / migration." → That's labor, not a reason. Do the work.
+- Adding an override / opt-out / fallback field to paper over a bad name or bad shape. → Fix the underlying name or shape.
+- Skipping a typecheck / test / build because it's slow or set-up-heavy. → Run it.
+- Keeping legacy compatibility "just in case" inside internal code. → Delete it (per the existing no-backwards-compat rule).
+- Generating bulk content with a script when each item deserves real thought. → Do the items by hand.
+- Writing a TODO / FIXME / "we can clean this up later." → Clean it up now.
+- Declaring something done before the verification step actually passed. → Not done.
+- Picking the smallest example to demo on without asking the user. → Ask.
+
+**Self-audit at the end of every meaningful chunk of work:**
+> "Where did I cut a corner? Was it because the better path was wrong, or because it was just longer?"
+>
+> If "just longer" — go back and do it right.
+
+This rule was added because the model defaulted to a shortcut (a `display_name` schema override instead of renaming 40 slugs) and the user had to push back. Don't make the user push back. Catch yourself first.
+
+---
+
 ## PHASE 0 — Load /caveman (EVERY SESSION, FIRST)
 
 Before any action: invoke `/caveman` skill. Stay terse. Drop articles, filler, pleasantries. Technical substance stays. Code blocks unchanged.
