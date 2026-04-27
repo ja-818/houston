@@ -29,6 +29,14 @@
     "active": "Misión en curso...",
     "complete": "Registro de misión"
   },
+  "summary": {
+    "updatesMade": "Actualizaciones hechas",
+    "newFiles_one": "1 archivo nuevo",
+    "newFiles_other": "{{count}} archivos nuevos",
+    "instructionsUpdated": "Instrucciones actualizadas",
+    "actionsUpdated": "Acciones actualizadas",
+    "learningsUpdated": "Aprendizajes actualizados"
+  },
   "filesUpdated_one": "1 archivo actualizado",
   "filesUpdated_other": "{{count}} archivos actualizados"
 }

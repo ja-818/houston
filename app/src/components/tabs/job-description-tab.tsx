@@ -34,6 +34,7 @@ import {
   useUpdateLearning,
 } from "../../hooks/queries";
 import type { TabProps } from "../../lib/types";
+import { useUIStore } from "../../stores/ui";
 
 type SubTab = "instructions" | "skills" | "learnings";
 
@@ -56,6 +57,8 @@ export default function JobDescriptionTab({ agent }: TabProps) {
   };
   const path = agent.folderPath;
   const [activeTab, setActiveTab] = useState<SubTab>("instructions");
+  const targetTab = useUIStore((s) => s.jobDescriptionTarget);
+  const setTargetTab = useUIStore((s) => s.setJobDescriptionTarget);
 
   // Instructions (CLAUDE.md)
   const { data: instructions } = useInstructions(path);
@@ -64,6 +67,12 @@ export default function JobDescriptionTab({ agent }: TabProps) {
   // Skills
   const { data: summaries, isLoading: skillsLoading } = useSkills(path);
   const [selectedSkillName, setSelectedSkillName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!targetTab) return;
+    setActiveTab(targetTab);
+    setSelectedSkillName(null);
+    setTargetTab(null);
+  }, [targetTab, setTargetTab]);
   const { data: skillDetail } = useSkillDetail(path, selectedSkillName ?? undefined);
   const saveSkill = useSaveSkill(path);
   const deleteSkill = useDeleteSkill(path);

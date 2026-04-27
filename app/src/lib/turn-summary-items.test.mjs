@@ -1,0 +1,77 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { buildTurnSummaryItems, groupTurnSummaryItems } from "./turn-summary-items.ts";
+
+const agentPath = "/Users/me/Houston/Agent";
+
+test("summarizes internal agent files as semantic updates", () => {
+  const items = buildTurnSummaryItems(
+    [
+      {
+        name: "Write",
+        input: { file_path: `${agentPath}/CLAUDE.md` },
+        result: { content: "ok", is_error: false },
+      },
+      {
+        name: "Edit",
+        input: { file_path: `${agentPath}/.agents/skills/report/SKILL.md` },
+        result: { content: "ok", is_error: false },
+      },
+      {
+        name: "Write",
+        input: { file_path: `${agentPath}/.houston/learnings/learnings.json` },
+        result: { content: "ok", is_error: false },
+      },
+    ],
+    agentPath,
+  );
+
+  assert.deepEqual(items, [
+    { kind: "semantic", update: "instructions" },
+    { kind: "semantic", update: "actions" },
+    { kind: "semantic", update: "learnings" },
+  ]);
+});
+
+test("keeps normal files in the summary", () => {
+  const items = buildTurnSummaryItems(
+    [
+      {
+        name: "Write",
+        input: { file_path: `${agentPath}/deck.pptx` },
+        result: { content: "ok", is_error: false },
+      },
+    ],
+    agentPath,
+  );
+
+  assert.deepEqual(items, [{ kind: "file", path: `${agentPath}/deck.pptx` }]);
+});
+
+test("extracts labeled bash output paths", () => {
+  const items = buildTurnSummaryItems(
+    [
+      {
+        name: "Bash",
+        input: { command: "python make_deck.py" },
+        result: {
+          content: `Saved: ${agentPath}/presentation.pptx\nDone`,
+          is_error: false,
+        },
+      },
+    ],
+    agentPath,
+  );
+
+  assert.deepEqual(items, [{ kind: "file", path: `${agentPath}/presentation.pptx` }]);
+});
+
+test("groups semantic updates and files separately", () => {
+  const groups = groupTurnSummaryItems([
+    { kind: "semantic", update: "actions" },
+    { kind: "file", path: `${agentPath}/deck.pptx` },
+  ]);
+
+  assert.deepEqual(groups.updates, [{ kind: "semantic", update: "actions" }]);
+  assert.deepEqual(groups.files, [{ kind: "file", path: `${agentPath}/deck.pptx` }]);
+});

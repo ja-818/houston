@@ -104,11 +104,7 @@ export type ConversationAutoScrollProps = {
   status: "ready" | "streaming" | "submitted";
 };
 
-/**
- * Mount inside a <Conversation> to auto-scroll to the bottom on two events:
- * - User sends a message (status → "submitted"): re-enables sticky + scrolls down
- * - Agent finishes (status → "ready"): scrolls to bottom one final time
- */
+/** Mount inside a <Conversation> to bring new user submissions into view. */
 export const ConversationAutoScroll = ({ status }: ConversationAutoScrollProps) => {
   const { scrollToBottom } = useStickToBottomContext();
   const prevStatusRef = useRef(status);
@@ -118,8 +114,6 @@ export const ConversationAutoScroll = ({ status }: ConversationAutoScrollProps) 
     prevStatusRef.current = status;
 
     if (status === "submitted" && prev !== "submitted") {
-      scrollToBottom();
-    } else if (status === "ready" && prev !== "ready") {
       scrollToBottom();
     }
   }, [status, scrollToBottom]);

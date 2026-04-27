@@ -8,6 +8,8 @@ export interface ToastItem {
   action?: { label: string; onClick: () => void };
 }
 
+export type JobDescriptionTarget = "instructions" | "skills" | "learnings";
+
 interface UIState {
   viewMode: string;
   assistantPanelOpen: boolean;
@@ -23,6 +25,7 @@ interface UIState {
   boardActions: Array<{ id: string; label: string; onClick: () => void }>;
   /** Whether the mission chat panel is open (hides tab bar for full-height panel) */
   missionPanelOpen: boolean;
+  jobDescriptionTarget: JobDescriptionTarget | null;
   setViewMode: (mode: string) => void;
   setAssistantPanelOpen: (open: boolean) => void;
   setActivityPanelId: (id: string | null) => void;
@@ -34,6 +37,7 @@ interface UIState {
   setOnStartMission: (cb: (() => void) | null) => void;
   setBoardActions: (actions: Array<{ id: string; label: string; onClick: () => void }>) => void;
   setMissionPanelOpen: (open: boolean) => void;
+  setJobDescriptionTarget: (target: JobDescriptionTarget | null) => void;
 }
 
 let toastCounter = 0;
@@ -49,6 +53,7 @@ export const useUIStore = create<UIState>((set) => ({
   onStartMission: null,
   boardActions: [],
   missionPanelOpen: false,
+  jobDescriptionTarget: null,
 
   setViewMode: (viewMode) => set({ viewMode }),
   setAssistantPanelOpen: (assistantPanelOpen) => set({ assistantPanelOpen }),
@@ -80,4 +85,5 @@ export const useUIStore = create<UIState>((set) => ({
   setOnStartMission: (onStartMission) => set({ onStartMission }),
   setBoardActions: (boardActions) => set({ boardActions }),
   setMissionPanelOpen: (missionPanelOpen) => set({ missionPanelOpen }),
+  setJobDescriptionTarget: (jobDescriptionTarget) => set({ jobDescriptionTarget }),
 }));

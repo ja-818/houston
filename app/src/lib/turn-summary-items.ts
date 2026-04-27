@@ -1,0 +1,104 @@
+import type { ToolEntry } from "@houston-ai/chat";
+
+export type SemanticUpdateKind = "instructions" | "actions" | "learnings";
+
+export type TurnSummaryItem =
+  | { kind: "file"; path: string }
+  | { kind: "semantic"; update: SemanticUpdateKind };
+
+export interface TurnSummaryGroups {
+  updates: Extract<TurnSummaryItem, { kind: "semantic" }>[];
+  files: Extract<TurnSummaryItem, { kind: "file" }>[];
+}
+
+const FILE_TOOLS = new Set(["Write", "Edit"]);
+
+function shortName(name: string): string {
+  return name.includes("__") ? name.split("__").pop()! : name;
+}
+
+function normalizePath(path: string, agentPath: string): string {
+  const trimmed = path.trim();
+  if (trimmed.startsWith(`${agentPath}/`)) return trimmed.slice(agentPath.length + 1);
+  return trimmed;
+}
+
+function classifyPath(path: string, agentPath: string): SemanticUpdateKind | null {
+  const relative = normalizePath(path, agentPath).toLowerCase();
+  const fileName = relative.split("/").pop() ?? relative;
+
+  if (fileName === "claude.md" || fileName === "agents.md") return "instructions";
+  if (relative === ".houston/learnings/learnings.json") return "learnings";
+  if (relative.includes("/.agents/skills/") || relative.includes("/.claude/skills/")) {
+    return "actions";
+  }
+  if (fileName === "skill.md" || fileName === "skills.md") return "actions";
+  return null;
+}
+
+function extractPathsFromBashOutput(output: string): string[] {
+  const paths: string[] = [];
+  const seen = new Set<string>();
+  const add = (raw: string) => {
+    const p = raw.trim();
+    if (p && !seen.has(p)) {
+      seen.add(p);
+      paths.push(p);
+    }
+  };
+
+  const labeled = /(?:saved|created|wrote|written|output|file):\s*([^\r\n]+\.[a-zA-Z0-9]{1,10})/gi;
+  let match: RegExpExecArray | null;
+  while ((match = labeled.exec(output)) !== null) add(match[1]);
+
+  const bare = /^(\/[^\r\n]+\.[a-zA-Z0-9]{1,10})\s*$/gm;
+  while ((match = bare.exec(output)) !== null) add(match[1]);
+
+  return paths;
+}
+
+export function buildTurnSummaryItems(
+  tools: ToolEntry[],
+  agentPath: string,
+): TurnSummaryItem[] {
+  const semantic = new Set<SemanticUpdateKind>();
+  const files: string[] = [];
+  const seenFiles = new Set<string>();
+
+  const addPath = (path: string) => {
+    const update = classifyPath(path, agentPath);
+    if (update) {
+      semantic.add(update);
+      return;
+    }
+    if (!seenFiles.has(path)) {
+      seenFiles.add(path);
+      files.push(path);
+    }
+  };
+
+  for (const tool of tools) {
+    if (!tool.result || tool.result.is_error) continue;
+    const sn = shortName(tool.name);
+
+    if (FILE_TOOLS.has(sn)) {
+      const inp = tool.input as Record<string, unknown> | null | undefined;
+      const fp = inp?.file_path as string | undefined;
+      if (fp) addPath(fp);
+    } else if (sn === "Bash") {
+      for (const fp of extractPathsFromBashOutput(tool.result.content)) addPath(fp);
+    }
+  }
+
+  return [
+    ...Array.from(semantic).map((update) => ({ kind: "semantic" as const, update })),
+    ...files.map((path) => ({ kind: "file" as const, path })),
+  ];
+}
+
+export function groupTurnSummaryItems(items: TurnSummaryItem[]): TurnSummaryGroups {
+  return {
+    updates: items.filter((item) => item.kind === "semantic"),
+    files: items.filter((item) => item.kind === "file"),
+  };
+}
