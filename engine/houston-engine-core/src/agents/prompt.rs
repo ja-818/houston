@@ -171,6 +171,10 @@ pub fn build_agent_context(
         }
     }
 
+    if let Some(learnings) = super::learnings_context::build_learnings_context(dir) {
+        parts.push(learnings);
+    }
+
     let skills_dir = dir.join(".agents/skills");
     if let Ok(index) = houston_skills::build_skills_index(&skills_dir) {
         if !index.is_empty() {
@@ -240,6 +244,26 @@ mod tests {
         assert!(out.contains("boot body"));
         assert!(out.contains("# Section"));
         assert!(out.contains("section body"));
+    }
+
+    #[test]
+    fn build_agent_context_includes_learnings_snapshot() {
+        let d = TempDir::new().unwrap();
+        let learnings_dir = d.path().join(".houston/learnings");
+        fs::create_dir_all(&learnings_dir).unwrap();
+        fs::write(
+            learnings_dir.join("learnings.json"),
+            r#"[
+                { "id": "one", "text": "User calls this contact Mr. Perkins.", "created_at": "2026-01-01T00:00:00Z" }
+            ]"#,
+        )
+        .unwrap();
+
+        let out = build_agent_context(d.path(), None, None);
+
+        assert!(out.contains("# Persistent Learnings - Frozen Snapshot"));
+        assert!(out.contains("User calls this contact Mr. Perkins."));
+        assert!(!out.contains("2026-01-01"));
     }
 
     #[test]

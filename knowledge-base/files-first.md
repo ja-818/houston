@@ -48,6 +48,14 @@ schema + a generic read/write pair covers everything.
 ## Schemas
 Authoritative. Live in `ui/agent-schemas/src/*.schema.json`. Embedded in Rust via `include_str!` in `houston-agent-files::schemas`. Seeded into each agent's `.houston/<type>/<type>.schema.json` on first launch. Prompts instruct model to read schema before writing data file.
 
+## Learnings prompt injection
+`engine/houston-engine-core/src/agents/prompt.rs::build_agent_context`
+injects `.houston/learnings/learnings.json` into each session as a
+bounded, frozen-at-session-start background block. Only each entry's
+`text` field is rendered; `id`, `created_at`, and any future metadata
+stay storage/UI-only. Writes during a session persist immediately but are
+not visible in the already-started prompt until the next session.
+
 ## Migration
 `houston_agent_files::migrate_agent_data()` runs on every `seed_agent()`. Idempotent. Leaves legacy flat-layout data files in place as rollback. Legacy product-prompt seeds (`.houston/prompts/system.md`, `.houston/prompts/self-improvement.md`) are deleted — the Houston product prompt now lives in the app binary (`app/src-tauri/src/houston_prompt.rs`), not on disk.
 

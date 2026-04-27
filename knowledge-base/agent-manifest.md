@@ -160,8 +160,9 @@ Lives in `app/src-tauri/src/houston_prompt.rs` for the Houston desktop app. Cove
 Built in `engine/houston-engine-core/src/agents/prompt.rs::build_agent_context`:
 1. **Working directory block** — hard rules scoping file I/O to `<agent-root>`.
 2. Mode file `.houston/prompts/modes/<mode>.md` (optional, user-editable).
-3. Skills index — `.agents/skills/` via `houston_skills::build_skills_index`.
-4. Integrations block — based on `.houston/integrations.json` if present.
+3. Learnings snapshot — `.houston/learnings/learnings.json`, text fields only, rendered as bounded background context. IDs/timestamps stay storage/UI-only.
+4. Skills index — `.agents/skills/` via `houston_skills::build_skills_index`.
+5. Integrations block — based on `.houston/integrations.json` if present.
 
 `CLAUDE.md` is read by the CLI (claude/codex) itself at startup, not injected by the engine.
 
