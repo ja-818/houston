@@ -1,8 +1,8 @@
 ---
 name: draft-terms-of-service
-description: "Draft ToS with full sections (Usage / Account / IP / Acceptable-Use / Payment / Termination / Warranty / Liability / Disputes) - grounded in your actual product surface via Firecrawl."
+description: "Draft Terms of Service for your product covering usage rules, accounts, intellectual property, payment, cancellation, warranties, liability, and disputes. I read your live product to make it match what you actually do. Drafts only, you publish."
 version: 1
-tags: ["legal", "overview-action", "draft-document"]
+tags: ["legal", "overview-action", "draft-a-legal-document"]
 category: "Compliance"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
@@ -11,13 +11,9 @@ image: "scroll"
 
 
 # Draft Terms of Service
-**Use when:** Usage, IP, acceptable use, liability cap, disputes.
-**What it does:** Draft ToS with full sections (Usage / Account / IP / Acceptable-Use / Payment / Termination / Warranty / Liability / Disputes)  -  grounded in your actual product surface via Firecrawl.
-**Outcome:** ToS draft at privacy-drafts/tos-{date}.md.
-## Instructions
-Run this as a user-facing action. Use the underlying `draft-document` skill for the deep procedure.
-Ask the user for any missing specifics, then complete the work end-to-end.
-## Action Prompt
-```text
-Draft our Terms of Service. Use the draft-document skill with type=tos. Scrape my landing page via Firecrawl to infer product surface, structure as Usage / Account / IP / Acceptable-Use / Payment / Termination / Warranty / Liability / Disputes. Save to privacy-drafts/tos-{YYYY-MM-DD}.md.
-```
+
+User-facing entry point for `draft-a-legal-document` (terms of service).
+
+## Talking to the user
+
+Plain language. Confirm the draft is ready for review and remind it isn't published yet. Note any clauses worth your final say (liability cap, refund policy, exclusivity). Never name files or paths.

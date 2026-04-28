@@ -54,6 +54,59 @@ their frontmatter metadata is refreshed from the bundled package. Result:
 new Houston-built workflows appear in existing agents, Action cards can
 be updated across releases, and local procedure edits stay intact.
 
+### Migrations (renaming or removing Actions across versions)
+
+Net-new Actions are picked up automatically. **Renaming** a packaged
+Action's slug (or removing it) is different — without help, users end
+up with old + new copies side-by-side in their picker. To handle this
+cleanly, each agent package can ship a `.migrations.json` at its root
+listing the rename steps between published versions:
+
+```json
+[
+  {
+    "from": "0.1.4",
+    "to": "0.2.0",
+    "renames": {
+      "old-slug": "new-slug"
+    }
+  }
+]
+```
+
+On sync, the engine reads `.migrations.json` and, for each user
+workspace agent of that `config_id`:
+
+1. Reads the workspace's last-synced bundled version from
+   `.houston/bundled-package.json` (or treats the install as
+   pre-migration if absent).
+2. Picks every migration step whose `to` version is ≤ the current
+   bundled version and (when a marker exists) > the workspace's last
+   synced version.
+3. For each rename, if the old slug exists in the workspace:
+   - **New slug doesn't exist yet** → rename the directory in place.
+     The user's body content is preserved; only the directory name
+     and the `name:` frontmatter field change. The existing
+     metadata-refresh step then updates the description, inputs,
+     prompt template etc. on the renamed skill.
+   - **New slug already exists** (because a prior sync without
+     migrations ran) → delete the old slug. The bundled package no
+     longer ships it and every cross-reference points at the new
+     slug, so it's orphaned dead weight. Keeping it would just leave
+     a duplicate card in the picker.
+4. Writes `.houston/bundled-package.json` with the new version, so
+   the next sync starts from there.
+
+Author the migration step in the same release that does the rename.
+Forgetting it means existing users see duplicates until they delete
+the old one by hand.
+
+If a release ships migrations *late* (the rename was published in v0.2.0
+but `.migrations.json` only landed in v0.2.1), include a follow-up
+migration step in v0.2.1 with the same renames so users whose marker
+already says "0.2.0" still get the cleanup. The renames are idempotent
+so there's no harm in repeating them.
+
 User-created sharing is intentionally separate. Future community store
 work should add publish/share flow without requiring GitHub.
 

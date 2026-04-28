@@ -111,9 +111,9 @@ field twice.
 
 The shared legal doc. **Every skill reads this before it writes
 any substantive artifact.** Owned and updated exclusively by
-`define-legal-context`.
+`set-up-my-legal-info`.
 
-Structure (filled in by `define-legal-context`):
+Structure (filled in by `set-up-my-legal-info`):
 
 - Entity snapshot (state, type, formation date, authorized shares,
   issued shares, par value, 409A date).
@@ -172,35 +172,35 @@ Rules:
 
 | File | Written by | Notes |
 |---|---|---|
-| `counterparty-tracker.json` | `track-legal-state` (counterparties) | Executed agreements (id, counterparty, type, executedDate, term, auto-renewal, notice period, governing law, signedCopyPath). |
+| `counterparty-tracker.json` | `track-deadlines-and-signatures` (counterparties) | Executed agreements (id, counterparty, type, executedDate, term, auto-renewal, notice period, governing law, signedCopyPath). |
 | `subprocessor-inventory.json` | `audit-compliance` (subprocessors) | Vendor inventory (role, data categories, transfer mechanism, DPA status, public DPA URL). |
-| `deadline-calendar.json` | `track-legal-state` (deadlines) | Canonical legal calendar (Delaware March 1, 83(b) 30-day, 409A 12-month, DSR 30/45-day, TM office action, annual board consent). |
+| `deadline-calendar.json` | `track-deadlines-and-signatures` (deadlines) | Canonical legal calendar (Delaware March 1, 83(b) 30-day, 409A 12-month, DSR 30/45-day, TM office action, annual board consent). |
 
 ### Artifact folders (all at agent root)
 
 | Folder | Written by | Notes |
 |---|---|---|
-| `contract-reviews/{counterparty}-{YYYY-MM-DD}.md` | `review-contract` (mode=full) | |
-| `clause-extracts/{counterparty}-{YYYY-MM-DD}.md` | `review-contract` (mode=clauses-only) | |
-| `ndas/{counterparty}-{YYYY-MM-DD}.md` | `review-contract` (mode=nda-traffic-light) | |
-| `redline-plans/{counterparty}-{YYYY-MM-DD}.md` | `plan-redline` | |
-| `advice-memos/{topic-slug}-{YYYY-MM-DD}.md` | `advise-on-question` | |
-| `escalations/{matter-slug}-{YYYY-MM-DD}.md` | `draft-document` (type=escalation-brief) | |
-| `drafts/{type}/{counterparty}-{YYYY-MM-DD}.md` | `draft-document` (type ∈ nda / consulting / offer-letter / msa / order-form / board-consent) | |
-| `privacy-drafts/privacy-policy-{YYYY-MM-DD}.md` | `draft-document` (type=privacy-policy) | |
-| `privacy-drafts/tos-{YYYY-MM-DD}.md` | `draft-document` (type=tos) | |
+| `contract-reviews/{counterparty}-{YYYY-MM-DD}.md` | `review-a-contract` (mode=full) | |
+| `clause-extracts/{counterparty}-{YYYY-MM-DD}.md` | `review-a-contract` (mode=clauses-only) | |
+| `ndas/{counterparty}-{YYYY-MM-DD}.md` | `review-a-contract` (mode=nda-traffic-light) | |
+| `redline-plans/{counterparty}-{YYYY-MM-DD}.md` | `plan-contract-pushback` | |
+| `advice-memos/{topic-slug}-{YYYY-MM-DD}.md` | `answer-a-legal-question` | |
+| `escalations/{matter-slug}-{YYYY-MM-DD}.md` | `draft-a-legal-document` (type=escalation-brief) | |
+| `drafts/{type}/{counterparty}-{YYYY-MM-DD}.md` | `draft-a-legal-document` (type ∈ nda / consulting / offer-letter / msa / order-form / board-consent) | |
+| `privacy-drafts/privacy-policy-{YYYY-MM-DD}.md` | `draft-a-legal-document` (type=privacy-policy) | |
+| `privacy-drafts/tos-{YYYY-MM-DD}.md` | `draft-a-legal-document` (type=tos) | |
 | `privacy-audits/{YYYY-MM-DD}.md` | `audit-compliance` (scope=privacy-posture) | |
 | `subprocessor-reviews/{YYYY-MM-DD}.md` | `audit-compliance` (scope=subprocessors) | + updates `subprocessor-inventory.json` |
 | `template-reviews/{YYYY-MM-DD}.md` | `audit-compliance` (scope=template-library) | |
 | `security-questionnaires/{prospect-slug}-{YYYY-MM-DD}.md` | `security-questionnaire` | |
-| `signature-status/{YYYY-MM-DD}.md` | `track-legal-state` (scope=signatures) | |
-| `deadline-summaries/{YYYY-MM-DD}.md` | `track-legal-state` (scope=deadlines) | + updates `deadline-calendar.json` |
-| `weekly-reviews/{YYYY-MM-DD}.md` | `track-legal-state` (scope=weekly-review) | |
-| `intake-summaries/{YYYY-MM-DD}.md` | `triage-legal-inbox` | |
-| `annual-filings/{YYYY}-delaware.md` | `file-delaware-report` | |
-| `tm-searches/{mark-slug}-{YYYY-MM-DD}.md` | `run-trademark-search` | |
-| `offer-packets/{candidate-slug}-{YYYY-MM-DD}/` | `prepare-offer-packet` | 4 files: offer letter, CIIAA, option grant notice, exercise agreement + index. |
-| `dsr-responses/{request-id}-{YYYY-MM-DD}/` | `draft-document` (type=dsr-response) | 3 files: acknowledgment, identity verification, export cover note. |
+| `signature-status/{YYYY-MM-DD}.md` | `track-deadlines-and-signatures` (scope=signatures) | |
+| `deadline-summaries/{YYYY-MM-DD}.md` | `track-deadlines-and-signatures` (scope=deadlines) | + updates `deadline-calendar.json` |
+| `weekly-reviews/{YYYY-MM-DD}.md` | `track-deadlines-and-signatures` (scope=weekly-review) | |
+| `intake-summaries/{YYYY-MM-DD}.md` | `sort-my-legal-inbox` | |
+| `annual-filings/{YYYY}-delaware.md` | `prepare-the-delaware-annual-filing` | |
+| `tm-searches/{mark-slug}-{YYYY-MM-DD}.md` | `check-a-trademark` | |
+| `offer-packets/{candidate-slug}-{YYYY-MM-DD}/` | `prepare-a-job-offer` | 4 files: offer letter, CIIAA, option grant notice, exercise agreement + index. |
+| `dsr-responses/{request-id}-{YYYY-MM-DD}/` | `draft-a-legal-document` (type=dsr-response) | 3 files: acknowledgment, identity verification, export cover note. |
 
 ---
 
