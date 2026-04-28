@@ -7,14 +7,6 @@ category: "Onboarding"
 featured: yes
 integrations: ["gmail", "notion", "slack"]
 image: "busts-in-silhouette"
-inputs:
-  - name: new_hire
-    label: "New Hire"
-  - name: employee_slug
-    label: "Employee Slug"
-    required: false
-prompt_template: |
-  Draft the welcome email for {{new_hire}}'s first morning. Use the draft-onboarding-plan skill. Include: laptop shipment / pickup, account setup (Google / Slack / HRIS / GitHub / etc.), which #channels to join, and Day-1 calendar. Voice from context/people-context.md. Write into the `## Welcome Email` section of onboarding-plans/{{employee_slug}}.md.
 ---
 
 

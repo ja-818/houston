@@ -7,14 +7,6 @@ category: "Reliability"
 featured: yes
 integrations: ["github", "gitlab"]
 image: "laptop"
-inputs:
-  - name: system
-    label: "System"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Draft a runbook for {{system}}. Use the draft-runbook skill. Command-first ops doc with bash snippets + placeholders, dashboard URLs (from my connected Sentry / Datadog), rollback commands, and if-this-fails decision branches. No prose walls  -  every section is a command block or decision branch. Save to runbooks/{{slug}}.md.
 ---
 
 

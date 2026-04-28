@@ -7,12 +7,6 @@ category: "Performance"
 featured: yes
 integrations: ["slack", "discord"]
 image: "busts-in-silhouette"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Find team members who've been quiet in check-ins for 3+ weeks. Use the collect-checkins skill to read the last 4 weekly reports in checkins/, cross-reference with the roster, and surface everyone who has missed 3+ responses in a row. Append a `## Quiet Patterns` section to checkins/{{date}}.md with names, last-response date, and recommended next move (stay conversation, 1:1 check-in, or nothing if context explains the silence).
 ---
 
 

@@ -7,18 +7,6 @@ category: "Outbound"
 featured: yes
 integrations: ["gmail", "hubspot", "salesforce", "attio", "linkedin", "firecrawl", "perplexityai"]
 image: "handshake"
-inputs:
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Research {{company}}  -  give me a full brief. Use the research-account skill with depth=full-brief. Scrape their site via Firecrawl, pull the last 12 weeks of news via Exa, detect tech-stack signals, scan company LinkedIn. Structure: snapshot, recent signals (cited), tech stack, buying-committee guesses, 3 outreach angles ranked. Save to accounts/{{slug}}/brief-{{date}}.md.
 ---
 
 

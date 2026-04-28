@@ -7,16 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["attio", "customerio", "github", "gmail", "googledocs", "hubspot", "jira", "linear", "loops", "mailchimp", "microsoftteams", "notion", "outlook", "salesforce", "slack", "stripe"]
 image: "headphone"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Track a commitment I just made. Use the promise-tracker skill. Extract the verbatim promise from the draft or chat, parse the due date (explicit / relative / vague defaults to +48h), link to the conversation and customer, and append to followups.json with status=open.
-
-  Additional context: {{request}}
 ---
 
 

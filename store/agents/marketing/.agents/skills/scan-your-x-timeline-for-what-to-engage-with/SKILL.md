@@ -7,12 +7,6 @@ category: "Social"
 featured: yes
 integrations: ["linkedin", "twitter", "reddit", "instagram", "googleads", "metaads", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Scan my X timeline and surface what's worth engaging with. Use the monitor-competitors skill with source=social-feed. Filter my feed for relevance to my topics and engagement opportunities, then suggest concrete replies  -  no doom-scrolling. Save to competitor-briefs/social-feed-x-{{date}}.md with reply drafts per opportunity.
 ---
 
 

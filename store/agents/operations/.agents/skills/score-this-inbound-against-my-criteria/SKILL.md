@@ -7,14 +7,6 @@ category: "Vendors"
 featured: yes
 integrations: ["airtable", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "googledrive", "googlesheets", "linear", "linkedin", "notion", "outlook", "perplexityai", "slack", "stripe"]
 image: "clipboard"
-inputs:
-  - name: kind
-    label: "Kind"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Score this inbound application. Use the run-approval-flow skill. Apply the rubric from my context/operations-context.md (priorities + key contacts + hard nos) to produce a scored approve / decline / more-info recommendation with evidence per criterion. Save to approvals/{{kind}}-{{slug}}.md.
 ---
 
 

@@ -7,14 +7,6 @@ category: "Retention"
 featured: yes
 integrations: ["attio", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "hubspot", "linear", "linkedin", "notion", "outlook", "perplexityai", "pipedrive", "reddit", "salesforce", "stripe", "twitter"]
 image: "handshake"
-inputs:
-  - name: customer
-    label: "Customer"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Plan onboarding for {{customer}}. Use the plan-onboarding skill. Build a kickoff agenda, lock one concrete success metric with the customer, and sequence a 90-day time-to-value timeline with milestones and risks. Save to customers/{{slug}}/onboarding-plan.md.
 ---
 
 

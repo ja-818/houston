@@ -7,11 +7,6 @@ category: "Scheduling"
 featured: yes
 integrations: ["googlecalendar", "gmail", "outlook"]
 image: "clipboard"
-inputs:
-  - name: name
-    label: "Name"
-prompt_template: |
-  Book a 30-min meeting with {{name}}. Use the schedule-meeting skill. Propose 3 times that respect my focus blocks, buffers, and max-meetings-per-day. Draft the counterparty message in my voice. Iterate on back-and-forth if needed. Create the event in Google Calendar ONLY after my explicit approval.
 ---
 
 

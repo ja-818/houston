@@ -7,16 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googlesheets", "notion"]
 image: "busts-in-silhouette"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Build the compliance calendar. Use the compliance-calendar skill. Scan my connected HRIS for start dates, work-authorization status, and vesting schedules. Pull the review-cycle rhythm from context/people-context.md. Write a living calendar at compliance-calendar.md (updated in place, atomic), and log each substantive update to outputs.json.
-
-  Additional context: {{request}}
 ---
 
 

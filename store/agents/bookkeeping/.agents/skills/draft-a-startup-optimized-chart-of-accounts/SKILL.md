@@ -7,16 +7,6 @@ category: "Setup"
 featured: yes
 integrations: ["hubspot", "stripe", "quickbooks", "xero", "notion", "slack"]
 image: "ledger"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Draft our chart of accounts. Use the build-chart-of-accounts skill. Produce a startup-optimized CoA with income (recurring vs. one-time), COGS (hosting, third-party fees), opex broken into R&D / S&M / G&A, assets (cash by account, prepaid rent, prepaid SaaS, fixed assets), liabilities (deferred revenue, accrued payroll, accrued PTO, SAFE notes, convertible notes), and equity. Write to config/chart-of-accounts.json with `[{code, name, type, statementSection}]`.
-
-  Additional context: {{request}}
 ---
 
 

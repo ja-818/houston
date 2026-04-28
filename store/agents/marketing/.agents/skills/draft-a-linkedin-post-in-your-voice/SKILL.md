@@ -7,14 +7,6 @@ category: "Social"
 featured: yes
 integrations: ["googledocs", "linkedin", "twitter", "reddit", "mailchimp", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: topic
-    label: "Topic"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Draft a LinkedIn post about {{topic}} in my voice. Use the write-content skill with channel=linkedin. Hook in the first line, whitespace, one clear takeaway, CTA or question to spark replies. Uses my saved voice samples so it doesn't sound like AI. Save to posts/linkedin-{{slug}}.md.
 ---
 
 

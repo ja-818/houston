@@ -7,12 +7,6 @@ category: "Performance"
 featured: yes
 integrations: ["hubspot", "github", "linear", "jira", "slack", "discord", "firecrawl"]
 image: "busts-in-silhouette"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Score retention risk across the team. Use the analyze skill with subject=retention-risk. Fuse engagement (check-ins, Slack activity, optional PR / ticket cadence), sentiment (check-in tone drift), tenure milestones (cliff vesting, promotion honeymoon, manager change), and comp exposure (vs bands in context/people-context.md). Classify GREEN / YELLOW / RED and write the exact signal combination on every RED. Save to analyses/retention-risk-{{date}}.md. Founder-eyes-only.
 ---
 
 

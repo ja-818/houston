@@ -7,17 +7,6 @@ category: "Data"
 featured: yes
 integrations: ["airtable", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "googledrive", "googlesheets", "linear", "linkedin", "notion", "outlook", "perplexityai", "slack", "stripe"]
 image: "clipboard"
-inputs:
-  - name: name
-    label: "Name"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Analyze experiment {{name}}. Use the analyze skill with subject=experiment. Pull variant data from my connected warehouse or accept pasted aggregates. Compute lift, statistical significance, 95% CI, observed MDE, guardrail deltas. Make the call: SHIP / KILL / ITERATE / INCONCLUSIVE-EXTEND. Save to analyses/experiment-{{slug}}-{{date}}.md. Never recommends SHIP without significance.
 ---
 
 

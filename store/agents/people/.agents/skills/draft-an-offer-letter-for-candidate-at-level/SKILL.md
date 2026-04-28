@@ -7,16 +7,6 @@ category: "Hiring"
 featured: yes
 integrations: ["googledocs", "notion", "loops"]
 image: "busts-in-silhouette"
-inputs:
-  - name: candidate
-    label: "Candidate"
-  - name: level
-    label: "Level"
-  - name: candidate_slug
-    label: "Candidate Slug"
-    required: false
-prompt_template: |
-  Draft an offer letter for {{candidate}} at {{level}}. Use the draft-offer skill. Read comp bands, equity stance, and leveling from context/people-context.md plus voice from the ledger. Write to offers/{{candidate_slug}}.md as status draft. Never sent.
 ---
 
 

@@ -6,14 +6,6 @@ tags: [marketing, write, cta]
 category: Marketing
 featured: yes
 image: megaphone
-inputs:
-  - name: request
-    label: "Request"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Request: {{request}}
 ---
 
 

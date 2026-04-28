@@ -7,14 +7,6 @@ category: "Vendors"
 featured: yes
 integrations: ["airtable", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "googledrive", "googlesheets", "linear", "linkedin", "notion", "outlook", "perplexityai", "slack", "stripe"]
 image: "clipboard"
-inputs:
-  - name: supplier
-    label: "Supplier"
-  - name: supplier_slug
-    label: "Supplier Slug"
-    required: false
-prompt_template: |
-  Evaluate {{supplier}} against our criteria. Use the evaluate-supplier skill. Rubric-based due-diligence. Score 1-10 on each criterion, risk tier green / yellow / red, strengths, concerns, first-call questions, and a clear recommendation. Save to evaluations/{{supplier_slug}}.md.
 ---
 
 

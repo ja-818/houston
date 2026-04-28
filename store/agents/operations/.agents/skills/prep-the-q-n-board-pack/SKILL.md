@@ -7,15 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion"]
 image: "clipboard"
-inputs:
-  - name: n
-    label: "N"
-    required: false
-  - name: quarter
-    label: "Quarter"
-    placeholder: "e.g. 2026-Q1"
-prompt_template: |
-  Prep the Q{{n}} board pack. Use the prep-package skill with type=board-pack. Draft the standard 8 sections (TL;DR, business update, metrics, OKRs, wins, challenges, asks, appendix) from my outputs.json + okr-history.json + decisions.json + metrics-daily.json. Flag every TBD. Save to board-packs/{{quarter}}/board-pack.md with an optional Google Docs mirror if connected.
 ---
 
 

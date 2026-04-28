@@ -18,44 +18,52 @@ interface Props {
 }
 
 export function UserActionMessage({ invocation }: Props) {
-  const { displayName, image, description, integrations, fields } = invocation;
+  const { displayName, image, description, integrations, fields, message } = invocation;
   return (
-    <div className="rounded-2xl bg-secondary p-4 max-w-sm inline-block text-left">
-      <div className="flex items-start gap-3">
-        <ImageBubble src={resolveActionImage(image)} />
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-foreground">
-            {displayName}
-          </div>
-          {description && (
-            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              {description}
-            </p>
-          )}
-          {integrations.length > 0 && (
-            <div className="mt-2 flex items-center gap-1.5">
-              {integrations.map((slug) => (
-                <IntegrationLogo key={slug} slug={slug} />
-              ))}
+    <div className="flex max-w-sm flex-col items-end gap-2">
+      <div className="inline-block rounded-2xl bg-secondary p-4 text-left">
+        <div className="flex items-start gap-3">
+          <ImageBubble src={resolveActionImage(image)} />
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-foreground">
+              {displayName}
             </div>
-          )}
+            {description && (
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                {description}
+              </p>
+            )}
+            {integrations.length > 0 && (
+              <div className="mt-2 flex items-center gap-1.5">
+                {integrations.map((slug) => (
+                  <IntegrationLogo key={slug} slug={slug} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
+        {fields.length > 0 && (
+          <div className="mt-3 flex flex-col gap-2 border-t border-border/50 pt-3">
+            {fields.map((f, idx) => (
+              <div key={idx} className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                  {f.label}
+                </span>
+                <span className="break-words whitespace-pre-wrap text-xs text-foreground">
+                  {f.value || (
+                    <span className="italic text-muted-foreground">empty</span>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {fields.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-border/50 flex flex-col gap-2">
-          {fields.map((f, idx) => (
-            <div key={idx} className="flex flex-col gap-0.5">
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium">
-                {f.label}
-              </span>
-              <span className="text-xs text-foreground break-words whitespace-pre-wrap">
-                {f.value || (
-                  <span className="italic text-muted-foreground">empty</span>
-                )}
-              </span>
-            </div>
-          ))}
+      {message.trim().length > 0 && (
+        <div className="inline-block max-w-full rounded-2xl bg-secondary px-4 py-2.5 text-left text-sm leading-6 text-foreground">
+          <span className="whitespace-pre-wrap break-words">{message}</span>
         </div>
       )}
     </div>

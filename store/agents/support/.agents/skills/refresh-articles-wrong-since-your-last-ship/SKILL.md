@@ -7,14 +7,6 @@ category: "Help Center"
 featured: yes
 integrations: ["googledocs", "notion", "github", "linear"]
 image: "headphone"
-inputs:
-  - name: change
-    label: "Change"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Refresh help-center articles affected by {{change}}. Use the write-article skill with type=refresh-stale. Scan every articles/{{slug}}.md for references to the changed element and write the proposed rewrite diff without overwriting. Mark the articles needsReview=true in outputs.json.
 ---
 
 

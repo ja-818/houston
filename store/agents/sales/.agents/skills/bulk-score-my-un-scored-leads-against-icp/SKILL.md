@@ -7,12 +7,6 @@ category: "Outbound"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "stripe"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Bulk-score every un-scored lead in leads.json + new leads from my connected CRM. Use the score skill with subject=lead. Compare each against the playbook's ICP + disqualifiers, drop hard-disqualifier RED, score each surviving lead 0-3 per dimension, and output GREEN / YELLOW / RED with the angle for each GREEN. Save to scores/lead-{{date}}.md and update leads.json rows.
 ---
 
 

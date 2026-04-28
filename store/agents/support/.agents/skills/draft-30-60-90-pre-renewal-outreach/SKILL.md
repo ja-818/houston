@@ -7,14 +7,6 @@ category: "Success"
 featured: yes
 integrations: ["hubspot", "attio", "stripe", "mailchimp", "customerio", "loops"]
 image: "headphone"
-inputs:
-  - name: account
-    label: "Account"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft pre-renewal outreach for {{account}}. Use the draft-lifecycle-message skill with type=renewal. Chain customer-view view=timeline first for wins + asks-shipped + friction. Draft Day-90 (value recap), Day-60 (expansion opportunity), Day-30 (direct ask + agenda). Every reference grounded in the timeline. Save to renewals/{{account}}-{{date}}.md.
 ---
 
 

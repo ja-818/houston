@@ -7,12 +7,6 @@ category: "Triage"
 featured: yes
 integrations: ["notion", "github", "linear", "jira"]
 image: "laptop"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Groom the backlog. Use the groom-backlog skill. Pull all open tickets from the connected Linear / Jira / GitHub Issues. Return three review lists: keep-and-prioritize, merge-as-duplicates, close-as-stale  -  each with a one-line rationale per ticket. Save to backlog-grooming/{{date}}.md. I never close, merge, or reprioritize in the tracker  -  you review and act.
 ---
 
 

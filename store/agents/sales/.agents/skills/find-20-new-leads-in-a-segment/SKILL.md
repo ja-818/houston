@@ -7,17 +7,6 @@ category: "Outbound"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "linkedin", "twitter", "reddit", "firecrawl"]
 image: "handshake"
-inputs:
-  - name: segment
-    label: "Segment"
-  - name: segment_slug
-    label: "Segment Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Find me 20 leads in {{segment}}. Use the find-leads skill. Pick a source that fits the segment: my connected CRM for lookalikes of closed-won, a LinkedIn comment thread, recent-funding / recent-hire feeds, Google Maps for local biz, or a subreddit. Quick-score each against the playbook's disqualifiers, drop REDs, save GREEN + YELLOW to leads.json with the trigger signal cited per lead. Write the batch to leads/batches/{{segment_slug}}-{{date}}.md.
 ---
 
 

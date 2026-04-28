@@ -7,17 +7,6 @@ category: "Copy"
 featured: yes
 integrations: ["firecrawl", "semrush", "ahrefs", "perplexityai"]
 image: "megaphone"
-inputs:
-  - name: form_type
-    label: "Form Type"
-  - name: form_slug
-    label: "Form Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Audit my {{form_type}} form. Use the audit skill with surface=form. Flag unnecessary fields, rewrite labels + helper text, and sequence fields by friction. Save to audits/form-{{form_slug}}-{{date}}.md. For signup flows specifically, use surface=signup-flow with the write-page-copy skill instead.
 ---
 
 

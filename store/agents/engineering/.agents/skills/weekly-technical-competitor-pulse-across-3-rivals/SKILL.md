@@ -7,21 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["github", "gitlab", "firecrawl", "perplexityai"]
 image: "laptop"
-inputs:
-  - name: competitor_a
-    label: "Competitor A"
-    placeholder: "First competitor"
-  - name: competitor_b
-    label: "Competitor B"
-    placeholder: "Second competitor"
-  - name: competitor_c
-    label: "Competitor C"
-    placeholder: "Third competitor"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me this week's technical competitor pulse across {{competitor_a}}, {{competitor_b}}, {{competitor_c}}. Use the analyze skill with subject=competitors. Scan each competitor's engineering blog, GitHub org activity (releases, major commits, star velocity), public changelog, and API diffs via Firecrawl + Exa. Label each signal technical-threat / parity-move / ignore. Save to competitor-watch/weekly-{{date}}.md. If I name just one competitor instead of three, switch to teardown mode.
 ---
 
 

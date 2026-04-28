@@ -7,14 +7,6 @@ category: "Docs"
 featured: yes
 integrations: ["stripe", "notion", "github", "gitlab", "perplexityai"]
 image: "laptop"
-inputs:
-  - name: endpoint
-    label: "Endpoint"
-  - name: endpoint_slug
-    label: "Endpoint Slug"
-    required: false
-prompt_template: |
-  Draft human API docs for {{endpoint}}. Use the write-docs skill with type=api. Read my OpenAPI spec (openapi.yaml / swagger.json) from the connected GitHub / GitLab, or accept a paste of a representative request/response. Per-endpoint doc with purpose, params table, request body, response body, error codes, curl example, SDK snippet. Save to api-docs/{{endpoint_slug}}.md. Never invents behavior the spec doesn't describe.
 ---
 
 

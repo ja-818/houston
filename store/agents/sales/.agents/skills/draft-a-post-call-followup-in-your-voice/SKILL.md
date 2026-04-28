@@ -7,18 +7,6 @@ category: "Meetings"
 featured: yes
 integrations: ["googlecalendar", "gmail", "outlook", "hubspot", "salesforce", "attio", "pipedrive", "gong", "fireflies", "stripe"]
 image: "handshake"
-inputs:
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft my followup for today's call with {{company}}. Use the draft-outreach skill with stage=followup. Read the latest calls/{{slug}}/notes-*.md and analysis-*.md. Subject: 'Re: {their pain, in their words}'. Body: confirm we heard them → 2-3 bullets answering the stated objection / open question → next step with a specific date. Match voice from config/voice.md. Save to deals/{{slug}}/followup-{{date}}.md.
 ---
 
 

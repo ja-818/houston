@@ -7,14 +7,6 @@ category: "Outbound"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "stripe"]
 image: "handshake"
-inputs:
-  - name: lead
-    label: "Lead"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Is {{lead}} a fit? Use the score skill with subject=icp-fit. Score the named lead against the playbook's ICP + disqualifiers, output GREEN / YELLOW / RED, and if GREEN name the single pain from the playbook that's the best angle for the first touch. Save to scores/icp-fit-{{date}}.md.
 ---
 
 

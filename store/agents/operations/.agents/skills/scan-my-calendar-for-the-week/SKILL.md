@@ -7,12 +7,6 @@ category: "Scheduling"
 featured: yes
 integrations: ["googlecalendar", "gmail", "outlook"]
 image: "clipboard"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Scan my calendar for the next 7 days. Use the triage skill with surface=calendar. Flag overbooks, back-to-back-with-no-buffer, focus-block clashes, unprotected VIP slots, and external meetings without prep. Rank by severity. Save to calendar-scans/{{date}}.md and upsert calendar-conflicts.json.
 ---
 
 

@@ -7,15 +7,6 @@ category: "CRM"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "pipedrive", "notion", "linear"]
 image: "handshake"
-inputs:
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Queue a follow-up on {{company}} for {{date}}. Use the manage-crm skill with action=queue-followup. Parse who + what + when from the ask, push the task into my connected task tool (Linear / Notion / Asana-style via Composio), and log to tasks/{{date}}.md. Capture the task URL.
 ---
 
 

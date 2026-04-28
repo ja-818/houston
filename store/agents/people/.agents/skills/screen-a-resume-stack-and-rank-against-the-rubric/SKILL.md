@@ -7,17 +7,6 @@ category: "Hiring"
 featured: yes
 integrations: ["googlesheets", "googledrive", "linkedin", "firecrawl"]
 image: "busts-in-silhouette"
-inputs:
-  - name: role
-    label: "Role"
-  - name: role_slug
-    label: "Role Slug"
-    required: false
-  - name: candidate_slug
-    label: "Candidate Slug"
-    required: false
-prompt_template: |
-  Screen the resume stack for {{role}}. Use the evaluate-candidate skill with source=resume. Parse PDFs from my connected Google Drive or Dropbox, evaluate each against reqs/{{role_slug}}.md, band each as pass / borderline / fail, and build a ranked summary. One candidate record per applicant at candidates/{{candidate_slug}}.md.
 ---
 
 

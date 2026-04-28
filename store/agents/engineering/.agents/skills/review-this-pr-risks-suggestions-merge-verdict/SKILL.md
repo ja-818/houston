@@ -7,15 +7,6 @@ category: "Development"
 featured: yes
 integrations: ["github", "gitlab", "linear", "jira", "loops"]
 image: "laptop"
-inputs:
-  - name: url
-    label: "URL"
-    placeholder: "e.g. https://example.com"
-  - name: pr_slug
-    label: "Pr Slug"
-    required: false
-prompt_template: |
-  Review PR {{url}}. Use the review-pr skill. Pull the diff, tests, description, and linked issue from my connected GitHub / GitLab / Bitbucket. Read context/engineering-context.md for the quality bar and sensitive areas. Order risks: security > correctness > performance > style. Suggest inline changes by file:line. End with a verdict (merge / merge-with-changes / hold). Save to pr-reviews/{{pr_slug}}.md. Do NOT post to the PR  -  I'll paste if I want.
 ---
 
 

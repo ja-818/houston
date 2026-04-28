@@ -7,17 +7,6 @@ category: "Retention"
 featured: yes
 integrations: ["googlecalendar", "hubspot", "salesforce", "attio", "gong", "fireflies", "stripe", "linkedin"]
 image: "handshake"
-inputs:
-  - name: customer
-    label: "Customer"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: quarter
-    label: "Quarter"
-    placeholder: "e.g. 2026-Q1"
-prompt_template: |
-  Prep the QBR for {{customer}}. Use the prep-meeting skill with type=qbr. Read the customer row + any prior QBR. Pull usage trend via PostHog, billing state via Stripe, open support tickets. Compile: outcomes shipped (vs the locked success metric), usage trend QoQ, open asks, risks (from latest customer-health score), next-quarter goal, renewal runway. Save to customers/{{slug}}/qbr-{{quarter}}.md.
 ---
 
 

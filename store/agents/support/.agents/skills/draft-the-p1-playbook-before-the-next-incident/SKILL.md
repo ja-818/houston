@@ -7,16 +7,6 @@ category: "Quality"
 featured: yes
 integrations: ["github", "linear", "slack", "microsoftteams"]
 image: "headphone"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Draft the P1 playbook. Use the draft-escalation-playbook skill. Ask 2 targeted questions (what counts as P1, who gets looped in), then write a step-by-step runbook to playbooks/p1-outage.md: first 15 min (detect + contain), first 60 min (customer comms + VIP DMs), same day (RCA + customer-facing RCA), 48h follow-up (post-mortem + known-issue article + personal follow-ups). Named humans, named channels.
-
-  Additional context: {{request}}
 ---
 
 

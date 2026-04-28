@@ -7,12 +7,6 @@ category: "Transactions"
 featured: yes
 integrations: ["stripe", "quickbooks", "xero"]
 image: "ledger"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Categorize the pending transactions. Use the categorize-transactions skill. Pull the pending-transaction list from the connected QBO / Xero / provided CSV. Apply priority order: party-rules exact match → prior-categorizations fuzzy match (token-set ratio ≥ 0.85) → reasoning against the chart-of-accounts with calibrated confidence. Anything < 0.90 goes to Suspense (never invent GL codes). Write the review-ready batch to transactions/{{date}}.md with summary counts (ready / review / suspense) and $ amount in suspense.
 ---
 
 

@@ -7,12 +7,6 @@ category: "Paid"
 featured: yes
 integrations: ["linkedin", "firecrawl", "semrush"]
 image: "megaphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the weekly funnel readout. Use the analyze skill with subject=funnel. Compute conversion at each step from my connected PostHog / Mixpanel / GA4 (or paste), flag the biggest drop, and recommend 2–3 experiments ranked by expected lift × effort. Save to analyses/funnel-{{date}}.md  -  clear next actions, not a dashboard dump.
 ---
 
 

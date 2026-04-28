@@ -7,15 +7,6 @@ category: "Transactions"
 featured: yes
 integrations: ["stripe", "quickbooks", "xero"]
 image: "ledger"
-inputs:
-  - name: account_last4
-    label: "Account Last4"
-    required: false
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-prompt_template: |
-  Reconcile the account. Use the reconcile-account skill. Compare GL balance against the bank / credit-card / Stripe statement for the specified account and period. Identify timing differences (outstanding checks, deposits in transit), unmatched transactions both directions, and any amount differences. Age unmatched items. Write the report to reconciliations/{{account_last4}}/{{period}}.md and upsert recon-breaks.json. Never silently force a match  -  every difference is surfaced with aging.
 ---
 
 

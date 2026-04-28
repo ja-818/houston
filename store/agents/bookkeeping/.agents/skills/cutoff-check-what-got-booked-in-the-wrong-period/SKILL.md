@@ -7,12 +7,6 @@ category: "Close"
 featured: yes
 integrations: ["quickbooks", "xero"]
 image: "ledger"
-inputs:
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-prompt_template: |
-  Run the period cutoff check. Use the run-monthly-close skill with step=cutoff-check. Scan transactions: any booked in the current period but dated ≥ 10 days before period start (late-arriving expense = prior-period adjustment or accrual candidate); any booked in prior period but dated in current (should have been accrued). Check AP-aging for unrecorded liabilities as of period end (large open bills dated in-period). Save to closes/{{period}}/cutoff-check.md.
 ---
 
 

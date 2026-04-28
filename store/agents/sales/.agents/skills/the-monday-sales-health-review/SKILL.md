@@ -7,12 +7,6 @@ category: "Playbook"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "gong", "fireflies"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the Monday sales review. Use the analyze skill with subject=sales-health. Aggregate everything this agent produced last week from outputs.json (leads, calls, outreach, proposals, QBRs, scores, forecasts), group by domain, flag stalled work + missed followups, and recommend the top 3 moves for the week. Save to analyses/sales-health-{{date}}.md.
 ---
 
 

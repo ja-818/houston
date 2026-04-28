@@ -7,14 +7,6 @@ category: "Close"
 featured: yes
 integrations: ["quickbooks", "xero", "linear"]
 image: "ledger"
-inputs:
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-  - name: pay_period_end
-    label: "Pay Period End"
-prompt_template: |
-  Book the payroll journal entry. Use the prep-journal-entry skill with type=payroll. Pull the pay-period summary from the connected Gusto / Rippling / Justworks (or accept a pasted summary). Classify gross wages by department (R&D / S&M / G&A) based on context-ledger.domains.payroll.teamSize or a team-to-department map if present. Book: debit by-department wage expense, debit by-department payroll-tax expense, credit cash (or accrued payroll if post-period), credit benefits-liability lines. Save to journal-entries/{{period}}/payroll-{{pay_period_end}}.md.
 ---
 
 

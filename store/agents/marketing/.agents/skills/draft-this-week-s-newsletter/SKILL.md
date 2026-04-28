@@ -7,12 +7,6 @@ category: "Email"
 featured: yes
 integrations: ["googledocs", "linkedin", "twitter", "reddit", "mailchimp", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft this week's newsletter. Use the write-content skill with channel=newsletter. Subject + preview + body with one clear through-line (not 5 updates glued together). Pull source material from this week's blog posts / case studies / launches in outputs.json if relevant. Save to newsletters/{{date}}.md ready for my connected Beehiiv / Substack / ESP.
 ---
 
 

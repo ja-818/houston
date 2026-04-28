@@ -7,18 +7,6 @@ category: "Meetings"
 featured: yes
 integrations: ["attio", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "hubspot", "linear", "linkedin", "notion", "outlook", "perplexityai", "pipedrive", "reddit", "salesforce", "stripe", "twitter"]
 image: "handshake"
-inputs:
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: n
-    label: "N"
-    required: false
-prompt_template: |
-  Draft a proposal for {{company}}. Use the draft-proposal skill. Read the deal history (all call notes + analyses under calls/{{slug}}/), extract their problem statement verbatim, their success metric verbatim, and stakeholders. Draft the one-pager: problem → approach → scope (in + out) → pricing (within playbook's stance) → terms → success metrics → timeline → next step. Save to deals/{{slug}}/proposal-v{{n}}.md. Flag anything outside the pricing stance with FLAG: needs approval.
 ---
 
 

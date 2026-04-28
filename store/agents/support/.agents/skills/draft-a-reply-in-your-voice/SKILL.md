@@ -7,12 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "headphone"
-inputs:
-  - name: id
-    label: "ID"
-    required: false
-prompt_template: |
-  Draft a reply for conversation {{id}}. Use the draft-reply skill. Pull the customer dossier via customer-view, read config/voice.md, mirror my tone, address the specific ask (bug / how-to / billing). Never promise a date I haven't approved. Save to conversations/{{id}}/draft.md.
 ---
 
 

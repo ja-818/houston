@@ -7,15 +7,6 @@ category: "Inbound"
 featured: yes
 integrations: ["googlecalendar", "gmail", "outlook", "hubspot", "salesforce", "attio", "pipedrive", "gong", "fireflies", "stripe"]
 image: "handshake"
-inputs:
-  - name: lead_slug
-    label: "Lead Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Triage this inbound reply and draft the response. Use the draft-outreach skill with stage=inbound-reply. Classify as interested / asking-question / objection / not-now / unsubscribe / spam, then draft the right reply (for interested: booking with 2-3 calendar slots; for objection: chain into handle-objection; for not-now: polite circle-back). Save to outreach/inbound-reply-{{lead_slug}}-{{date}}.md.
 ---
 
 

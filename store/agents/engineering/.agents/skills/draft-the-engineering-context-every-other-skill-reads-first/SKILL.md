@@ -7,16 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["github", "gitlab", "linear", "jira"]
 image: "laptop"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Help me draft (or update) my engineering context doc. Use the define-engineering-context skill. Interview me briefly (or read my connected GitHub) and write the full doc  -  product, stack, architecture, quality bar, team shape, current priorities, conventions  -  to context/engineering-context.md. Every other skill reads this first; until it exists, they stop and ask for it.
-
-  Additional context: {{request}}
 ---
 
 

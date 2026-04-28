@@ -7,12 +7,6 @@ category: "Development"
 featured: yes
 integrations: ["github", "gitlab", "firecrawl", "perplexityai"]
 image: "laptop"
-inputs:
-  - name: week
-    label: "Week"
-    placeholder: "e.g. 2026-W14"
-prompt_template: |
-  Run the weekly PR health readout. Use the analyze skill with subject=pr-velocity. Pull the last 7 days of PRs from my connected GitHub / GitLab. Compute: PRs merged, median cycle time (open → merge), largest PR size in lines changed, reviewer concentration (top-reviewer share), open-to-merge age of currently-open PRs. Read context/engineering-context.md so the diagnosis respects quality bar + cadence. Save to pr-velocity/{{week}}.md with a one-line diagnosis per anomaly.
 ---
 
 

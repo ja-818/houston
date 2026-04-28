@@ -7,14 +7,6 @@ category: "Onboarding"
 featured: yes
 integrations: ["notion", "slack", "loops"]
 image: "busts-in-silhouette"
-inputs:
-  - name: employee
-    label: "Employee"
-  - name: employee_slug
-    label: "Employee Slug"
-    required: false
-prompt_template: |
-  Prep me for my 1:1 with {{employee}}. Use the employee-dossier skill. Pull HRIS profile from my connected HRIS (read-only), plus onboarding-plans/, recent checkins/, and interview-loops/ into a single-page dossier at employee-dossiers/{{employee_slug}}.md: profile / history / recent signals / upcoming.
 ---
 
 

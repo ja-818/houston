@@ -7,12 +7,6 @@ category: "Copy"
 featured: yes
 integrations: ["reddit", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Write popup copy. Use the write-page-copy skill with surface=popup. Hook, offer, dismiss/accept CTAs  -  tied to a trigger (scroll, exit, time-on-page) with targeting recommendations. Save to page-copy/popup-{{slug}}.md.
 ---
 
 

@@ -7,14 +7,6 @@ category: "Copy"
 featured: yes
 integrations: ["ahrefs", "airtable", "attio", "customerio", "firecrawl", "fireflies", "gong", "googleads", "googledocs", "hubspot", "instagram", "linkedin", "mailchimp", "metaads", "notion", "perplexityai", "reddit", "salesforce", "semrush", "stripe", "twitter", "youtube"]
 image: "megaphone"
-inputs:
-  - name: button
-    label: "Button"
-  - name: page_slug
-    label: "Page Slug"
-    required: false
-prompt_template: |
-  Give me CTA variants for {{button}}. Use the write-cta-variants skill. Each variant paired with the objection it answers. Grounded in pains from my call-insights/. Save to cta-variants/{{page_slug}}.md.
 ---
 
 

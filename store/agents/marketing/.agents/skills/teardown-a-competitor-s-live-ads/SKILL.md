@@ -7,14 +7,6 @@ category: "Paid"
 featured: yes
 integrations: ["linkedin", "twitter", "reddit", "instagram", "googleads", "metaads", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: competitor
-    label: "Competitor"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Teardown {{competitor}}'s current ads. Use the monitor-competitors skill with source=ads. Pull live creative from Meta Ad Library, LinkedIn Ad Library, and Google Ads Transparency (via Composio scrape), then extract angles, hooks, and offers they're testing. Save to competitor-briefs/ads-{{competitor}}-{{date}}.md.
 ---
 
 

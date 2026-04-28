@@ -7,16 +7,6 @@ category: "Setup"
 featured: yes
 integrations: ["stripe"]
 image: "ledger"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Help me set up my bookkeeping context. Use the define-bookkeeping-context skill. Interview me briefly on entity (legal name, type, state, EIN, fiscal year), accounting method (cash vs. accrual), accounts (bank, credit card, Stripe), payroll provider, revenue model, and tax preparer. Write the full doc to context/bookkeeping-context.md  -  the source of truth every other skill reads before producing anything substantive.
-
-  Additional context: {{request}}
 ---
 
 

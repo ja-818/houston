@@ -7,16 +7,6 @@ category: "Culture"
 featured: yes
 integrations: ["googlesheets", "googledocs", "notion"]
 image: "busts-in-silhouette"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Draft our people-context doc. Use the define-people-context skill. Interview me briefly, then write context/people-context.md: company values, team shape, leveling framework (IC + manager L1-L5), comp bands, review-cycle rhythm, policy canon, escalation rules, voice notes, hard nos. Every other skill in this agent reads it first.
-
-  Additional context: {{request}}
 ---
 
 

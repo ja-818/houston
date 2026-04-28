@@ -124,7 +124,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   }, [pendingId, clearPending, selectedId, missionPanelOpen]);
 
   // Per-agent session key for the currently selected card. Drives the
-  // panel hook's action-form routing (mid-conversation send vs new
+  // panel hook's action routing (mid-conversation send vs new
   // conversation create).
   const selectedSessionKey = useMemo(() => {
     if (!selectedId) return null;
@@ -132,7 +132,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     return item?.session_key ?? `activity-${selectedId}`;
   }, [selectedId, rawItems]);
 
-  // All the per-agent panel features (skill cards, action form, model
+  // All the per-agent panel features (skill cards, selected Action, model
   // selector, Actions button, tool/link renderers) come from this hook
   // so the cross-agent Mission Control view can reuse them.
   const panel = useAgentChatPanel({
@@ -482,12 +482,14 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           />
         }
         cardLabels={cardLabels}
-        // Per-agent panel features (skill cards, action form, model
+        // Per-agent panel features (skill cards, selected Action, model
         // selector, Actions button, tool/link renderers) all come
         // from the shared `useAgentChatPanel` hook so Mission Control
         // and the per-agent BoardTab share one implementation.
         chatEmptyState={panel.chatEmptyState}
-        composerOverride={panel.composerOverride}
+        composerHeader={panel.composerHeader}
+        canSendEmpty={panel.canSendEmpty}
+        onComposerSubmit={panel.onComposerSubmit}
         footer={panel.footer}
         renderUserMessage={panel.renderUserMessage}
         renderSystemMessage={panel.renderSystemMessage}

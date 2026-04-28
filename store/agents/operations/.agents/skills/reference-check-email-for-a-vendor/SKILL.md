@@ -7,11 +7,6 @@ category: "Vendors"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "clipboard"
-inputs:
-  - name: vendor
-    label: "Vendor"
-prompt_template: |
-  Draft a reference-check email for {{vendor}}. Use the draft-message skill with type=vendor (sub-type=reference-check). 3-5 targeted questions based on what we're evaluating against  -  not 'tell me about them.' Save as an inbox draft + drafts/vendor-reference-check-{{vendor}}.md.
 ---
 
 

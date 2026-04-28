@@ -7,14 +7,6 @@ category: Support
 featured: yes
 image: headphone
 integrations: [googledocs, stripe, notion, github, linear]
-inputs:
-  - name: request
-    label: "Request"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Request: {{request}}
 ---
 
 

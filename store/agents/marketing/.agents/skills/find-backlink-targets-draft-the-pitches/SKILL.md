@@ -7,12 +7,6 @@ category: "SEO"
 featured: yes
 integrations: ["firecrawl", "semrush", "ahrefs"]
 image: "megaphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Find backlink targets and draft the pitches. Use the find-backlinks skill. Identify target sites via SERP + my connected Ahrefs (backlink tool) that match our niche, then draft per-target pitch emails grounded in what we actually offer them. Save to backlink-plans/{{date}}.md.
 ---
 
 

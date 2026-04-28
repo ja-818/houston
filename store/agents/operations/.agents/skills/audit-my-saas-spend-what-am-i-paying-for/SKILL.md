@@ -7,12 +7,6 @@ category: "Finance"
 featured: yes
 integrations: ["gmail", "outlook", "stripe"]
 image: "clipboard"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Audit my SaaS spend. Use the audit-saas-spend skill. Aggregate subscriptions from my contracts/ folder, connected Stripe, and inbox receipts (Gmail / Outlook). Flag duplicates, unused tools, and rank the top cancel candidates by annual cost × low-usage signal. Save to saas-audits/{{date}}.md.
 ---
 
 

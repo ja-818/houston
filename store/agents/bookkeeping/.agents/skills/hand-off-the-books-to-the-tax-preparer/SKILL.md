@@ -7,12 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googledrive", "gmail", "outlook"]
 image: "ledger"
-inputs:
-  - name: year
-    label: "Year"
-    placeholder: "e.g. 2026"
-prompt_template: |
-  Prep the tax-handoff package. Use the hand-off-to-tax skill. First, run audit-books  -  any open items become blockers that must be closed before handoff. Then assemble: final trial balance, every account's full-year reconciliation summary, fixed-asset schedule with depreciation, the 1099 list from track-vendor-1099s, the R&D classification from classify-rd-expenses, common M-1 adjustment candidates (meals 50%, stock comp book/tax diff, accrual-to-cash diffs for cash-basis returns), and a notes file flagging judgment calls. Save the package under handoffs/tax-{{year}}/ and optionally mirror to a shared Google Drive folder.
 ---
 
 

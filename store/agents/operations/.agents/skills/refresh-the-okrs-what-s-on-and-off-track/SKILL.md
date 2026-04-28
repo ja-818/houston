@@ -7,12 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["googlesheets", "notion", "airtable", "linear", "linkedin"]
 image: "clipboard"
-inputs:
-  - name: quarter
-    label: "Quarter"
-    placeholder: "e.g. 2026-Q1"
-prompt_template: |
-  Refresh the OKRs. Use the track-okr skill. For each KR, pull the current value via any connected OKR tool (Notion / Airtable / Google Sheets), append a snapshot to okr-history.json, classify on-track / at-risk / off-track, and surface root causes from decisions.json and context/operations-context.md priorities for anything off-track. Save to okrs/{{quarter}}.md.
 ---
 
 

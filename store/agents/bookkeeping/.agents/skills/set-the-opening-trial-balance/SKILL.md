@@ -7,16 +7,6 @@ category: "Setup"
 featured: yes
 integrations: ["stripe"]
 image: "ledger"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Set the opening trial balance. Use the define-bookkeeping-context skill with mode=opening-balances. Interview me for each GL account's balance as of the opening date, or parse a provided trial-balance file (CSV / xlsx / pasted). Validate: debits total = credits total within 1 cent; every GL code exists in config/chart-of-accounts.json. Write to config/opening-trial-balance.json. Update context-ledger.universal.openingBalances with as-of date and source.
-
-  Additional context: {{request}}
 ---
 
 

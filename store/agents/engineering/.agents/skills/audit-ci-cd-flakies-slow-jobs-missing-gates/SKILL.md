@@ -7,14 +7,6 @@ category: "Development"
 featured: yes
 integrations: ["github", "gitlab", "firecrawl"]
 image: "laptop"
-inputs:
-  - name: repo
-    label: "Repo"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Audit my CI/CD. Use the audit skill with surface=ci-cd. Pull workflow config + last 100 runs from my connected GitHub / GitLab. Identify flaky tests (same-SHA retry-pass), rank slowest jobs by minutes-per-week, enumerate missing gates vs the quality bar in context/engineering-context.md, flag security gaps (plaintext secrets, unpinned actions, pull_request_target leaks). Save to audits/ci-cd-{{repo}}-{{date}}.md with a prioritized fix list ranked by founder-impact.
 ---
 
 

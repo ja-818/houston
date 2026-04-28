@@ -7,14 +7,6 @@ category: "Data"
 featured: yes
 integrations: ["airtable", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "googledrive", "googlesheets", "linear", "linkedin", "notion", "outlook", "perplexityai", "slack", "stripe"]
 image: "clipboard"
-inputs:
-  - name: table
-    label: "Table"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Run data QA on {{table}}. Use the analyze skill with subject=data-qa. Read-only checks: nulls per column, duplicates on natural key, freshness (MAX(updated_at) vs expected staleness), referential integrity on key joins, cardinality surprises. Save to data-quality-reports/{{date}}/report.md with pass / warn / fail per check and a suggested fix per fail.
 ---
 
 

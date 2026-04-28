@@ -57,12 +57,13 @@ pub struct SkillSummary {
     /// Microsoft Fluent 3D Emoji slug like `rocket` / `magnifying-glass-tilted-left`
     /// resolved by the frontend.
     pub image: Option<String>,
-    /// Declared user inputs for this action. When non-empty, the frontend
-    /// renders an inline form with one labeled field per input instead of
-    /// a free-text composer prefill. The user's values are interpolated
-    /// into `prompt_template` before the message is sent.
+    /// Legacy declared user inputs for this action. Still parsed so older
+    /// user-authored skills survive round-trips, but current Houston UX
+    /// ignores these fields and keeps the free-text composer visible.
     pub inputs: Vec<SkillInput>,
-    /// Prompt template with `{{name}}` placeholders matching `inputs[].name`.
+    /// Legacy prompt template with `{{name}}` placeholders matching
+    /// `inputs[].name`. Still parsed for compatibility, but current sends
+    /// always use `Use the <skill> skill.` plus optional composer text.
     /// Multi-line YAML is supported via the `|` block scalar:
     ///
     /// ```yaml
@@ -71,17 +72,14 @@ pub struct SkillSummary {
     ///   Focus areas: {{focus}}
     /// ```
     ///
-    /// When omitted, a default prompt is synthesised from the labels +
-    /// values (e.g. `Use the X action.\n\nLabel: value\n…`).
     pub prompt_template: Option<String>,
 }
 
-/// Declared input on a skill. Skill authors describe each variable they
-/// want filled by the user; the frontend renders these as labeled form
-/// fields in the chat panel and interpolates them into `prompt_template`.
+/// Legacy declared input on a skill. Kept for parsing older files; new
+/// Store-packaged skills should not declare inputs.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SkillInput {
-    /// Variable name used inside `{{...}}` in `prompt_template`. Required.
+    /// Variable name used inside legacy `prompt_template`. Required.
     pub name: String,
     /// User-facing label shown above the input (e.g. "Company to research").
     pub label: String,

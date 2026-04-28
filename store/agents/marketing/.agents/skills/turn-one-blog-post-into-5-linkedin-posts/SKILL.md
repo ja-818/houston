@@ -7,14 +7,6 @@ category: "SEO"
 featured: yes
 integrations: ["linkedin", "twitter", "youtube", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: blog_post_url
-    label: "Blog Post URL"
-  - name: source_slug
-    label: "Source Slug"
-    required: false
-prompt_template: |
-  Turn {{blog_post_url}} into 5 LinkedIn posts. Use the repurpose-content skill. Extract the core ideas via Firecrawl and reshape each into a LinkedIn-native post (hook, whitespace, one clear takeaway) I can copy into the write-content skill's LinkedIn channel to ship. Save to repurposed/{{source_slug}}-to-linkedin.md.
 ---
 
 

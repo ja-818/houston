@@ -7,12 +7,6 @@ category: "Reliability"
 featured: yes
 integrations: ["slack"]
 image: "laptop"
-inputs:
-  - name: id
-    label: "ID"
-    required: false
-prompt_template: |
-  An incident just fired  -  run me through it. Use the run-incident-response skill. LIVE COACH + SCRIBE mode. Walk me through stabilize → communicate → mitigate → verify → document. Capture the incident timeline to incidents/{{id}}.md as we go. Never auto-rollback, never run prod commands  -  produce the next action, I execute it.
 ---
 
 

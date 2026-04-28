@@ -7,16 +7,6 @@ category: "Meetings"
 featured: yes
 integrations: ["notion", "reddit", "firecrawl"]
 image: "handshake"
-inputs:
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: competitor
-    label: "Competitor"
-  - name: prospect
-    label: "Prospect"
-prompt_template: |
-  Build a battlecard for {{company}} vs {{competitor}}. Use the build-battlecard skill. Research the competitor (positioning, pricing shape, known weaknesses, recent reviews) via Firecrawl + Exa. Build the 3-criterion comparison grid anchored in what Acme actually cares about (pulled from deal notes), 3 trap-set questions, 3 objection rebuttals, 2 proof points from the playbook's anchor accounts. Save to battlecards/{{competitor}}-{{prospect}}.md.
 ---
 
 

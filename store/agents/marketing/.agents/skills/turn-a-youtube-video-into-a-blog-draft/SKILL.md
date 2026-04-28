@@ -7,14 +7,6 @@ category: "SEO"
 featured: yes
 integrations: ["linkedin", "twitter", "youtube", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: youtube_url
-    label: "Youtube URL"
-  - name: video_slug
-    label: "Video Slug"
-    required: false
-prompt_template: |
-  Turn {{youtube_url}} into a blog post draft. Use the repurpose-content skill. Fetch the transcript via YouTube (Composio) and rewrite as a long-form blog draft with SEO structure (H1/H2, keywords, meta). Great for founder interviews, conference talks, or live sessions. Save to repurposed/{{video_slug}}-to-blog.md.
 ---
 
 

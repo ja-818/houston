@@ -7,12 +7,6 @@ category: "Retention"
 featured: yes
 integrations: ["linkedin"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Surface expansion opportunities in my book. Use the surface-expansion skill. Scan GREEN customers for usage spikes, team growth, feature-request patterns, and rank opportunities by ARR upside. Save to expansion/{{date}}.md.
 ---
 
 

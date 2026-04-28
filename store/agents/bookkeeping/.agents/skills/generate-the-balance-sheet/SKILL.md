@@ -7,12 +7,6 @@ category: "Reporting"
 featured: yes
 integrations: ["gmail", "googledocs", "googledrive", "googlesheets", "hubspot", "linear", "notion", "outlook", "quickbooks", "slack", "stripe", "xero"]
 image: "ledger"
-inputs:
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-prompt_template: |
-  Generate the balance sheet. Use the generate-financial-statements skill with statement=balance-sheet. As-of the specified date, grouped into current / non-current for assets and liabilities, with PoP comparison (vs. prior month-end and prior year-end). Tie the equity section back to opening balances + YTD net income. Flag any account where the balance would be unusual (e.g., credit AR balance, debit AP balance). Save to financials/{{period}}/balance-sheet.md.
 ---
 
 

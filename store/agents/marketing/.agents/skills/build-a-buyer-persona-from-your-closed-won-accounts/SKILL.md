@@ -7,14 +7,6 @@ category: "Positioning"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio"]
 image: "megaphone"
-inputs:
-  - name: segment
-    label: "Segment"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Build a buyer persona for {{segment}}. Use the profile-icp skill. Pull my top closed-won accounts from my connected CRM (HubSpot / Attio / Salesforce via Composio), extract common firmographics, roles, and decision-maker patterns, then synthesize pains ranked by frequency, jobs-to-be-done, triggers that mean they're in-market, objection patterns, and 1–2 anchor accounts. Save to personas/{{slug}}.md.
 ---
 
 

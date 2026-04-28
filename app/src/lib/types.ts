@@ -122,9 +122,9 @@ export interface SkillSummary {
   integrations: string[];
   /** Image URL or Microsoft Fluent 3D Emoji slug (e.g. "rocket"). */
   image: string | null;
-  /** Declared user inputs for this action. Empty = free-form composer. */
+  /** Legacy structured inputs. Parsed for compatibility, ignored by composer UX. */
   inputs: SkillInputDef[];
-  /** Prompt template with `{{name}}` placeholders matching `inputs[].name`. */
+  /** Legacy prompt template. Parsed for compatibility, ignored by sends. */
   prompt_template: string | null;
 }
 

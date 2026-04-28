@@ -7,11 +7,6 @@ category: "Vendors"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "clipboard"
-inputs:
-  - name: supplier
-    label: "Supplier"
-prompt_template: |
-  Reach out to {{supplier}} for a trial. Use the draft-message skill with type=vendor (sub-type=trial). Write: positioning fit + specific use case + success criteria + honest timeline. Save as an inbox draft + drafts/vendor-trial-{{supplier}}.md.
 ---
 
 

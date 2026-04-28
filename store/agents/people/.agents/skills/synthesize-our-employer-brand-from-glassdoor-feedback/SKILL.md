@@ -7,12 +7,6 @@ category: "Culture"
 featured: yes
 integrations: ["hubspot", "github", "linear", "jira", "slack", "discord", "firecrawl"]
 image: "busts-in-silhouette"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Synthesize our employer brand. Use the analyze skill with subject=employer-brand. Pull reviews from my connected Glassdoor or anonymous-feedback platform via Firecrawl / connected review sources, cluster themes, derive top 3 strengths + top 3 concerns + emerging patterns, flag contradictions vs our stated values, and recommend 3 moves. Write to analyses/employer-brand-{{date}}.md. Leadership readout only  -  do not publish.
 ---
 
 

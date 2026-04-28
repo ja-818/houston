@@ -7,11 +7,6 @@ category: "Success"
 featured: yes
 integrations: ["hubspot", "attio", "stripe", "mailchimp", "customerio", "loops"]
 image: "headphone"
-inputs:
-  - name: account
-    label: "Account"
-prompt_template: |
-  Draft a save message for {{account}}. Use the draft-lifecycle-message skill with type=churn-save. Chain customer-view view=churn-risk first to pull the exact flag. Acknowledge the risk honestly, name the specific pain, offer pause / downgrade / concierge / refund  -  whichever is policy in context/support-context.md. Never invent a discount I haven't pre-approved. Save to saves/{{account}}.md.
 ---
 
 

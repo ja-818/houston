@@ -7,16 +7,6 @@ category: "Positioning"
 featured: yes
 integrations: ["googledocs", "notion"]
 image: "megaphone"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Help me write my full positioning doc: ICP, category, differentiators, brand voice, pricing stance, primary CTA. Use the define-positioning skill. Interview me briefly, then write to context/marketing-context.md  -  the source of truth every other skill in this agent reads before it produces copy, content, or campaigns.
-
-  Additional context: {{request}}
 ---
 
 

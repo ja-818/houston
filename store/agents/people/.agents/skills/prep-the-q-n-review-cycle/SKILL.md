@@ -7,15 +7,6 @@ category: "Performance"
 featured: yes
 integrations: ["googledocs", "notion"]
 image: "busts-in-silhouette"
-inputs:
-  - name: n
-    label: "N"
-    required: false
-  - name: cycle_slug
-    label: "Cycle Slug"
-    required: false
-prompt_template: |
-  Prep the Q{{n}} review cycle. Use the prep-review-cycle skill. Read the leveling framework and review-cycle rhythm from context/people-context.md. Produce the self-review template, the manager-review template, the calibration doc, and the full timeline  -  all scoped to the leveling framework. Write to review-cycles/{{cycle_slug}}.md as status draft until I approve the structure.
 ---
 
 

@@ -7,12 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "headphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Find stale threads waiting on me. Use the scan-inbox skill with scope=stale-threads. Filter conversations.json to conversations quiet > 48h with me as last responder, group by 'their turn' vs 'my turn', surface only the my-turn group as actionable, and for each suggest a nudge draft or a clean close. Write to stale-rescues/{{date}}.md.
 ---
 
 

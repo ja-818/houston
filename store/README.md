@@ -33,11 +33,11 @@ Engine create ignores stale activity seeds from old installed packages,
 and Store update sync clears the known default intro card from existing
 agents only when it is the sole board item.
 
-Every packaged Action must also declare `inputs` and `prompt_template`
-frontmatter. The Store is for non-technical users, so placeholders that
-would otherwise live inside a prompt must become form fields in the chat
-panel. If an Action has no specific fields, include a short optional
-`request` textarea so the Action still follows the same form flow.
+Packaged Actions must not declare legacy `inputs` or `prompt_template`
+frontmatter. The Action picker only selects the workflow; the regular
+chat composer stays visible so the user can add context in plain
+language, or send the Action by itself and let the agent ask for missing
+details.
 
 ## Updates
 
@@ -51,7 +51,7 @@ When a bundled package updates, Houston also syncs newly-added packaged
 Actions into existing workspace agents whose `config_id` matches that
 Store agent. Existing Action folders keep their local body content, but
 their frontmatter metadata is refreshed from the bundled package. Result:
-new Houston-built workflows appear in existing agents, Action forms can
+new Houston-built workflows appear in existing agents, Action cards can
 be updated across releases, and local procedure edits stay intact.
 
 ### Migrations (renaming or removing Actions across versions)

@@ -7,11 +7,6 @@ category: "Success"
 featured: yes
 integrations: ["hubspot", "attio", "stripe", "mailchimp", "customerio", "loops"]
 image: "headphone"
-inputs:
-  - name: account
-    label: "Account"
-prompt_template: |
-  Draft an expansion nudge for {{account}}. Use the draft-lifecycle-message skill with type=expansion-nudge. Chain customer-view view=health first to find the ceiling signal (feature-adoption threshold, team-size change, repeated ask). Draft a short, specific outreach naming the signal and proposing an option. If no real signal exists, stop and tell me. Save to expansions/{{account}}.md.
 ---
 
 

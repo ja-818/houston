@@ -7,14 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["slack", "twitter", "firecrawl", "perplexityai"]
 image: "laptop"
-inputs:
-  - name: feature
-    label: "Feature"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Validate {{feature}} before I commit roadmap effort. Use the validate-feature-fit skill. I'll give you the idea, the target audience, and the problem statement. Scrape the competitor landscape via Firecrawl + Exa, check what's already shipping for this audience, and pull any adjacent customer-language signal you can find. Produce a verdict (build / defer / skip) with evidence. Save to feature-fit/{{slug}}.md. Flag the assumptions you couldn't test from the desk.
 ---
 
 

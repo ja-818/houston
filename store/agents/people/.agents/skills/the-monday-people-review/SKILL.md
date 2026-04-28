@@ -7,12 +7,6 @@ category: "Performance"
 featured: yes
 integrations: ["hubspot", "github", "linear", "jira", "slack", "discord", "firecrawl"]
 image: "busts-in-silhouette"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the Monday people review. Use the analyze skill with subject=people-health. Aggregate everything I produced this week across hiring, onboarding, performance, compliance, and culture from outputs.json. Per domain: what shipped, what's stale (>7 days as draft), gaps. Cross-cutting: open-req drift, retention reds without stay-conversation follow-up, compliance near-deadlines, review-cycle drift. Write to analyses/people-health-{{date}}.md.
 ---
 
 

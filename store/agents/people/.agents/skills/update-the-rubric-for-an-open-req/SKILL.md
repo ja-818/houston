@@ -7,14 +7,6 @@ category: "Hiring"
 featured: yes
 integrations: ["github", "linkedin", "firecrawl"]
 image: "busts-in-silhouette"
-inputs:
-  - name: role
-    label: "Role"
-  - name: role_slug
-    label: "Role Slug"
-    required: false
-prompt_template: |
-  Update the rubric for the {{role}} req. Use the source-candidates skill (it seeds reqs/{{role_slug}}.md as part of its first step). Ask me: target level, top 3 must-haves, top 3 nice-to-haves, 2-3 red flags. Write to reqs/{{role_slug}}.md. Every hiring skill reads this file next.
 ---
 
 

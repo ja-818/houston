@@ -7,12 +7,6 @@ category: "Scheduling"
 featured: yes
 integrations: ["googlecalendar", "gmail", "outlook"]
 image: "clipboard"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Triage my inbox. Use the triage skill with surface=inbox. Pull last-24h threads via Gmail / Outlook, classify each into needs-me-today / can-wait / ignore, rank the top bucket by time-sensitivity, and state a specific verb+object action per thread (not 'review'). Save to triage/{{date}}.md.
 ---
 
 

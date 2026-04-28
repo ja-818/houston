@@ -7,16 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googlesheets", "notion"]
 image: "busts-in-silhouette"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Audit I-9 / W-4 status across the team. Use the compliance-calendar skill. Scan my connected HRIS for any missing documents, expirations in the next 90 days, and incomplete fields. Update compliance-calendar.md in place and log each flag in outputs.json as a compliance-update entry.
-
-  Additional context: {{request}}
 ---
 
 

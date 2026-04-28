@@ -7,16 +7,6 @@ category: "Triage"
 featured: yes
 integrations: ["github", "gitlab"]
 image: "laptop"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Refresh the tech-debt inventory. Use the triage-tech-debt skill. Read context/engineering-context.md so impact scoring respects the actual stack and priorities. Read existing tech-debt.md at the agent root if it exists  -  merge new findings in, never wholesale-overwrite. Each entry: area, problem, impact (1-5), effort (S/M/L/XL), suggested next step. Sort by impact / effort. End with the top 3 to attack next week.
-
-  Additional context: {{request}}
 ---
 
 

@@ -7,17 +7,6 @@ category: "Onboarding"
 featured: yes
 integrations: ["gmail", "notion", "slack"]
 image: "busts-in-silhouette"
-inputs:
-  - name: new_hire
-    label: "New Hire"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-  - name: employee_slug
-    label: "Employee Slug"
-    required: false
-prompt_template: |
-  Draft the onboarding plan for {{new_hire}} starting {{date}}. Use the draft-onboarding-plan skill. Read leveling and voice from context/people-context.md. Produce a Day 0 / Week 1 / 30-60-90 plan plus welcome Slack and welcome email drafts at onboarding-plans/{{employee_slug}}.md.
 ---
 
 

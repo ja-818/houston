@@ -7,12 +7,6 @@ category: "CRM"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "pipedrive", "notion", "linear"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Answer my natural-language question of the CRM. Use the manage-crm skill with action=query. Parse the question into a read-only query, run it against my connected CRM, and return the answer + the query it ran (so I can adjust). Save to crm-reports/query-{{date}}.md.
 ---
 
 

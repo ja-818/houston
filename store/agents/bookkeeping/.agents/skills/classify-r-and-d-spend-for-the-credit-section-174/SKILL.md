@@ -7,12 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["gmail", "googledocs", "googledrive", "googlesheets", "hubspot", "linear", "notion", "outlook", "quickbooks", "slack", "stripe", "xero"]
 image: "ledger"
-inputs:
-  - name: year
-    label: "Year"
-    placeholder: "e.g. 2026"
-prompt_template: |
-  Classify R&D spend for the specified year. Use the classify-rd-expenses skill. Review vendor invoices + payroll + contractor spend from transactions + journal-entries.json. Bucket into qualified R&D categories (wages for qualified services, supplies, computer leasing / cloud, contract research at 65%) by project if a project list is available. Exclude non-qualifying items (routine data collection, post-commercial-release improvements, funded research). Save to compliance/rd-credit/{{year}}.md with a summary total and per-project breakdown. Never files  -  supports the credit claim, you or your tax preparer files.
 ---
 
 

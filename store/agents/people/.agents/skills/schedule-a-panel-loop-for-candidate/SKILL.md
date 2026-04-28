@@ -7,14 +7,6 @@ category: "Hiring"
 featured: yes
 integrations: ["googlecalendar", "outlook", "loops"]
 image: "busts-in-silhouette"
-inputs:
-  - name: candidate
-    label: "Candidate"
-  - name: candidate_slug
-    label: "Candidate Slug"
-    required: false
-prompt_template: |
-  Schedule {{candidate}}'s interview loop. Use the coordinate-interviews skill. Propose times via my connected Google Calendar (check free/busy, never send the invites), run the prep-interviewer skill per panelist, and append schedule + briefs to interview-loops/{{candidate_slug}}.md. I approve and send.
 ---
 
 

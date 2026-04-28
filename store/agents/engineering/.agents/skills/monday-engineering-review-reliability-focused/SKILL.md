@@ -7,12 +7,6 @@ category: "Reliability"
 featured: yes
 integrations: ["github", "gitlab", "firecrawl", "perplexityai"]
 image: "laptop"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the weekly engineering review, focused on reliability. Use the analyze skill with subject=engineering-health. Aggregate incidents, postmortems, runbooks, deploy-readiness verdicts, and observability audits from the last 7 days. Call out any incident without a postmortem, any runbook that's stale vs the current architecture, any deploy-readiness SOFT-GO that needs follow-up. Save to reviews/{{date}}.md.
 ---
 
 

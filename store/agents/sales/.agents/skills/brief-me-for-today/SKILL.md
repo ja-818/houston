@@ -7,12 +7,6 @@ category: "Playbook"
 featured: yes
 integrations: ["googlecalendar"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Brief me for today. Use the daily-brief skill. Produce today's calendar (pull from my connected Google Calendar), approvals queue (drafts from outputs.json with status:draft), and top 3 moves for the day. Save to briefs/{{date}}.md.
 ---
 
 

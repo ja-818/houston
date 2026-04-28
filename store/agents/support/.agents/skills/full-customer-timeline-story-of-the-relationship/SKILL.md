@@ -7,14 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "hubspot", "salesforce", "attio", "stripe"]
 image: "headphone"
-inputs:
-  - name: account
-    label: "Account"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Show me the full timeline for {{account}}. Use the customer-view skill with view=timeline. Pull every interaction (tickets, calls, purchases, plan changes, NPS) from conversations.json + my connected Stripe + my connected CRM and sort chronologically. Save to timelines/{{slug}}.md.
 ---
 
 

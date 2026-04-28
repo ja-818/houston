@@ -7,12 +7,6 @@ category: "Help Center"
 featured: yes
 integrations: ["attio", "customerio", "github", "gmail", "googledocs", "hubspot", "jira", "linear", "loops", "mailchimp", "microsoftteams", "notion", "outlook", "salesforce", "slack", "stripe"]
 image: "headphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Surface the top 3 docs gaps. Use the gap-surface skill. Read patterns.json, filter to clusters without a matching article, rank by occurrenceCount × customer-value weight × freshness, and present the top 3 with source ticket ids. Ask which I want drafted, then chain write-article type=from-ticket. Save to gaps/{{date}}.md.
 ---
 
 

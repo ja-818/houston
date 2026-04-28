@@ -7,15 +7,6 @@ category: "Scheduling"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "clipboard"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Draft replies to my needs-me inbox threads. Use the draft-message skill with type=reply. Pull threads from Gmail / Outlook, draft in my voice (from config/voice.md), save each as a draft in the inbox provider, and write the human-readable record to drafts/reply-{{date}}-{{slug}}.md. Never sends.
 ---
 
 

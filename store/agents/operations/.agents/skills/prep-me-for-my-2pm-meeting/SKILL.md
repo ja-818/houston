@@ -7,17 +7,6 @@ category: "Scheduling"
 featured: yes
 integrations: ["googledrive", "googlecalendar", "gmail", "outlook", "gong", "fireflies", "slack", "linkedin"]
 image: "clipboard"
-inputs:
-  - name: name
-    label: "Name"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Prep me for my upcoming meeting with {{name}}. Use the brief skill with mode=meeting-pre. Pull recent email threads, public activity, and shared history for each external attendee. Draft a suggested agenda reflecting what they'll likely want, grounded in my priorities from context/operations-context.md. Call out the ONE thing not to forget. Save to meetings/{{date}}-{{slug}}-pre.md.
 ---
 
 

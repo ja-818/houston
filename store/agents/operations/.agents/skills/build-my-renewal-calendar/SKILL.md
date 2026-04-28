@@ -7,12 +7,6 @@ category: "Finance"
 featured: yes
 integrations: ["googledrive"]
 image: "clipboard"
-inputs:
-  - name: quarter
-    label: "Quarter"
-    placeholder: "e.g. 2026-Q1"
-prompt_template: |
-  Build my renewal calendar. Use the track-renewals skill. Scan contracts/ and any connected Google Drive folder, extract renewal dates + notice windows + auto-renew language. Maintain the living renewals/calendar.md and a per-quarter digest at renewals/{{quarter}}.md.
 ---
 
 

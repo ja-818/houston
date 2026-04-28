@@ -7,12 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["notion", "github", "linear", "jira"]
 image: "laptop"
-inputs:
-  - name: week
-    label: "Week"
-    placeholder: "e.g. 2026-W14"
-prompt_template: |
-  Plan this week's sprint. Use the plan-sprint skill. Pull my open tickets from the connected Linear, Jira, or GitHub Issues; rank against priorities in context/engineering-context.md. Produce a time-boxed plan: top-N tickets in (with rationale), top-M cut (with rationale), velocity check vs last 2-3 sprints, dependencies, risks. Save to sprints/{{week}}.md.
 ---
 
 

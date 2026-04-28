@@ -86,6 +86,17 @@ export interface AIBoardProps {
    * the consumer can lock the provider for active conversations.
    */
   footer?: ReactNode | ((ctx: { hasMessages: boolean }) => ReactNode)
+  /** Content rendered inside the composer above the textarea. */
+  composerHeader?: ReactNode | ((ctx: { hasMessages: boolean }) => ReactNode)
+  /** Enables submit even when the composer has no text or files. */
+  canSendEmpty?: boolean
+  /** Lets consumers handle a submit before the board creates/sends a normal chat message. */
+  onComposerSubmit?: (ctx: {
+    sessionKey: string | null
+    text: string
+    files: File[]
+    hasMessages: boolean
+  }) => boolean | Promise<boolean>
   /** Called when the user renames a card. */
   onRename?: (item: KanbanItem, newTitle: string) => void
   /** Render prop for extra action buttons on each card (e.g. "Run" button). */
@@ -169,6 +180,9 @@ export function AIBoard({
   onOpenLink,
   renderLink,
   footer,
+  composerHeader,
+  canSendEmpty,
+  onComposerSubmit,
   cardLabels,
   composerOverride,
 }: AIBoardProps) {
@@ -242,10 +256,24 @@ export function AIBoard({
   const activeSessionKey = selectedItem ? sessionKeyFor(selectedItem.id) : null
   // The session key currently visible in the detail panel's ChatPanel.
   const activeDraftKey = activeSessionKey ?? "new-conversation"
+  const rawActiveFeed = activeSessionKey ? (feedItems[activeSessionKey] ?? []) : []
+  const activeFeed = activeSessionKey && mapFeedItems
+    ? mapFeedItems({ sessionKey: activeSessionKey, items: rawActiveFeed })
+    : rawActiveFeed
 
   // Unified send handler: creates conversation on first message, sends follow-ups after
   const handleSend = useCallback(
     async (text: string, files: File[]) => {
+      const handled = await onComposerSubmit?.({
+        sessionKey: activeSessionKey,
+        text,
+        files,
+        hasMessages: activeFeed.length > 0,
+      })
+      if (handled) {
+        onDraftChange?.(activeDraftKey, "")
+        return
+      }
       // Clear draft immediately so the user sees the send
       onDraftChange?.(activeDraftKey, "")
       if (selectedItem && onSendMessage) {
@@ -263,12 +291,8 @@ export function AIBoard({
         setSelectedId(activityId)
       }
     },
-    [selectedItem, onSendMessage, sessionKeyFor, newPanelOpen, onCreateConversation, setSelectedId, onDraftChange, activeDraftKey],
+    [onComposerSubmit, activeSessionKey, activeFeed.length, activeDraftKey, onDraftChange, selectedItem, onSendMessage, sessionKeyFor, newPanelOpen, onCreateConversation, setSelectedId],
   )
-  const rawActiveFeed = activeSessionKey ? (feedItems[activeSessionKey] ?? []) : []
-  const activeFeed = activeSessionKey && mapFeedItems
-    ? mapFeedItems({ sessionKey: activeSessionKey, items: rawActiveFeed })
-    : rawActiveFeed
   const activeLoading = activeSessionKey ? (isLoading[activeSessionKey] ?? false) : false
   const renderedAfterMessages = typeof afterMessages === "function"
     ? afterMessages({
@@ -387,6 +411,8 @@ export function AIBoard({
           onOpenLink={onOpenLink}
           renderLink={renderLink}
           footer={typeof footer === "function" ? footer({ hasMessages: activeFeed.length > 0 }) : footer}
+          composerHeader={typeof composerHeader === "function" ? composerHeader({ hasMessages: activeFeed.length > 0 }) : composerHeader}
+          canSendEmpty={canSendEmpty}
           composerOverride={composerOverride}
         />
       </div>

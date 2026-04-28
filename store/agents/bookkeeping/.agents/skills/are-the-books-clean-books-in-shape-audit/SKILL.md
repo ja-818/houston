@@ -7,12 +7,6 @@ category: "Reporting"
 featured: yes
 integrations: ["gmail", "googledocs", "googledrive", "googlesheets", "hubspot", "linear", "notion", "outlook", "quickbooks", "slack", "stripe", "xero"]
 image: "ledger"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Run a books health audit. Use the audit-books skill. Sweep: uncategorized / suspense items with aging, recon breaks > $100 open > 30 days, accruals with no activity > 90 days, cutoff candidates (expenses dated in prior period booked in current), JEs in draft for > 14 days, and any GL code with transactions but no opening balance. Produce a punch list at audits/{{date}}.md ranked by dollar impact. Call out the one most useful item to close this week.
 ---
 
 

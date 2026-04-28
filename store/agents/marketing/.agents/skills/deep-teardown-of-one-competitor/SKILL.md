@@ -7,14 +7,6 @@ category: "Positioning"
 featured: yes
 integrations: ["linkedin", "twitter", "reddit", "instagram", "googleads", "metaads", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: competitor
-    label: "Competitor"
-  - name: competitor_slug
-    label: "Competitor Slug"
-    required: false
-prompt_template: |
-  Do a full teardown of {{competitor}}. Use the monitor-competitors skill with source=product. Go deep on all dimensions via Firecrawl: positioning statement, pricing page, content strategy, messaging patterns, unguarded flanks we should press. Save to competitor-briefs/product-{{competitor_slug}}.md.
 ---
 
 

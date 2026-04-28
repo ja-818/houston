@@ -7,12 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["github", "gitlab", "firecrawl", "perplexityai"]
 image: "laptop"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the Monday engineering review. Use the analyze skill with subject=engineering-health. Aggregate everything in outputs.json from the last 7 days, grouped by domain (planning / triage / development / reliability / docs). For each domain, name what shipped, what's stale, what's blocked. Close with a prioritized list of decisions I need to make this week, each with a paste-ready follow-up prompt. Save to reviews/{{date}}.md.
 ---
 
 

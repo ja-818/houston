@@ -7,14 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["discord", "firecrawl", "github", "gitlab", "jira", "linear", "loops", "notion", "perplexityai", "slack", "stripe", "twitter"]
 image: "laptop"
-inputs:
-  - name: feature
-    label: "Feature"
-  - name: feature_slug
-    label: "Feature Slug"
-    required: false
-prompt_template: |
-  Coordinate the {{feature}} release. Use the coordinate-release skill. Break the release into a sequenced checklist across phases: Design (draft-design-doc done?), Ship (review-deploy-readiness GREEN? review-pr done on the PRs?), Ops (draft-runbook written? audit observability?), Docs (write-release-notes drafted? write-docs tutorial?). For every phase, write an exact copy-paste prompt I can send to trigger the relevant skill. Flag the critical path. Save to release-plans/{{feature_slug}}.md.
 ---
 
 

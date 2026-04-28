@@ -7,11 +7,6 @@ category: "Data"
 featured: yes
 integrations: ["airtable", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "googledrive", "googlesheets", "linear", "linkedin", "notion", "outlook", "perplexityai", "slack", "stripe"]
 image: "clipboard"
-inputs:
-  - name: topic
-    label: "Topic"
-prompt_template: |
-  Spec me a {{topic}} dashboard. Use the spec-dashboard skill. Propose sections, per-section visualizations (what chart, what it shows), cadence (live / daily / weekly / monthly), and the read-only SQL behind each viz. Save the spec to config/dashboards.json  -  you or your BI tool builds the rendered dashboard.
 ---
 
 

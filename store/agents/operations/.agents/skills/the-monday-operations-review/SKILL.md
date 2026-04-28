@@ -7,12 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["googlesheets"]
 image: "clipboard"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the Monday operations review. Use the run-review skill with period=weekly. Aggregate everything I produced this past week from outputs.json across Planning / Scheduling / Finance / Vendors / Data. Flag what's stale (3+ weeks untouched), gaps against my active priorities, renewals in the next 30 days, and recommend the one most useful move for the week. Save to reviews/{{date}}.md.
 ---
 
 

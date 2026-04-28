@@ -7,12 +7,6 @@ category: "Reporting"
 featured: yes
 integrations: ["googledocs"]
 image: "ledger"
-inputs:
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-prompt_template: |
-  Refresh SaaS metrics. Use the prep-investor-financials skill with mode=saas-metrics. From active revrec schedules (revrec/) + transactions + the current close's P&L: compute MRR, ARR, new / expansion / churn / contraction MRR, gross margin (revenue − COGS / revenue), and NRR (net revenue retention over a cohort window). Write to investor-financials/metrics-{{period}}.md.
 ---
 
 

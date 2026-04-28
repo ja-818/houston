@@ -7,12 +7,6 @@ category: "Reporting"
 featured: yes
 integrations: ["quickbooks", "xero"]
 image: "ledger"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Refresh the burn & runway report. Use the build-burn-runway-report skill. Read the latest cash balances across every account in context-ledger.banks. Compute trailing 3-month and 6-month net burn from financials/ or from the underlying transactions. Calculate runway months on both bases. Produce a sensitivity table: runway at -20% / -10% / 0% / +10% / +20% of current burn. Flag any 10%+ week-over-week change in runway. Save to runway/{{date}}.md.
 ---
 
 

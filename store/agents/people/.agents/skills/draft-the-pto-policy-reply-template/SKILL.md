@@ -7,16 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googledocs", "gmail", "notion", "slack"]
 image: "busts-in-silhouette"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Draft the PTO policy reply template. Use the answer-policy-question skill. Read the PTO section of the policy canon from context/people-context.md, then draft three reply variants: (a) direct yes when the ask is clearly inside policy, (b) ambiguous follow-up when I need more context, (c) escalation note when the ask exceeds policy. Write to approvals/pto-reply-template.md for reuse.
-
-  Additional context: {{request}}
 ---
 
 

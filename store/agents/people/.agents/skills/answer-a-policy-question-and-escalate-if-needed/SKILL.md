@@ -7,14 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googledocs", "gmail", "notion", "slack"]
 image: "busts-in-silhouette"
-inputs:
-  - name: question
-    label: "Question"
-  - name: request_slug
-    label: "Request Slug"
-    required: false
-prompt_template: |
-  Answer this policy question: {{question}}. Use the answer-policy-question skill. Read the policy canon AND escalation rules from context/people-context.md, classify as direct / ambiguous / escalation, and draft the reply (or escalation note) accordingly. Never answer a legal-sensitive escalation on your own. Write to approvals/{{request_slug}}.md.
 ---
 
 

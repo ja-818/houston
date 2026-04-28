@@ -7,12 +7,6 @@ category: "Data"
 featured: yes
 integrations: ["googlesheets"]
 image: "clipboard"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the weekly metrics rollup. Use the run-review skill with period=metrics-rollup. Read every tracked metric from metrics-daily.json (last 14 snapshots each), compute week-over-week change and classification vs declared direction, flag any open anomaly from anomalies.json, and rank by biggest movement. Save to rollups/{{date}}.md.
 ---
 
 

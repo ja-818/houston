@@ -7,12 +7,6 @@ category: "Performance"
 featured: yes
 integrations: ["slack", "discord"]
 image: "busts-in-silhouette"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Collect this week's 1:1 check-ins. Use the collect-checkins skill. Pull the roster from my connected HRIS, send the check-in prompt via my connected Slack channel, gather responses, and write a dated report to checkins/{{date}}.md with themes, who's quiet, and flagged responses.
 ---
 
 

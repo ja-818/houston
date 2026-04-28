@@ -67,10 +67,9 @@ root so chat Actions are available immediately.
 Store agents must not use custom Overview dashboards or manifest
 `useCases` for starter workflows. If a workflow should be visible to
 users, package it as a real skill under `.agents/skills/*/SKILL.md`.
-Every Store-packaged skill must include `inputs` and `prompt_template`
-frontmatter so the chat Action picker can render a form instead of
-exposing raw prompt placeholders. Use a generic optional `request`
-textarea only when the action genuinely has no structured fields.
+Store-packaged skills must not include legacy `inputs` or
+`prompt_template` frontmatter. The chat Action picker selects the
+workflow, then the regular composer stays visible for free-form context.
 Store manifests must also not seed `.houston/activity.json` or
 `.houston/activity/activity.json`; fresh Store agents start with an empty
 board and the app points users at New Mission. The engine ignores stale
@@ -87,8 +86,7 @@ After a bundled package update, Houston copies newly-added packaged
 Actions into existing workspace agents with the same `config_id`.
 Existing Action bodies are not overwritten; user edits win. Matching
 Action frontmatter is refreshed from the bundled package so descriptions,
-integrations, images, inputs, and prompt templates can update with a
-release.
+integrations, images, category, and featured state can update with a release.
 
 ## GitHub import flow
 Engine route remains for developer/manual import. A caller posts an

@@ -22,6 +22,7 @@ import type { PromptInputMessage } from "./ai-elements/prompt-input";
 import {
   PromptInput,
   PromptInputBody,
+  PromptInputHeader,
   PromptInputTextarea,
 } from "./ai-elements/prompt-input";
 import { PlusIcon } from "lucide-react";
@@ -49,6 +50,10 @@ export interface ChatInputProps {
   onNotice?: (message: string) => void;
   /** Optional content rendered in the composer footer (e.g. model selector). */
   footer?: ReactNode;
+  /** Optional content rendered inside the composer above the textarea. */
+  header?: ReactNode;
+  /** Enables submit even when text/files are empty. */
+  canSendEmpty?: boolean;
 }
 
 export function ChatInput({
@@ -62,6 +67,8 @@ export function ChatInput({
   placeholder = "Type a message...",
   onNotice,
   footer,
+  header,
+  canSendEmpty = false,
 }: ChatInputProps) {
   const [text, setText] = useControllable(value, onValueChange, "");
   const [files, setFiles] = useControllable<File[]>(
@@ -102,14 +109,14 @@ export function ChatInput({
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
       const trimmed = message.text?.trim();
-      if (!trimmed && files.length === 0) return;
+      if (!trimmed && files.length === 0 && !canSendEmpty) return;
       onSend(trimmed ?? "", files);
       // In uncontrolled mode, clear our own state. In controlled mode the
       // parent is responsible for clearing.
       if (!isTextControlled) setText("");
       if (!isFilesControlled) setFiles([]);
     },
-    [onSend, files, isTextControlled, isFilesControlled, setText, setFiles],
+    [onSend, files, canSendEmpty, isTextControlled, isFilesControlled, setText, setFiles],
   );
 
   const handleFileChange = useCallback(
@@ -135,7 +142,7 @@ export function ChatInput({
     [files, setFiles],
   );
 
-  const hasContent = text.trim().length > 0 || files.length > 0;
+  const hasContent = canSendEmpty || text.trim().length > 0 || files.length > 0;
 
   return (
     <div className="shrink-0 px-4 pb-6 pt-2">
@@ -167,6 +174,12 @@ export function ChatInput({
         )}
 
         <PromptInput onSubmit={handleSubmit}>
+          {header && (
+            <PromptInputHeader className="pb-1">
+              {header}
+            </PromptInputHeader>
+          )}
+
           {/* + button — ref-based click, reliable across invocations */}
           <div className="flex items-center [grid-area:leading]">
             <button

@@ -50,6 +50,8 @@ export function ChatPanel({
   onAttachmentsChange,
   onNotice,
   footer,
+  composerHeader,
+  canSendEmpty,
   composerOverride,
 }: ChatPanelProps) {
   const status = statusProp ?? deriveStatus(feedItems, isLoading);
@@ -144,6 +146,8 @@ export function ChatPanel({
           onAttachmentsChange={setFiles}
           onNotice={onNotice}
           footer={footer}
+          header={composerHeader}
+          canSendEmpty={canSendEmpty}
         />
       )}
     </div>

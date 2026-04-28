@@ -7,20 +7,6 @@ category: "Outbound"
 featured: yes
 integrations: ["gmail", "hubspot", "salesforce", "attio", "linkedin", "firecrawl", "perplexityai"]
 image: "handshake"
-inputs:
-  - name: person
-    label: "Person"
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Enrich {{person}} at {{company}}. Use the research-account skill with depth=enrich-contact. Via LinkedIn + my connected CRM, capture title, tenure, prior companies, recent posts / talks / podcasts (6 months), and any trigger signal (new role, speaker, press). Save to leads/{{slug}}/enrichment-{{date}}.md.
 ---
 
 

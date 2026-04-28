@@ -7,16 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "github", "linear", "jira"]
 image: "headphone"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Capture this feature request. Use the detect-signal skill with signal=feature-request. Extract the ask in one sentence, attribute to the requesting customer's slug, dedupe against requests.json, and flag if a VIP is in the cluster. Append to requests.json.
-
-  Additional context: {{request}}
 ---
 
 

@@ -7,14 +7,6 @@ category: "Triage"
 featured: yes
 integrations: ["github", "linear", "jira"]
 image: "laptop"
-inputs:
-  - name: ticket_or_list
-    label: "Ticket Or List"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Score {{ticket_or_list}}. Use the score-ticket-priority skill. Apply RICE (Reach × Impact × Confidence / Effort) or MoSCoW (Must / Should / Could / Won't) with one-line reasoning per axis and a final ranking. Save to priority-scores/{{slug}}.md.
 ---
 
 

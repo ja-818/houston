@@ -7,12 +7,6 @@ category: "Quality"
 featured: yes
 integrations: ["gmail"]
 image: "headphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Mine the last 30 days of tickets for voice-of-customer signal. Use the synthesize-voice-of-customer skill. Cluster conversations.json + requests.json + patterns.json for the window into top 5 pains (verbatim quotes), top 5 feature asks (distinct requesters), friction quotes that contradict positioning, and positioning-worthy quotes. Save to voc/{{date}}.md.
 ---
 
 

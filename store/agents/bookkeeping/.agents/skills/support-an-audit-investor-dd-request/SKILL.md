@@ -7,15 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["gmail", "googledocs", "googledrive", "googlesheets", "hubspot", "linear", "notion", "outlook", "quickbooks", "slack", "stripe", "xero"]
 image: "ledger"
-inputs:
-  - name: quarter
-    label: "Quarter"
-    placeholder: "e.g. 2026-Q1"
-  - name: request_slug
-    label: "Request Slug"
-    required: false
-prompt_template: |
-  Respond to the audit / DD request. Use the audit-books skill with mode=audit-response. Parse the request into discrete items. For sample-selection requests, pull a random sample of the right size from the relevant population (with seed documented for reproducibility). For walkthrough requests, summarize the process flow from context/bookkeeping-context.md. For document requests, assemble the docs into handoffs/audit-{{quarter}}/{{request_slug}}/. Flag any request that touches an area with a judgment call  -  surface the options, you decide.
 ---
 
 

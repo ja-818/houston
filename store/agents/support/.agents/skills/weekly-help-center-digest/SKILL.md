@@ -7,12 +7,6 @@ category: "Help Center"
 featured: yes
 integrations: ["googledocs", "notion", "slack"]
 image: "headphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the weekly help-center digest. Use the review skill with scope=help-center-digest. Read conversations.json counts for the week, patterns.json top 3 themes, requests.json velocity, known-issues.json state changes. Surface the single most useful docs gap to write next. Save to digests/{{date}}.md.
 ---
 
 

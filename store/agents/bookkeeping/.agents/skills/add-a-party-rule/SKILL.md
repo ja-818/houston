@@ -7,15 +7,6 @@ category: "Transactions"
 featured: yes
 integrations: ["stripe", "quickbooks", "xero"]
 image: "ledger"
-inputs:
-  - name: canonical_party
-    label: "Canonical Party"
-  - name: gl_code
-    label: "Gl Code"
-  - name: gl_name
-    label: "Gl Name"
-prompt_template: |
-  Add a party rule. Use the categorize-transactions skill in RULE-ADD sub-mode. Canonicalize the specified vendor name the same way the categorizer does, then upsert `{canonical_party: gl_code}` into config/party-rules.json. Confirm the GL code exists in the locked chart-of-accounts. Return a short confirmation: 'Added rule: {{canonical_party}} → {{gl_code}} {{gl_name}}. Will auto-categorize on all future runs with source=rule.'
 ---
 
 

@@ -7,14 +7,6 @@ category: Operations
 featured: yes
 image: clipboard
 integrations: [googledrive, googlecalendar, gmail, outlook, gong, fireflies, slack, linkedin]
-inputs:
-  - name: request
-    label: "Request"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Request: {{request}}
 ---
 
 

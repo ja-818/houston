@@ -7,14 +7,6 @@ category: "SEO"
 featured: yes
 integrations: ["firecrawl", "semrush", "ahrefs", "perplexityai"]
 image: "megaphone"
-inputs:
-  - name: domain
-    label: "Domain"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Run a full SEO audit of my site. Use the audit skill with surface=site-seo. Pull on-page + technical via my connected Semrush (or Ahrefs / Firecrawl fallback). Score issues by impact × ease, not severity level. Give me the top 10 prioritized fixes with the exact change each one needs (title tag, schema, internal link, missing alt, etc.). Save to audits/site-seo-{{domain}}-{{date}}.md.
 ---
 
 

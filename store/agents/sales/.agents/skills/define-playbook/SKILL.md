@@ -7,14 +7,6 @@ category: Sales
 featured: yes
 image: handshake
 integrations: [googledocs, hubspot, salesforce, attio, pipedrive, notion]
-inputs:
-  - name: request
-    label: "Request"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Request: {{request}}
 ---
 
 

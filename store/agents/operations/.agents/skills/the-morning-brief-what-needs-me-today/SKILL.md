@@ -7,12 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["googledrive", "googlecalendar", "gmail", "outlook", "gong", "fireflies", "slack", "linkedin"]
 image: "clipboard"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me today's morning brief. Use the brief skill with mode=daily. Roll up the last 24h from my connected inbox (Gmail / Outlook), calendar (Google Calendar), team chat (Slack), and drive (Google Drive). Produce: Fires (≤3), Today's meetings with prep notes, What changed overnight, Can-wait, and the one move for today. Save to briefs/{{date}}.md.
 ---
 
 

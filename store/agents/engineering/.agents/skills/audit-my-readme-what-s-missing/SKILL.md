@@ -7,14 +7,6 @@ category: "Docs"
 featured: yes
 integrations: ["github", "gitlab", "firecrawl"]
 image: "laptop"
-inputs:
-  - name: repo
-    label: "Repo"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Audit my repo's README. Use the audit skill with surface=readme. Fetch README from my connected GitHub / GitLab (or accept a paste). Score against: one-sentence pitch, badges, quickstart, install, usage, configuration, contribution, license. Write an audit with inline diff suggestions, a rewritten lede, and a prioritized fix list. Save to audits/readme-{{repo}}-{{date}}.md. Draft only  -  I never auto-commit.
 ---
 
 

@@ -147,7 +147,7 @@ export function Dashboard() {
   // The agent currently scoping the right panel: either the agent the
   // selected card belongs to, or the agent the user picked for a new
   // mission. Drives the per-agent composer features (skills, action
-  // form, model selector) provided by `useAgentChatPanel`.
+  // selected Action, model selector) provided by `useAgentChatPanel`.
   const activeAgent = useMemo<Agent | null>(() => {
     if (selectedItem) {
       const path = selectedItem.metadata?.agentPath as string | undefined;
@@ -301,7 +301,9 @@ export function Dashboard() {
           // panel exactly. Active when `activeAgent` is set (a card is
           // selected OR the user just picked an agent for new mission).
           chatEmptyState={panel.chatEmptyState}
-          composerOverride={panel.composerOverride}
+          composerHeader={panel.composerHeader}
+          canSendEmpty={panel.canSendEmpty}
+          onComposerSubmit={panel.onComposerSubmit}
           footer={panel.footer}
           renderUserMessage={panel.renderUserMessage}
           renderSystemMessage={panel.renderSystemMessage}
