@@ -7,12 +7,6 @@ category: "Data"
 featured: yes
 integrations: ["airtable", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "googledrive", "googlesheets", "linear", "linkedin", "notion", "outlook", "perplexityai", "slack", "stripe"]
 image: "clipboard"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Run an anomaly sweep. Use the analyze skill with subject=anomaly. For each metric in config/metrics.json with ≥7 snapshots, compute 7-day and 28-day rolling baselines, flag deviations past the per-metric threshold or default (2σ yellow / 3σ red), and hypothesize 1-3 possible causes from recent decisions, deploys, and experiments. Save to analyses/anomaly-sweep-{{date}}.md and upsert anomalies.json.
 ---
 
 

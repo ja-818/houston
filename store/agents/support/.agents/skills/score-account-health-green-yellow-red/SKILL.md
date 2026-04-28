@@ -7,11 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "hubspot", "salesforce", "attio", "stripe"]
 image: "headphone"
-inputs:
-  - name: account
-    label: "Account"
-prompt_template: |
-  Score account health for {{account}}. Use the customer-view skill with view=health. Compute 3 signals (ticket volume, product-usage trend via connected PostHog, recent-interaction sentiment), apply the thresholds in domains.success.churnSignals, and output GREEN / YELLOW / RED with reasoning and ONE recommended action. Append to health-scores.json.
 ---
 
 

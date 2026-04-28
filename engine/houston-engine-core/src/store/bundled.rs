@@ -282,7 +282,6 @@ mod tests {
     use super::*;
     use crate::agents_crud::{self, CreateAgent};
     use crate::workspaces::CreateWorkspace;
-    use std::collections::BTreeSet;
     use std::sync::Mutex;
     use tempfile::TempDir;
 
@@ -485,11 +484,6 @@ name: demo
 description: New action
 version: 2
 tags: [demo]
-inputs:
-  - name: company
-    label: Company
-prompt_template: |
-  Research {{company}}
 ---
 
 # Demo
@@ -556,12 +550,8 @@ User customized body
         assert_eq!(summary.description, "New action");
         assert_eq!(summary.version, 2);
         assert_eq!(summary.last_used.as_deref(), Some("2026-04-20"));
-        assert_eq!(summary.inputs.len(), 1);
-        assert_eq!(summary.inputs[0].name, "company");
-        assert_eq!(
-            summary.prompt_template.as_deref(),
-            Some("Research {{company}}")
-        );
+        assert!(summary.inputs.is_empty());
+        assert!(summary.prompt_template.is_none());
         assert!(body.contains("User customized body"));
         assert!(!body.contains("Package v2 body"));
     }
@@ -629,7 +619,7 @@ User customized body
     }
 
     #[test]
-    fn bundled_store_skills_parse_with_forms() {
+    fn bundled_store_skills_parse_without_forms() {
         let store_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../store/agents");
         assert!(
             store_dir.exists(),
@@ -649,23 +639,15 @@ User customized body
             let (summary, _) = houston_skills::format::parse_file(file)
                 .unwrap_or_else(|e| panic!("{} failed to parse: {e}", file.display()));
             assert!(
-                !summary.inputs.is_empty(),
-                "{} missing form inputs",
+                summary.inputs.is_empty(),
+                "{} must not declare legacy form inputs",
                 file.display()
             );
-            let template = summary
-                .prompt_template
-                .as_deref()
-                .unwrap_or_else(|| panic!("{} missing prompt_template", file.display()));
-            let input_names: BTreeSet<_> = summary.inputs.iter().map(|input| &input.name).collect();
-            for placeholder in template_placeholders(template) {
-                assert!(
-                    input_names.contains(&placeholder),
-                    "{} template references undeclared input {{{{{}}}}}",
-                    file.display(),
-                    placeholder
-                );
-            }
+            assert!(
+                summary.prompt_template.is_none(),
+                "{} must not declare legacy prompt_template",
+                file.display()
+            );
         }
     }
 
@@ -723,22 +705,5 @@ User customized body
                 out.push(path);
             }
         }
-    }
-
-    fn template_placeholders(template: &str) -> Vec<String> {
-        let mut placeholders = Vec::new();
-        let mut rest = template;
-        while let Some(start) = rest.find("{{") {
-            rest = &rest[start + 2..];
-            let Some(end) = rest.find("}}") else {
-                break;
-            };
-            let name = rest[..end].trim();
-            if !name.is_empty() {
-                placeholders.push(name.to_string());
-            }
-            rest = &rest[end + 2..];
-        }
-        placeholders
     }
 }

@@ -7,11 +7,6 @@ category: "Data"
 featured: yes
 integrations: ["airtable", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "googledrive", "googlesheets", "linear", "linkedin", "notion", "outlook", "perplexityai", "slack", "stripe"]
 image: "clipboard"
-inputs:
-  - name: metric
-    label: "Metric"
-prompt_template: |
-  Start tracking {{metric}}. Use the track-metric skill. Write the read-only SQL against my connected warehouse (Postgres / BigQuery / Snowflake via Composio), snapshot the current value into metrics-daily.json, append the definition to config/metrics.json, and register it for daily cadence.
 ---
 
 

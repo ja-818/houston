@@ -7,14 +7,6 @@ category: "SEO"
 featured: yes
 integrations: ["semrush", "ahrefs"]
 image: "megaphone"
-inputs:
-  - name: topic
-    label: "Topic"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Run keyword research with Semrush for {{topic}}. Use the research-keywords skill. Cluster by intent and difficulty, flag the 3 pillars worth owning (not the top 50), and draft cluster briefs. Maintain the living keyword-map.md and per-cluster detail at keyword-clusters/{{slug}}.md.
 ---
 
 

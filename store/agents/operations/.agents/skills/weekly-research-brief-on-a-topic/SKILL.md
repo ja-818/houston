@@ -7,17 +7,6 @@ category: "Data"
 featured: yes
 integrations: ["linkedin", "firecrawl", "perplexityai"]
 image: "clipboard"
-inputs:
-  - name: topic
-    label: "Topic"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me a research brief on {{topic}}. Use the synthesize-signal skill. News + deep research via Exa / Perplexity + social-feed scan via Firecrawl. Structured brief: what's moving, who's moving it, 3 implications for my company, 3 angles worth acting on. Every claim cited with source URL. Save to signals/{{slug}}-{{date}}.md.
 ---
 
 

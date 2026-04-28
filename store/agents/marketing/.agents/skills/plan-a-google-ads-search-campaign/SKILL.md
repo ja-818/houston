@@ -7,16 +7,6 @@ category: "Paid"
 featured: yes
 integrations: ["hubspot", "stripe", "linkedin", "mailchimp", "customerio", "googleads", "metaads"]
 image: "megaphone"
-inputs:
-  - name: keyword_cluster
-    label: "Keyword Cluster"
-  - name: channel
-    label: "Channel"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Plan a Google Ads search campaign for {{keyword_cluster}}. Use the plan-campaign skill with type=paid. Full brief: audience, keyword/placement strategy, ad-group structure, suggested budget, landing-page requirements, KPI targets. Save to campaigns/paid-{{channel}}-{{slug}}.md  -  spec the experiment before I spend a dollar.
 ---
 
 

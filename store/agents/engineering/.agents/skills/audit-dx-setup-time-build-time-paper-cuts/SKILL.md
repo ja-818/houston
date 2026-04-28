@@ -7,14 +7,6 @@ category: "Development"
 featured: yes
 integrations: ["github", "gitlab", "firecrawl"]
 image: "laptop"
-inputs:
-  - name: repo
-    label: "Repo"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Audit our local dev experience. Use the audit skill with surface=devx. Read README + CONTRIBUTING + Makefile + package.json scripts + docker-compose + .env.example + CI config via the connected code host. Count discrete setup steps, estimate setup time, estimate build time from CI history, and surface the top 5 paper cuts (missing env vars, flaky scripts, bad error messages, outdated commands) with suggested fixes + effort. Save to audits/devx-{{repo}}-{{date}}.md.
 ---
 
 

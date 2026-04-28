@@ -7,18 +7,6 @@ category: "Inbound"
 featured: yes
 integrations: ["gmail", "hubspot", "salesforce", "attio", "linkedin", "firecrawl", "perplexityai"]
 image: "handshake"
-inputs:
-  - name: url
-    label: "URL"
-    placeholder: "e.g. https://example.com"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Is {{url}} worth pursuing? Use the research-account skill with depth=quick-qualify. One scrape via Firecrawl, one decision (IN-ICP / BORDER / OUT) vs the playbook's disqualifiers, one angle if IN. Save to leads/{{slug}}/qualify-{{date}}.md. If OUT, I'll recommend dropping; if IN, I'll suggest draft-outreach next.
 ---
 
 

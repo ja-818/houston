@@ -7,16 +7,6 @@ category: "Scheduling"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "clipboard"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Track this follow-up. Use the draft-message skill with type=followup (TRACK sub-mode). Extract who owes what to whom by when, append to followups.json. When the due date arrives I'll surface it and  -  when you say 'handle due follow-ups'  -  draft the fulfillment or an honest bump.
-
-  Additional context: {{request}}
 ---
 
 

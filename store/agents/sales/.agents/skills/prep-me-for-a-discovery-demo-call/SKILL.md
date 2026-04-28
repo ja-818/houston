@@ -7,18 +7,6 @@ category: "Meetings"
 featured: yes
 integrations: ["googlecalendar", "hubspot", "salesforce", "attio", "gong", "fireflies", "stripe", "linkedin"]
 image: "handshake"
-inputs:
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Prep me for my call with {{company}}. Use the prep-meeting skill with type=call. Read the deal record from deals.json + any prior call analyses in calls/{{slug}}/, pull meeting details from my connected Google Calendar, and compile: meeting goal (from playbook), attendees, question bank (5-8 from the qualification framework, prioritized on the weakest pillar), likely objections with reframes, exit criteria for the stage advance, landmines from call-insights. Save to deals/{{slug}}/call-prep-{{date}}.md.
 ---
 
 

@@ -7,15 +7,6 @@ category: "Help Center"
 featured: yes
 integrations: ["googledocs", "notion", "github", "linear"]
 image: "headphone"
-inputs:
-  - name: id
-    label: "ID"
-    required: false
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Turn this resolved conversation into a help-center article. Use the write-article skill with type=from-ticket. Read conversations/{{id}}/thread.json, extract the reusable question + answer, and draft in the tone profile from domains.help-center.toneProfile. Save to articles/{{slug}}.md and mirror to my connected KB (Notion / Intercom / Help Scout / Google Docs) if one's linked.
 ---
 
 

@@ -7,12 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["stripe", "quickbooks", "xero"]
 image: "ledger"
-inputs:
-  - name: quarter
-    label: "Quarter"
-    placeholder: "e.g. 2026-Q1"
-prompt_template: |
-  Run a sales-tax nexus check. Use the assess-sales-tax-nexus skill. Aggregate revenue + transaction count per state for the period from Stripe / invoices. Compare against each state's economic nexus threshold (typically $100K revenue or 200 transactions per year, with variations). Rank states by exposure. For any state where we've crossed the threshold, surface: when it was crossed, cumulative exposure, and the next action (register / file). Save to compliance/sales-tax/{{quarter}}.md.
 ---
 
 

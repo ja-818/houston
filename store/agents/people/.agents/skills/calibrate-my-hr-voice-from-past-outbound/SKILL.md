@@ -7,16 +7,6 @@ category: "Culture"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "busts-in-silhouette"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Calibrate my HR voice. Use the voice-calibration skill. Pull 10-20 of my recent HR-adjacent outbound messages from my connected Gmail (or Outlook), extract a tone fingerprint  -  greeting habits, closing habits, sentence length, formality, forbidden phrases, hard-news register  -  and append it to the voice-notes section of context/people-context.md. Also refresh config/voice.md.
-
-  Additional context: {{request}}
 ---
 
 

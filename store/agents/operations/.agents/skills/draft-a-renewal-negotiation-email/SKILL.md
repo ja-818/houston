@@ -7,11 +7,6 @@ category: "Finance"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "clipboard"
-inputs:
-  - name: vendor
-    label: "Vendor"
-prompt_template: |
-  Draft a renewal-negotiation email for {{vendor}}. Use the draft-message skill with type=vendor (sub-type=renewal). Ground in contract terms from contracts/{{vendor}}/ and my vendor posture from context/operations-context.md (risk appetite, signature authority, paper preference). Lead with data, specific ask, walk-away. Save as inbox draft + drafts/vendor-renewal-{{vendor}}.md.
 ---
 
 

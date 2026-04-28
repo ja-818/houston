@@ -7,16 +7,6 @@ category: "Culture"
 featured: yes
 integrations: ["googlesheets", "googledocs", "notion"]
 image: "busts-in-silhouette"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Build our leveling ladder. Use the define-people-context skill. Focus on the leveling section: IC + manager tracks, L1-L5 by default (ask once if I want higher). For each level: name, one-paragraph expectations, scope of impact, seniority markers, and a value-embodiment line. Update context/people-context.md in place.
-
-  Additional context: {{request}}
 ---
 
 

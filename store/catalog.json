@@ -38,8 +38,8 @@
       "repo": "houston-store/bookkeeping",
       "installs": 0,
       "registered_at": "2026-04-26",
-      "version": "0.1.4",
-      "content_hash": "d06a0a6eca56b76db4d288653be510f8a79015d2921440de9b846ce2531272ee",
+      "version": "0.1.5",
+      "content_hash": "67656b00978c7982680e87f4f6d4eb0cd629b1b5dc49e2c9de0abacee0de5bcb",
       "bundled": true
     },
     {
@@ -77,8 +77,8 @@
       "repo": "houston-store/engineering",
       "installs": 0,
       "registered_at": "2026-04-26",
-      "version": "0.1.4",
-      "content_hash": "e82675790ef3ebdd96a930e8387c081fb8e2d7c955a3a5243339d8b9155b9e12",
+      "version": "0.1.5",
+      "content_hash": "63c7f0edd9f42d8ed9523311361b348aeb527ba194b6b2e7ae3f3b580d267d3b",
       "bundled": true
     },
     {
@@ -114,8 +114,8 @@
       "repo": "houston-store/legal",
       "installs": 0,
       "registered_at": "2026-04-26",
-      "version": "0.1.4",
-      "content_hash": "f3f0a412ac35084d413ebd549878eabec39d4261c3f2f465d0fc0ed108df7dc1",
+      "version": "0.1.5",
+      "content_hash": "9c77d2369b72b0aa428120f3b03f13c527c9a6cc1f6d080466c4cff07c3bed10",
       "bundled": true
     },
     {
@@ -163,8 +163,8 @@
       "repo": "houston-store/marketing",
       "installs": 0,
       "registered_at": "2026-04-26",
-      "version": "0.1.4",
-      "content_hash": "37c90c224d47fbd6981301b10f3b68351ea92502df2a478c6e6e1900843fa027",
+      "version": "0.1.5",
+      "content_hash": "bd2b9de0b5a2f1a3e204865f77b946bbf341ac2b236c5f4d8ebbd1e6b2b5fc96",
       "bundled": true
     },
     {
@@ -206,8 +206,8 @@
       "repo": "houston-store/operations",
       "installs": 0,
       "registered_at": "2026-04-26",
-      "version": "0.1.4",
-      "content_hash": "6c539adb44691441e1f629f06c91090e6fd2fe106d64c2883af8f69d87df7bb0",
+      "version": "0.1.5",
+      "content_hash": "8154009cd1be9372d8650fdf5f269e05d63ee3275e0becb0215afca855060b97",
       "bundled": true
     },
     {
@@ -248,8 +248,8 @@
       "repo": "houston-store/people",
       "installs": 0,
       "registered_at": "2026-04-26",
-      "version": "0.1.4",
-      "content_hash": "aa583380ba7b0664b11b01eec9cb6deb8f6e64333ed27524c5e45cabfe20f48c",
+      "version": "0.1.5",
+      "content_hash": "29208e0886c09fb12e1056d9fa18383fc9c87b83f818aede2660cd1c97f29b61",
       "bundled": true
     },
     {
@@ -292,8 +292,8 @@
       "repo": "houston-store/sales",
       "installs": 0,
       "registered_at": "2026-04-26",
-      "version": "0.1.4",
-      "content_hash": "a0eeeda8b0026f275bcdbd77536eb23c826eac55c46abdbd9051a5462466b53f",
+      "version": "0.1.5",
+      "content_hash": "95f4be7446ac871ec10b43ad1f0f0c442545a52c2f5f4f3b9f2d9125d01cffab",
       "bundled": true
     },
     {
@@ -334,8 +334,8 @@
       "repo": "houston-store/support",
       "installs": 0,
       "registered_at": "2026-04-26",
-      "version": "0.1.4",
-      "content_hash": "31861216f63db0c3bc8046b6479dc08901aa62c48f2af2bbf2f8e894eba2f387",
+      "version": "0.1.5",
+      "content_hash": "95fb456c278a41ee13c189e01bebd5fcdd7bc5b4d91d1a07165a7a165f5e08cd",
       "bundled": true
     }
   ]

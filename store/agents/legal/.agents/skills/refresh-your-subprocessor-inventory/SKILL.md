@@ -7,12 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googledocs", "googledrive", "stripe", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Refresh my subprocessor inventory. Use the audit-compliance skill with scope=subprocessors. Walk my connected integrations + scrape my landing page for vendor clues, capture role + data categories + transfer mechanism + DPA status + public DPA URL per vendor. Read-merge-write subprocessor-inventory.json + save a delta report to subprocessor-reviews/{{date}}.md.
 ---
 
 

@@ -7,15 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "ledger"
-inputs:
-  - name: vendor_slug
-    label: "Vendor Slug"
-    required: false
-  - name: year
-    label: "Year"
-    placeholder: "e.g. 2026"
-prompt_template: |
-  Prep the 1099 list for the specified tax year. Use the track-vendor-1099s skill. Compute YTD payments per vendor for the year. Flag 1099-eligible vendors (non-corporate, >= $600 NEC threshold / >= $600 MISC). Separate NEC from MISC categories. Cross-reference W-9 status from files/ or a vendor list. For every vendor missing a W-9, draft a chase email to drafts/1099-chase-{{vendor_slug}}.md. Save the full list to compliance/1099s/{{year}}.md. Never files  -  preps the package.
 ---
 
 

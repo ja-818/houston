@@ -7,12 +7,6 @@ category: "Triage"
 featured: yes
 integrations: ["github", "linear", "jira", "slack"]
 image: "laptop"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Triage this bug report. Use the triage-bug-report skill. I'll paste the raw Sentry alert / user email / error text. Produce reproduction steps (where inferable), severity tied to my severity rules, route (hotfix / current sprint / backlog / close-as-not-a-bug / needs-more-info), and a paste-ready issue description for Linear / Jira / GitHub Issues. Save to bug-triage/{{slug}}.md.
 ---
 
 

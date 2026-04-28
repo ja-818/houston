@@ -7,16 +7,6 @@ category: "Entity"
 featured: yes
 integrations: ["googledrive", "gmail", "notion"]
 image: "scroll"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Log this executed agreement. Use the track-legal-state skill with scope=counterparties. Append a row to counterparty-tracker.json with counterparty, agreementType, executedDate, effectiveDate, term, autoRenewal, noticePeriod, governingLaw, keyObligations, signedCopyPath  -  and compute renewalDate = effectiveDate + term - noticePeriod (the 'notice must be given by' date). Ask me for any missing field.
-
-  Additional context: {{request}}
 ---
 
 

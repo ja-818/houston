@@ -7,12 +7,6 @@ category: "Triage"
 featured: yes
 integrations: ["slack"]
 image: "laptop"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Triage this inbound feature request. Use the triage-inbound-request skill. I'll paste the raw request (user email, sales call note, shower thought). Classify it: roadmap-change (route to plan-roadmap), ticket (route to triage-bug-report or a backlog entry), design-doc (route to draft-design-doc), or skip (with reasoning). Include the exact copy-paste prompt for the skill that owns it next. Save to inbound-triage/{{slug}}.md.
 ---
 
 

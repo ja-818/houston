@@ -7,11 +7,6 @@ category: "Finance"
 featured: yes
 integrations: ["googledrive"]
 image: "clipboard"
-inputs:
-  - name: folder
-    label: "Folder"
-prompt_template: |
-  Extract the auto-renew language from every contract in {{folder}}. Use the extract-contract-clauses skill. Parse each contract, extract the clause with a verbatim quote + plain-language summary + flag if the notice window is onerous or the auto-renew is silent. Also update the renewal calendar.
 ---
 
 

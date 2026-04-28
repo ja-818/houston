@@ -7,14 +7,6 @@ category: "Positioning"
 featured: yes
 integrations: ["hubspot", "stripe", "linkedin", "mailchimp", "customerio", "googleads", "metaads"]
 image: "megaphone"
-inputs:
-  - name: feature
-    label: "Feature"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Plan the {{feature}} launch over the next 2 weeks. Use the plan-campaign skill with type=launch. Break it into pre-launch (7d out), launch day, post-launch. Each task tagged with the right follow-up skill in this agent (write-content for launch post, plan-campaign type=paid for ad creative, plan-campaign type=announcement for email + in-app, write-page-copy for landing updates). Save to campaigns/launch-{{slug}}.md.
 ---
 
 

@@ -7,15 +7,6 @@ category: "IP"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: counterparty_slug
-    label: "Counterparty Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Review the IP terms in this consulting / contractor agreement. Use the review-contract skill with mode=full. Focus on IP work-product assignment, background IP, feedback license, and moral-rights handling. Flag anything non-standard for attorney review. Save to contract-reviews/{{counterparty_slug}}-{{date}}.md.
 ---
 
 

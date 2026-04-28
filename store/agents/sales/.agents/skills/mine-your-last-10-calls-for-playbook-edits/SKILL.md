@@ -7,12 +7,6 @@ category: "Playbook"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "gong", "fireflies"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Mine my last 10 sales calls for playbook edits. Use the analyze skill with subject=call-insights. Pull transcripts from my connected call-recording app (Gong / Fireflies via Composio), extract the top 5 verbatim pain phrases, the top 5 objections with frequency + current best reframe, and win/loss themes. End with concrete playbook-edit suggestions (add pain X, rework objection Y, tighten pillar Z). Save to call-insights/{{date}}.md.
 ---
 
 

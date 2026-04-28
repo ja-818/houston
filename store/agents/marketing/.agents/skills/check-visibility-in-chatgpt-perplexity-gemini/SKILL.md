@@ -7,12 +7,6 @@ category: "SEO"
 featured: yes
 integrations: ["firecrawl", "semrush", "ahrefs", "perplexityai"]
 image: "megaphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  How does my product show up in ChatGPT, Perplexity, and Gemini? Use the audit skill with surface=ai-search. Probe AI engines for my brand and category terms, then recommend Generative Engine Optimization (GEO) changes  -  schema, mentions, source authority, content tweaks. Save to audits/ai-search-{{date}}.md.
 ---
 
 

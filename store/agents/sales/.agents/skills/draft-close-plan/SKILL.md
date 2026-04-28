@@ -6,14 +6,6 @@ tags: [sales, draft, close]
 category: Sales
 featured: yes
 image: handshake
-inputs:
-  - name: request
-    label: "Request"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Request: {{request}}
 ---
 
 

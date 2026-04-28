@@ -7,14 +7,6 @@ category: "Social"
 featured: yes
 integrations: ["googledocs", "linkedin", "twitter", "reddit", "mailchimp", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: thread_url
-    label: "Thread URL"
-  - name: source_slug
-    label: "Source Slug"
-    required: false
-prompt_template: |
-  Draft a Reddit reply to {{thread_url}}. Use the write-content skill with channel=reddit. Pull the source thread via Reddit (Composio) / Firecrawl fallback, then draft a value-first reply. Helpful first, link only if it truly belongs. Save to community-replies/{{source_slug}}.md.
 ---
 
 

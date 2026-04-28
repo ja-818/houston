@@ -7,12 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "headphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me my morning brief. Use the scan-inbox skill with scope=morning-brief. Rank open conversations by VIP × SLA-at-risk × unblocking-engineering, cap at 10 items, add a one-line next action per item, include followups due today. Write to briefings/{{date}}.md.
 ---
 
 

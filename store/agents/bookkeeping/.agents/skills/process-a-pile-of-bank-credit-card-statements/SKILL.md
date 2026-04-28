@@ -7,12 +7,6 @@ category: "Transactions"
 featured: yes
 integrations: ["googlesheets", "stripe"]
 image: "ledger"
-inputs:
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-prompt_template: |
-  Process these statements. Use the process-statements skill. Extract every transaction from the attached PDFs (parallel Haiku extractors, one per PDF), canonicalize parties, categorize against the locked chart-of-accounts (Sonnet categorizers, one per account), then assemble a Google Sheets workbook with a formula-driven P&L (Sonnet sheets writer). Save the run artifact to runs/{{period}}/run.json and log to outputs.json. Credit card sign convention: purchases are negative. P&L totals are =SUMIFS formulas, never hardcoded.
 ---
 
 

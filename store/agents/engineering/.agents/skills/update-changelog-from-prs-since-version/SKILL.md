@@ -7,11 +7,6 @@ category: "Docs"
 featured: yes
 integrations: ["github", "gitlab", "linear", "jira"]
 image: "laptop"
-inputs:
-  - name: version
-    label: "Version"
-prompt_template: |
-  Update the CHANGELOG. Use the write-release-notes skill with format=changelog. Pull merged PRs + linked issues via my connected GitHub / GitLab since {{version}}. Filter for user-facing changes. Produce a Keep-A-Changelog snippet sectioned Added / Changed / Deprecated / Removed / Fixed / Security  -  one line per change in user-facing language. Save to changelog/{{version}}.md as a snippet I paste into the canonical CHANGELOG.md. Never writes to CHANGELOG.md directly.
 ---
 
 

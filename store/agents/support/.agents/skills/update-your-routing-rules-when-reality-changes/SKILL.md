@@ -7,16 +7,6 @@ category: "Quality"
 featured: yes
 integrations: ["googledocs", "stripe", "notion", "github", "linear"]
 image: "headphone"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Update our routing rules. Use the tune-routing-rules skill. Read context/support-context.md, restate current rules in 3-4 lines, capture what's changing (new tracker / classification / escalation contact / refund approver), and rewrite the routing section cleanly. Every triage-incoming and detect-signal run after this picks up the new rules automatically.
-
-  Additional context: {{request}}
 ---
 
 

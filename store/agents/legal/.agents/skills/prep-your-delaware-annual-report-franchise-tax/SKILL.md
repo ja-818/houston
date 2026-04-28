@@ -7,12 +7,6 @@ category: "Entity"
 featured: yes
 integrations: ["googledocs"]
 image: "scroll"
-inputs:
-  - name: year
-    label: "Year"
-    placeholder: "e.g. 2026"
-prompt_template: |
-  Prep my Delaware annual report. Use the file-delaware-report skill. Recalculate franchise tax under both the Authorized-Shares method AND the Assumed-Par-Value-Capital method (almost always cheaper for early-stage) using issued shares + authorized shares + gross assets from my ledger. Produce the submission package to annual-filings/{{year}}-delaware.md.
 ---
 
 

@@ -7,16 +7,6 @@ category: "Playbook"
 featured: yes
 integrations: ["googledocs", "hubspot", "salesforce", "attio", "pipedrive", "notion"]
 image: "handshake"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Help me write my full sales playbook: ICP, buying committee, disqualifiers, qualification framework (MEDDPICC / BANT / custom), pricing stance, deal stages with exit criteria, objection handbook, top 3 competitors, primary first-call goal. Use the define-playbook skill. Interview me briefly, then write to context/sales-context.md  -  the source of truth every other skill in this agent reads before it drafts outreach, preps calls, or scores deals.
-
-  Additional context: {{request}}
 ---
 
 

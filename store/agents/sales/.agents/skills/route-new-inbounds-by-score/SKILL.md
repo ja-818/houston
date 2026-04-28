@@ -7,12 +7,6 @@ category: "Inbound"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "pipedrive", "notion", "linear"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Route my new inbounds. Use the manage-crm skill with action=route. Read the latest scores from scores/lead-*.md (or run the score skill first if stale), apply the playbook's routing policy (GREEN → assign to owner, YELLOW → nurture queue, RED → drop with disqualifier cited), and write the routing decisions to crm-reports/route-{{date}}.md. I wait for per-row approval before mutating the CRM.
 ---
 
 

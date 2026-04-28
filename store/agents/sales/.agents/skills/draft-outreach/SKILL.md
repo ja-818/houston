@@ -7,14 +7,6 @@ category: Sales
 featured: yes
 image: handshake
 integrations: [googlecalendar, gmail, outlook, hubspot, salesforce, attio, pipedrive, gong, fireflies, stripe]
-inputs:
-  - name: request
-    label: "Request"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Request: {{request}}
 ---
 
 

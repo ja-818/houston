@@ -7,12 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googledocs", "googledrive", "stripe", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Audit my template library. Use the audit-compliance skill with scope=template-library. Read domains.contracts.templateLibrary, flag templates > 12 months old, check each against current-law changes (AI-training disclosure, SCC versions, 2026 DPA standards, CCPA cure-period, EU AI Act). Save a refresh plan to template-reviews/{{date}}.md.
 ---
 
 

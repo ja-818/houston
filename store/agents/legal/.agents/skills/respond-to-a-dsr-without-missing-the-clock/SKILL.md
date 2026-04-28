@@ -7,17 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: requester
-    label: "Requester"
-  - name: request_id
-    label: "Request ID"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Respond to this DSR from {{requester}}. Use the draft-document skill with type=dsr-response. Compute the statutory clock (GDPR Art. 15 → 30 days, CCPA → 45 days), produce the three-file first-touch packet (acknowledgment, identity verification, export cover note). Save to dsr-responses/{{request_id}}-{{date}}/. If clock < 7 days, flag attorneyReviewRequired.
 ---
 
 

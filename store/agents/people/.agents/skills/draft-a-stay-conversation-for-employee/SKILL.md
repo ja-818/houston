@@ -7,14 +7,6 @@ category: "Performance"
 featured: yes
 integrations: ["gmail", "slack"]
 image: "busts-in-silhouette"
-inputs:
-  - name: employee
-    label: "Employee"
-  - name: employee_slug
-    label: "Employee Slug"
-    required: false
-prompt_template: |
-  Draft a stay conversation for {{employee}}. Use the draft-performance-doc skill with type=stay-conversation. Read voice and hard-nos from context/people-context.md (especially counter-offer policy), pull the retention-score reasoning if present, and draft a verbal 1:1 SCRIPT: Open → Listen → Surface → Ask → Propose. Write to performance-docs/stay-conversation-{{employee_slug}}.md. This is a prompt for a verbal 1:1  -  do not send.
 ---
 
 

@@ -7,12 +7,6 @@ category: "Copy"
 featured: yes
 integrations: ["ahrefs", "airtable", "attio", "customerio", "firecrawl", "fireflies", "gong", "googleads", "googledocs", "hubspot", "instagram", "linkedin", "mailchimp", "metaads", "notion", "perplexityai", "reddit", "salesforce", "semrush", "stripe", "twitter", "youtube"]
 image: "megaphone"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Edit this copy. Use the edit-copy skill. Tighten in my voice: cut adjectives, remove marketer-speak, add specificity, fix rhythm. Preserve intent. Save an edited version to copy-edits/{{slug}}.md with before/after notes.
 ---
 
 

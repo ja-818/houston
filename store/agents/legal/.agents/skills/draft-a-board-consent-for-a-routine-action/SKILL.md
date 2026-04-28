@@ -7,17 +7,6 @@ category: "Entity"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: action
-    label: "Action"
-  - name: action_slug
-    label: "Action Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft a board consent for {{action}} (officer appointment / option grant / 409A adoption / bank resolution). Use the draft-document skill with type=board-consent. Pull directors + authorized shares from universal.entity, substitute the action-specific variables, produce the consent. Save to drafts/board-consent/{{action_slug}}-{{date}}.md. Flags attorney review if share math is non-standard.
 ---
 
 

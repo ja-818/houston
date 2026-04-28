@@ -7,11 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "hubspot", "salesforce", "attio", "stripe"]
 image: "headphone"
-inputs:
-  - name: account
-    label: "Account"
-prompt_template: |
-  Run a churn risk scan on {{account}}. Use the customer-view skill with view=churn-risk. Scan the last 60 days of conversations for cancellation language, 2+ frustration signals, or a usage cliff. If found, write a new entry to churn-flags.json with signal + severity + recommended next move.
 ---
 
 

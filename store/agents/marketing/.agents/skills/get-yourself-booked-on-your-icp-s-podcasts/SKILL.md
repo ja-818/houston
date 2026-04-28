@@ -7,12 +7,6 @@ category: "Social"
 featured: yes
 integrations: ["twitter"]
 image: "megaphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft podcast outreach for 5 shows our ICP listens to. Use the pitch-podcast skill. Identify target shows by audience fit via Listen Notes and draft per-show pitches: hook based on my positioning, angle, proof, clear ask. No template spam. Save to podcast-pitches/{{date}}.md.
 ---
 
 

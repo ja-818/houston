@@ -7,12 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion"]
 image: "clipboard"
-inputs:
-  - name: quarter
-    label: "Quarter"
-    placeholder: "e.g. 2026-Q1"
-prompt_template: |
-  Draft the monthly investor update. Use the prep-package skill with type=investor-update. CEO-voice narrative ~600-900 words: opening, highlights (3-5), lowlights (1-2), KR status block, asks (2-3), closing. Voice-matched from config/voice.md. Save to investor-updates/{{quarter}}/update.md.
 ---
 
 

@@ -7,14 +7,6 @@ category: "Reliability"
 featured: yes
 integrations: ["linear", "jira"]
 image: "laptop"
-inputs:
-  - name: incident
-    label: "Incident"
-  - name: id
-    label: "ID"
-    required: false
-prompt_template: |
-  Write the postmortem for {{incident}}. Use the write-postmortem skill. Read the incident timeline at incidents/{{id}}.md and pull linked logs from my connected Sentry / PostHog / Datadog. Draft sections: Summary, Impact, Timeline, Root cause, Contributing factors, What went well, What went poorly, Action items (each with owner + due date). Save to postmortems/{{id}}.md.
 ---
 
 

@@ -7,17 +7,6 @@ category: "Contracts"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: counterparty
-    label: "Counterparty"
-  - name: counterparty_slug
-    label: "Counterparty Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Review the attached MSA from {{counterparty}}. Use the review-contract skill with mode=full. Extract the full clause map, grade each clause green/yellow/red against market standard for a solo-founder-stage company, and give me an accept / redline / walk recommendation. Save to contract-reviews/{{counterparty_slug}}-{{date}}.md and update counterparty-tracker.json.
 ---
 
 

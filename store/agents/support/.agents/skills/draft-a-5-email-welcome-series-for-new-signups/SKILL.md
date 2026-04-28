@@ -7,11 +7,6 @@ category: "Success"
 featured: yes
 integrations: ["hubspot", "attio", "stripe", "mailchimp", "customerio", "loops"]
 image: "headphone"
-inputs:
-  - name: segment
-    label: "Segment"
-prompt_template: |
-  Draft a welcome series for {{segment}}. Use the draft-lifecycle-message skill with type=welcome-series. 5 touches (Day 0 / 1 / 3 / 7 / 14) keyed to the product's activation milestones in domains.email.journey (ask if not set). Each touch: subject, preview, body, CTA, success metric. Format for my connected ESP (Customer.io / Loops / Mailchimp / Kit via Composio). Save to onboarding/{{segment}}.md.
 ---
 
 

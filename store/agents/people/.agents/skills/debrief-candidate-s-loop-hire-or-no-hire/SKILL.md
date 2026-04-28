@@ -7,14 +7,6 @@ category: "Hiring"
 featured: yes
 integrations: ["notion", "linear", "slack", "loops"]
 image: "busts-in-silhouette"
-inputs:
-  - name: candidate
-    label: "Candidate"
-  - name: candidate_slug
-    label: "Candidate Slug"
-    required: false
-prompt_template: |
-  Debrief {{candidate}}'s interview loop. Use the debrief-loop skill. Pull interviewer feedback from my connected Slack channel (or Notion / paste fallback), extract themes, surface contradictions across panelists, score against the rubric, and produce a hire / no-hire decision memo at interview-loops/{{candidate_slug}}-debrief.md. Recommendation only  -  I decide.
 ---
 
 

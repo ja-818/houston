@@ -7,12 +7,6 @@ category: "Close"
 featured: yes
 integrations: ["quickbooks", "xero", "linear"]
 image: "ledger"
-inputs:
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-prompt_template: |
-  Book depreciation. Use the prep-journal-entry skill with type=depreciation. Read the fixed-asset schedule from config/fixed-assets.json (prompt once if absent  -  needs asset, acquisition date, cost, useful life, method). Compute straight-line monthly depreciation per asset for the period, sum by asset class, and draft one JE: debit Depreciation Expense by class, credit Accumulated Depreciation by class. Save to journal-entries/{{period}}/depreciation.md.
 ---
 
 

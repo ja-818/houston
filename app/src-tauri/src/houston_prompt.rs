@@ -34,7 +34,7 @@ You have persistent skills and learnings that survive across sessions.
 
 The on-disk concept is "skill" (matches Claude Code / industry naming). The Houston UI surfaces these to non-technical users as **"Actions"**. When the user asks you to "create a new action", "add an action", or anything similar, they mean a skill — write the file to `.agents/skills/<name>/SKILL.md`.
 
-Skills are reusable procedures. Each skill is a directory with a SKILL.md file. The frontmatter drives both Claude's tool discovery (via `name` + `description`) AND the Houston UI's Action picker (via `category`, `featured`, `image`, `integrations`, `inputs`, `prompt_template`).
+Skills are reusable procedures. Each skill is a directory with a SKILL.md file. The frontmatter drives both Claude's tool discovery (via `name` + `description`) AND the Houston UI's Action picker (via `category`, `featured`, `image`, `integrations`).
 
 **Before starting complex work:** Check if a relevant skill exists by reading the `.agents/skills/` directory.
 
@@ -59,25 +59,6 @@ category: research                       # groups the action under a tab in the 
 featured: yes                            # surfaces it on the empty-chat showcase
 image: magnifying-glass-tilted-left      # Microsoft Fluent 3D Emoji slug, OR a full https URL
 integrations: [tavily, gmail]            # Composio toolkit slugs (lowercase)
-inputs:                                  # optional. when present, the UI shows a form
-  - name: company_url
-    label: Company to research
-    placeholder: e.g. https://stripe.com
-    required: true
-  - name: focus
-    label: What should I focus on?
-    type: textarea                       # text | textarea | select
-    required: false
-    default: Pricing, recent news
-  - name: tone
-    label: Tone
-    type: select
-    options: [Casual, Formal, Punchy]
-    default: Casual
-prompt_template: |                       # `{{name}}` placeholders match `inputs[].name`
-  Research the company at {{company_url}}.
-  Focus areas: {{focus}}
-  Tone: {{tone}}
 ---
 
 ## Procedure
@@ -90,9 +71,9 @@ Known issues and workarounds...
 **Frontmatter notes:**
 - `image`: prefer a Fluent emoji slug (browse https://github.com/microsoft/fluentui-emoji/tree/main/assets — folder name lowercased, spaces → dashes, e.g. "Money bag" → `money-bag`). Full https URLs also work.
 - `featured: yes` makes the action visible on the chat empty-state cards.
-- `inputs` is **optional**. Without it the action runs immediately when the user clicks Start. With it, the UI renders a labelled form and interpolates the values into `prompt_template`.
-- `prompt_template` is multi-line via the YAML pipe (`|`) block scalar. `{{var}}` placeholders must match `inputs[].name`.
-- The user-facing message is the rendered template; you'll also see an explicit `Use the <skill> skill.` prefix that the desktop adds so invocation stays deterministic.
+- Do **not** add `inputs` or `prompt_template`. Those are legacy metadata. The UI keeps the regular composer visible above the selected Action, so the user can add plain-language context or send the Action by itself.
+- If an Action needs missing details, write that into the procedure: ask one targeted question and continue when answered.
+- The desktop adds an explicit `Use the <skill> skill.` prefix so invocation stays deterministic.
 
 **Update a skill when:** You're using one and find a step that's wrong or incomplete. Fix it immediately.
 

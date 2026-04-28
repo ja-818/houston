@@ -7,12 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft our Terms of Service. Use the draft-document skill with type=tos. Scrape my landing page via Firecrawl to infer product surface, structure as Usage / Account / IP / Acceptable-Use / Payment / Termination / Warranty / Liability / Disputes. Save to privacy-drafts/tos-{{date}}.md.
 ---
 
 

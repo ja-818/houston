@@ -7,14 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "hubspot", "salesforce", "attio", "stripe"]
 image: "headphone"
-inputs:
-  - name: customer
-    label: "Customer"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Build the customer dossier for {{customer}}. Use the customer-view skill with view=dossier. Pull plan + MRR from my connected Stripe, profile from my connected CRM (HubSpot / Attio / Salesforce), and filter conversations.json + bug-candidates.json + followups.json + churn-flags.json to this customer. Save to dossiers/{{slug}}.md.
 ---
 
 

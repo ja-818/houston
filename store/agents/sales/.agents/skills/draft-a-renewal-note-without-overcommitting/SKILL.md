@@ -7,17 +7,6 @@ category: "Retention"
 featured: yes
 integrations: ["googlecalendar", "gmail", "outlook", "hubspot", "salesforce", "attio", "pipedrive", "gong", "fireflies", "stripe"]
 image: "handshake"
-inputs:
-  - name: customer
-    label: "Customer"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft the renewal note for {{customer}}. Use the draft-outreach skill with stage=renewal. Read customers/{{slug}}/ history (onboarding plan, QBRs, health scores). Bundle outcomes shipped (with numbers) + expansion levers + pricing reasoning (from playbook  -  never commit outside the pricing stance). End with a dated next step. Save to customers/{{slug}}/renewal-{{date}}.md.
 ---
 
 

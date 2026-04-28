@@ -7,16 +7,6 @@ category: "Close"
 featured: yes
 integrations: ["gmail", "googledocs", "googledrive", "googlesheets", "hubspot", "linear", "notion", "outlook", "quickbooks", "slack", "stripe", "xero"]
 image: "ledger"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Refresh the accruals register. Use the review-accruals skill. Read accruals.json, compute current balances for every active accrual (prepaid rent, prepaid SaaS, deferred revenue, vacation / PTO accrual, payroll accrual), flag candidates for reversing entries this period, and call out accruals with no activity in > 90 days (stale  -  review for write-off or reclass). Rewrite accruals/register.md and upsert accruals.json.
-
-  Additional context: {{request}}
 ---
 
 

@@ -7,12 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "outlook", "slack"]
 image: "headphone"
-inputs:
-  - name: id
-    label: "ID"
-    required: false
-prompt_template: |
-  Triage this new inbound customer message. Use the triage-incoming skill. Pull the thread via my connected inbox (Gmail / Outlook / Intercom / Help Scout / Zendesk via Composio), classify against the routing rules in context/support-context.md, assign priority from customer tier + content signals, VIP-flag, and write to conversations.json + conversations/{{id}}/thread.json.
 ---
 
 

@@ -7,12 +7,6 @@ category: "Social"
 featured: yes
 integrations: ["linkedin"]
 image: "megaphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the weekly LinkedIn digest. Use the digest-linkedin-activity skill. Pull stats on my own posts (reach, engagement, new followers) via my connected LinkedIn plus notable posts in my network worth commenting on. A 5-minute read. Save to linkedin-digests/{{date}}.md for Monday morning.
 ---
 
 

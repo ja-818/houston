@@ -7,12 +7,6 @@ category: "Paid"
 featured: yes
 integrations: ["linkedin", "reddit", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: campaign_slug
-    label: "Campaign Slug"
-    required: false
-prompt_template: |
-  Draft 10 ad variants grounded in real customer language. Use the generate-ad-copy skill. Pull phrases from my call-insights/ folder (or G2 / Capterra / Trustpilot reviews via scrape) and write headlines + descriptions that sound like my customers talking, not a marketer pitching. Save to ad-copy/{{campaign_slug}}.md with the source quote alongside each headline.
 ---
 
 

@@ -7,12 +7,6 @@ category: "Social"
 featured: yes
 integrations: ["linkedin", "twitter", "reddit", "youtube"]
 image: "megaphone"
-inputs:
-  - name: week
-    label: "Week"
-    placeholder: "e.g. 2026-W14"
-prompt_template: |
-  Plan this week's social content across LinkedIn and X. Use the plan-social-calendar skill. Mon–Fri per platform, keyed to my topics, mixing original posts with repurposed content from outputs.json (zero duplicate angles). Save to social-calendars/{{week}}.md and append to social-calendar.md.
 ---
 
 

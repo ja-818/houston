@@ -7,20 +7,6 @@ category: "Meetings"
 featured: yes
 integrations: ["attio", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "hubspot", "linear", "linkedin", "notion", "outlook", "perplexityai", "pipedrive", "reddit", "salesforce", "stripe", "twitter"]
 image: "handshake"
-inputs:
-  - name: objection
-    label: "Objection"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-  - name: objection_slug
-    label: "Objection Slug"
-    required: false
-prompt_template: |
-  They said '{{objection}}'  -  draft my reframe. Use the handle-objection skill. Look up the objection in the playbook's handbook + any pattern in call-insights, then draft a 3-sentence in-call reframe (acknowledge → reframe with concrete example from anchor accounts → propose dated next step) plus a 5-8 line post-call follow-up email. Save to deals/{{slug}}/objections/{{date}}-{{objection_slug}}.md.
 ---
 
 

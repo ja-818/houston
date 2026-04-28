@@ -7,12 +7,6 @@ category: "Paid"
 featured: yes
 integrations: ["ahrefs", "airtable", "attio", "customerio", "firecrawl", "fireflies", "gong", "googleads", "googledocs", "hubspot", "instagram", "linkedin", "mailchimp", "metaads", "notion", "perplexityai", "reddit", "salesforce", "semrush", "stripe", "twitter", "youtube"]
 image: "megaphone"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Design an A/B test for the pricing page headline. Use the design-ab-test skill. Full spec: hypothesis (PICOT), control vs variant, primary + secondary metrics, sample-size estimate with MDE + power, duration, go/no-go criteria. Save to ab-tests/{{slug}}.md so I don't ship the loser.
 ---
 
 

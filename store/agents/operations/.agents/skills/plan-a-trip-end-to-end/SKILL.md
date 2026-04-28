@@ -7,14 +7,6 @@ category: "Scheduling"
 featured: yes
 integrations: ["googlecalendar", "gmail"]
 image: "clipboard"
-inputs:
-  - name: city
-    label: "City"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Plan my upcoming trip to {{city}}. Use the coordinate-travel skill. Read my travel prefs (ask once if missing). Assemble: trip summary, itinerary draft with flight + hotel search criteria, and a destination-adapted packing checklist. Save to trips/{{slug}}/. Never books  -  drafts only.
 ---
 
 

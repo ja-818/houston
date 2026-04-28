@@ -1,8 +1,8 @@
 /**
  * Action-invocation message marker.
  *
- * When a user runs a Houston "action" the chat composer is replaced by
- * a structured form; the message body sent to Claude is wrapped in an
+ * When a user runs a Houston "action" the selected action is shown
+ * above the composer; the message body sent to Claude is wrapped in an
  * HTML-comment marker carrying the action's display metadata so the
  * chat renderer can show a card (instead of the raw prompt) for both
  * the live message and reloaded history.
@@ -43,6 +43,8 @@ export interface ActionInvocation {
   integrations: string[];
   /** Ordered field labels + values the user filled. */
   fields: ActionInvocationField[];
+  /** Optional text the user typed alongside the action. */
+  message: string;
 }
 
 /**
@@ -63,6 +65,7 @@ export function decodeActionMessage(body: string): ActionInvocation | null {
       description: payload.description ?? "",
       integrations: payload.integrations ?? [],
       fields: payload.fields ?? [],
+      message: payload.message ?? "",
     };
   } catch {
     return null;

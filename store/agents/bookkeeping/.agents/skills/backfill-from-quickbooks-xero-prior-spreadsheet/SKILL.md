@@ -7,16 +7,6 @@ category: "Setup"
 featured: yes
 integrations: ["quickbooks", "xero"]
 image: "ledger"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Import our historical books. Use the import-historical-books skill. Parse the provided QBO / Xero export or prior-period workbook. Extract: chart of accounts (seed config/chart-of-accounts.json if absent), opening trial balance (write config/opening-trial-balance.json), transaction history by account, and prior vendor categorizations (seed config/prior-categorizations.json with majority GL per vendor where ≥ 80% consistent).
-
-  Additional context: {{request}}
 ---
 
 

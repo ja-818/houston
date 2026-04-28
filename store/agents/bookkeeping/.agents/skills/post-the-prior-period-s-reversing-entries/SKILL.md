@@ -7,12 +7,6 @@ category: "Close"
 featured: yes
 integrations: ["quickbooks", "xero", "linear"]
 image: "ledger"
-inputs:
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-prompt_template: |
-  Draft reversing entries for the current period. Use the prep-journal-entry skill with type=accrual (reversing sub-mode). Read accruals.json  -  every accrual with reversing=true that hasn't yet been reversed for this period needs a reversing JE. For each, generate a balanced JE with the opposite sign of the original, reversesEntryId linking back. Save under journal-entries/{{period}}/ and append to journal-entries.json with status=draft.
 ---
 
 

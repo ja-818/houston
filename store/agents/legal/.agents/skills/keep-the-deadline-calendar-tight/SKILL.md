@@ -7,12 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googledrive", "gmail", "notion"]
 image: "scroll"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Refresh my legal deadline calendar. Use the track-legal-state skill with scope=deadlines. Seed from the canonical set (Delaware March 1, 83(b) 30-day, 409A 12-month, DSR 30/45-day, TM office action 6-month, annual board consent) + enrich with dynamic renewal clocks from counterparty-tracker.json. Cite the authority for each. Save to deadline-summaries/{{date}}.md + update deadline-calendar.json.
 ---
 
 

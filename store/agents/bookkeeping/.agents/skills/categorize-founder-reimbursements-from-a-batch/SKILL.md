@@ -7,15 +7,6 @@ category: "Transactions"
 featured: yes
 integrations: ["gmail", "outlook", "quickbooks", "xero"]
 image: "ledger"
-inputs:
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Process the founder-reimbursement batch. Use the handle-expense-receipt skill in BATCH sub-mode. For each attached receipt or line item: extract vendor + date + amount, categorize against the locked CoA (confidence ≥ 0.90  -  Suspense otherwise), draft one line per expense. At the end, draft a single credit JE: debit each expense line, credit Founder Loan Payable (or Accrued Reimbursements if same-period reimbursement). Save individual expense records to expenses/ and the summary JE to journal-entries/{{period}}/founder-reimbursement-{{date}}.md.
 ---
 
 

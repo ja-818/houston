@@ -21,6 +21,8 @@ export interface ChatPanelProps {
   onAttachmentsChange?: (files: File[]) => void;
   onNotice?: (message: string) => void;
   footer?: ReactNode;
+  composerHeader?: ReactNode;
+  canSendEmpty?: boolean;
   status?: ChatStatus;
   thinkingIndicator?: ReactNode;
   transformContent?: (content: string) => { content: string; extra?: ReactNode };

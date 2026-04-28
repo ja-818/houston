@@ -7,17 +7,6 @@ category: "IP"
 featured: yes
 integrations: ["firecrawl"]
 image: "scroll"
-inputs:
-  - name: mark
-    label: "Mark"
-  - name: mark_slug
-    label: "Mark Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Run a USPTO knockout search on {{mark}}. Use the run-trademark-search skill. Search USPTO Trademark Center for exact hits, phonetic variants, and visual variants in the relevant Nice classes. Return Low / Medium / High risk with recommended next step. Save to tm-searches/{{mark_slug}}-{{date}}.md. Honest about knockout-vs-clearance limits.
 ---
 
 

@@ -7,15 +7,6 @@ category: "Advisory"
 featured: yes
 integrations: ["stripe"]
 image: "scroll"
-inputs:
-  - name: topic_slug
-    label: "Topic Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Answer: {your question here, e.g. 'do I need an NDA with investors'}. Use the advise-on-question skill. Write a short advice memo with Question → Short answer → Context → Sources cited → Next move, end with a judgment-call disclaimer. Save to advice-memos/{{topic_slug}}-{{date}}.md. If the matter is non-routine, flag it and recommend draft-document type=escalation-brief.
 ---
 
 

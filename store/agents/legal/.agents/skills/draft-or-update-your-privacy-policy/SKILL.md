@@ -7,12 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft our Privacy Policy. Use the draft-document skill with type=privacy-policy. Scrape my landing page via Firecrawl, cross-reference subprocessor-inventory.json, cite GDPR articles for EU-inclusive geography or CCPA/CPRA for US. AI-training disclosure is explicit. Save to privacy-drafts/privacy-policy-{{date}}.md.
 ---
 
 

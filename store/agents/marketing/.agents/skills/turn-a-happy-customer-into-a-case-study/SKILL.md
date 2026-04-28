@@ -7,14 +7,6 @@ category: "SEO"
 featured: yes
 integrations: ["notion", "airtable"]
 image: "megaphone"
-inputs:
-  - name: customer
-    label: "Customer"
-  - name: customer_slug
-    label: "Customer Slug"
-    required: false
-prompt_template: |
-  Draft a case study for {{customer}}. Use the write-case-study skill. Pull the interview / email thread / testimonial from my connected Airtable (or other notes app via Composio), or use what I paste. Structure as challenge → approach → results with real numbers, not marketer-speak. Save to case-studies/{{customer_slug}}.md.
 ---
 
 

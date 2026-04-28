@@ -7,16 +7,6 @@ category: "SEO"
 featured: yes
 integrations: ["googledocs", "linkedin", "twitter", "reddit", "mailchimp", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: topic
-    label: "Topic"
-  - name: keyword
-    label: "Keyword"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Draft a blog post on {{topic}} targeting {{keyword}}. Use the write-content skill with channel=blog. 2,000–3,000 words with proper H1/H2/H3, meta description, URL slug, internal-link suggestions, and one clear CTA. Reads like I wrote it. Save to blog-posts/{{slug}}.md and also save to my connected Google Docs if one's linked.
 ---
 
 

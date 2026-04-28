@@ -7,12 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "headphone"
-inputs:
-  - name: id
-    label: "ID"
-    required: false
-prompt_template: |
-  Summarize the thread at conversations/{{id}}/thread.json. Use the thread-summary skill. Produce exactly 3 bullets: where we are (last message + current state), what we promised (pulled from followups.json), what the customer expects next. Append the summary to conversations/{{id}}/notes.md.
 ---
 
 

@@ -7,17 +7,6 @@ category: "Contracts"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: counterparty
-    label: "Counterparty"
-  - name: counterparty_slug
-    label: "Counterparty Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Extract the clauses from this contract with {{counterparty}}. Use the review-contract skill with mode=clauses-only. Produce a structured map (term, termination, renewal, liability cap, indemnity, IP, governing law, DPA, AI training, data residency, exit rights)  -  no verdict, just the structure. Save to clause-extracts/{{counterparty_slug}}-{{date}}.md and update counterparty-tracker.json.
 ---
 
 

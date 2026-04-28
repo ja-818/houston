@@ -7,19 +7,6 @@ category: "Hiring"
 featured: yes
 integrations: ["notion", "linkedin", "loops"]
 image: "busts-in-silhouette"
-inputs:
-  - name: candidate
-    label: "Candidate"
-  - name: role
-    label: "Role"
-  - name: candidate_slug
-    label: "Candidate Slug"
-    required: false
-  - name: role_slug
-    label: "Role Slug"
-    required: false
-prompt_template: |
-  Prep me to interview {{candidate}} for the {{role}} role. Use the prep-interviewer skill. Read the candidate record at candidates/{{candidate_slug}}.md (or run evaluate-candidate first if missing), pull the rubric from reqs/{{role_slug}}.md, and build an interviewer-side brief: background summary, likely questions, red flags to probe, reference themes, scoring rubric. Write to interview-loops/{{candidate_slug}}.md.
 ---
 
 

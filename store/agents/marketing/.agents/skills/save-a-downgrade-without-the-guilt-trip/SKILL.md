@@ -7,11 +7,6 @@ category: "Email"
 featured: yes
 integrations: ["hubspot", "stripe", "linkedin", "mailchimp", "customerio", "googleads", "metaads"]
 image: "megaphone"
-inputs:
-  - name: persona
-    label: "Persona"
-prompt_template: |
-  Draft a save email for accounts that downgraded. Use the plan-campaign skill with type=churn-save. Pull the downgrade signal from my connected Stripe / HubSpot if available. No guilt tactics, no fake scarcity. Offer a genuine option (pause / downgrade further / concierge help / refund). Tone matches my voice. Save to campaigns/churn-save-{{persona}}.md.
 ---
 
 

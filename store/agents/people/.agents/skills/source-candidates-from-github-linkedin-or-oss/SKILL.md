@@ -7,17 +7,6 @@ category: "Hiring"
 featured: yes
 integrations: ["github", "linkedin", "firecrawl"]
 image: "busts-in-silhouette"
-inputs:
-  - name: role
-    label: "Role"
-  - name: role_slug
-    label: "Role Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Source candidates for the {{role}} role. Use the source-candidates skill. Pull from my signal source (GitHub / LinkedIn / community posts / OSS repos) via Firecrawl, score each against the must-haves in reqs/{{role_slug}}.md, and write a ranked list to sourcing-lists/{{role_slug}}-{{date}}.md.
 ---
 
 

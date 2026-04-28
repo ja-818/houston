@@ -7,15 +7,6 @@ category: "Close"
 featured: yes
 integrations: ["quickbooks", "xero", "linear"]
 image: "ledger"
-inputs:
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Draft the journal entry. Use the prep-journal-entry skill, picking `type` from: accrual | prepaid | payroll | revrec | depreciation | stock-comp | adjustment | reclass. Build a balanced double-entry JE against the locked chart-of-accounts, with a clear memo and supporting-doc links. Set reversing=true and reversesEntryId when the entry reverses a prior accrual. Save to journal-entries/{{period}}/{{slug}}.md and append to journal-entries.json with status=draft.
 ---
 
 

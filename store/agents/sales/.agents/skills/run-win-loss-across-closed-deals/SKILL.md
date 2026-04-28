@@ -7,12 +7,6 @@ category: "Playbook"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "gong", "fireflies"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Run win-loss across my closed deals. Use the analyze skill with subject=win-loss. Pull closed-won and closed-lost deals from my connected CRM (at least 5 of each), cluster by reason, find the 3 patterns that repeat, and propose concrete playbook edits (ICP tightening, objection handbook additions, pricing adjustments). Save to analyses/win-loss-{{date}}.md.
 ---
 
 

@@ -7,14 +7,6 @@ category: Legal
 featured: yes
 image: scroll
 integrations: [googlesheets, googledocs, googledrive, airtable]
-inputs:
-  - name: request
-    label: "Request"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Request: {{request}}
 ---
 
 

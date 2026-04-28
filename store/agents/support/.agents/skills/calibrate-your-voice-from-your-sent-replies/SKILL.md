@@ -7,16 +7,6 @@ category: "Quality"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "headphone"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Calibrate my voice. Use the voice-calibration skill. Pull 10-20 of my recent outbound support replies from my connected inbox (Gmail / Outlook / Intercom / Help Scout via Composio), extract tone cues (greeting, sign-off, sentence length, quirks, forbidden phrases), and write config/voice.md. Every draft-reply and write-article in this agent reads this.
-
-  Additional context: {{request}}
 ---
 
 

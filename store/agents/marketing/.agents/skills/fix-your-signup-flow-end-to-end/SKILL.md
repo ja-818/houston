@@ -7,12 +7,6 @@ category: "Copy"
 featured: yes
 integrations: ["reddit", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Audit my signup flow end-to-end. Use the write-page-copy skill with surface=signup-flow. Cover pre-signup page, email field, password requirements, verification, first-screen post-signup. Copy + field-level recommendations. Save to page-copy/signup-flow-{{slug}}.md.
 ---
 
 

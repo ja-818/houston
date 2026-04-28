@@ -7,15 +7,6 @@ category: "Vendors"
 featured: yes
 integrations: ["linkedin", "firecrawl", "perplexityai"]
 image: "clipboard"
-inputs:
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: company_slug
-    label: "Company Slug"
-    required: false
-prompt_template: |
-  Run a compliance check on {{company}}. Use the research-compliance skill. Public-source research via Exa / Perplexity / Firecrawl: frameworks held (SOC 2, ISO 27001, HIPAA, GDPR posture), named officers, recent incidents, litigation. Every claim cited with source URL. Save to compliance-reports/{{company_slug}}.md.
 ---
 
 

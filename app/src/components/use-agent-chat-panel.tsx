@@ -7,12 +7,12 @@
  * scope) and the hook returns ready-to-use AIBoard props:
  *
  *   - chatEmptyState      — featured-skill cards + "see more"
- *   - composerOverride    — inline ActionForm when an action is picked
+ *   - composerHeader      — selected Action chip above the prompt input
  *   - footer              — model selector + "Actions" button
  *   - renderUserMessage   — decode + render action-invocation card
  *   - tool / link helpers — file tool renderer, Composio link card
  *
- * The hook also owns the action-form submission pipeline (createMission
+ * The hook also owns the action submission pipeline (createMission
  * for new conversations, tauriChat.send for follow-ups) so we don't
  * duplicate the encoding + feed-push logic in two places.
  */
@@ -37,7 +37,14 @@ import {
   useConnections,
   useSkills,
 } from "../hooks/queries";
-import { tauriChat, tauriConfig, tauriShell, tauriWorktree } from "../lib/tauri";
+import {
+  tauriAttachments,
+  tauriChat,
+  tauriConfig,
+  tauriShell,
+  tauriWorktree,
+  withAttachmentPaths,
+} from "../lib/tauri";
 import { createMission } from "../lib/create-mission";
 import { queryKeys } from "../lib/query-keys";
 import { useFileToolRenderer } from "../hooks/use-file-tool-renderer";
@@ -53,10 +60,10 @@ import {
   decodeActionMessage,
   encodeActionMessage,
 } from "../lib/action-message";
-import { ActionForm } from "./action-form";
 import { SkillCard } from "./skill-card";
 import { NewMissionPickerDialog } from "./new-mission-picker-dialog";
 import { UserActionMessage } from "./user-action-message";
+import { SelectedActionChip } from "./selected-action-chip";
 import { ProviderReconnectCard } from "./shell/provider-reconnect-card";
 import { useChatDisplayLabels } from "./use-chat-display-labels";
 import {
@@ -74,7 +81,7 @@ interface UseAgentChatPanelArgs {
   agent: Agent | null;
   /** That agent's catalog definition (for agentModes etc.). */
   agentDef: AgentDefinition | null;
-  /** Currently-open session key, if any. Drives action-form routing. */
+  /** Currently-open session key, if any. Drives action routing. */
   selectedSessionKey: string | null;
   /** Called with the new conversation id after an action's "Start". */
   onSelectSession?: (id: string) => void;
@@ -83,8 +90,12 @@ interface UseAgentChatPanelArgs {
 interface AgentChatPanelProps {
   /** Renders skill cards + "see more" when no action is in flight. */
   chatEmptyState: AIBoardProps["chatEmptyState"];
-  /** Renders the ActionForm in place of the chat input. */
-  composerOverride: AIBoardProps["composerOverride"];
+  /** Selected Action chip rendered above the prompt input. */
+  composerHeader: AIBoardProps["composerHeader"];
+  /** Submit can run the selected Action without extra text. */
+  canSendEmpty: AIBoardProps["canSendEmpty"];
+  /** Intercepts composer submit while an Action is selected. */
+  onComposerSubmit: AIBoardProps["onComposerSubmit"];
   /** Composer footer with model selector + Actions button. */
   footer: AIBoardProps["footer"];
   /** Decodes action-invocation user messages into a card. */
@@ -185,7 +196,7 @@ export function useAgentChatPanel({
   const { isSpecialTool, renderToolResult, renderTurnSummary } =
     useFileToolRenderer(path ?? "");
 
-  // ── Skills + action-form state ────────────────────────────────────────
+  // ── Skills + selected-action state ────────────────────────────────────
   const { data: allSkills } = useSkills(path ?? undefined);
   const emptySkillShowcase = useMemo(() => {
     const skills = allSkills ?? [];
@@ -199,7 +210,7 @@ export function useAgentChatPanel({
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeAction, setActiveAction] = useState<SkillSummary | null>(null);
-  // Drop in-flight form when the agent / session changes so it doesn't
+  // Drop selected Action when the agent / session changes so it doesn't
   // leak across contexts.
   useEffect(() => {
     setActiveAction(null);
@@ -212,28 +223,37 @@ export function useAgentChatPanel({
 
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
 
-  // "Start" inside the inline ActionForm. We split user-display from
-  // Claude-prompt: both share the same persisted body (an HTML-comment
-  // marker the renderer parses + the explicit instruction Claude reads).
-  const handleActionFormSubmit = useCallback(
-    async (values: Record<string, string>) => {
+  // While an Action is selected, the regular composer still owns text
+  // and attachments. This hook only wraps the submitted message with the
+  // hidden Action marker + deterministic "Use the X skill" prompt.
+  const handleActionComposerSubmit = useCallback<NonNullable<AIBoardProps["onComposerSubmit"]>>(
+    async ({ sessionKey, text, files }) => {
       const skill = activeAction;
+      if (!skill || !agent || !path) return false;
       setActiveAction(null);
-      if (!skill || !agent || !path) return;
 
-      const claudePrompt = buildActionClaudePrompt(skill, values);
-      const encoded = encodeActionMessage(skill, values, claudePrompt);
+      const visibleText = actionVisibleText(
+        text,
+        files,
+        (names) => t("toasts.attached", { names }),
+      );
+      const claudePrompt = buildActionClaudePrompt(skill, text);
+      const encoded = encodeActionMessage(skill, visibleText, claudePrompt);
       const friendlyTitle = humanize(skill.name);
 
-      if (selectedSessionKey) {
+      if (sessionKey) {
         // Mid-conversation: optimistic feed push + send, mirrors the
         // text-send pipeline.
-        pushFeedItem(path, selectedSessionKey, {
+        const scopeId = sessionKey;
+        const attachmentPaths = await tauriAttachments.save(scopeId, files);
+        const prompt = withAttachmentPaths(claudePrompt, attachmentPaths);
+        const encodedWithAttachments = encodeActionMessage(skill, visibleText, prompt);
+        pushFeedItem(path, sessionKey, {
           feed_type: "user_message",
-          data: encoded,
+          data: encodedWithAttachments,
         });
         const mode = agentModes?.find((m) => m.id === undefined); // default mode
-        tauriChat.send(path, encoded, selectedSessionKey, {
+        tauriChat.send(path, encodedWithAttachments, sessionKey, {
           mode: mode?.promptFile,
           providerOverride: chatProvider ?? undefined,
           modelOverride: chatModel ?? undefined,
@@ -276,7 +296,11 @@ export function useAgentChatPanel({
             promptFile: mode?.promptFile,
             providerOverride: chatProvider ?? undefined,
             modelOverride: chatModel ?? undefined,
-            buildPrompt: () => encoded,
+            buildPrompt: async (activityId) => {
+              const paths = await tauriAttachments.save(`activity-${activityId}`, files);
+              const prompt = withAttachmentPaths(claudePrompt, paths);
+              return encodeActionMessage(skill, visibleText, prompt);
+            },
             title: friendlyTitle,
           },
         );
@@ -291,22 +315,23 @@ export function useAgentChatPanel({
         });
         onSelectSessionRef.current?.(conversationId);
       }
+      return true;
     },
     [
       activeAction,
       agent,
       path,
-      selectedSessionKey,
       agentModes,
       chatProvider,
       chatModel,
       pushFeedItem,
       queryClient,
+      t,
     ],
   );
 
-  // Picking a skill from a card or the picker. Drops user into the
-  // action-form (no inputs → confirm; with inputs → labeled fields).
+  // Picking a skill from a card or the picker pins it above the regular
+  // composer. The user can add text or send the Action by itself.
   const applyAction = useCallback(
     (skill: SkillSummary) => setActiveAction(skill),
     [],
@@ -346,16 +371,15 @@ export function useAgentChatPanel({
     [effectiveProvider],
   );
 
-  const composerOverride = useMemo<AIBoardProps["composerOverride"]>(() => {
+  const composerHeader = useMemo<AIBoardProps["composerHeader"]>(() => {
     if (!agent || !activeAction) return undefined;
     return (
-      <ActionForm
+      <SelectedActionChip
         skill={activeAction}
-        onSubmit={handleActionFormSubmit}
         onCancel={() => setActiveAction(null)}
       />
     );
-  }, [agent, activeAction, handleActionFormSubmit]);
+  }, [agent, activeAction]);
 
   const chatEmptyState = useMemo<AIBoardProps["chatEmptyState"]>(() => {
     if (!agent) return undefined;
@@ -435,7 +459,9 @@ export function useAgentChatPanel({
 
   return {
     chatEmptyState,
-    composerOverride,
+    composerHeader,
+    canSendEmpty: activeAction != null,
+    onComposerSubmit: handleActionComposerSubmit,
     footer,
     renderUserMessage,
     isSpecialTool,
@@ -460,4 +486,15 @@ function humanize(slug: string): string {
   return spaced.length === 0
     ? slug
     : spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+function actionVisibleText(
+  text: string,
+  files: File[],
+  formatAttached: (names: string) => string,
+): string {
+  const trimmed = text.trim();
+  if (files.length === 0) return trimmed;
+  const attached = formatAttached(files.map((f) => f.name).join(", "));
+  return trimmed ? `${trimmed}\n\n${attached}` : attached;
 }

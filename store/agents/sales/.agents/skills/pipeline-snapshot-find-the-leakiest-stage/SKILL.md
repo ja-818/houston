@@ -7,15 +7,6 @@ category: "CRM"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "gong", "fireflies"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-  - name: week
-    label: "Week"
-    placeholder: "e.g. 2026-W14"
-prompt_template: |
-  Give me a pipeline snapshot. Use the analyze skill with subject=pipeline. Pull the open-deal snapshot from my connected CRM. Per stage: count, ARR, average time-in-stage, stage-to-next conversion. Flag the leakiest transition. Save to analyses/pipeline-{{date}}.md and mirror the table to pipeline-reports/{{week}}.md.
 ---
 
 

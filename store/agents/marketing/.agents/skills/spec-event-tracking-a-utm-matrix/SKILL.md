@@ -7,12 +7,6 @@ category: "Paid"
 featured: yes
 integrations: ["linkedin", "reddit"]
 image: "megaphone"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Spec the event tracking plan for sign-up → activation. Use the setup-tracking skill. Event names, triggers, properties, owner per step. UTM matrix so paid / social / email are comparable in my connected GA4 / PostHog. Save to tracking-plans/{{slug}}.md.
 ---
 
 

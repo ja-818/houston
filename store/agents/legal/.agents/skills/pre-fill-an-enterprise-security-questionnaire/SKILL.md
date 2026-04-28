@@ -7,17 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googlesheets", "googledocs", "googledrive", "airtable"]
 image: "scroll"
-inputs:
-  - name: prospect
-    label: "Prospect"
-  - name: prospect_slug
-    label: "Prospect Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Help me fill out this security questionnaire from {{prospect}} (SIG-lite / CAIQ / custom sheet). Use the security-questionnaire skill. Extract the question set, pre-fill every question answerable from config/security-answers.md, group the rest by topic so one sit-down with me resolves many. Save the draft to security-questionnaires/{{prospect_slug}}-{{date}}.md.
 ---
 
 

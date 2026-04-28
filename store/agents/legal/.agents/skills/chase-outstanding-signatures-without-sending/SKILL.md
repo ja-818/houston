@@ -7,12 +7,6 @@ category: "Contracts"
 featured: yes
 integrations: ["googledrive", "gmail", "notion"]
 image: "scroll"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Check outstanding signatures. Use the track-legal-state skill with scope=signatures. Read my connected DocuSign / PandaDoc / HelloSign, list outstanding envelopes + days open, draft polite reminders for laggards (> 5 days open, never sends), file recently executed copies to my connected Google Drive. Save to signature-status/{{date}}.md.
 ---
 
 

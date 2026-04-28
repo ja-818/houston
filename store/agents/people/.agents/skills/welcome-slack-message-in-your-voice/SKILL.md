@@ -7,14 +7,6 @@ category: "Onboarding"
 featured: yes
 integrations: ["gmail", "notion", "slack"]
 image: "busts-in-silhouette"
-inputs:
-  - name: new_hire
-    label: "New Hire"
-  - name: employee_slug
-    label: "Employee Slug"
-    required: false
-prompt_template: |
-  Draft the Day-0 welcome Slack for {{new_hire}}. Use the draft-onboarding-plan skill and return just the Slack portion  -  warm, specific to their role, in my voice (pulled from context/people-context.md). Write to onboarding-plans/{{employee_slug}}.md under the `## Welcome Slack` section.
 ---
 
 

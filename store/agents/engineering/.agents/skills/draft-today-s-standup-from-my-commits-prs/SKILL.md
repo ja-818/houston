@@ -7,12 +7,6 @@ category: "Triage"
 featured: yes
 integrations: ["github", "gitlab", "linear", "jira", "slack", "discord"]
 image: "laptop"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft today's standup. Use the run-standup skill. Pull recent commits + PR activity from my connected GitHub / GitLab, recently closed tickets from Linear / Jira, mix in any notes I drop. Produce three bullets: Yesterday / Today / Blockers. Save to standups/{{date}}.md. I never post to Slack  -  you copy-paste.
 ---
 
 

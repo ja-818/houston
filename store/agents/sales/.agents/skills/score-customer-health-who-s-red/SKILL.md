@@ -7,12 +7,6 @@ category: "Retention"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "stripe"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Score customer health. Use the score skill with subject=customer-health. Pull every current customer from customers.json + connected CRM. Compute drivers: usage trend via connected PostHog / Mixpanel / Amplitude, NPS / CSAT if captured, support-ticket volume, billing signal via Stripe. Apply the health thresholds. Name the top 2 drivers per row. Save to scores/customer-health-{{date}}.md.
 ---
 
 

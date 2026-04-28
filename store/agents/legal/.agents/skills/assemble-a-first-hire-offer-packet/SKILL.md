@@ -7,17 +7,6 @@ category: "Entity"
 featured: yes
 integrations: ["googledocs", "googledrive"]
 image: "scroll"
-inputs:
-  - name: candidate
-    label: "Candidate"
-  - name: candidate_slug
-    label: "Candidate Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Prepare the offer packet for {{candidate}}. Use the prepare-offer-packet skill. Assemble offer letter + CIIAA + option grant notice + exercise agreement anchored to my current 409A (universal.entity.four09aDate). Flag attorneyReviewRequired if comp structure is non-standard. Save to offer-packets/{{candidate_slug}}-{{date}}/.
 ---
 
 

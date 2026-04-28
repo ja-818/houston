@@ -7,17 +7,6 @@ category: "Development"
 featured: yes
 integrations: ["github", "gitlab", "firecrawl"]
 image: "laptop"
-inputs:
-  - name: system
-    label: "System"
-  - name: system_slug
-    label: "System Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Audit the architecture of {{system}}. Use the audit skill with surface=architecture. Read context/engineering-context.md for stack, invariants, and priorities. Walk modules / services / boundaries and produce a risk-sorted list (high / medium / low). For each concern: current state, proposed fix, effort (S/M/L/XL). Flag anything overlapping sensitiveAreas as high by default. Save to audits/architecture-{{system_slug}}-{{date}}.md. Favor incremental fixes over rewrites.
 ---
 
 

@@ -7,14 +7,6 @@ category: "Copy"
 featured: yes
 integrations: ["reddit", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: page
-    label: "Page"
-  - name: page_slug
-    label: "Page Slug"
-    required: false
-prompt_template: |
-  Give me 10 headlines for {{page}}. Use the write-headline-variants skill. Each headline + subhead pair grounded in a verbatim customer quote, review line, or positioning-doc claim. No marketer-speak. Top 3 ranked to test first. Save to headline-variants/{{page_slug}}.md.
 ---
 
 

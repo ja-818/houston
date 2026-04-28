@@ -7,16 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["airtable", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "googledrive", "googlesheets", "linear", "linkedin", "notion", "outlook", "perplexityai", "slack", "stripe"]
 image: "clipboard"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Help me set up my operating context. Use the define-operating-context skill. Interview me briefly on company + priorities + rhythm + key contacts + tools + vendor posture + hard nos + voice, then write the full doc to context/operations-context.md  -  the source of truth every other skill reads before producing anything substantive.
-
-  Additional context: {{request}}
 ---
 
 

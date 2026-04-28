@@ -7,14 +7,6 @@ category: "Contracts"
 featured: yes
 integrations: ["airtable", "firecrawl", "gmail", "googledocs", "googledrive", "googlesheets", "notion", "outlook", "stripe"]
 image: "scroll"
-inputs:
-  - name: counterparty
-    label: "Counterparty"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Plan the redline for the {{counterparty}} contract I just reviewed. Use the plan-redline skill. Read contract-reviews/{{counterparty}}-{{date}}.md, combine with my risk posture from config/context-ledger.json, and produce must-have / nice-to-have / punt tiers with the exact redline language for every must-have. Save to redline-plans/{{counterparty}}-{{date}}.md.
 ---
 
 

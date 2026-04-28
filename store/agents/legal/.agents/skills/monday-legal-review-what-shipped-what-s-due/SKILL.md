@@ -7,12 +7,6 @@ category: "Advisory"
 featured: yes
 integrations: ["googledrive", "gmail", "notion"]
 image: "scroll"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the Monday legal review. Use the track-legal-state skill with scope=weekly-review. Aggregate this agent's outputs.json for the last 7 days (contract reviews, drafts, audits, filings) grouped by domain, surface pending signatures (from signature-status/), next 3 deadlines (from deadline-calendar.json), and any attorneyReviewRequired entries without a follow-up. Save to weekly-reviews/{{date}}.md.
 ---
 
 

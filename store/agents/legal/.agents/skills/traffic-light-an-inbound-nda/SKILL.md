@@ -7,17 +7,6 @@ category: "Contracts"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: counterparty
-    label: "Counterparty"
-  - name: counterparty_slug
-    label: "Counterparty Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Traffic-light this NDA from {{counterparty}}. Use the review-contract skill with mode=nda-traffic-light. Grade term, mutuality, confidential-info definition, carve-outs, jurisdiction, non-solicit smuggling, and return/destruction. Write a specific redline for every Red item. Save to ndas/{{counterparty_slug}}-{{date}}.md.
 ---
 
 

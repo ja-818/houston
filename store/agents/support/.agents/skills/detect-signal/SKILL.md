@@ -7,14 +7,6 @@ category: Support
 featured: yes
 image: headphone
 integrations: [gmail, github, linear, jira]
-inputs:
-  - name: request
-    label: "Request"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Request: {{request}}
 ---
 
 

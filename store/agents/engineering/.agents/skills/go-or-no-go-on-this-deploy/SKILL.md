@@ -7,14 +7,6 @@ category: "Reliability"
 featured: yes
 integrations: ["github", "gitlab"]
 image: "laptop"
-inputs:
-  - name: release
-    label: "Release"
-  - name: release_slug
-    label: "Release Slug"
-    required: false
-prompt_template: |
-  Is {{release}} ready to deploy? Use the review-deploy-readiness skill. Run the pre-deploy gate checklist: tests green, migrations backwards-compat, feature flags documented, rollback plan, on-call aware, runbook updated. Green / yellow / red per gate. Final verdict: GO / NO-GO / SOFT-GO with the condition. Save to deploy-readiness/{{release_slug}}.md. I never deploy  -  you click the button.
 ---
 
 

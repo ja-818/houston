@@ -7,16 +7,6 @@ category: "Inbox"
 featured: yes
 integrations: ["gmail", "github", "linear", "jira"]
 image: "headphone"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Extract a bug report from this thread. Use the detect-signal skill with signal=bug. Pull repro steps, affected version, error message / stack trace, apply severity from the context doc, and append to bug-candidates.json. Offer to chain to my connected tracker (GitHub / Linear / Jira via Composio).
-
-  Additional context: {{request}}
 ---
 
 

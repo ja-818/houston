@@ -7,13 +7,6 @@ category: "Docs"
 featured: yes
 integrations: ["github", "gitlab", "linear", "jira"]
 image: "laptop"
-inputs:
-  - name: version
-    label: "Version"
-  - name: prior_tag
-    label: "Prior Tag"
-prompt_template: |
-  Draft public release notes for {{version}} (since {{prior_tag}}). Use the write-release-notes skill with format=release-notes. Pull merged PRs + linked issues via my connected GitHub / GitLab + Linear / Jira. Filter for user-visible changes. Write a narrative post: headline, 3-5 highlights (user outcomes, not 'upgraded queue worker'), breaking changes with migration snippets, upgrade notes, fixed list, thanks if contributors. Save to release-notes/{{version}}.md.
 ---
 
 

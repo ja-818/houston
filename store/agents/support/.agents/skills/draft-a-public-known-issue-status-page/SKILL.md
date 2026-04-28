@@ -7,15 +7,6 @@ category: "Help Center"
 featured: yes
 integrations: ["googledocs", "notion", "github", "linear"]
 image: "headphone"
-inputs:
-  - name: bug_id
-    label: "Bug ID"
-    required: false
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Draft a public known-issue status entry for {{bug_id}}. Use the write-article skill with type=known-issue. Read bug-candidates.json for details. Draft: what's broken, who's affected, workaround, current status, ETA (only if I pre-approved one). Save to known-issues/{{slug}}.md and append to known-issues.json.
 ---
 
 

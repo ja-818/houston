@@ -7,12 +7,6 @@ category: "Contracts"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "scroll"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Sweep my legal inbox from the last 7 days. Use the triage-legal-inbox skill. Read my connected Gmail / Outlook for legal-flavored inbound, classify each item (NDA green/yellow/red, MSA, DPA, DSR, subpoena, TM office action, contractor, other), recommend a route per item. Save to intake-summaries/{{date}}.md.
 ---
 
 

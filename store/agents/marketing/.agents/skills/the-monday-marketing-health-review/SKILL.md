@@ -7,12 +7,6 @@ category: "Positioning"
 featured: yes
 integrations: ["linkedin", "firecrawl", "semrush"]
 image: "megaphone"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me the Monday marketing health review. Use the analyze skill with subject=marketing-health. Aggregate everything I produced this week across all domains (blog posts, campaigns, emails, social, page copy) from outputs.json, flag gaps (e.g. 'no email shipped in 3 weeks'), and recommend next moves grouped by domain. Save to analyses/marketing-health-{{date}}.md.
 ---
 
 

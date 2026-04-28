@@ -7,12 +7,6 @@ category: "CRM"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "stripe"]
 image: "handshake"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Score my open deals on health. Use the score skill with subject=deal-health. For each open deal in deals.json + connected CRM, score three drivers: time-in-stage vs playbook baseline, qualification-pillar coverage, touch recency. Return per-deal GREEN / YELLOW / RED with drivers named. Save to scores/deal-health-{{date}}.md and update deals.json.
 ---
 
 

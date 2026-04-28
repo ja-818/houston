@@ -7,16 +7,6 @@ category: "Help Center"
 featured: yes
 integrations: ["gmail", "github", "linear", "jira"]
 image: "headphone"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Find repeat-question clusters that deserve an article. Use the detect-signal skill with signal=repeat-question. Scan the last 30-60 days of conversations.json, cluster semantically similar incoming questions, and for each cluster of ≥3 with no matching article in articles/, append to patterns.json. Offer to chain write-article type=from-ticket for my top pick.
-
-  Additional context: {{request}}
 ---
 
 

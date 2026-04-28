@@ -7,20 +7,6 @@ category: "Outbound"
 featured: yes
 integrations: ["googlecalendar", "gmail", "outlook", "hubspot", "salesforce", "attio", "pipedrive", "gong", "fireflies", "stripe"]
 image: "handshake"
-inputs:
-  - name: person
-    label: "Person"
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: lead_slug
-    label: "Lead Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft a cold email to {{person}} at {{company}}. Use the draft-outreach skill with stage=cold-email. Run a fresh signal search (recent news, hires, funding, product launches) via Composio, pick the single strongest signal, and draft 3 short paragraphs: signal → specific pain (from playbook) → one-line ask. Match voice from config/voice.md. Max 110 words body. Save to outreach/email-{{lead_slug}}-{{date}}.md.
 ---
 
 

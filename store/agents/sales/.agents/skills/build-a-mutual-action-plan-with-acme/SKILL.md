@@ -7,15 +7,6 @@ category: "Meetings"
 featured: yes
 integrations: ["attio", "firecrawl", "fireflies", "gmail", "gong", "googlecalendar", "googledocs", "hubspot", "linear", "linkedin", "notion", "outlook", "perplexityai", "pipedrive", "reddit", "salesforce", "stripe", "twitter"]
 image: "handshake"
-inputs:
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Build a mutual action plan with {{company}}. Use the draft-close-plan skill. Stitch the call analyses into a shared timeline with procurement, security review, budget approval, legal, owners (ours + theirs), and target dates. Surface the top 3 risks. Save to deals/{{slug}}/close-plan.md.
 ---
 
 

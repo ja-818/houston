@@ -7,14 +7,6 @@ category: "Social"
 featured: yes
 integrations: ["googledocs", "linkedin", "twitter", "reddit", "mailchimp", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: topic
-    label: "Topic"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Draft a 7-tweet X thread on {{topic}}. Use the write-content skill with channel=x-thread. Hook tweet, numbered progression, CTA tweet at the end. Each tweet fits the 280-char budget with room for edits. Save to threads/x-{{slug}}.md.
 ---
 
 

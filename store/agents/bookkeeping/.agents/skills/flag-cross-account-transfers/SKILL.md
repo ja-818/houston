@@ -7,12 +7,6 @@ category: "Transactions"
 featured: yes
 integrations: ["stripe", "quickbooks", "xero"]
 image: "ledger"
-inputs:
-  - name: period
-    label: "Period"
-    placeholder: "e.g. 2026-03"
-prompt_template: |
-  Find cross-account transfers. Use the reconcile-account skill with mode=transfer-detect. For every debit in account A on date D, search all other accounts for a credit on date D±2 with the same absolute amount. Matching legs get gl_code=9000 (Internal Transfer), source=transfer, category_status=ready_for_approval. Write the transfer-pair list to reconciliations/transfers/{{period}}.md. Transfers are excluded from P&L SUMIFS formulas so they don't inflate revenue/expense.
 ---
 
 

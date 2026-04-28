@@ -7,17 +7,6 @@ category: "Development"
 featured: yes
 integrations: ["discord", "firecrawl", "github", "gitlab", "jira", "linear", "loops", "notion", "perplexityai", "slack", "stripe", "twitter"]
 image: "laptop"
-inputs:
-  - name: decision
-    label: "Decision"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Write an Architecture Decision Record (ADR) for {{decision}}. Use the write-adr skill. Follow the Michael Nygard template: Title, Status (Proposed / Accepted / Deprecated / Superseded), Context, Decision, Consequences. Read context/engineering-context.md for stack. Keep it tight  -  one page, no padding. Save to adrs/{{date}}-{{slug}}.md.
 ---
 
 

@@ -7,15 +7,6 @@ category: "Close"
 featured: yes
 integrations: ["hubspot", "stripe"]
 image: "ledger"
-inputs:
-  - name: customer_slug
-    label: "Customer Slug"
-    required: false
-  - name: contract_slug
-    label: "Contract Slug"
-    required: false
-prompt_template: |
-  Build the revenue recognition schedule. Use the calculate-revenue-recognition skill. For the specified contract, identify performance obligations, allocate the transaction price across obligations (standalone selling price allocation for bundles), and produce the monthly recognition schedule. Handle common startup patterns: annual upfront / monthly ratable, usage-based with a floor, implementation-fee deferral, contract modifications. Save to revrec/{{customer_slug}}/{{contract_slug}}.json.
 ---
 
 

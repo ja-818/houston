@@ -14,24 +14,13 @@
 //! featured: yes
 //! integrations: [tavily, gmail]
 //! image: magnifying-glass-tilted-left
-//! inputs:
-//!   - name: company_url
-//!     label: Company to research
-//!     placeholder: e.g. https://stripe.com
-//!     required: true
-//!   - name: focus
-//!     label: What should I focus on?
-//!     type: textarea
-//!     required: false
-//! prompt_template: |
-//!   Research the company at {{company_url}}.
-//!   Focus areas: {{focus}}
 //! ---
 //! ```
 //!
 //! Parsing is delegated to `serde_yml`. Serialization is hand-rolled so
-//! the output ordering and formatting (block scalars for templates, empty
-//! `tags: []` for missing tags) stays deterministic and round-trippable.
+//! the output ordering and formatting stays deterministic and
+//! round-trippable. Legacy `inputs` and `prompt_template` still parse,
+//! but new Store-packaged skills should not declare them.
 
 use crate::{SkillError, SkillInput, SkillInputKind, SkillSummary};
 use serde::Deserialize;
@@ -515,8 +504,7 @@ prompt_template: |
 
     #[test]
     fn parse_legacy_starter_prompt_is_ignored() {
-        // The `starter_prompt` field was replaced by `prompt_template +
-        // inputs`. Existing files with it should still parse cleanly.
+        // Older files used `starter_prompt`; it should still parse cleanly.
         let content =
             "---\nname: s\ndescription: d\nstarter_prompt: Hi there\n---\n";
         let (summary, _) = parse_content(content).unwrap();

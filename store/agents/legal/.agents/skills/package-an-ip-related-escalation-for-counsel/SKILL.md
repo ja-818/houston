@@ -7,15 +7,6 @@ category: "IP"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: matter_slug
-    label: "Matter Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Package this IP matter for outside counsel. Use the draft-document skill with type=escalation-brief. Structure: 2-3 sentence matter summary, numbered questions for the lawyer, deadline + why, quoted excerpts with cite, entity snapshot, recommended firm type (IP). Save to escalations/{{matter_slug}}-{{date}}.md. Never names specific firms.
 ---
 
 

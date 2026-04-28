@@ -7,12 +7,6 @@ category: "Copy"
 featured: yes
 integrations: ["reddit", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Rewrite my upgrade paywall. Use the write-page-copy skill with surface=paywall. Headline, value stack, price anchoring, CTA, social proof  -  grounded in why users actually upgrade (from my call-insights/). Save to page-copy/paywall-{{slug}}.md.
 ---
 
 

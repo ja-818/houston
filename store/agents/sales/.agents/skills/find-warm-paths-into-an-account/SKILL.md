@@ -7,18 +7,6 @@ category: "Outbound"
 featured: yes
 integrations: ["gmail", "hubspot", "salesforce", "attio", "linkedin", "firecrawl", "perplexityai"]
 image: "handshake"
-inputs:
-  - name: company
-    label: "Company"
-    placeholder: "e.g. Acme"
-  - name: slug
-    label: "Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Find warm-paths into {{company}}. Use the research-account skill with depth=warm-paths. Search my connected LinkedIn + CRM for first-degree connections and mutual-customer paths. Rank Strong / Medium / Weak. Draft the intro ask per strong path. Save to leads/{{slug}}/warm-paths-{{date}}.md.
 ---
 
 

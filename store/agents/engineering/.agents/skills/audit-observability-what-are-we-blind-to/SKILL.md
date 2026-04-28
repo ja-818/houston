@@ -7,12 +7,6 @@ category: "Reliability"
 featured: yes
 integrations: ["github", "gitlab", "firecrawl"]
 image: "laptop"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Audit my observability. Use the audit skill with surface=observability. Read the connected Sentry / PostHog / Datadog / New Relic / Honeycomb. Produce a 3-column matrix (signal × coverage × gap) across errors / traces / logs / alerts / SLOs. Ground coverage expectations against context/engineering-context.md architecture + invariants. Top 5 fixes ranked by blast-radius reduction. Save to audits/observability-{{date}}.md.
 ---
 
 

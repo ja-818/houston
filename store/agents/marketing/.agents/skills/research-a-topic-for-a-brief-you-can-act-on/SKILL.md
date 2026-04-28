@@ -7,14 +7,6 @@ category: "Positioning"
 featured: yes
 integrations: ["firecrawl", "perplexityai"]
 image: "megaphone"
-inputs:
-  - name: topic
-    label: "Topic"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Research {{topic}} with Exa and give me a structured brief. Use the synthesize-research skill. Deep research via connected Exa (or Perplexity / Firecrawl fallback), cite sources, and deliver key findings + 3–5 angles worth writing about. Save to research/{{slug}}.md so downstream content / ad / landing-page skills can pull from it.
 ---
 
 

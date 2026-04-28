@@ -8,10 +8,11 @@
  *
  * Persisted format (single line + body):
  *
- *     <!--houston:action {"skill":"...","fields":[...],...}-->
+ *     <!--houston:action {"skill":"...","message":"..."}-->
  *
- *     Use the X skill with these inputs:
- *     ...
+ *     Use the X skill.
+ *
+ *     Optional user text.
  */
 
 import {
@@ -35,21 +36,18 @@ const MARKER_SUFFIX = "-->";
  */
 export function encodeActionMessage(
   skill: SkillSummary,
-  values: Record<string, string>,
+  userText: string,
   claudePrompt: string,
 ): string {
+  const trimmedText = userText.trim();
   const payload: ActionInvocation = {
     skill: skill.name,
     displayName: humanize(skill.name),
     image: skill.image,
     description: skill.description,
     integrations: skill.integrations,
-    fields: skill.inputs
-      .map((i) => ({
-        label: i.label,
-        value: (values[i.name] ?? "").trim(),
-      }))
-      .filter((f) => f.value.length > 0),
+    fields: [],
+    message: trimmedText,
   };
   const json = JSON.stringify(payload);
   return `${MARKER_PREFIX}${json}${MARKER_SUFFIX}\n\n${claudePrompt}`;
@@ -57,36 +55,16 @@ export function encodeActionMessage(
 
 /**
  * Build the explicit prompt sent to Claude for an action invocation.
- * Always names the skill so invocation is deterministic, and includes
- * either the author's interpolated `prompt_template` or a synthesised
- * input listing.
+ * Always names the skill so invocation is deterministic. Structured
+ * inputs and prompt templates are legacy metadata and are ignored.
  */
 export function buildActionClaudePrompt(
   skill: SkillSummary,
-  values: Record<string, string>,
+  userText: string,
 ): string {
-  if (skill.prompt_template) {
-    const interpolated = interpolate(skill.prompt_template, values).trim();
-    return `Use the ${skill.name} skill.\n\n${interpolated}`;
-  }
-  if (skill.inputs.length === 0) {
-    return `Use the ${skill.name} skill.`;
-  }
-  const lines = skill.inputs.map(
-    (i) => `- ${i.label}: ${(values[i.name] ?? "").trim()}`,
-  );
-  return [
-    `Use the ${skill.name} skill with these inputs:`,
-    "",
-    ...lines,
-  ].join("\n");
-}
-
-function interpolate(template: string, values: Record<string, string>): string {
-  return template.replace(/\{\{\s*([\w-]+)\s*\}\}/g, (_match, name) => {
-    const v = values[name];
-    return v != null && v.trim() !== "" ? v : `{{${name}}}`;
-  });
+  const trimmed = userText.trim();
+  if (!trimmed) return `Use the ${skill.name} skill.`;
+  return `Use the ${skill.name} skill.\n\n${trimmed}`;
 }
 
 function humanize(slug: string): string {

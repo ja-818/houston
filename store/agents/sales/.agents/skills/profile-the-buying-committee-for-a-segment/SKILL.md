@@ -7,14 +7,6 @@ category: "Playbook"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "pipedrive"]
 image: "handshake"
-inputs:
-  - name: segment
-    label: "Segment"
-  - name: segment_slug
-    label: "Segment Slug"
-    required: false
-prompt_template: |
-  Profile the buying committee for {{segment}}. Use the profile-icp skill. Pull top closed-won accounts from my connected CRM (HubSpot / Salesforce / Attio / Pipedrive / Close via Composio), identify the champion (title + motivations), economic buyer (title + what wins them), blocker (who kills deals + why), and influencers. Save to personas/{{segment_slug}}.md.
 ---
 
 

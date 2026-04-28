@@ -7,14 +7,6 @@ category: "Email"
 featured: yes
 integrations: ["hubspot", "stripe", "linkedin", "mailchimp", "customerio", "googleads", "metaads"]
 image: "megaphone"
-inputs:
-  - name: feature
-    label: "Feature"
-  - name: feature_slug
-    label: "Feature Slug"
-    required: false
-prompt_template: |
-  Plan the email + in-app announcement for {{feature}}. Use the plan-campaign skill with type=announcement. Draft the announcement email AND matching in-app copy (banner / modal / empty-state nudge), keyed to the launch plan at campaigns/launch-{{feature}}.md if one exists. Save to campaigns/announcement-{{feature_slug}}.md.
 ---
 
 

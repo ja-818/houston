@@ -7,16 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["notion", "slack"]
 image: "busts-in-silhouette"
-inputs:
-  - name: type
-    label: "Type"
-  - name: details
-    label: "Details"
-  - name: request_slug
-    label: "Request Slug"
-    required: false
-prompt_template: |
-  Review this {{type}} request: {{details}}. Use the run-approval-flow skill. Read the approval rubric from context/people-context.md, evaluate the request, classify as approved / escalate / denied with reasoning, and produce an escalation note for any out-of-rubric ask. Write to approvals/{{request_slug}}.md.
 ---
 
 

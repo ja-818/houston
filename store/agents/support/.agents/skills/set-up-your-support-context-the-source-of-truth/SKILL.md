@@ -7,16 +7,6 @@ category: "Quality"
 featured: yes
 integrations: ["googledocs", "stripe", "notion", "github", "linear"]
 image: "headphone"
-inputs:
-  - name: request
-    label: "Additional context"
-    placeholder: "Add context, links, constraints, or leave blank"
-    type: textarea
-    required: false
-prompt_template: |
-  Help me set up my support context. Use the define-support-context skill. Interview me briefly, then write context/support-context.md  -  product overview, customer segments + VIPs, tone + voice, SLA tiers, routing rules, known gotchas. Every other skill in this agent reads it before substantive work.
-
-  Additional context: {{request}}
 ---
 
 

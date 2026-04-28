@@ -7,12 +7,6 @@ category: "CRM"
 featured: yes
 integrations: ["hubspot", "salesforce", "attio", "pipedrive"]
 image: "handshake"
-inputs:
-  - name: week
-    label: "Week"
-    placeholder: "e.g. 2026-W14"
-prompt_template: |
-  Build this week's forecast. Use the run-forecast skill. Pull open deals from my connected CRM, classify each against the playbook's deal-stage exit criteria into Commit / Best / Pipeline / Omit buckets, roll up ARR per bucket, and compare to last week's forecast to flag slippage. Save to forecasts/{{week}}.md.
 ---
 
 

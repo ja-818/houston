@@ -7,12 +7,6 @@ category: "Copy"
 featured: yes
 integrations: ["reddit", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Rewrite my in-app onboarding copy. Use the write-page-copy skill with surface=onboarding. Empty states, tooltips, nudges, welcome modals. Every string ties to an activation event I care about. Save to page-copy/onboarding-{{slug}}.md.
 ---
 
 

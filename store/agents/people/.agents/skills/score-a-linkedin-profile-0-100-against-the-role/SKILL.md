@@ -7,16 +7,6 @@ category: "Hiring"
 featured: yes
 integrations: ["googlesheets", "googledrive", "linkedin", "firecrawl"]
 image: "busts-in-silhouette"
-inputs:
-  - name: role
-    label: "Role"
-  - name: linkedin_url
-    label: "Linkedin URL"
-  - name: candidate_slug
-    label: "Candidate Slug"
-    required: false
-prompt_template: |
-  Score this LinkedIn profile for the {{role}} role: {{linkedin_url}}. Use the evaluate-candidate skill with source=linkedin. Scrape the profile via Firecrawl, score 0-100 across 4-6 sub-criteria with one-line reasons citing profile evidence, and list 3-5 red flags to probe in interviews. Write to candidates/{{candidate_slug}}.md.
 ---
 
 

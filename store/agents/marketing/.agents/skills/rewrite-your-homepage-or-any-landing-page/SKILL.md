@@ -7,14 +7,6 @@ category: "Copy"
 featured: yes
 integrations: ["reddit", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: page
-    label: "Page"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Write copy for {{page}}. Use the write-page-copy skill with surface=homepage (or pricing / about / landing). Full page copy grounded in my positioning and real customer language (from call-insights/ or G2 / Capterra reviews). Sections, headlines, bodies, CTAs, social-proof placement. Save to page-copy/homepage-{{slug}}.md.
 ---
 
 

@@ -7,12 +7,6 @@ category: "Compliance"
 featured: yes
 integrations: ["googledocs", "googledrive", "stripe", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Audit my privacy posture. Use the audit-compliance skill with scope=privacy-posture. Scrape my landing page + product via Firecrawl, fetch my deployed Privacy Policy, and diff (new analytics tool undisclosed, subprocessor added without policy update, new cookie, purpose drift). Tag each finding by severity with authority citations. Save to privacy-audits/{{date}}.md.
 ---
 
 

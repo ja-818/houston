@@ -7,15 +7,6 @@ category: "Transactions"
 featured: yes
 integrations: ["gmail", "outlook", "quickbooks", "xero"]
 image: "ledger"
-inputs:
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Categorize this expense receipt. Use the handle-expense-receipt skill. Read the receipt (PDF / image / email forward), extract vendor + date + amount + line items, pick the best GL code from the locked chart-of-accounts (confidence ≥ 0.90 required  -  Suspense otherwise), and draft a balanced journal entry. Write the expense record to expenses/{{date}}-{{slug}}.md with the JE inline.
 ---
 
 

@@ -27,9 +27,7 @@
   "composerAction": {
     "browse": "Ações"
   },
-  "actionForm": {
-    "start": "Começar",
-    "cancel": "Fechar",
-    "optional": "(opcional)"
+  "selectedAction": {
+    "cancel": "Fechar"
   }
 }

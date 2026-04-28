@@ -7,21 +7,6 @@ category: "Positioning"
 featured: yes
 integrations: ["linkedin", "twitter", "reddit", "instagram", "googleads", "metaads", "firecrawl"]
 image: "megaphone"
-inputs:
-  - name: competitor_a
-    label: "Competitor A"
-    placeholder: "First competitor"
-  - name: competitor_b
-    label: "Competitor B"
-    placeholder: "Second competitor"
-  - name: competitor_c
-    label: "Competitor C"
-    placeholder: "Third competitor"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Give me this week's competitor pulse across {{competitor_a}}, {{competitor_b}}, {{competitor_c}}. Use the monitor-competitors skill with source=product. Scan each competitor's recent blog posts, product updates, release notes, and pricing pages via Firecrawl. Filter real threats from noise. Save to competitor-briefs/product-weekly-{{date}}.md.
 ---
 
 

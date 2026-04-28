@@ -7,12 +7,6 @@ category: "Email"
 featured: yes
 integrations: ["hubspot", "stripe", "linkedin", "mailchimp", "customerio", "googleads", "metaads"]
 image: "megaphone"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Design a re-activation drip for users who signed up but never activated. Use the plan-campaign skill with type=lifecycle-drip. Event-triggered: trigger event, frequency rules, branching by user action, drafted copy per email. Honest about when to stop emailing. Save to campaigns/lifecycle-drip-{{slug}}.md.
 ---
 
 

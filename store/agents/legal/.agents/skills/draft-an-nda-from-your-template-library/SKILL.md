@@ -7,17 +7,6 @@ category: "Contracts"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: counterparty
-    label: "Counterparty"
-  - name: counterparty_slug
-    label: "Counterparty Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft an NDA with {{counterparty}}. Use the draft-document skill with type=nda. Read my template library from domains.contracts.templateLibrary (or use market-standard boilerplate with a caveat stamp), substitute the variables (counterparty, effective date, term), and save to drafts/nda/{{counterparty_slug}}-{{date}}.md.
 ---
 
 

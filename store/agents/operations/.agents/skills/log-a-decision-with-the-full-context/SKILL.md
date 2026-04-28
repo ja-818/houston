@@ -7,12 +7,6 @@ category: "Planning"
 featured: yes
 integrations: ["linkedin"]
 image: "clipboard"
-inputs:
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Log this decision. Use the log-decision skill. Write an ADR-style record with context, alternatives considered, trade-offs, the decision, rationale, consequences, and links to related initiatives. Save to decisions/{{slug}}/decision.md and append to decisions.json.
 ---
 
 

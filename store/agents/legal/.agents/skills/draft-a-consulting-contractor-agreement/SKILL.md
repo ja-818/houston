@@ -7,17 +7,6 @@ category: "Entity"
 featured: yes
 integrations: ["googledocs", "googledrive", "notion", "firecrawl"]
 image: "scroll"
-inputs:
-  - name: contractor
-    label: "Contractor"
-  - name: contractor_slug
-    label: "Contractor Slug"
-    required: false
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-prompt_template: |
-  Draft a consulting agreement with {{contractor}}. Use the draft-document skill with type=consulting. Anchor on CIIAA + deliverables + term, substitute variables, produce a draft. Save to drafts/consulting/{{contractor_slug}}-{{date}}.md.
 ---
 
 

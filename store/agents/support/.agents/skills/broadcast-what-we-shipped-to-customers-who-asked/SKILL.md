@@ -7,17 +7,6 @@ category: "Help Center"
 featured: yes
 integrations: ["googledocs", "notion", "github", "linear"]
 image: "headphone"
-inputs:
-  - name: feature
-    label: "Feature"
-  - name: date
-    label: "Date"
-    placeholder: "e.g. 2026-03-31"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Broadcast that we shipped {{feature}}. Use the write-article skill with type=broadcast-shipped. Read requests.json, filter to customers who asked for exactly this, and draft a short personal note per customer referencing their specific ask. One file per customer in broadcasts/{{date}}-{{slug}}.md.
 ---
 
 

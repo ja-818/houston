@@ -7,13 +7,6 @@ category: "Finance"
 featured: yes
 integrations: ["gmail", "outlook"]
 image: "clipboard"
-inputs:
-  - name: saas
-    label: "Saas"
-  - name: vendor
-    label: "Vendor"
-prompt_template: |
-  Write the cancel email for {{saas}}. Use the draft-message skill with type=vendor (sub-type=cancel). Direct, grateful, cites the cancellation clause + effective date from the contract. Save as an inbox draft + drafts/vendor-cancel-{{vendor}}.md.
 ---
 
 

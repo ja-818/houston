@@ -7,14 +7,6 @@ category: "Docs"
 featured: yes
 integrations: ["stripe", "notion", "github", "gitlab", "perplexityai"]
 image: "laptop"
-inputs:
-  - name: feature
-    label: "Feature"
-  - name: slug
-    label: "Slug"
-    required: false
-prompt_template: |
-  Write a tutorial for {{feature}}. Use the write-docs skill with type=tutorial. Diátaxis-aligned (learning-oriented, concrete end-to-end flow the reader runs). Sections: Overview, Prerequisites, Numbered steps with working code blocks, Verify, Troubleshooting (2-4 common errors), Next steps. Every code block must run. Save to tutorials/{{slug}}.md. Draft only  -  I never publish.
 ---
 
 
