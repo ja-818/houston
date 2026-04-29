@@ -3,6 +3,18 @@
   "filter": {
     "allAgents": "Todos os agentes"
   },
+  "search": {
+    "placeholder": "Buscar missões",
+    "clear": "Limpar busca",
+    "clearCta": "Limpar busca",
+    "searchingText": "Buscando no texto das missões",
+    "searchingTitle": "Buscando no texto das missões",
+    "searchingDescription": "Verificando mensagens antigas agora.",
+    "emptyTitle": "Nenhuma missão encontrada",
+    "emptyDescription": "Tente outra busca ou limpe a atual.",
+    "historyErrorTitle": "Não foi possível buscar todas as missões",
+    "historyErrorDescription": "Parte do texto de missões antigas não pôde ser carregada."
+  },
   "columns": {
     "running": "Em execução",
     "needsYou": "Precisa de você",

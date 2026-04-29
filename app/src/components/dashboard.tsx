@@ -8,13 +8,8 @@ import {
   EmptyTitle,
   EmptyDescription,
   Button,
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
 } from "@houston-ai/core";
-import { ChevronDown, Plus } from "lucide-react";
-import { HoustonLogo } from "./shell/experience-card";
+import { Plus } from "lucide-react";
 import { HoustonHelmet } from "./shell/experience-card";
 import { resolveAgentColor } from "../lib/agent-colors";
 import { useAgentStore } from "../stores/agents";
@@ -27,6 +22,9 @@ import { useAgentChatPanel } from "./use-agent-chat-panel";
 import type { Agent } from "../lib/types";
 import { useDetailPanelContainer } from "./shell/detail-panel-context";
 import { AgentMiniAvatar, HoustonThinkingIndicator } from "./shell/experience-card";
+import { MissionControlToolbar } from "./mission-control-toolbar";
+import { MissionBoardEmptyState } from "./mission-board-empty-state";
+import { useMissionSearch } from "./use-mission-search";
 
 export function Dashboard() {
   const { t } = useTranslation(["dashboard", "board", "common"]);
@@ -51,8 +49,10 @@ export function Dashboard() {
   const setDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
   const setMissionPanelOpen = useUIStore((s) => s.setMissionPanelOpen);
   const missionPanelOpen = useUIStore((s) => s.missionPanelOpen);
+  const addToast = useUIStore((s) => s.addToast);
 
   const [filterPath, setFilterPath] = useState("");
+  const [missionSearchQuery, setMissionSearchQuery] = useState("");
   const [agentPickerOpen, setAgentPickerOpen] = useState(false);
   const [newPanelOpenerReady, setNewPanelOpenerReady] = useState(false);
   // Agent the user just picked for "New Mission". Stays in scope until
@@ -100,7 +100,7 @@ export function Dashboard() {
     return map;
   }, [agents]);
 
-  const filteredItems = useMemo(() => {
+  const agentFilteredItems = useMemo(() => {
     const base = filterPath
       ? mc.items.filter((i) => i.metadata?.agentPath === filterPath)
       : mc.items;
@@ -113,11 +113,25 @@ export function Dashboard() {
     () => (filterPath ? agents.filter((a) => a.folderPath === filterPath) : agents),
     [agents, filterPath],
   );
+  const handleMissionSearchError = useCallback(() => {
+    addToast({
+      title: t("dashboard:search.historyErrorTitle"),
+      description: t("dashboard:search.historyErrorDescription"),
+      variant: "error",
+    });
+  }, [addToast, t]);
+  const missionSearch = useMissionSearch({
+    items: agentFilteredItems,
+    query: missionSearchQuery,
+    loadHistory: mc.loadHistory,
+    onHistoryLoadError: handleMissionSearchError,
+  });
 
   useEffect(() => {
     if (!mc.isLoaded) return;
+    if (missionSearch.hasQuery) return;
     const emptyKey = filterPath || "all";
-    if (filteredItems.length > 0) {
+    if (agentFilteredItems.length > 0) {
       if (emptyAutoOpenKeyRef.current === emptyKey) emptyAutoOpenKeyRef.current = null;
       return;
     }
@@ -132,9 +146,10 @@ export function Dashboard() {
   }, [
     agentPickerOpen,
     filterPath,
-    filteredItems.length,
+    agentFilteredItems.length,
     handlePickAgent,
     mc.isLoaded,
+    missionSearch.hasQuery,
     missionPanelOpen,
     newPanelOpenerReady,
     visibleAgents,
@@ -196,73 +211,40 @@ export function Dashboard() {
   }
 
   const emptyBoard = (
-    <Empty className="border-0">
-      <EmptyHeader>
-        <EmptyTitle>{t("dashboard:empty.boardTitle")}</EmptyTitle>
-        <EmptyDescription>
-          {t("dashboard:empty.boardDescription")}
-        </EmptyDescription>
-      </EmptyHeader>
-      <Button
-        className="mt-4 rounded-full gap-1.5"
-        size="sm"
-        onClick={() => setAgentPickerOpen(true)}
-      >
-        <HoustonLogo size={16} />
-        {t("dashboard:empty.newMission")}
-      </Button>
-    </Empty>
+    <MissionBoardEmptyState
+      isSearch={missionSearch.hasQuery}
+      isSearchingText={missionSearch.isSearchingText}
+      labels={{
+        emptyTitle: t("dashboard:empty.boardTitle"),
+        emptyDescription: t("dashboard:empty.boardDescription"),
+        newMission: t("dashboard:empty.newMission"),
+        searchEmptyTitle: t("dashboard:search.emptyTitle"),
+        searchEmptyDescription: t("dashboard:search.emptyDescription"),
+        searchSearchingTitle: t("dashboard:search.searchingTitle"),
+        searchSearchingDescription: t("dashboard:search.searchingDescription"),
+        clearSearch: t("dashboard:search.clearCta"),
+      }}
+      onNewMission={() => setAgentPickerOpen(true)}
+      onClearSearch={() => setMissionSearchQuery("")}
+    />
   );
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="shrink-0 px-5 pt-4">
-        <div className="flex items-center gap-2 mb-3">
-          <h1 className="text-xl font-semibold text-foreground">
-            {t("dashboard:title")}
-          </h1>
-          <div className="ml-auto flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="rounded-full gap-1.5">
-                  {filterPath
-                    ? agents.find((a) => a.folderPath === filterPath)?.name ?? t("dashboard:filter.allAgents")
-                    : t("dashboard:filter.allAgents")}
-                  <ChevronDown className="size-3.5 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setFilterPath("")}>
-                  {t("dashboard:filter.allAgents")}
-                </DropdownMenuItem>
-                {agents.map((a) => (
-                  <DropdownMenuItem
-                    key={a.id}
-                    onClick={() => setFilterPath(a.folderPath)}
-                    className="gap-2"
-                  >
-                    <AgentMiniAvatar color={a.color} />
-                    {a.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              data-keep-panel-open
-              onClick={() => setAgentPickerOpen(true)}
-            >
-              <HoustonLogo size={16} />
-              New mission
-            </Button>
-          </div>
-        </div>
-      </div>
+      <MissionControlToolbar
+        agents={agents}
+        filterPath={filterPath}
+        search={missionSearchQuery}
+        isSearchingText={missionSearch.isSearchingText}
+        onFilterPathChange={setFilterPath}
+        onSearchChange={setMissionSearchQuery}
+        onNewMission={() => setAgentPickerOpen(true)}
+      />
 
       {/* Board */}
       <div className="flex-1 min-h-0">
         <AIBoard
-          items={filteredItems}
+          items={missionSearch.items}
           columns={MC_COLUMNS}
           selectedId={mc.selectedId}
           onSelect={mc.setSelectedId}

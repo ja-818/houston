@@ -13,7 +13,20 @@
   },
   "empty": {
     "title": "Ainda sem conversas",
-    "description": "Comece uma conversa nova para delegar trabalho a um agente."
+    "description": "Comece uma conversa nova para delegar trabalho a um agente.",
+    "newMission": "Nova missão"
+  },
+  "search": {
+    "placeholder": "Buscar missões",
+    "clear": "Limpar busca",
+    "clearCta": "Limpar busca",
+    "searchingText": "Buscando no texto das missões",
+    "searchingTitle": "Buscando no texto das missões",
+    "searchingDescription": "Verificando mensagens antigas agora.",
+    "emptyTitle": "Nenhuma missão encontrada",
+    "emptyDescription": "Tente outra busca ou limpe a atual.",
+    "historyErrorTitle": "Não foi possível buscar todas as missões",
+    "historyErrorDescription": "Parte do texto de missões antigas não pôde ser carregada."
   },
   "toasts": {
     "attached": "Anexou: {{names}}"
