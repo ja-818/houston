@@ -67,6 +67,10 @@ pub fn emit_deep_link(handle: &AppHandle, url: &str) {
 /// corrupt JSON, locked Keychain) all resolve to `None` silently — the engine
 /// runs fine without an identity.
 pub fn persisted_user_id() -> Option<String> {
+    if option_env!("HOUSTON_AUTH_STORAGE_MODE") != Some("keychain") {
+        return None;
+    }
+
     // Storage key must match `storageKey` in app/src/lib/supabase.ts.
     let entry = Entry::new(SERVICE, "houston-auth").ok()?;
     let raw = entry.get_password().ok()?;
@@ -100,5 +104,12 @@ mod tests {
         auth_remove_item(key.into()).await.unwrap();
         let after = auth_get_item(key.into()).await.unwrap();
         assert!(after.is_none());
+    }
+
+    #[test]
+    fn local_auth_storage_does_not_read_persisted_keychain_user() {
+        if option_env!("HOUSTON_AUTH_STORAGE_MODE") == Some("browser") {
+            assert!(persisted_user_id().is_none());
+        }
     }
 }
