@@ -24,6 +24,7 @@
 #   SUPABASE_URL                       — Supabase project URL
 #   SUPABASE_ANON_KEY                  — Supabase anon key (client-side, RLS-gated)
 #   SLACK_BUG_WEBHOOK_URL              — Slack incoming-webhook for in-app "Report bug" button
+#   SLACK_RELEASE_WEBHOOK_URL          — Slack incoming-webhook to ping the team when a draft release is built
 #   SENTRY_DSN                         — Sentry crash reporting DSN
 
 name: Release
@@ -641,3 +642,57 @@ jobs:
             checksums-sha256.txt
 
           echo "::notice::Draft release created — review notes then publish at https://github.com/${{ github.repository }}/releases/tag/$GITHUB_REF_NAME"
+
+      # Pings the team Slack channel so anyone can grab the DMG and try the
+      # build before we publish. No-ops when SLACK_RELEASE_WEBHOOK_URL is
+      # unset, so forks and personal builds stay quiet.
+      - name: Notify Slack of new draft release
+        if: success()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_RELEASE_WEBHOOK_URL not set; skipping Slack notification."
+            exit 0
+          fi
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/${GITHUB_REF_NAME}"
+          DMG_URL=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '[.assets[] | select(.name | endswith(".dmg")) | .url] | first // empty')
+
+          # First ~700 chars of the release-notes body, skipping the leading "## Houston X.Y.Z" header line.
+          NOTES_PREVIEW=$(tail -n +2 release-notes.md | head -c 700)
+          if [ "$(wc -c < release-notes.md)" -gt 700 ]; then
+            NOTES_PREVIEW="${NOTES_PREVIEW}…"
+          fi
+
+          # Build action buttons: always include "View on GitHub", add "Download DMG" only when we found one.
+          if [ -n "$DMG_URL" ]; then
+            ACTIONS=$(jq -n --arg dmg "$DMG_URL" --arg url "$RELEASE_URL" '[
+              { type: "button", text: { type: "plain_text", text: "Download DMG", emoji: true }, url: $dmg, style: "primary" },
+              { type: "button", text: { type: "plain_text", text: "View on GitHub", emoji: true }, url: $url }
+            ]')
+          else
+            ACTIONS=$(jq -n --arg url "$RELEASE_URL" '[
+              { type: "button", text: { type: "plain_text", text: "View on GitHub", emoji: true }, url: $url }
+            ]')
+          fi
+
+          jq -n \
+            --arg ver "$VERSION" \
+            --arg notes "$NOTES_PREVIEW" \
+            --argjson actions "$ACTIONS" \
+            '{
+              text: ("Houston v" + $ver + " is ready to test"),
+              blocks: [
+                { type: "header", text: { type: "plain_text", text: ("Houston v" + $ver + " is ready to test"), emoji: true } },
+                { type: "context", elements: [ { type: "mrkdwn", text: "Draft release · grab the DMG and try it before we publish" } ] },
+                { type: "section", text: { type: "mrkdwn", text: $notes } },
+                { type: "actions", elements: $actions }
+              ]
+            }' | curl --silent --show-error --fail \
+              -X POST \
+              -H "Content-Type: application/json" \
+              --data @- \
+              "$SLACK_WEBHOOK_URL"
