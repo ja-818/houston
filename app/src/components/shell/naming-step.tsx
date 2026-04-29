@@ -228,7 +228,7 @@ function InlineModelSelector({
       </button>
 
       {open && (
-        <div className="mt-2 rounded-xl border border-border bg-card p-1 space-y-0.5">
+        <div className="mt-2 max-h-72 overflow-y-auto overscroll-contain rounded-xl border border-border bg-card p-1 space-y-0.5">
           {PROVIDERS.map((prov) => {
             const status = statuses[prov.id];
             const connected = (status?.cli_installed && status?.authenticated) ?? false;
