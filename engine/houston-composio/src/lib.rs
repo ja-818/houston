@@ -11,3 +11,4 @@ pub mod commands;
 pub mod install;
 pub mod lifecycle;
 pub mod mcp;
+pub mod toolkits;

@@ -3,6 +3,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { tauriConnections } from "../lib/tauri";
 import { queryKeys } from "../lib/query-keys";
 import { logger } from "../lib/logger";
+import {
+  normalizeToolkitSlug,
+  normalizeToolkitSlugs,
+} from "../lib/composio-toolkits";
 
 /**
  * Shared helper for any surface that initiates a Composio OAuth flow
@@ -43,29 +47,33 @@ export function useComposioRefetchOnReturn(): (slug: string) => void {
 
   return useCallback(
     (slug: string) => {
-      if (!slug) return;
-      if (pollersRef.current.has(slug)) return;
+      const targetSlug = normalizeToolkitSlug(slug);
+      if (!targetSlug) return;
+      if (pollersRef.current.has(targetSlug)) return;
 
-      waitingRef.current.add(slug);
+      waitingRef.current.add(targetSlug);
       let attempts = 0;
       const MAX_ATTEMPTS = 15;
       const INTERVAL_MS = 4000;
 
       const stop = () => {
-        const handle = pollersRef.current.get(slug);
+        const handle = pollersRef.current.get(targetSlug);
         if (handle !== undefined) {
           window.clearInterval(handle);
-          pollersRef.current.delete(slug);
+          pollersRef.current.delete(targetSlug);
         }
-        waitingRef.current.delete(slug);
+        waitingRef.current.delete(targetSlug);
       };
 
       const tick = async () => {
         attempts += 1;
         try {
-          const connected = await tauriConnections.listConnectedToolkits();
-          if (connected.includes(slug)) {
-            qc.invalidateQueries({
+          const connected = normalizeToolkitSlugs(
+            await tauriConnections.listConnectedToolkits(),
+          );
+          if (connected.includes(targetSlug)) {
+            qc.setQueryData(queryKeys.connectedToolkits(), connected);
+            await qc.invalidateQueries({
               queryKey: queryKeys.connectedToolkits(),
             });
             stop();
@@ -73,7 +81,7 @@ export function useComposioRefetchOnReturn(): (slug: string) => void {
           }
         } catch (e) {
           logger.warn(
-            `[composio] poll for ${slug} failed: ${String(e)}`,
+            `[composio] poll for ${targetSlug} failed: ${String(e)}`,
           );
         }
         if (attempts >= MAX_ATTEMPTS) {
@@ -82,7 +90,7 @@ export function useComposioRefetchOnReturn(): (slug: string) => void {
       };
 
       const handle = window.setInterval(tick, INTERVAL_MS);
-      pollersRef.current.set(slug, handle);
+      pollersRef.current.set(targetSlug, handle);
       void tick();
     },
     [qc],

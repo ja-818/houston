@@ -30,7 +30,7 @@ export default function ConnectionsTab(_props: TabProps) {
     setInstallError(null);
     try {
       await tauriConnections.installCli();
-      invalidate();
+      await invalidate();
     } catch (e) {
       setInstallError(String(e));
     } finally {

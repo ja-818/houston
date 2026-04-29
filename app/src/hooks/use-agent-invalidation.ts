@@ -57,6 +57,8 @@ export function useAgentInvalidation() {
         // Composio CLI became available — refresh integrations state.
         case "ComposioCliReady":
           qc.invalidateQueries({ queryKey: queryKeys.connections() });
+          qc.invalidateQueries({ queryKey: queryKeys.composioApps() });
+          qc.invalidateQueries({ queryKey: queryKeys.connectedToolkits() });
           break;
       }
     });
