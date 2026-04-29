@@ -1,4 +1,15 @@
+import { marked } from "marked";
+
+marked.setOptions({ gfm: true, breaks: false });
+
 export default function (eleventyConfig) {
+  // Render a markdown string to HTML. Used by the changelog page to render
+  // GitHub release bodies fetched at build time.
+  eleventyConfig.addFilter("markdown", (str) => {
+    if (!str) return "";
+    return marked.parse(str);
+  });
+
   // Pass through static assets unchanged
   eleventyConfig.addPassthroughCopy("src/favicon.svg");
   eleventyConfig.addPassthroughCopy("src/houston-black.svg");
