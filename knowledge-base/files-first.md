@@ -30,7 +30,7 @@ If app-specific → `.houston/`.
     sessions/
       {session_key}.sid         one file per conversation, holds Claude session id for --resume
   .agents/
-    skills/<name>/SKILL.md      skill.sh / Claude Code convention
+    skills/<name>/SKILL.md      Claude Code skill convention
   .claude/
     skills/<name>               symlink → ../../.agents/skills/<name>
   CLAUDE.md                     agent instructions
@@ -57,7 +57,7 @@ stay storage/UI-only. Writes during a session persist immediately but are
 not visible in the already-started prompt until the next session.
 
 ## Migration
-`houston_agent_files::migrate_agent_data()` runs on every `seed_agent()`. Idempotent. Leaves legacy flat-layout data files in place as rollback. Legacy product-prompt seeds (`.houston/prompts/system.md`, `.houston/prompts/self-improvement.md`) are deleted — the Houston product prompt now lives in the app binary (`app/src-tauri/src/houston_prompt.rs`), not on disk.
+`houston_agent_files::migrate_agent_data()` runs on every `seed_agent()`. Idempotent. Leaves legacy flat-layout data files in place as rollback. Legacy product-prompt seeds (`.houston/prompts/system.md`, `.houston/prompts/self-improvement.md`) are deleted — the Houston product prompt now lives in the app binary (`app/src-tauri/src/houston_prompt/`), not on disk.
 
 ## Atomic writes
 All writes: temp file + rename. Path-traversal safe via `houston-agent-files::safe_relative`.
