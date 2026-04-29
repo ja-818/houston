@@ -13,7 +13,20 @@
   },
   "empty": {
     "title": "No conversations yet",
-    "description": "Start a new conversation to delegate work to an agent."
+    "description": "Start a new conversation to delegate work to an agent.",
+    "newMission": "New mission"
+  },
+  "search": {
+    "placeholder": "Search missions",
+    "clear": "Clear search",
+    "clearCta": "Clear search",
+    "searchingText": "Searching mission text",
+    "searchingTitle": "Searching mission text",
+    "searchingDescription": "Looking through older messages now.",
+    "emptyTitle": "No matching missions",
+    "emptyDescription": "Try a different search or clear the current one.",
+    "historyErrorTitle": "Couldn't search every mission",
+    "historyErrorDescription": "Some older mission text could not be loaded."
   },
   "toasts": {
     "attached": "Attached: {{names}}"
