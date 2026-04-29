@@ -1,6 +1,6 @@
 ---
 name: release
-description: Ship new Houston version. Bump semver across all packages, tag, push, let CI build + sign + notarize, publish draft. Defaults patch bump. Minor needs explicit user permission.
+description: Ship new Houston version. Bump semver across all packages, tag, push, let CI build + sign + notarize. STOP at draft — user publishes manually. Defaults patch bump. Minor needs explicit user permission.
 ---
 
 # /release
@@ -48,7 +48,7 @@ One DMG covers Apple Silicon + Intel. See `knowledge-base/production-infra.md` �
 
 Duration: ~15-20 min (2-arch compile).
 
-**After CI:** GH Releases → review draft → "Publish". Users see "Update available" in-app.
+**After CI:** the release stays as a **draft**. Stop there. The user reviews the draft and clicks "Publish" themselves. Do NOT run `gh release edit --draft=false` or otherwise auto-publish — publishing is the user's call, every time.
 
 ## Full checklist
 
@@ -60,8 +60,8 @@ Duration: ~15-20 min (2-arch compile).
 6. **Tag + push:** `git tag v0.3.X && git push origin main --tags`
 7. **Wait CI:** ~10-15 min. Check `github.com/ja-818/houston/actions`
 8. **If CI fails:** `gh run view <id> --log-failed`, fix, commit. Re-tag = `git tag -d v0.3.X && git push origin :refs/tags/v0.3.X`, then re-tag + push.
-9. **Publish:** GH Releases → draft → "Publish". (Notes already populated from step 4.)
-10. **Verify rollout:** Installed apps show "Update available" w/in 30 min or next launch.
+9. **STOP. Hand off draft to user.** The CI-created GH Release is a draft. Tell the user it's ready for review and link it. Do NOT publish it yourself — `gh release edit --draft=false` is the user's call. Publishing flips on auto-update for every installed Houston, so it's never auto-pilot.
+10. **After user publishes:** Installed apps show "Update available" w/in 30 min or next launch.
 
 ## Version bump only (no publish)
 ```bash
