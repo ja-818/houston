@@ -6,8 +6,10 @@ Four prod systems. All **dormant by default** — activate only when env vars se
 
 - **Config:** `tauri.conf.json` → `plugins.updater` (endpoint + pubkey)
 - **Frontend:** `app/src/hooks/use-update-checker.ts` → checks on launch + every 30 min
-- **UI:** `app/src/components/shell/update-checker.tsx` → banner w/ download/restart
+- **UI:** `app/src/components/shell/update-checker.tsx` → update card w/ download, progress, details, relaunch
 - **How:** Checks `latest.json` on GitHub Releases. Newer version? Downloads `.app.tar.gz`, verifies Ed25519 sig, replaces binary, relaunches.
+- **Relaunch:** frontend captures the original app bundle path before install and calls `relaunch_app_from_path` after install. Do not use generic process relaunch after macOS updater install; it can resolve to the moved backup bundle and reopen the old version.
+- **Notes:** release CI writes `release-notes.md` into `latest.json.notes`; the update card shows those details.
 - **Critical:** Update signing (Ed25519 via `TAURI_SIGNING_PRIVATE_KEY`) is SEPARATE from Apple code signing. Both needed.
 - **Critical:** Users who install version WITHOUT updater can never auto-update. Ship updater in EVERY release.
 
