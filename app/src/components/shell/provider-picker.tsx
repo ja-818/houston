@@ -239,7 +239,13 @@ function ProviderCard({
                 <ChevronDown className="size-3 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-64">
+            <DropdownMenuContent
+              align="center"
+              className="w-64 overscroll-contain"
+              style={{
+                maxHeight: "min(22rem, var(--radix-dropdown-menu-content-available-height, 22rem))",
+              }}
+            >
               <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
                 {t("card.modelDropdownLabel")}
               </DropdownMenuLabel>
