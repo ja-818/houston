@@ -1,19 +1,28 @@
 use std::path::PathBuf;
 
 fn main() {
+    let mut dotenv_pairs: Vec<(String, String)> = Vec::new();
+
     // Load .env file so env!() macros in slack.rs can read credentials at build time.
     if let Ok(env_path) = std::fs::canonicalize(".env") {
-        for line in std::fs::read_to_string(&env_path).unwrap_or_default().lines() {
+        for line in std::fs::read_to_string(&env_path)
+            .unwrap_or_default()
+            .lines()
+        {
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
             if let Some((key, value)) = line.split_once('=') {
-                println!("cargo:rustc-env={}={}", key.trim(), value.trim());
+                let key = key.trim().to_string();
+                let value = value.trim().to_string();
+                println!("cargo:rustc-env={key}={value}");
+                dotenv_pairs.push((key, value));
             }
         }
         println!("cargo:rerun-if-changed={}", env_path.display());
     }
+    configure_auth_storage(&dotenv_pairs);
 
     // Stage the houston-engine binary into `binaries/houston-engine-<triple>`
     // so tauri's `externalBin` picks it up for bundling. The user is expected
@@ -39,6 +48,43 @@ fn main() {
     tauri_build::build()
 }
 
+fn configure_auth_storage(dotenv_pairs: &[(String, String)]) {
+    println!("cargo:rerun-if-env-changed=HOUSTON_AUTH_STORAGE");
+    println!("cargo:rerun-if-env-changed=CI");
+
+    let mode = resolve_auth_storage_mode(dotenv_pairs);
+    println!("cargo:rustc-env=HOUSTON_AUTH_STORAGE_MODE={mode}");
+}
+
+fn resolve_auth_storage_mode(dotenv_pairs: &[(String, String)]) -> &'static str {
+    if let Some(override_mode) = env_value("HOUSTON_AUTH_STORAGE", dotenv_pairs) {
+        let normalized = override_mode.trim().to_ascii_lowercase();
+        return match normalized.as_str() {
+            "keychain" => "keychain",
+            "browser" => "browser",
+            _ => panic!("HOUSTON_AUTH_STORAGE must be keychain or browser"),
+        };
+    }
+
+    if env_value("CI", dotenv_pairs).as_deref() == Some("true") {
+        return "keychain";
+    }
+    "browser"
+}
+
+fn env_value(key: &str, dotenv_pairs: &[(String, String)]) -> Option<String> {
+    std::env::var(key)
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .or_else(|| {
+            dotenv_pairs
+                .iter()
+                .find(|(candidate, _)| candidate == key)
+                .map(|(_, value)| value.clone())
+                .filter(|value| !value.trim().is_empty())
+        })
+}
+
 fn ensure_resources_bin_dir() {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let dir = manifest.join("resources").join("bin");
@@ -52,9 +98,10 @@ fn ensure_resources_bin_dir() {
 
 fn stage_engine_sidecar() -> Result<(), String> {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let workspace = manifest.parent().and_then(|p| p.parent()).ok_or(
-        "could not resolve workspace root from CARGO_MANIFEST_DIR",
-    )?;
+    let workspace = manifest
+        .parent()
+        .and_then(|p| p.parent())
+        .ok_or("could not resolve workspace root from CARGO_MANIFEST_DIR")?;
     let triple = std::env::var("TARGET").unwrap_or_default();
     let bin_name = if cfg!(windows) {
         "houston-engine.exe"
@@ -72,11 +119,23 @@ fn stage_engine_sidecar() -> Result<(), String> {
     //   4. `target/debug/` — default dev build.
     let mut candidates: Vec<PathBuf> = Vec::new();
     if !triple.is_empty() {
-        candidates.push(workspace.join("target").join(&triple).join("release").join(bin_name));
+        candidates.push(
+            workspace
+                .join("target")
+                .join(&triple)
+                .join("release")
+                .join(bin_name),
+        );
     }
     candidates.push(workspace.join("target").join("release").join(bin_name));
     if !triple.is_empty() {
-        candidates.push(workspace.join("target").join(&triple).join("debug").join(bin_name));
+        candidates.push(
+            workspace
+                .join("target")
+                .join(&triple)
+                .join("debug")
+                .join(bin_name),
+        );
     }
     candidates.push(workspace.join("target").join("debug").join(bin_name));
     let src = candidates
@@ -104,9 +163,6 @@ fn stage_engine_sidecar() -> Result<(), String> {
         perms.set_mode(0o755);
         std::fs::set_permissions(&dest, perms).map_err(|e| format!("chmod sidecar: {e}"))?;
     }
-    println!(
-        "cargo:rerun-if-changed={}",
-        src.display()
-    );
+    println!("cargo:rerun-if-changed={}", src.display());
     Ok(())
 }

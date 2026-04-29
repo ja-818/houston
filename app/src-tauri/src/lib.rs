@@ -196,7 +196,8 @@ pub fn run() {
             // signed in on a previous launch), stamp the subprocess with the
             // user_id so future cloud-side operations can attribute work to
             // a user. Engine is prompt-agnostic about identity — treats this
-            // as an opaque string.
+            // as an opaque string. Local/ad-hoc builds compile auth storage
+            // in browser mode, so this returns before touching Keychain.
             if let Some(user_id) = auth::persisted_user_id() {
                 engine_env.push(("HOUSTON_APP_USER_ID".into(), user_id));
             }
