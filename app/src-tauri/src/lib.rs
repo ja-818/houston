@@ -163,7 +163,7 @@ pub fn run() {
             let cb: Arc<TauriSupervisorCallbacks> = Arc::new(TauriSupervisorCallbacks {
                 handle: app.handle().clone(),
             });
-            // Product-layer prompts live in `houston_prompt.rs` and are
+            // Product-layer prompts live in the `houston_prompt` module and are
             // exported to the engine via env vars. The engine treats these
             // as opaque strings — it has no hardcoded Houston copy.
             //

@@ -15,17 +15,16 @@ Why the split: skill is jargon for non-technical users. Action is a verb they in
 Houston Store agent packages may also include `.agents/skills/*`.
 Install copies the package to `~/.houston/agents/<id>/`; creating a
 workspace agent from that definition copies those packaged skills into
-the user's agent root so Actions appear in chat immediately.
-Store-packaged Actions must not include legacy `inputs` or
-`prompt_template`. The picker only selects the workflow; the chat
-composer stays visible so the user can add free-form context, or send
-the Action by itself and let the agent ask for missing details.
+the user's agent root so Actions appear in chat immediately. The picker
+only selects the workflow; the chat composer stays visible so the user
+can add free-form context, or send the Action by itself and let the
+agent ask for missing details.
 
-The body is a regular markdown file Claude Code uses as the procedure when the action runs. The frontmatter drives both **tool discovery** (Claude reads `name` + `description`) and **UI rendering** (everything else).
+The body is a regular markdown file Claude Code uses as the procedure when the action runs. The frontmatter drives both **tool discovery** (Claude reads `name` + `description`) and current **UI rendering** fields such as category, featured, image, and integrations.
 
 ## Frontmatter schema
 
-Source of truth: `engine/houston-skills/src/lib.rs` (`SkillSummary` + `SkillInput`). Parsed by `serde_yml`, so anything valid YAML works.
+Source of truth: `engine/houston-skills/src/lib.rs` (`SkillSummary`). Parsed by `serde_yml`, so anything valid YAML works.
 
 ```yaml
 ---
@@ -35,7 +34,6 @@ description: Deep-dive on pricing  # one-liner Claude uses for tool matching
 
 # Bookkeeping (optional, set by engine on create)
 version: 1
-tags: [research, sales]
 created: 2026-04-25
 last_used: 2026-04-25
 
@@ -58,33 +56,16 @@ Step-by-step instructions Claude follows when the action runs.
 | `name` | string | — | Required slug. Drives the file path + Claude's tool name. |
 | `description` | string | `""` | One line. Claude semantically matches user intent against this. **Specific = reliable invocation.** |
 | `version` | int | `1` | Engine increments on edit. |
-| `tags` | string[] | `[]` | Free-form. Surfaced in the agent's skills tab. |
 | `created` / `last_used` | string | unset | YYYY-MM-DD. Engine maintains. |
 | `category` | string | unset | Picker tab grouping. Missing → falls under "Other". |
 | `featured` | bool | `false` | Accepts `yes` / `true` / `1` / `on`. Surfaces on the empty-chat showcase. |
 | `image` | string | unset | Either an `https://...` URL OR a Fluent 3D Emoji slug (lowercased folder name from [microsoft/fluentui-emoji/assets](https://github.com/microsoft/fluentui-emoji/tree/main/assets), spaces → dashes). Resolved frontend-side via `resolveActionImage`. |
 | `integrations` | string[] | `[]` | Composio toolkit slugs. Drives the small logo row on the card. |
-| `inputs` | `SkillInput[]` | `[]` | Legacy. Parsed for old user Actions, ignored by the composer and Store packages must not declare it. |
-| `prompt_template` | string | unset | Legacy. Parsed for old user Actions, ignored by sends and Store packages must not declare it. |
-
-### `SkillInput` shape
-
-Legacy compatibility only. Do not add these fields to new Actions.
-
-| Field | Type | Default | Notes |
-|------|------|---------|-------|
-| `name` | string | required | Variable name for `{{ }}` in `prompt_template`. |
-| `label` | string | required | Shown above the field. |
-| `placeholder` | string | unset | Inside the field (or "—" hint for select). |
-| `type` | enum | `text` | `text` \| `textarea` \| `select`. |
-| `required` | bool | `true` | Disables Start until filled. |
-| `default` | string | unset | Pre-fills the field on open. |
-| `options` | string[] | `[]` | Required for `type: select`. |
 
 ## Render pipeline
 
 1. **Engine** parses SKILL.md frontmatter via `serde_yml` (`engine/houston-skills/src/format.rs`). Unknown fields are silently ignored — old skills with `icon:` / `starter_prompt:` still parse.
-2. Engine returns the full `SkillSummaryResponse` (incl. `inputs`, `promptTemplate`) on `GET /v1/skills`.
+2. Engine returns the full `SkillSummaryResponse` on `GET /v1/skills`.
 3. **App** (`useSkills` query → `tauri.ts` → `engine-client`) maps the snake/camel-case wire shape back to app's `SkillSummary`.
 4. **`useAgentChatPanel`** (`app/src/components/use-agent-chat-panel.tsx`) — single source of truth for the per-agent panel UX. Owns:
    - skill discovery (featured cards on empty state)
@@ -121,8 +102,7 @@ When the user asks "create an action that does X", Claude should:
 3. Set `description` carefully — it's the trigger phrase Claude itself will use for tool matching later.
 4. Default to `featured: yes` for new actions until proven otherwise (so the user actually finds them).
 5. Include an `image` slug — pick a relevant Fluent 3D emoji (browse the assets folder).
-6. Do not add `inputs` or `prompt_template`. Missing details belong in the skill procedure: ask the user one targeted question when needed.
-7. Body: at least an `## Instructions` or `## Procedure` section.
+6. Body: at least an `## Instructions` or `## Procedure` section.
 
 ### Naming rules — non-technical users only
 
@@ -142,10 +122,9 @@ The user never sees the `name` slug — they see `humanize(name)` (e.g. `"Resear
 3. **Verb-led, founder-voice** ("Draft an NDA", "Check my deadlines"), not internal taxonomy ("Document drafter", "Deadline tracker").
 4. **No `display_name` override.** The schema does not have one. The slug *is* the name. If a slug doesn't humanize cleanly, rename it; don't paper over it.
 5. **`description`** carries the user-facing one-liner shown on the card. Lead with what the user gets, then any constraint ("Drafts only, you sign"). Avoid file paths, JSON keys, tool names (Composio, Firecrawl), config field names, scope enums.
-6. **`inputs[].label` and `placeholder`** must be plain language — the founder is reading them in a form. No "Counterparty Slug", no "Topic Slug", no "Date" placeholders that say "e.g. 2026-03-31" (the AI can fill the date itself).
-7. **Body** is for the AI. Procedural detail (file paths, schemas, JSON shapes) is fine and necessary — it's what makes the procedure work. But anywhere the body tells the AI what to *say to the user* ("Summarize to user…", "respond:", clarifying questions), the wording must be plain English: never name files, paths, configs, or other skills' slugs.
+6. **Body** is for the AI. Procedural detail (file paths, schemas, JSON shapes) is fine and necessary — it's what makes the procedure work. But anywhere the body tells the AI what to *say to the user* ("Summarize to user…", "respond:", clarifying questions), the wording must be plain English: never name files, paths, configs, or other skills' slugs.
 
-Cross-references between skills (e.g. `prompt_template: "Use the draft-a-legal-document skill"`) live inside templates and bodies, never in user-facing wording. When you rename a primitive slug, update every cross-reference.
+Cross-references between skills live inside bodies, never in user-facing wording. When you rename a primitive slug, update every cross-reference.
 
 ### When you rename or remove a packaged Action
 
@@ -179,4 +158,4 @@ The engine applies the rename per workspace on the next sync. If only the old sl
 | Selected Action chip | [`app/src/components/selected-action-chip.tsx`](../app/src/components/selected-action-chip.tsx) |
 | Card on user message | [`app/src/components/user-action-message.tsx`](../app/src/components/user-action-message.tsx) (desktop) and [`mobile/src/components/user-action-message.tsx`](../mobile/src/components/user-action-message.tsx) |
 | Marker codec | [`ui/chat/src/action-message.ts`](../ui/chat/src/action-message.ts) (decode) and [`app/src/lib/action-message.ts`](../app/src/lib/action-message.ts) (encode) |
-| System prompt template | [`app/src-tauri/src/houston_prompt.rs`](../app/src-tauri/src/houston_prompt.rs) (`SELF_IMPROVEMENT_GUIDANCE`) |
+| System prompt template | [`app/src-tauri/src/houston_prompt/actions_memory.rs`](../app/src-tauri/src/houston_prompt/actions_memory.rs) (`SELF_IMPROVEMENT_GUIDANCE`) |
