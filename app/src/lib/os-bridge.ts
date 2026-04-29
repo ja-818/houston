@@ -78,6 +78,16 @@ export function osCheckClaudeCli(): Promise<boolean> {
   return invoke<boolean>("check_claude_cli");
 }
 
+/** Resolve the app bundle/executable path before updater install moves it. */
+export function osCurrentAppBundlePath(): Promise<string> {
+  return invoke<string>("current_app_bundle_path");
+}
+
+/** Relaunch the installed app from a path captured before update install. */
+export function osRelaunchAppFromPath(appPath: string): Promise<void> {
+  return invoke<void>("relaunch_app_from_path", { app_path: appPath });
+}
+
 /** Append a line to `~/Library/Application Support/houston/logs/frontend.log`. */
 export function osWriteFrontendLog(
   level: "error" | "warn" | "info" | "debug",

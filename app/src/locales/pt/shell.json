@@ -45,9 +45,20 @@
     "launchError": "Não foi possível abrir o login. Tente de novo."
   },
   "updateChecker": {
-    "available": "v{{version}} disponível",
-    "downloading": "Baixando... {{progress}}%",
-    "restart": "Reinicie para atualizar"
+    "cardLabel": "Atualização do Houston disponível",
+    "title": "Houston, temos uma atualização!",
+    "availableDescription": "A versão {{version}} está pronta. Você está na v{{currentVersion}}.",
+    "downloading": "Baixando e instalando a atualização...",
+    "downloadingProgress": "Baixando e instalando... {{progress}}%",
+    "ready": "Atualização instalada. Reinicie o Houston para concluir.",
+    "errorInstall": "O Houston não conseguiu instalar a atualização. Tente de novo em instantes.",
+    "errorRelaunch": "A atualização foi instalada, mas o Houston não conseguiu reiniciar sozinho. Reinicie manualmente ou tente de novo.",
+    "detailsHeading": "Novidades",
+    "noDetails": "Esta atualização inclui as correções e melhorias mais recentes.",
+    "primaryAction": "Atualizar e reiniciar",
+    "installingAction": "Instalando atualização...",
+    "relaunchAction": "Reiniciar Houston",
+    "retryAction": "Tentar de novo"
   },
   "store": {
     "searchPlaceholder": "Buscar na loja...",

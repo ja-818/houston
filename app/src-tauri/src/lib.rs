@@ -97,7 +97,6 @@ pub fn run() {
     builder
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             // Deep-link handler for Google-OAuth callbacks
@@ -283,8 +282,10 @@ pub fn run() {
             commands::os::open_file,
             commands::os::reveal_file,
             commands::os::reveal_agent,
-            commands::os::open_terminal,
+            commands::terminal::open_terminal,
             commands::os::check_claude_cli,
+            commands::update::current_app_bundle_path,
+            commands::update::relaunch_app_from_path,
             // Logging (writes to local log files).
             logging::write_frontend_log,
             logging::read_recent_logs,

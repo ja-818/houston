@@ -24,7 +24,6 @@ chrono = { version = "0.4", features = ["serde"] }
 houston-tauri = { path = "../houston-tauri" }
 tauri-plugin-notification = "2"
 tauri-plugin-updater = "2"
-tauri-plugin-process = "2"
 tauri-plugin-deep-link = "2"
 tauri-plugin-sentry = "0.5"
 sentry = "0.42"

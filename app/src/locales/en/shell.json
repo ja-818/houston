@@ -45,9 +45,20 @@
     "launchError": "Could not open sign-in. Try again."
   },
   "updateChecker": {
-    "available": "v{{version}} available",
-    "downloading": "Downloading... {{progress}}%",
-    "restart": "Restart to update"
+    "cardLabel": "Houston update available",
+    "title": "Houston, we have an update!",
+    "availableDescription": "Version {{version}} is ready. You're on v{{currentVersion}}.",
+    "downloading": "Downloading and installing update...",
+    "downloadingProgress": "Downloading and installing... {{progress}}%",
+    "ready": "Update installed. Relaunch Houston to finish.",
+    "errorInstall": "Houston couldn't install the update. Try again in a moment.",
+    "errorRelaunch": "Update installed, but Houston couldn't relaunch itself. Relaunch manually or try again.",
+    "detailsHeading": "What's new",
+    "noDetails": "This update includes the latest fixes and improvements.",
+    "primaryAction": "Update and relaunch",
+    "installingAction": "Installing update...",
+    "relaunchAction": "Relaunch Houston",
+    "retryAction": "Try again"
   },
   "store": {
     "searchPlaceholder": "Search the store...",

@@ -45,9 +45,20 @@
     "launchError": "No se pudo abrir el inicio de sesión. Intenta otra vez."
   },
   "updateChecker": {
-    "available": "v{{version}} disponible",
-    "downloading": "Descargando... {{progress}}%",
-    "restart": "Reinicia para actualizar"
+    "cardLabel": "Actualización de Houston disponible",
+    "title": "¡Houston, tenemos una actualización!",
+    "availableDescription": "La versión {{version}} está lista. Estás en v{{currentVersion}}.",
+    "downloading": "Descargando e instalando la actualización...",
+    "downloadingProgress": "Descargando e instalando... {{progress}}%",
+    "ready": "Actualización instalada. Reinicia Houston para terminar.",
+    "errorInstall": "Houston no pudo instalar la actualización. Intenta otra vez en un momento.",
+    "errorRelaunch": "La actualización se instaló, pero Houston no pudo reiniciarse solo. Reinícialo manualmente o intenta otra vez.",
+    "detailsHeading": "Novedades",
+    "noDetails": "Esta actualización incluye las últimas correcciones y mejoras.",
+    "primaryAction": "Actualizar y reiniciar",
+    "installingAction": "Instalando actualización...",
+    "relaunchAction": "Reiniciar Houston",
+    "retryAction": "Intentar otra vez"
   },
   "store": {
     "searchPlaceholder": "Buscar en la tienda...",

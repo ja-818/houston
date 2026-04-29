@@ -22,6 +22,14 @@ body {
     Arial, sans-serif;
 }
 
+[data-theme="dark"] .houston-update-logo-light {
+  display: none;
+}
+
+[data-theme="dark"] .houston-update-logo-dark {
+  display: block;
+}
+
 /* Style links in assistant chat messages as xs primary pill buttons */
 .group.is-assistant a[href] {
   display: inline-flex;

@@ -596,7 +596,7 @@ jobs:
             --arg sig "$SIG" \
             --arg url "$URL" \
             --arg date "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
-            --arg notes "See the assets to download and install this version." \
+            --rawfile notes release-notes.md \
             '{
               version: $v,
               notes: $notes,
