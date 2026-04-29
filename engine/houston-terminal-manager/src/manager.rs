@@ -228,6 +228,7 @@ async fn run_cli_process(
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
     cmd.stdin(Stdio::piped());
+    configure_process_group(cmd);
 
     let mut child = match cmd.spawn() {
         Ok(c) => c,
@@ -339,6 +340,29 @@ async fn run_cli_process(
             CliRunOutcome::Failed
         }
     }
+}
+
+#[cfg(unix)]
+fn configure_process_group(cmd: &mut Command) {
+    unsafe {
+        cmd.pre_exec(|| {
+            if setpgid(0, 0) == -1 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    }
+}
+
+#[cfg(windows)]
+fn configure_process_group(_cmd: &mut Command) {}
+
+#[cfg(not(any(unix, windows)))]
+fn configure_process_group(_cmd: &mut Command) {}
+
+#[cfg(unix)]
+extern "C" {
+    fn setpgid(pid: i32, pgid: i32) -> i32;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

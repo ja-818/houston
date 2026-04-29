@@ -110,10 +110,17 @@ module.
 | GET | `/v1/agents/:agent_path/sessions/:key/history` | Load chat history |
 | POST | `/v1/sessions/summarize` | Activity title/description |
 
-Session starts are exclusive per `workingDir`. If another chat or routine
-session is already running in the same directory, start returns
-`CONFLICT`. This keeps session file-change attribution correct. On
-successful completion, the engine may emit and persist a `FeedItem` with
+Chat session starts are queued per `sessionKey`, not per `workingDir`.
+Follow-up turns inside the same conversation wait and resume in order.
+The desktop app keeps mid-run follow-ups in a visible local queued-message
+strip, lets users remove them, then submits the remaining queued text as one
+combined turn when the active run finishes. The engine queue remains the
+protocol safety net for other clients and direct API callers.
+Different sessions in the same folder run in parallel. Cancelling a session
+invalidates any queued turns for that session key. If multiple sessions overlap
+in one folder, file-change attribution is skipped for those overlapping runs
+because the diff cannot be assigned to one model safely. On successful
+non-overlapping completion, the engine may emit and persist a `FeedItem` with
 `feed_type: "file_changes"` and `data: { created: string[], modified:
 string[] }`; clients should render this as session-owned project artifacts.
 

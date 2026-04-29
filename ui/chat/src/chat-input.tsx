@@ -27,6 +27,8 @@ import {
 } from "./ai-elements/prompt-input";
 import { PlusIcon } from "lucide-react";
 import { AttachmentChip, ComposerTrailing } from "./attachment-chip";
+import { QueuedMessageList } from "./queued-message-list";
+import type { QueuedChatMessage, QueuedMessageLabels } from "./queued-message-list";
 import { useControllable, mergeUniqueFiles } from "./use-file-drop-zone";
 
 type InputStatus = "ready" | "streaming" | "submitted";
@@ -52,6 +54,10 @@ export interface ChatInputProps {
   footer?: ReactNode;
   /** Optional content rendered inside the composer above the textarea. */
   header?: ReactNode;
+  /** Messages accepted while a turn is active, waiting to be sent as one turn. */
+  queuedMessages?: QueuedChatMessage[];
+  onRemoveQueuedMessage?: (id: string) => void;
+  queuedLabels?: QueuedMessageLabels;
   /** Enables submit even when text/files are empty. */
   canSendEmpty?: boolean;
 }
@@ -68,6 +74,9 @@ export function ChatInput({
   onNotice,
   footer,
   header,
+  queuedMessages = [],
+  onRemoveQueuedMessage,
+  queuedLabels,
   canSendEmpty = false,
 }: ChatInputProps) {
   const [text, setText] = useControllable(value, onValueChange, "");
@@ -98,7 +107,7 @@ export function ChatInput({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Escape" && status === "streaming" && onStop) {
+      if (e.key === "Escape" && status !== "ready" && onStop) {
         e.preventDefault();
         onStop();
       }
@@ -155,6 +164,12 @@ export function ChatInput({
           className="sr-only"
           onChange={handleFileChange}
           tabIndex={-1}
+        />
+
+        <QueuedMessageList
+          messages={queuedMessages}
+          onRemove={onRemoveQueuedMessage}
+          labels={queuedLabels}
         />
 
         {/* Attachment cards — ABOVE the composer, always-visible scrollbar */}

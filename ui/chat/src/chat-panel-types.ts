@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { ToolsAndCardsProps } from "./chat-helpers";
 import type { ChatMessagesProps } from "./chat-messages";
 import type { ChatMessage } from "./feed-to-messages";
+import type { QueuedChatMessage, QueuedMessageLabels } from "./queued-message-list";
 import type { FeedItem } from "./types";
 
 export type ChatStatus = "ready" | "streaming" | "submitted";
@@ -22,6 +23,9 @@ export interface ChatPanelProps {
   onNotice?: (message: string) => void;
   footer?: ReactNode;
   composerHeader?: ReactNode;
+  queuedMessages?: QueuedChatMessage[];
+  onRemoveQueuedMessage?: (id: string) => void;
+  queuedLabels?: QueuedMessageLabels;
   canSendEmpty?: boolean;
   status?: ChatStatus;
   thinkingIndicator?: ReactNode;

@@ -9,6 +9,12 @@ import { Terminal, GitBranch } from "lucide-react";
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
 import { useDraftStore } from "../../stores/drafts";
+import { useSessionMessageQueue } from "../../hooks/use-session-message-queue";
+import {
+  getSessionStatusKey,
+  isActiveSessionStatus,
+  useSessionStatusStore,
+} from "../../stores/session-status";
 import {
   useActivity,
   useDeleteActivity,
@@ -17,12 +23,14 @@ import {
 import { useAgentChatPanel } from "../use-agent-chat-panel";
 import { tauriActivity, tauriChat, tauriAttachments, tauriSystem, tauriWorktree, tauriShell, tauriTerminal, tauriConfig, tauriPreferences, withAttachmentPaths } from "../../lib/tauri";
 import { createMission } from "../../lib/create-mission";
+import { formatVisibleMessageText } from "../../lib/queued-chat";
 import { queryKeys } from "../../lib/query-keys";
 import { analytics } from "../../lib/analytics";
 import type { TabProps } from "../../lib/types";
 import { useDetailPanelContainer } from "../shell/detail-panel-context";
 import { HoustonHelmet, HoustonThinkingIndicator } from "../shell/experience-card";
 import { resolveAgentColor } from "../../lib/agent-colors";
+import { useQueuedMessageLabels } from "../use-queued-message-labels";
 import { MissionSearchInput } from "../mission-search-input";
 import { MissionBoardEmptyState } from "../mission-board-empty-state";
 import { useMissionSearch } from "../use-mission-search";
@@ -52,7 +60,8 @@ function PanelAvatar({ color, isRunning }: { color?: string; isRunning: boolean 
 }
 
 export default function BoardTab({ agent, agentDef }: TabProps) {
-  const { t } = useTranslation(["board", "dashboard"]);
+  const { t } = useTranslation(["board", "dashboard", "chat"]);
+  const queuedLabels = useQueuedMessageLabels();
   const cardLabels = {
     approve: t("board:cardActions.approve"),
     approveTooltip: t("board:cardActions.approveTooltip"),
@@ -196,22 +205,33 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     [path, setFeed],
   );
   const [loadingState, setLoading] = useState<Record<string, boolean>>({});
+  const sessionStatuses = useSessionStatusStore((s) => s.statuses);
   // A session is "loading" from the user's perspective whenever its activity
   // is running — not just when WE started it from this component. This catches
   // sessions kicked off elsewhere (onboarding, routines, Mission Control, agent
-  // writes) so the ChatPanel shows the Thinking indicator instead of an empty
-  // chat while the first streaming event is in flight. Once feed items arrive,
-  // ChatPanel's deriveStatus takes over based on feed contents.
+  // writes) so the ChatPanel keeps Stop/Esc live until SessionStatus reaches a
+  // terminal state.
   const effectiveLoading = useMemo(() => {
-    const out: Record<string, boolean> = { ...loadingState };
+    const out: Record<string, boolean> = {};
+    for (const [key, value] of Object.entries(loadingState)) {
+      if (!value) continue;
+      const knownStatus = sessionStatuses[getSessionStatusKey(path, key)];
+      if (!knownStatus || isActiveSessionStatus(knownStatus)) {
+        out[key] = true;
+      }
+    }
     for (const a of rawItems ?? []) {
+      const key = a.session_key ?? `activity-${a.id}`;
+      const status = sessionStatuses[getSessionStatusKey(path, key)];
+      if (isActiveSessionStatus(status)) {
+        out[key] = true;
+      }
       if (a.status === "running") {
-        const key = a.session_key ?? `activity-${a.id}`;
         out[key] = true;
       }
     }
     return out;
-  }, [loadingState, rawItems]);
+  }, [loadingState, rawItems, sessionStatuses, path]);
 
   // Register the "Start a Mission" handler in the UI store for the TabBar
   const handleOpenerReady = useCallback(
@@ -347,9 +367,11 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           },
         },
       );
-      const visible = files.length > 0
-        ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
-        : text;
+      const visible = formatVisibleMessageText(
+        text,
+        files,
+        (names) => t("chat:queue.attached", { names }),
+      );
       pushFeedItem(path, sessionKey, { feed_type: "user_message", data: visible });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
       // createMission bypassed useCreateActivity so invalidate manually.
@@ -357,7 +379,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       analytics.track("mission_created", { agent_mode: agentMode ?? "default" });
       return conversationId;
     },
-    [path, agent.id, agent.name, agent.color, pushFeedItem, pendingAgentMode, agentModes, chatProvider, chatModel, queryClient],
+    [path, agent.id, agent.name, agent.color, pushFeedItem, pendingAgentMode, agentModes, chatProvider, chatModel, queryClient, t],
   );
 
   // Derive the session key for an activity, using custom key if set by routine runner
@@ -376,11 +398,13 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     [path],
   );
 
-  const handleSendMessage = useCallback(
+  const sendMessageNow = useCallback(
     async (sessionKey: string, text: string, files: File[]) => {
-      const visible = files.length > 0
-        ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
-        : text;
+      const visible = formatVisibleMessageText(
+        text,
+        files,
+        (names) => t("chat:queue.attached", { names }),
+      );
       pushFeedItem(path, sessionKey, { feed_type: "user_message", data: visible });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
       const activity = (rawItems ?? []).find(
@@ -391,17 +415,66 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       // so every client (desktop, mobile, third-party) sees the same
       // transition. Don't pre-write from the UI.
       const scopeId = activity ? `activity-${activity.id}` : sessionKey;
-      const paths = await tauriAttachments.save(scopeId, files);
-      const prompt = withAttachmentPaths(text, paths);
-      const mode = agentModes?.find((m) => m.id === activity?.agent);
-      tauriChat.send(path, prompt, sessionKey, {
-        mode: mode?.promptFile,
-        workingDirOverride: activity?.worktree_path ?? undefined,
-        providerOverride: chatProvider ?? undefined,
-        modelOverride: chatModel ?? undefined,
-      });
+      try {
+        const paths = await tauriAttachments.save(scopeId, files);
+        const prompt = withAttachmentPaths(text, paths);
+        const mode = agentModes?.find((m) => m.id === activity?.agent);
+        await tauriChat.send(path, prompt, sessionKey, {
+          mode: mode?.promptFile,
+          workingDirOverride: activity?.worktree_path ?? undefined,
+          providerOverride: chatProvider ?? undefined,
+          modelOverride: chatModel ?? undefined,
+        });
+      } catch (err) {
+        setLoading((prev) => ({ ...prev, [sessionKey]: false }));
+        pushFeedItem(path, sessionKey, {
+          feed_type: "system_message",
+          data: t("chat:errors.sessionStart", { error: String(err) }),
+        });
+      }
     },
-    [path, pushFeedItem, rawItems, agentModes, chatProvider, chatModel],
+    [path, pushFeedItem, rawItems, agentModes, chatProvider, chatModel, t],
+  );
+
+  const selectedSessionActive = selectedSessionKey
+    ? (effectiveLoading[selectedSessionKey] ?? false)
+    : false;
+  const sendSelectedNow = useCallback(
+    async (text: string, files: File[]) => {
+      if (!selectedSessionKey) return;
+      await sendMessageNow(selectedSessionKey, text, files);
+    },
+    [selectedSessionKey, sendMessageNow],
+  );
+  const messageQueue = useSessionMessageQueue({
+    agentPath: path,
+    sessionKey: selectedSessionKey,
+    isActive: selectedSessionActive,
+    sendNow: sendSelectedNow,
+  });
+  const handleSendMessage = useCallback(
+    async (sessionKey: string, text: string, files: File[]) => {
+      if (sessionKey === selectedSessionKey) {
+        await messageQueue.sendOrQueue(text, files);
+        return;
+      }
+      await sendMessageNow(sessionKey, text, files);
+    },
+    [selectedSessionKey, messageQueue.sendOrQueue, sendMessageNow],
+  );
+  const handleComposerSubmit = useCallback<NonNullable<typeof panel.onComposerSubmit>>(
+    async (ctx) => {
+      if (ctx.sessionKey && ctx.sessionKey === selectedSessionKey && selectedSessionActive) {
+        messageQueue.queueMessage(ctx.text, ctx.files);
+        return true;
+      }
+      return (await panel.onComposerSubmit?.(ctx)) ?? false;
+    },
+    [selectedSessionKey, selectedSessionActive, messageQueue.queueMessage, panel.onComposerSubmit],
+  );
+  const queuedMessages = useMemo(
+    () => selectedSessionKey ? { [selectedSessionKey]: messageQueue.queuedMessages } : {},
+    [selectedSessionKey, messageQueue.queuedMessages],
   );
 
   const handleRunInTerminal = useCallback(
@@ -519,6 +592,9 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           }}
           onCreateConversation={handleCreateConversation}
           onSendMessage={handleSendMessage}
+          queuedMessages={queuedMessages}
+          onRemoveQueuedMessage={(_, id) => messageQueue.removeQueuedMessage(id)}
+          queuedLabels={queuedLabels}
           onLoadHistory={loadHistory}
           onHistoryLoaded={handleHistoryLoaded}
           onNewPanelOpenerReady={handleOpenerReady}
@@ -548,7 +624,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           chatEmptyState={panel.chatEmptyState}
           composerHeader={panel.composerHeader}
           canSendEmpty={panel.canSendEmpty}
-          onComposerSubmit={panel.onComposerSubmit}
+          onComposerSubmit={handleComposerSubmit}
           footer={panel.footer}
           renderUserMessage={panel.renderUserMessage}
           renderSystemMessage={panel.renderSystemMessage}

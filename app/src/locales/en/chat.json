@@ -2,6 +2,12 @@
   "composer": {
     "placeholder": "Ask anything..."
   },
+  "queue": {
+    "title": "Queued",
+    "remove": "Remove queued message",
+    "attachmentsOnly": "Attachments",
+    "attached": "Attached: {{names}}"
+  },
   "empty": {
     "title": "Start a conversation",
     "description": "Type a message to talk to your assistant."

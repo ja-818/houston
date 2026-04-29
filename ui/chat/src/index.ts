@@ -165,6 +165,12 @@ export type { ChatProcessLabels } from "./chat-process-block";
 export { ChatInput } from "./chat-input";
 export type { ChatInputProps } from "./chat-input";
 export type { AttachMenuItem } from "./chat-input-parts";
+export { QueuedMessageList } from "./queued-message-list";
+export type {
+  QueuedChatMessage,
+  QueuedMessageLabels,
+  QueuedMessageListProps,
+} from "./queued-message-list";
 
 export { ToolActivity, ToolsAndCards, ToolBlock, feedItemsToMessages } from "./chat-helpers";
 export type { ToolActivityProps, ToolsAndCardsProps, ToolBlockProps } from "./chat-helpers";

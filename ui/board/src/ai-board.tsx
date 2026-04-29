@@ -54,6 +54,12 @@ export interface AIBoardProps {
   onPanelOpenChange?: (open: boolean) => void
   /** Called when the user clicks Stop in the chat panel. Receives the active session key. */
   onStopSession?: (sessionKey: string) => void
+  /** Queued follow-up messages keyed by session key. */
+  queuedMessages?: Record<string, NonNullable<ChatPanelProps["queuedMessages"]>>
+  /** Called when the user removes a queued follow-up. */
+  onRemoveQueuedMessage?: (sessionKey: string, id: string) => void
+  /** Translated labels for queued follow-ups. */
+  queuedLabels?: ChatPanelProps["queuedLabels"]
   /** Predicate to identify tools that should use custom rendering. */
   isSpecialTool?: ToolsAndCardsProps["isSpecialTool"]
   /** Custom renderer for special tool results. */
@@ -160,6 +166,9 @@ export function AIBoard({
   panelAgentName,
   onPanelOpenChange,
   onStopSession,
+  queuedMessages,
+  onRemoveQueuedMessage,
+  queuedLabels,
   onRename,
   actions,
   panelActions,
@@ -294,6 +303,7 @@ export function AIBoard({
     [onComposerSubmit, activeSessionKey, activeFeed.length, activeDraftKey, onDraftChange, selectedItem, onSendMessage, sessionKeyFor, newPanelOpen, onCreateConversation, setSelectedId],
   )
   const activeLoading = activeSessionKey ? (isLoading[activeSessionKey] ?? false) : false
+  const activeQueuedMessages = activeSessionKey ? (queuedMessages?.[activeSessionKey] ?? []) : []
   const renderedAfterMessages = typeof afterMessages === "function"
     ? afterMessages({
       sessionKey: activeSessionKey ?? "new-conversation",
@@ -393,6 +403,13 @@ export function AIBoard({
           isLoading={activeLoading}
           onSend={handleSend}
           onStop={activeSessionKey && onStopSession ? () => onStopSession(activeSessionKey) : undefined}
+          queuedMessages={activeQueuedMessages}
+          onRemoveQueuedMessage={
+            activeSessionKey && onRemoveQueuedMessage
+              ? (id) => onRemoveQueuedMessage(activeSessionKey, id)
+              : undefined
+          }
+          queuedLabels={queuedLabels}
           placeholder={selectedItem ? "Send a follow-up..." : "What should the agent work on?"}
           emptyState={activeFeed.length === 0 ? chatEmptyState : undefined}
           thinkingIndicator={thinkingIndicator}

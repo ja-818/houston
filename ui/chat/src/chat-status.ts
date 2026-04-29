@@ -13,6 +13,6 @@ export function deriveStatus(items: FeedItem[], isLoading: boolean): ChatStatus 
     return "streaming";
   }
   if (last?.feed_type === "user_message") return "submitted";
-  if (isLoading && items.length === 0) return "submitted";
+  if (isLoading) return items.length === 0 ? "submitted" : "streaming";
   return "ready";
 }

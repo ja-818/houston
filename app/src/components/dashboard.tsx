@@ -17,8 +17,10 @@ import { useAgentCatalogStore } from "../stores/agent-catalog";
 import { useUIStore } from "../stores/ui";
 import { tauriChat } from "../lib/tauri";
 import { useMissionControl } from "./use-mission-control";
+import { useSessionMessageQueue } from "../hooks/use-session-message-queue";
 import { AgentPickerDialog } from "./agent-picker-dialog";
 import { useAgentChatPanel } from "./use-agent-chat-panel";
+import { useQueuedMessageLabels } from "./use-queued-message-labels";
 import type { Agent } from "../lib/types";
 import { useDetailPanelContainer } from "./shell/detail-panel-context";
 import { AgentMiniAvatar, HoustonThinkingIndicator } from "./shell/experience-card";
@@ -28,6 +30,7 @@ import { useMissionSearch } from "./use-mission-search";
 
 export function Dashboard() {
   const { t } = useTranslation(["dashboard", "board", "common"]);
+  const queuedLabels = useQueuedMessageLabels();
   const MC_COLUMNS: KanbanColumnConfig[] = [
     { id: "running", label: t("dashboard:columns.running"), statuses: ["running"] },
     { id: "needs_you", label: t("dashboard:columns.needsYou"), statuses: ["needs_you"] },
@@ -187,6 +190,47 @@ export function Dashboard() {
     selectedSessionKey,
     onSelectSession: onActionCreated,
   });
+  const selectedAgentPath = selectedItem?.metadata?.agentPath as string | undefined;
+  const selectedSessionActive = selectedSessionKey
+    ? (mc.loading[selectedSessionKey] ?? false)
+    : false;
+  const sendSelectedNow = useCallback(
+    async (text: string, files: File[]) => {
+      if (!selectedSessionKey) return;
+      await mc.handleSendMessage(selectedSessionKey, text, files);
+    },
+    [mc.handleSendMessage, selectedSessionKey],
+  );
+  const messageQueue = useSessionMessageQueue({
+    agentPath: selectedAgentPath ?? null,
+    sessionKey: selectedSessionKey,
+    isActive: selectedSessionActive,
+    sendNow: sendSelectedNow,
+  });
+  const handleSendMessage = useCallback(
+    async (sessionKey: string, text: string, files: File[]) => {
+      if (sessionKey === selectedSessionKey) {
+        await messageQueue.sendOrQueue(text, files);
+        return;
+      }
+      await mc.handleSendMessage(sessionKey, text, files);
+    },
+    [mc.handleSendMessage, selectedSessionKey, messageQueue.sendOrQueue],
+  );
+  const handleComposerSubmit = useCallback<NonNullable<typeof panel.onComposerSubmit>>(
+    async (ctx) => {
+      if (ctx.sessionKey && ctx.sessionKey === selectedSessionKey && selectedSessionActive) {
+        messageQueue.queueMessage(ctx.text, ctx.files);
+        return true;
+      }
+      return (await panel.onComposerSubmit?.(ctx)) ?? false;
+    },
+    [selectedSessionKey, selectedSessionActive, messageQueue.queueMessage, panel.onComposerSubmit],
+  );
+  const queuedMessages = useMemo(
+    () => selectedSessionKey ? { [selectedSessionKey]: messageQueue.queuedMessages } : {},
+    [selectedSessionKey, messageQueue.queuedMessages],
+  );
 
   if (agents.length === 0) {
     return (
@@ -253,7 +297,10 @@ export function Dashboard() {
           onDelete={mc.handleDelete}
           onApprove={mc.handleApprove}
           onRename={mc.handleRename}
-          onSendMessage={mc.handleSendMessage}
+          onSendMessage={handleSendMessage}
+          queuedMessages={queuedMessages}
+          onRemoveQueuedMessage={(_, id) => messageQueue.removeQueuedMessage(id)}
+          queuedLabels={queuedLabels}
           onLoadHistory={mc.loadHistory}
           onHistoryLoaded={mc.handleHistoryLoaded}
           onNewPanelOpenerReady={handleOpenerReady}
@@ -285,7 +332,7 @@ export function Dashboard() {
           chatEmptyState={panel.chatEmptyState}
           composerHeader={panel.composerHeader}
           canSendEmpty={panel.canSendEmpty}
-          onComposerSubmit={panel.onComposerSubmit}
+          onComposerSubmit={handleComposerSubmit}
           footer={panel.footer}
           renderUserMessage={panel.renderUserMessage}
           renderSystemMessage={panel.renderSystemMessage}

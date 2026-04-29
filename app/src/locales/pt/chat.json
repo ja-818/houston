@@ -2,6 +2,12 @@
   "composer": {
     "placeholder": "Pergunte qualquer coisa..."
   },
+  "queue": {
+    "title": "Na fila",
+    "remove": "Remover mensagem da fila",
+    "attachmentsOnly": "Anexos",
+    "attached": "Anexo: {{names}}"
+  },
   "empty": {
     "title": "Comece uma conversa",
     "description": "Digite uma mensagem para falar com seu assistente."

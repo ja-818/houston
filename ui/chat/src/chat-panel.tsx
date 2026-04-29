@@ -51,6 +51,9 @@ export function ChatPanel({
   onNotice,
   footer,
   composerHeader,
+  queuedMessages,
+  onRemoveQueuedMessage,
+  queuedLabels,
   canSendEmpty,
   composerOverride,
 }: ChatPanelProps) {
@@ -147,6 +150,9 @@ export function ChatPanel({
           onNotice={onNotice}
           footer={footer}
           header={composerHeader}
+          queuedMessages={queuedMessages}
+          onRemoveQueuedMessage={onRemoveQueuedMessage}
+          queuedLabels={queuedLabels}
           canSendEmpty={canSendEmpty}
         />
       )}

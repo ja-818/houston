@@ -1,15 +1,23 @@
 import { useState, useCallback, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { KanbanItem } from "@houston-ai/board";
 import type { FeedItem } from "@houston-ai/chat";
 import { useFeedStore } from "../stores/feeds";
+import {
+  getSessionStatusKey,
+  isActiveSessionStatus,
+  useSessionStatusStore,
+} from "../stores/session-status";
 import { useAllConversations } from "../hooks/queries";
 import { tauriActivity, tauriChat, tauriAttachments, withAttachmentPaths } from "../lib/tauri";
+import { formatVisibleMessageText } from "../lib/queued-chat";
 import type { Agent } from "../lib/types";
 import { createElement } from "react";
 import { HoustonHelmet } from "./shell/agent-avatar";
 import { resolveAgentColor } from "../lib/agent-colors";
 
 export function useMissionControl(agents: Agent[]) {
+  const { t } = useTranslation("chat");
   // Mission control is cross-agent. Flatten the nested feed store into a
   // single sessionKey → items map, filtered to the agents on this view.
   const allItems = useFeedStore((s) => s.items);
@@ -26,6 +34,7 @@ export function useMissionControl(agents: Agent[]) {
     return out;
   }, [allItems, agentPaths]);
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
+  const sessionStatuses = useSessionStatusStore((s) => s.statuses);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState<Record<string, boolean>>({});
@@ -59,7 +68,7 @@ export function useMissionControl(agents: Agent[]) {
           icon: createElement(HoustonHelmet, { color: resolveAgentColor(agentColorMap[c.agent_path]), size: 14 }),
           status: c.status!,
           updatedAt: c.updated_at ?? new Date().toISOString(),
-          metadata: { agentPath: c.agent_path },
+          metadata: { agentPath: c.agent_path, sessionKey: c.session_key },
         };
       });
     pathMapRef.current = map;
@@ -135,17 +144,27 @@ export function useMissionControl(agents: Agent[]) {
       const activityId = sessionKey.replace("activity-", "");
       const agentPath = pathMapRef.current[activityId];
       if (!agentPath) return;
-      const visible = files.length > 0
-        ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
-        : text;
+      const visible = formatVisibleMessageText(
+        text,
+        files,
+        (names) => t("queue.attached", { names }),
+      );
       pushFeedItem(agentPath, sessionKey, { feed_type: "user_message", data: visible });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
       tauriActivity.update(agentPath, activityId, { status: "running" }).catch(console.error);
-      const paths = await tauriAttachments.save(`activity-${activityId}`, files);
-      const prompt = withAttachmentPaths(text, paths);
-      tauriChat.send(agentPath, prompt, sessionKey);
+      try {
+        const paths = await tauriAttachments.save(`activity-${activityId}`, files);
+        const prompt = withAttachmentPaths(text, paths);
+        await tauriChat.send(agentPath, prompt, sessionKey);
+      } catch (err) {
+        setLoading((prev) => ({ ...prev, [sessionKey]: false }));
+        pushFeedItem(agentPath, sessionKey, {
+          feed_type: "system_message",
+          data: t("errors.sessionStart", { error: String(err) }),
+        });
+      }
     },
-    [pushFeedItem],
+    [pushFeedItem, t],
   );
 
   const handleCreate = useCallback(
@@ -162,11 +181,37 @@ export function useMissionControl(agents: Agent[]) {
     [pushFeedItem],
   );
 
+  const effectiveLoading = useMemo(() => {
+    const out: Record<string, boolean> = {};
+    for (const [sessionKey, value] of Object.entries(loading)) {
+      if (!value) continue;
+      const activityId = sessionKey.replace("activity-", "");
+      const agentPath = pathMapRef.current[activityId];
+      const status = agentPath
+        ? sessionStatuses[getSessionStatusKey(agentPath, sessionKey)]
+        : undefined;
+      if (!status || isActiveSessionStatus(status)) {
+        out[sessionKey] = true;
+      }
+    }
+    for (const item of items) {
+      const sessionKey = (item.metadata?.sessionKey as string | undefined) ?? `activity-${item.id}`;
+      const agentPath = pathMapRef.current[item.id];
+      const status = agentPath
+        ? sessionStatuses[getSessionStatusKey(agentPath, sessionKey)]
+        : undefined;
+      if (item.status === "running" || isActiveSessionStatus(status)) {
+        out[sessionKey] = true;
+      }
+    }
+    return out;
+  }, [items, loading, sessionStatuses]);
+
   return {
     items,
     selectedId,
     setSelectedId,
-    loading,
+    loading: effectiveLoading,
     isLoaded: isFetched,
     feedItems,
     loadHistory,

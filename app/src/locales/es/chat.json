@@ -2,6 +2,12 @@
   "composer": {
     "placeholder": "Pregunta lo que quieras..."
   },
+  "queue": {
+    "title": "En cola",
+    "remove": "Quitar mensaje en cola",
+    "attachmentsOnly": "Archivos adjuntos",
+    "attached": "Adjunto: {{names}}"
+  },
   "empty": {
     "title": "Empieza una conversación",
     "description": "Escribe un mensaje para hablar con tu asistente."

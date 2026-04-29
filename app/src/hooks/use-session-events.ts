@@ -6,6 +6,7 @@ import { useFeedStore } from "../stores/feeds";
 import { useUIStore } from "../stores/ui";
 import { useWorkspaceStore } from "../stores/workspaces";
 import { useAgentStore } from "../stores/agents";
+import { useSessionStatusStore } from "../stores/session-status";
 import { subscribeHoustonEvents, listenOsEvent } from "../lib/events";
 import { logger } from "../lib/logger";
 
@@ -91,6 +92,7 @@ export function useSessionEvents() {
     pushFeedItem,
     addToast,
     setAuthRequired,
+    setSessionStatus: useSessionStatusStore.getState().setStatus,
     getWorkspace: () => useWorkspaceStore.getState().current,
     getAgent: () => useAgentStore.getState().current,
   });
@@ -98,6 +100,7 @@ export function useSessionEvents() {
     pushFeedItem,
     addToast,
     setAuthRequired,
+    setSessionStatus: useSessionStatusStore.getState().setStatus,
     getWorkspace: () => useWorkspaceStore.getState().current,
     getAgent: () => useAgentStore.getState().current,
   };
@@ -120,6 +123,14 @@ export function useSessionEvents() {
           break;
         case "SessionStatus": {
           const { status, error, session_key, agent_path } = payload.data;
+          if (
+            status === "starting" ||
+            status === "running" ||
+            status === "completed" ||
+            status === "error"
+          ) {
+            h.setSessionStatus(agent_path, session_key, status);
+          }
           if (status === "error" && error) {
             // When auth is required, the backend has emitted AuthRequired and
             // the inline reconnect card renders from the authRequired store

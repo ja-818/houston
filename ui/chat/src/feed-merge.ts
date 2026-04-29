@@ -16,27 +16,27 @@ export function mergeFeedItem(items: FeedItem[], item: FeedItem): FeedItem[] {
   const last = items[items.length - 1];
 
   if (item.feed_type === "thinking_streaming") {
-    if (last?.feed_type === "thinking_streaming") {
-      return [...items.slice(0, -1), item];
-    }
+    return replaceLast(items, item, (existing) => existing.feed_type === "thinking_streaming");
   }
 
   if (item.feed_type === "thinking") {
-    if (last?.feed_type === "thinking_streaming") {
-      return [...items.slice(0, -1), item];
-    }
+    return replaceLast(items, item, (existing) => existing.feed_type === "thinking_streaming");
   }
 
   if (item.feed_type === "assistant_text_streaming") {
-    if (last?.feed_type === "assistant_text_streaming") {
-      return [...items.slice(0, -1), item];
-    }
+    return replaceLast(
+      items,
+      item,
+      (existing) => existing.feed_type === "assistant_text_streaming",
+    );
   }
 
   if (item.feed_type === "assistant_text") {
-    if (last?.feed_type === "assistant_text_streaming") {
-      return [...items.slice(0, -1), item];
-    }
+    return replaceLast(
+      items,
+      item,
+      (existing) => existing.feed_type === "assistant_text_streaming",
+    );
   }
 
   // tool_call with real input replaces the immediate null-input notification
@@ -61,5 +61,22 @@ export function mergeFeedItem(items: FeedItem[], item: FeedItem): FeedItem[] {
     }
   }
 
+  return [...items, item];
+}
+
+function replaceLast(
+  items: FeedItem[],
+  item: FeedItem,
+  predicate: (item: FeedItem) => boolean,
+): FeedItem[] {
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    if (predicate(items[index])) {
+      return [
+        ...items.slice(0, index),
+        item,
+        ...items.slice(index + 1),
+      ];
+    }
+  }
   return [...items, item];
 }

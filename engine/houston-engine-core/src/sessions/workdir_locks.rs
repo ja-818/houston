@@ -11,6 +11,19 @@ pub struct WorkdirLocks {
 }
 
 impl WorkdirLocks {
+    #[cfg(test)]
+    pub async fn acquire(&self, working_dir: &Path) -> WorkdirSessionGuard {
+        let key = normalize_key(working_dir);
+        let lock = {
+            let mut locks = self.inner.lock().await;
+            locks
+                .entry(key)
+                .or_insert_with(|| Arc::new(Mutex::new(())))
+                .clone()
+        };
+        lock.lock_owned().await
+    }
+
     pub async fn try_acquire(&self, working_dir: &Path) -> Option<WorkdirSessionGuard> {
         let key = normalize_key(working_dir);
         let lock = {
@@ -44,6 +57,28 @@ mod tests {
 
         drop(first);
         assert!(locks.try_acquire(dir.path()).await.is_some());
+    }
+
+    #[tokio::test]
+    async fn acquire_waits_until_guard_drops() {
+        let dir = TempDir::new().unwrap();
+        let locks = WorkdirLocks::default();
+        let first = locks.acquire(dir.path()).await;
+
+        let locks2 = locks.clone();
+        let path = dir.path().to_path_buf();
+        let started = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let started2 = started.clone();
+        let handle = tokio::spawn(async move {
+            let _guard = locks2.acquire(&path).await;
+            started2.store(true, std::sync::atomic::Ordering::SeqCst);
+        });
+
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        assert!(!started.load(std::sync::atomic::Ordering::SeqCst));
+        drop(first);
+        handle.await.unwrap();
+        assert!(started.load(std::sync::atomic::Ordering::SeqCst));
     }
 
     #[tokio::test]

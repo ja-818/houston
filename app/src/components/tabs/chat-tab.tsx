@@ -12,7 +12,10 @@ import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useDraftStore, useDraftText, useDraftFiles } from "../../stores/drafts";
+import { isActiveSessionStatus, useSessionStatus } from "../../stores/session-status";
+import { useSessionMessageQueue } from "../../hooks/use-session-message-queue";
 import { tauriChat, tauriAttachments, tauriSystem, tauriConfig, withAttachmentPaths } from "../../lib/tauri";
+import { formatVisibleMessageText } from "../../lib/queued-chat";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
 import { useConnectedToolkits, useConnections } from "../../hooks/queries";
 import {
@@ -26,6 +29,7 @@ import { ChatModelSelector } from "../chat-model-selector";
 import { useChatDisplayLabels } from "../use-chat-display-labels";
 import { getDefaultModel } from "../../lib/providers";
 import { ProviderReconnectCard } from "../shell/provider-reconnect-card";
+import { useQueuedMessageLabels } from "../use-queued-message-labels";
 import {
   filterProviderAuthFeedItems,
   isProviderAuthMessage,
@@ -34,6 +38,7 @@ import {
 
 export default function ChatTab({ agent }: TabProps) {
   const { t } = useTranslation("chat");
+  const queuedLabels = useQueuedMessageLabels();
   const { processLabels, getThinkingMessage } = useChatDisplayLabels();
   const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(agent.folderPath);
   // Free-form chat tab gets its own UUID-scoped session key per agent.
@@ -53,6 +58,8 @@ export default function ChatTab({ agent }: TabProps) {
     [addToast],
   );
   const [isLoading, setIsLoading] = useState(false);
+  const sessionStatus = useSessionStatus(agentPath, sessionKey);
+  const isSessionActive = isActiveSessionStatus(sessionStatus);
   const composerText = useDraftText(sessionKey);
   const composerFiles = useDraftFiles(sessionKey);
   const setComposerText = useCallback(
@@ -120,6 +127,12 @@ export default function ChatTab({ agent }: TabProps) {
     tauriChat.stop(agentPath, sessionKey).catch(console.error);
   }, [agentPath, sessionKey]);
 
+  useEffect(() => {
+    if (sessionStatus === "completed" || sessionStatus === "error") {
+      setIsLoading(false);
+    }
+  }, [sessionStatus]);
+
   const handleOpenLink = useCallback((url: string) => {
     tauriSystem.openUrl(url).catch(console.error);
   }, []);
@@ -153,21 +166,21 @@ export default function ChatTab({ agent }: TabProps) {
     [connectedSet],
   );
 
-  const handleSend = useCallback(
+  const sendNow = useCallback(
     async (text: string, files: File[]) => {
       if (sendingRef.current) return;
       sendingRef.current = true;
       setIsLoading(true);
-      // Visible user message includes the file names so the user sees what
-      // they sent; the path block goes into the prompt only.
-      const visible = files.length > 0
-        ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
-        : text;
+      const visible = formatVisibleMessageText(
+        text,
+        files,
+        (names) => t("queue.attached", { names }),
+      );
       pushFeedItem(agentPath, sessionKey, { feed_type: "user_message", data: visible });
       analytics.track("chat_message_sent");
-      // Clear composer immediately so the user sees the send.
       setComposerText("");
       setComposerFiles([]);
+      let started = false;
       try {
         const paths = await tauriAttachments.save(attachmentScope, files);
         const prompt = withAttachmentPaths(text, paths);
@@ -175,26 +188,39 @@ export default function ChatTab({ agent }: TabProps) {
           providerOverride: chatProvider ?? undefined,
           modelOverride: chatModel ?? undefined,
         });
+        started = true;
       } catch (err) {
+        setIsLoading(false);
         pushFeedItem(agentPath, sessionKey, {
           feed_type: "system_message",
           data: t("errors.sessionStart", { error: String(err) }),
         });
       } finally {
-        setIsLoading(false);
+        if (!started) setIsLoading(false);
         sendingRef.current = false;
       }
     },
-    [agentPath, sessionKey, attachmentScope, pushFeedItem, setComposerText, setComposerFiles, chatProvider, chatModel],
+    [agentPath, sessionKey, attachmentScope, pushFeedItem, setComposerText, setComposerFiles, chatProvider, chatModel, t],
   );
+  const handleQueued = useCallback(() => {
+    setComposerText("");
+    setComposerFiles([]);
+  }, [setComposerText, setComposerFiles]);
+  const messageQueue = useSessionMessageQueue({
+    agentPath,
+    sessionKey,
+    isActive: isLoading || isSessionActive,
+    sendNow,
+    onQueued: handleQueued,
+  });
 
   return (
     <div className="h-full w-full flex flex-col">
       <ChatPanel
         sessionKey={sessionKey}
         feedItems={visibleFeedItems}
-        isLoading={isLoading}
-        onSend={handleSend}
+        isLoading={isLoading || isSessionActive}
+        onSend={messageQueue.sendOrQueue}
         onStop={handleStop}
         onOpenLink={handleOpenLink}
         renderLink={renderLink}
@@ -225,6 +251,9 @@ export default function ChatTab({ agent }: TabProps) {
         attachments={composerFiles}
         onAttachmentsChange={setComposerFiles}
         onNotice={handleNotice}
+        queuedMessages={messageQueue.queuedMessages}
+        onRemoveQueuedMessage={messageQueue.removeQueuedMessage}
+        queuedLabels={queuedLabels}
         footer={
           <ChatModelSelector
             provider={effectiveProvider}
