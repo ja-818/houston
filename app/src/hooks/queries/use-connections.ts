@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../lib/query-keys";
 import { tauriConnections } from "../../lib/tauri";
+import { normalizeToolkitSlugs } from "../../lib/composio-toolkits";
 
 export function useConnections() {
   return useQuery({
@@ -17,7 +18,7 @@ export function useConnections() {
 
 export function useComposioApps() {
   return useQuery({
-    queryKey: ["composio-apps"],
+    queryKey: queryKeys.composioApps(),
     queryFn: () => tauriConnections.listApps(),
     staleTime: 1000 * 60 * 60,
   });
@@ -30,7 +31,8 @@ export function useComposioApps() {
 export function useConnectedToolkits(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.connectedToolkits(),
-    queryFn: () => tauriConnections.listConnectedToolkits(),
+    queryFn: async () =>
+      normalizeToolkitSlugs(await tauriConnections.listConnectedToolkits()),
     enabled,
     staleTime: 1000 * 60,
     refetchOnWindowFocus: false,
@@ -39,13 +41,27 @@ export function useConnectedToolkits(enabled: boolean) {
 
 export function useInvalidateConnections() {
   const qc = useQueryClient();
-  return () => qc.invalidateQueries({ queryKey: queryKeys.connections() });
+  return async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: queryKeys.connections() }),
+      qc.invalidateQueries({ queryKey: queryKeys.composioApps() }),
+      qc.invalidateQueries({ queryKey: queryKeys.connectedToolkits() }),
+    ]);
+  };
 }
 
 export function useResetConnections() {
   const qc = useQueryClient();
   return async () => {
-    await qc.cancelQueries({ queryKey: queryKeys.connections() });
+    await Promise.all([
+      qc.cancelQueries({ queryKey: queryKeys.connections() }),
+      qc.cancelQueries({ queryKey: queryKeys.composioApps() }),
+      qc.cancelQueries({ queryKey: queryKeys.connectedToolkits() }),
+    ]);
     await qc.resetQueries({ queryKey: queryKeys.connections() });
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: queryKeys.composioApps() }),
+      qc.invalidateQueries({ queryKey: queryKeys.connectedToolkits() }),
+    ]);
   };
 }

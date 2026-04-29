@@ -5,6 +5,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::toolkits::normalize_toolkit_slug;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComposioAppEntry {
     pub toolkit: String,
@@ -119,11 +121,10 @@ fn parse_toolkits(body: &serde_json::Value) -> Result<Vec<ComposioAppEntry>, Str
 
     let mut apps = Vec::with_capacity(items.len());
     for item in items {
-        let slug = item
+        let slug = normalize_toolkit_slug(item
             .get("slug")
             .and_then(|v| v.as_str())
-            .unwrap_or_default()
-            .to_string();
+            .unwrap_or_default());
         if slug.is_empty() {
             continue;
         }

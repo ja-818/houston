@@ -9,6 +9,7 @@
 
 use crate::cli::{self, ComposioStatus, StartLinkResponse, StartLoginResponse};
 use crate::install;
+use crate::toolkits::normalize_toolkit_slugs;
 
 /// Current state of Houston's composio integration.
 pub async fn list_composio_connections() -> ComposioStatus {
@@ -48,5 +49,5 @@ pub async fn list_composio_apps() -> Vec<crate::apps::ComposioAppEntry> {
 
 /// List all connected toolkit slugs in the consumer namespace.
 pub async fn list_composio_connected_toolkits() -> Vec<String> {
-    cli::list_connected_toolkits().await
+    normalize_toolkit_slugs(cli::list_connected_toolkits().await)
 }

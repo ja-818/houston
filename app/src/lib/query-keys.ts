@@ -30,5 +30,6 @@ export const queryKeys = {
 
   // App-scoped (less reactive, loaded on init)
   connections: () => ["connections"] as const,
+  composioApps: () => ["composio-apps"] as const,
   connectedToolkits: () => ["connected-toolkits"] as const,
 };
