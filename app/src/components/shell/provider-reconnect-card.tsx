@@ -4,6 +4,10 @@ import { Button, Spinner } from "@houston-ai/core";
 import { useUIStore } from "../../stores/ui";
 import { tauriProvider } from "../../lib/tauri";
 import { getProvider } from "../../lib/providers";
+import {
+  providerIsAuthenticated,
+  providerReconnectSignalState,
+} from "./provider-reconnect-state";
 
 interface ProviderReconnectCardProps {
   providerId?: string;
@@ -39,14 +43,14 @@ export function ProviderReconnectCard({
     tauriProvider.checkStatus(providerId)
       .then((status) => {
         if (cancelled) return;
-        if (status.cli_installed && status.authenticated) {
-          setResolvedSignal(signalKey);
-        } else {
+        if (providerReconnectSignalState(status) === "needs_auth") {
           setSignalNeedsAuth(true);
+        } else {
+          setResolvedSignal(signalKey);
         }
       })
       .catch(() => {
-        if (!cancelled) setSignalNeedsAuth(true);
+        if (!cancelled) setResolvedSignal(signalKey);
       });
     return () => {
       cancelled = true;
@@ -60,7 +64,7 @@ export function ProviderReconnectCard({
       try {
         const status = await tauriProvider.checkStatus(activeProviderId);
         if (cancelled) return;
-        if (status.cli_installed && status.authenticated) {
+        if (providerIsAuthenticated(status)) {
           setAuthRequired(null);
           if (signalKey) setResolvedSignal(signalKey);
           setLoginLaunched(false);

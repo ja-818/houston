@@ -7,9 +7,10 @@ use crate::session_id_tracker::SessionIdHandle;
 use crate::session_pids::SessionPidMap;
 use houston_db::Database;
 use houston_terminal_manager::auth_error::{is_auth_error, is_auth_retry_marker};
+use houston_terminal_manager::provider_auth::{probe_claude_auth_status, ProviderAuthState};
 use houston_terminal_manager::{FeedItem, Provider, SessionManager, SessionStatus, SessionUpdate};
 use houston_ui_events::{DynEventSink, HoustonEvent};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Result of a completed session.
 pub struct SessionResult {
@@ -35,16 +36,26 @@ pub struct PersistOptions {
 enum AuthFeedAction {
     None,
     DeferUntilExit,
+    VerifyProviderStatus,
     RequireNow,
 }
 
 fn classify_auth_feed_message(provider: Provider, message: &str) -> AuthFeedAction {
     if is_auth_retry_marker(message) {
         AuthFeedAction::DeferUntilExit
-    } else if is_auth_error(message) || is_opaque_claude_auth_error(provider, message) {
+    } else if is_auth_error(message) {
         AuthFeedAction::RequireNow
+    } else if is_opaque_claude_auth_error(provider, message) {
+        AuthFeedAction::VerifyProviderStatus
     } else {
         AuthFeedAction::None
+    }
+}
+
+async fn provider_auth_state(provider: Provider) -> ProviderAuthState {
+    match provider {
+        Provider::Anthropic => probe_claude_auth_status(Path::new("claude")).await,
+        Provider::OpenAI => ProviderAuthState::Unknown,
     }
 }
 
@@ -136,6 +147,40 @@ pub fn spawn_and_monitor(
                                     "[session_runner] auth retry marker detected — deferring AuthRequired until session exit"
                                 );
                                 continue;
+                            }
+                            AuthFeedAction::VerifyProviderStatus => {
+                                let auth_state = provider_auth_state(provider_kind).await;
+                                if auth_state != ProviderAuthState::Unauthenticated {
+                                    tracing::info!(
+                                        "[session_runner] opaque provider error was not confirmed as logout: provider={provider_str}, auth_state={auth_state:?}"
+                                    );
+                                } else {
+                                    saw_auth_error = true;
+                                    if !sent_auth_required {
+                                        sent_auth_required = true;
+                                        tracing::info!(
+                                            "[session_runner] emitting AuthRequired for provider={provider_str} after status verification"
+                                        );
+                                        sink.emit(HoustonEvent::AuthRequired {
+                                            provider: provider_str.clone(),
+                                            message: msg.clone(),
+                                        });
+                                    }
+                                    if !sent_auth_checking {
+                                        sent_auth_checking = true;
+                                        tracing::info!(
+                                            "[session_runner] auth issue detected ({msg:?}) — emitting Checking connection..."
+                                        );
+                                        sink.emit(HoustonEvent::FeedItem {
+                                            agent_path: agent_path_for_events.clone(),
+                                            session_key: key.clone(),
+                                            item: FeedItem::SystemMessage(
+                                                "Checking connection...".to_string(),
+                                            ),
+                                        });
+                                    }
+                                    continue;
+                                }
                             }
                             AuthFeedAction::RequireNow => {
                                 saw_auth_error = true;
@@ -264,9 +309,14 @@ pub fn spawn_and_monitor(
                     // slot). No feed marker needed — the card is anchored to
                     // store state, not to a specific FeedItem.
                     if let SessionStatus::Error(ref e) = status {
-                        let auth_error = saw_auth_error
-                            || is_auth_error(e)
-                            || is_opaque_claude_auth_error(provider_kind, e);
+                        let auth_error = if saw_auth_error || is_auth_error(e) {
+                            true
+                        } else if is_opaque_claude_auth_error(provider_kind, e) {
+                            provider_auth_state(provider_kind).await
+                                == ProviderAuthState::Unauthenticated
+                        } else {
+                            false
+                        };
                         tracing::info!(
                             "[session_runner] session error: {e:?} | saw_auth_error={saw_auth_error} | is_auth_error={auth_error} | provider={provider_str}"
                         );
@@ -356,7 +406,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn treats_opaque_claude_result_error_as_auth() {
+    fn opaque_claude_result_error_requires_status_verification() {
+        assert_eq!(
+            classify_auth_feed_message(Provider::Anthropic, "Error: Unknown error"),
+            AuthFeedAction::VerifyProviderStatus
+        );
+    }
+
+    #[test]
+    fn identifies_opaque_claude_auth_error_shape() {
         assert!(is_opaque_claude_auth_error(
             Provider::Anthropic,
             "Error: Unknown error"

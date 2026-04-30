@@ -198,7 +198,7 @@ string[] }`; clients should render this as session-owned project artifacts.
 | Method | Path | Description |
 |---|---|---|
 | GET/PUT | `/v1/preferences/:key` | String KV (DB-backed) |
-| GET | `/v1/providers/:name/status` | `{cli_installed, authenticated, install_source, cli_path}` |
+| GET | `/v1/providers/:name/status` | `{cliInstalled, authState, installSource, cliPath}` |
 | POST | `/v1/providers/:name/login` | Launch CLI login |
 | GET | `/v1/agent-configs` | List installed agent definitions |
 

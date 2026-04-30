@@ -25,6 +25,7 @@ import type {
 import type {
   ComposioAppEntry as EngineComposioAppEntry,
   ComposioStatus as EngineComposioStatus,
+  ProviderAuthState,
   ProviderStatus as EngineProviderStatus,
 } from "@houston-ai/engine-client";
 import { getEngine } from "./engine";
@@ -566,6 +567,7 @@ export const tauriPreferences = {
 export interface ProviderStatus {
   provider: string;
   cli_installed: boolean;
+  auth_state: ProviderAuthState;
   authenticated: boolean;
   cli_name: string;
 }
@@ -579,7 +581,8 @@ export const tauriProvider = {
       return {
         provider: p.provider,
         cli_installed: p.cliInstalled,
-        authenticated: p.authenticated,
+        auth_state: p.authState,
+        authenticated: p.authState === "authenticated",
         cli_name: p.cliName,
       };
     }),

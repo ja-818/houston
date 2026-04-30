@@ -10,6 +10,7 @@ pub mod codex_parser;
 pub mod concurrency;
 pub mod manager;
 pub mod parser;
+pub mod provider_auth;
 pub mod session_io;
 pub mod session_pump;
 pub mod types;
@@ -18,6 +19,7 @@ pub mod types;
 pub use codex_parser::{extract_thread_id, parse_codex_event, CodexAccumulator};
 pub use manager::{SessionHandle, SessionManager, SessionUpdate};
 pub use parser::{extract_session_id, parse_event, StreamAccumulator};
+pub use provider_auth::ProviderAuthState;
 pub use types::{
     ClaudeEvent, ContentBlock, FeedItem, FileChanges, Provider, SessionFeedBuffer, SessionStatus,
 };
