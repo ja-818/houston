@@ -1,4 +1,4 @@
-use super::manager::SessionUpdate;
+use super::session_update::SessionUpdate;
 use super::types::{FeedItem, SessionStatus};
 use tokio::sync::mpsc;
 

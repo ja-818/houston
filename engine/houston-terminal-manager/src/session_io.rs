@@ -1,17 +1,24 @@
 use super::codex_command;
 use super::codex_parser;
-use super::manager::SessionUpdate;
 use super::parser;
 use super::types::{FeedItem, Provider};
 use crate::auth_error::{is_auth_retry_noise, AUTH_RETRY_MARKER};
+use crate::provider_error::is_malformed_provider_json_error;
+use crate::session_update::SessionUpdate;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct StdoutReadReport {
+    pub malformed_provider_json: bool,
+}
 
 /// Read all stderr lines, emitting each as a `SystemMessage` feed item.
 /// Returns the collected lines so the caller can include them in error reports.
 pub async fn read_stderr_lines(
     stderr: tokio::process::ChildStderr,
     tx: mpsc::UnboundedSender<SessionUpdate>,
+    provider: Provider,
 ) -> Vec<String> {
     let mut lines = Vec::new();
     let mut sent_auth_checking = false;
@@ -28,7 +35,7 @@ pub async fn read_stderr_lines(
                     AUTH_RETRY_MARKER.to_string(),
                 )));
             }
-        } else if is_meaningful_stderr(&line) {
+        } else if is_meaningful_stderr(provider, &line) {
             let _ = tx.send(SessionUpdate::Feed(FeedItem::SystemMessage(format!(
                 "stderr: {line}",
             ))));
@@ -39,9 +46,12 @@ pub async fn read_stderr_lines(
 }
 
 /// Filter out stderr noise that shouldn't be shown to users.
-fn is_meaningful_stderr(line: &str) -> bool {
+fn is_meaningful_stderr(provider: Provider, line: &str) -> bool {
     let trimmed = line.trim();
     if trimmed.is_empty() {
+        return false;
+    }
+    if provider == Provider::Anthropic && is_malformed_provider_json_error(trimmed) {
         return false;
     }
     // Codex progress noise
@@ -71,22 +81,26 @@ pub async fn read_stdout_events(
     stdout: tokio::process::ChildStdout,
     tx: mpsc::UnboundedSender<SessionUpdate>,
     provider: Provider,
-) {
+) -> StdoutReadReport {
     match provider {
         Provider::Anthropic => read_claude_stdout(stdout, tx).await,
-        Provider::OpenAI => read_codex_stdout(stdout, tx).await,
+        Provider::OpenAI => {
+            read_codex_stdout(stdout, tx).await;
+            StdoutReadReport::default()
+        }
     }
 }
 
 async fn read_claude_stdout(
     stdout: tokio::process::ChildStdout,
     tx: mpsc::UnboundedSender<SessionUpdate>,
-) {
+) -> StdoutReadReport {
     let reader = BufReader::new(stdout);
     let mut lines = reader.lines();
     let mut acc = parser::StreamAccumulator::new();
     let mut line_count = 0u64;
     let mut item_count = 0u64;
+    let mut report = StdoutReadReport::default();
     while let Ok(Some(line)) = lines.next_line().await {
         line_count += 1;
         let line_type = line.trim().chars().take(80).collect::<String>();
@@ -95,12 +109,18 @@ async fn read_claude_stdout(
         if let Some(sid) = parser::extract_session_id(&line) {
             let _ = tx.send(SessionUpdate::SessionId(sid));
         }
+        if is_malformed_provider_json_error(&line) {
+            report.malformed_provider_json = true;
+            tracing::warn!("[houston:stdout:claude] suppressed malformed provider JSON error");
+            continue;
+        }
         let items = parser::parse_event(&line, &mut acc);
         item_count += log_and_send(&tx, items);
     }
     tracing::debug!(
         "[houston:stdout:claude] stream ended. {line_count} lines, {item_count} feed items"
     );
+    report
 }
 
 async fn read_codex_stdout(
@@ -157,4 +177,21 @@ fn log_and_send(tx: &mpsc::UnboundedSender<SessionUpdate>, items: Vec<FeedItem>)
         let _ = tx.send(SessionUpdate::Feed(item));
     }
     count
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hides_anthropic_malformed_json_stderr() {
+        let line = "API Error: The request body is not valid JSON: no low surrogate in string";
+        assert!(!is_meaningful_stderr(Provider::Anthropic, line));
+    }
+
+    #[test]
+    fn does_not_hide_codex_matching_stderr() {
+        let line = "API Error: The request body is not valid JSON: no low surrogate in string";
+        assert!(is_meaningful_stderr(Provider::OpenAI, line));
+    }
 }

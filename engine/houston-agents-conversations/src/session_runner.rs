@@ -91,6 +91,7 @@ pub fn spawn_and_monitor(
     let key = session_key;
     let agent_path_for_events = agent_path;
     let mut persist = persist;
+    let original_user_message = persist.as_ref().and_then(|opts| opts.user_message.clone());
     tokio::spawn(async move {
         let mut response_text: Option<String> = None;
         let mut claude_session_id: Option<String> = None;
@@ -199,6 +200,14 @@ pub fn spawn_and_monitor(
                 SessionUpdate::ResumeInvalid => {
                     if let Some(ref h) = session_id_handle {
                         h.clear_current_preserving_history().await;
+                    }
+                    claude_session_id = None;
+                    if let Some(ref mut opts) = persist {
+                        opts.claude_session_id = None;
+                        restore_pending_user_message(
+                            &mut opts.user_message,
+                            &original_user_message,
+                        );
                     }
                     continue;
                 }
@@ -351,6 +360,12 @@ fn is_opaque_claude_auth_error(provider: Provider, message: &str) -> bool {
     provider == Provider::Anthropic && message.trim() == "Error: Unknown error"
 }
 
+fn restore_pending_user_message(current: &mut Option<String>, original: &Option<String>) {
+    if current.is_none() {
+        *current = original.clone();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -388,5 +403,25 @@ mod tests {
             ),
             AuthFeedAction::RequireNow
         );
+    }
+
+    #[test]
+    fn resume_invalid_restores_consumed_user_message() {
+        let original = Some("retry this".to_string());
+        let mut current = None;
+
+        restore_pending_user_message(&mut current, &original);
+
+        assert_eq!(current, original);
+    }
+
+    #[test]
+    fn resume_invalid_keeps_existing_user_message() {
+        let original = Some("first".to_string());
+        let mut current = Some("current".to_string());
+
+        restore_pending_user_message(&mut current, &original);
+
+        assert_eq!(current.as_deref(), Some("current"));
     }
 }
