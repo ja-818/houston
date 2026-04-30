@@ -9,6 +9,16 @@
   "errors": {
     "sessionStart": "Não foi possível iniciar a sessão: {{error}}"
   },
+  "attachmentIssues": {
+    "title": "Alguns arquivos não foram anexados",
+    "description": "Houston manteve sua mensagem e os arquivos que pode usar.",
+    "close": "Entendi",
+    "reasons": {
+      "blockedType": "Este tipo de arquivo não pode ser usado aqui.",
+      "blockedTypeWithExtension": "Arquivos .{{extension}} não podem ser usados aqui.",
+      "tooLarge": "Este arquivo é maior que {{maxSize}}."
+    }
+  },
   "composio": {
     "integration": "Integração do Composio",
     "alreadyConnected": "Já conectado",

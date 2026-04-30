@@ -31,10 +31,12 @@ import {
   isProviderAuthMessage,
   providerAuthSignalKey,
 } from "./provider-auth-feed";
+import { useAttachmentRejectionDialog } from "../attachment-rejection-dialog";
 
 export default function ChatTab({ agent }: TabProps) {
   const { t } = useTranslation("chat");
   const { processLabels, getThinkingMessage } = useChatDisplayLabels();
+  const attachmentValidation = useAttachmentRejectionDialog();
   const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(agent.folderPath);
   // Free-form chat tab gets its own UUID-scoped session key per agent.
   // Must be stable across renders so streaming events land in the same bucket.
@@ -158,16 +160,6 @@ export default function ChatTab({ agent }: TabProps) {
       if (sendingRef.current) return;
       sendingRef.current = true;
       setIsLoading(true);
-      // Visible user message includes the file names so the user sees what
-      // they sent; the path block goes into the prompt only.
-      const visible = files.length > 0
-        ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
-        : text;
-      pushFeedItem(agentPath, sessionKey, { feed_type: "user_message", data: visible });
-      analytics.track("chat_message_sent");
-      // Clear composer immediately so the user sees the send.
-      setComposerText("");
-      setComposerFiles([]);
       try {
         const paths = await tauriAttachments.save(attachmentScope, files);
         const prompt = withAttachmentPaths(text, paths);
@@ -175,6 +167,15 @@ export default function ChatTab({ agent }: TabProps) {
           providerOverride: chatProvider ?? undefined,
           modelOverride: chatModel ?? undefined,
         });
+        // Visible user message includes the file names so the user sees what
+        // they sent; the path block goes into the prompt only.
+        const visible = files.length > 0
+          ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
+          : text;
+        pushFeedItem(agentPath, sessionKey, { feed_type: "user_message", data: visible });
+        analytics.track("chat_message_sent");
+        setComposerText("");
+        setComposerFiles([]);
       } catch (err) {
         pushFeedItem(agentPath, sessionKey, {
           feed_type: "system_message",
@@ -185,7 +186,7 @@ export default function ChatTab({ agent }: TabProps) {
         sendingRef.current = false;
       }
     },
-    [agentPath, sessionKey, attachmentScope, pushFeedItem, setComposerText, setComposerFiles, chatProvider, chatModel],
+    [agentPath, sessionKey, attachmentScope, pushFeedItem, setComposerText, setComposerFiles, chatProvider, chatModel, t],
   );
 
   return (
@@ -225,6 +226,8 @@ export default function ChatTab({ agent }: TabProps) {
         attachments={composerFiles}
         onAttachmentsChange={setComposerFiles}
         onNotice={handleNotice}
+        prepareAttachments={attachmentValidation.prepareAttachments}
+        onAttachmentRejections={attachmentValidation.onAttachmentRejections}
         footer={
           <ChatModelSelector
             provider={effectiveProvider}
@@ -244,6 +247,7 @@ export default function ChatTab({ agent }: TabProps) {
           </Empty>
         }
       />
+      {attachmentValidation.dialog}
     </div>
   );
 }

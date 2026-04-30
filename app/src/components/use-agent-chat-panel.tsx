@@ -230,7 +230,6 @@ export function useAgentChatPanel({
     async ({ sessionKey, text, files }) => {
       const skill = activeAction;
       if (!skill || !agent || !path) return false;
-      setActiveAction(null);
 
       const visibleText = actionVisibleText(
         text,
@@ -248,15 +247,15 @@ export function useAgentChatPanel({
         const attachmentPaths = await tauriAttachments.save(scopeId, files);
         const prompt = withAttachmentPaths(claudePrompt, attachmentPaths);
         const encodedWithAttachments = encodeActionMessage(skill, visibleText, prompt);
-        pushFeedItem(path, sessionKey, {
-          feed_type: "user_message",
-          data: encodedWithAttachments,
-        });
         const mode = agentModes?.find((m) => m.id === undefined); // default mode
-        tauriChat.send(path, encodedWithAttachments, sessionKey, {
+        await tauriChat.send(path, encodedWithAttachments, sessionKey, {
           mode: mode?.promptFile,
           providerOverride: chatProvider ?? undefined,
           modelOverride: chatModel ?? undefined,
+        });
+        pushFeedItem(path, sessionKey, {
+          feed_type: "user_message",
+          data: encodedWithAttachments,
         });
       } else {
         // New conversation: createMission with `title` override so the
@@ -314,6 +313,7 @@ export function useAgentChatPanel({
         });
         onSelectSessionRef.current?.(conversationId);
       }
+      setActiveAction(null);
       return true;
     },
     [

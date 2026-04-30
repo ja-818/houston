@@ -9,6 +9,16 @@
   "errors": {
     "sessionStart": "Failed to start session: {{error}}"
   },
+  "attachmentIssues": {
+    "title": "Some files were not attached",
+    "description": "Houston kept your prompt and the files it can use.",
+    "close": "Got it",
+    "reasons": {
+      "blockedType": "This file type cannot be used here.",
+      "blockedTypeWithExtension": ".{{extension}} files cannot be used here.",
+      "tooLarge": "This file is larger than {{maxSize}}."
+    }
+  },
   "composio": {
     "integration": "Composio integration",
     "alreadyConnected": "Already connected",

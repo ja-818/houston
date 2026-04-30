@@ -2472,7 +2472,6 @@ name = "houston-engine-core"
 version = "0.4.3"
 dependencies = [
  "async-trait",
- "base64 0.22.1",
  "chrono",
  "chrono-tz",
  "cron 0.12.1",

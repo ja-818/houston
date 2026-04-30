@@ -135,15 +135,14 @@ export function useMissionControl(agents: Agent[]) {
       const activityId = sessionKey.replace("activity-", "");
       const agentPath = pathMapRef.current[activityId];
       if (!agentPath) return;
+      const paths = await tauriAttachments.save(`activity-${activityId}`, files);
+      const prompt = withAttachmentPaths(text, paths);
+      await tauriChat.send(agentPath, prompt, sessionKey);
       const visible = files.length > 0
         ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
         : text;
       pushFeedItem(agentPath, sessionKey, { feed_type: "user_message", data: visible });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
-      tauriActivity.update(agentPath, activityId, { status: "running" }).catch(console.error);
-      const paths = await tauriAttachments.save(`activity-${activityId}`, files);
-      const prompt = withAttachmentPaths(text, paths);
-      tauriChat.send(agentPath, prompt, sessionKey);
     },
     [pushFeedItem],
   );

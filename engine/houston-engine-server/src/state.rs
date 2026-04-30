@@ -5,7 +5,7 @@ use crate::mobile_access::MobileAccessStore;
 use anyhow::{Context, Result};
 use houston_db::Database;
 use houston_engine_core::routines::scheduler::RoutineSchedulerState;
-use houston_engine_core::{paths::EnginePaths, EngineState};
+use houston_engine_core::{attachments::AttachmentUploadStore, paths::EnginePaths, EngineState};
 use houston_file_watcher::WatcherState;
 use houston_tunnel::{TunnelIdentity, TunnelRuntimeState};
 use houston_ui_events::BroadcastEventSink;
@@ -29,6 +29,8 @@ pub struct ServerState {
     pub tunnel_runtime: Option<TunnelRuntimeState>,
     /// Stable phone-access secret + device-token minting.
     pub mobile_access: MobileAccessStore,
+    /// Pending binary attachment uploads keyed by upload id.
+    pub attachment_uploads: AttachmentUploadStore,
 }
 
 impl ServerState {
@@ -82,6 +84,7 @@ impl ServerState {
             watcher: WatcherState::default(),
             tunnel_runtime,
             mobile_access,
+            attachment_uploads: AttachmentUploadStore::default(),
         }
     }
 }

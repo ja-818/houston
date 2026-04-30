@@ -492,14 +492,43 @@ export interface SummarizeResult {
 
 // ---------- Attachments ----------
 
-export interface AttachmentInput {
+export interface AttachmentUploadRequest {
   name: string;
-  dataBase64: string;
+  size: number;
+  mime?: string | null;
 }
 
-export interface SaveAttachmentsRequest {
+export interface CreateAttachmentUploadsRequest {
   scopeId: string;
-  files: AttachmentInput[];
+  files: AttachmentUploadRequest[];
+}
+
+export interface AttachmentUploadTarget {
+  id: string;
+  name: string;
+  size: number;
+  uploadUrl: string;
+  maxBytes: number;
+}
+
+export interface CreateAttachmentUploadsResponse {
+  uploads: AttachmentUploadTarget[];
+}
+
+export interface AttachmentUploadResult {
+  id: string;
+  path: string;
+  size: number;
+  sha256: string;
+}
+
+export interface AttachmentManifest extends AttachmentUploadResult {
+  scopeId: string;
+  originalName: string;
+  safeName: string;
+  mime?: string | null;
+  objectPath: string;
+  createdAt: string;
 }
 
 // ---------- Composio ----------

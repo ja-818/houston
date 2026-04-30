@@ -24,6 +24,7 @@ import { tauriChat } from "../lib/tauri";
 import { useMissionControl } from "./use-mission-control";
 import { AgentPickerDialog } from "./agent-picker-dialog";
 import { useAgentChatPanel } from "./use-agent-chat-panel";
+import { useAttachmentRejectionDialog } from "./attachment-rejection-dialog";
 import type { Agent } from "../lib/types";
 import { useDetailPanelContainer } from "./shell/detail-panel-context";
 import { AgentMiniAvatar, HoustonThinkingIndicator } from "./shell/experience-card";
@@ -172,6 +173,7 @@ export function Dashboard() {
     selectedSessionKey,
     onSelectSession: onActionCreated,
   });
+  const attachmentValidation = useAttachmentRejectionDialog();
 
   if (agents.length === 0) {
     return (
@@ -279,6 +281,8 @@ export function Dashboard() {
           panelContainer={panelContainer}
           onPanelOpenChange={setMissionPanelOpen}
           onStopSession={handleStopSession}
+          prepareAttachments={attachmentValidation.prepareAttachments}
+          onAttachmentRejections={attachmentValidation.onAttachmentRejections}
           panelAgentName={activeAgent?.name ?? selectedItem?.subtitle}
           panelAvatar={
             selectedItem?.status === "running" ? (
@@ -319,6 +323,7 @@ export function Dashboard() {
       </div>
 
       {panel.pickerDialog}
+      {attachmentValidation.dialog}
 
       <AgentPickerDialog
         open={agentPickerOpen}

@@ -49,6 +49,8 @@ export function ChatPanel({
   attachments,
   onAttachmentsChange,
   onNotice,
+  prepareAttachments,
+  onAttachmentRejections,
   footer,
   composerHeader,
   canSendEmpty,
@@ -69,21 +71,27 @@ export function ChatPanel({
   const isFilesControlled = attachments !== undefined;
   const addDroppedFiles = useCallback(
     (dropped: File[]) => {
-      const merged = mergeUniqueFiles(files, dropped);
-      if (merged.length < files.length + dropped.length) {
+      const prepared = prepareAttachments
+        ? prepareAttachments(dropped, files)
+        : { accepted: dropped, rejected: [] };
+      if (prepared.rejected.length > 0) {
+        onAttachmentRejections?.(prepared.rejected);
+      }
+      const merged = mergeUniqueFiles(files, prepared.accepted);
+      if (merged.length < files.length + prepared.accepted.length) {
         onNotice?.("File already in chat");
       }
       setFiles(merged);
     },
-    [files, setFiles, onNotice],
+    [files, setFiles, onNotice, prepareAttachments, onAttachmentRejections],
   );
   const { isDraggingOver, dropProps } = useFileDropZone(addDroppedFiles);
 
   // Wrap onSend so we clear internally-managed attachments after a send;
   // in controlled mode the parent is responsible for clearing.
   const handleSend = useCallback(
-    (text: string, sent: File[]) => {
-      onSend(text, sent);
+    async (text: string, sent: File[]) => {
+      await onSend(text, sent);
       if (!isFilesControlled) setFiles([]);
     },
     [onSend, isFilesControlled, setFiles],
@@ -145,6 +153,8 @@ export function ChatPanel({
           attachments={files}
           onAttachmentsChange={setFiles}
           onNotice={onNotice}
+          prepareAttachments={prepareAttachments}
+          onAttachmentRejections={onAttachmentRejections}
           footer={footer}
           header={composerHeader}
           canSendEmpty={canSendEmpty}

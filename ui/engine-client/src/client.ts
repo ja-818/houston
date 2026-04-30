@@ -14,7 +14,8 @@ import type {
   Activity,
   ActivityUpdate,
   Agent,
-  AttachmentInput,
+  AttachmentManifest,
+  AttachmentUploadResult,
   ChatHistoryEntry,
   CommunitySkill,
   ComposioAppEntry,
@@ -24,6 +25,7 @@ import type {
   ConversationEntry,
   CreateAgent,
   CreateAgentResult,
+  CreateAttachmentUploadsResponse,
   CreateSkillRequest,
   CreateWorkspace,
   CreateWorktreeRequest,
@@ -66,6 +68,7 @@ import type {
   Workspace,
   WorktreeInfo,
 } from "./types";
+import { planAttachmentUploadBatches } from "./attachments";
 
 export interface HoustonClientOptions {
   baseUrl: string;
@@ -107,13 +110,41 @@ export class HoustonClient {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) {
-      const err = (await res.json().catch(() => null)) as ErrorBody | null;
-      throw new HoustonEngineError(res.status, err);
+      throw await this.toError(res);
     }
     if (res.status === 204 || res.headers.get("content-length") === "0") {
       return undefined as T;
     }
     return (await res.json()) as T;
+  }
+
+  private async rawRequest<T>(
+    method: string,
+    path: string,
+    body?: BodyInit,
+    contentType?: string,
+  ): Promise<T> {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.token}`,
+    };
+    if (contentType) headers["Content-Type"] = contentType;
+    const res = await fetch(`${this.baseUrl}/v1${path}`, {
+      method,
+      headers,
+      body,
+    });
+    if (!res.ok) {
+      throw await this.toError(res);
+    }
+    if (res.status === 204 || res.headers.get("content-length") === "0") {
+      return undefined as T;
+    }
+    return (await res.json()) as T;
+  }
+
+  private async toError(res: Response): Promise<HoustonEngineError> {
+    const err = (await res.json().catch(() => null)) as ErrorBody | null;
+    return new HoustonEngineError(res.status, err);
   }
 
   private seg(s: string): string {
@@ -412,18 +443,67 @@ export class HoustonClient {
 
   // ---------- attachments ----------
 
-  saveAttachments(scopeId: string, files: AttachmentInput[]): Promise<string[]> {
-    // Wire contract is camelCase (server uses `#[serde(rename_all = "camelCase")]`
-    // on `SaveAttachmentsRequest` + `AttachmentInput`). Previously sent
-    // `scope_id` / `data_base64` snake_case, which the server rejected with
-    // 422 Unprocessable Entity — drag-and-drop file uploads broke silently.
-    return this.request("POST", "/attachments", {
-      scopeId,
-      files: files.map((f) => ({ name: f.name, dataBase64: f.dataBase64 })),
-    });
+  async saveAttachments(scopeId: string, files: File[]): Promise<string[]> {
+    if (files.length === 0) return [];
+    const paths = new Array<string>(files.length);
+
+    for (const batch of planAttachmentUploadBatches(files)) {
+      const batchFiles = files.slice(batch.start, batch.end);
+      const created = await this.request<CreateAttachmentUploadsResponse>(
+        "POST",
+        "/attachments/uploads",
+        {
+          scopeId,
+          files: batchFiles.map((f) => ({
+            name: f.name,
+            size: f.size,
+            mime: f.type || null,
+          })),
+        },
+      );
+      if (created.uploads.length !== batchFiles.length) {
+        throw new Error("engine returned mismatched attachment upload count");
+      }
+      await this.uploadAttachmentBatch(batch.start, batchFiles, created, paths);
+    }
+    return paths;
+  }
+
+  private async uploadAttachmentBatch(
+    offset: number,
+    files: File[],
+    created: CreateAttachmentUploadsResponse,
+    paths: string[],
+  ): Promise<void> {
+    let next = 0;
+    let firstError: unknown;
+    const worker = async () => {
+      while (next < files.length && firstError === undefined) {
+        const index = next;
+        next += 1;
+        const upload = created.uploads[index];
+        try {
+          const result = await this.rawRequest<AttachmentUploadResult>(
+            "PUT",
+            upload.uploadUrl.replace(/^\/v1/, ""),
+            files[index],
+            files[index].type || "application/octet-stream",
+          );
+          paths[offset + index] = result.path;
+        } catch (err) {
+          firstError = err;
+        }
+      }
+    };
+    const workers = Array.from({ length: Math.min(3, files.length) }, () => worker());
+    await Promise.all(workers);
+    if (firstError !== undefined) throw firstError;
   }
   deleteAttachments(scopeId: string): Promise<void> {
     return this.request("DELETE", `/attachments/${this.seg(scopeId)}`);
+  }
+  listAttachments(scopeId: string): Promise<AttachmentManifest[]> {
+    return this.request("GET", `/attachments/${this.seg(scopeId)}`);
   }
 
   // ---------- worktree / shell ----------

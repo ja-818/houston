@@ -23,6 +23,7 @@ import type { TabProps } from "../../lib/types";
 import { useDetailPanelContainer } from "../shell/detail-panel-context";
 import { HoustonHelmet, HoustonThinkingIndicator } from "../shell/experience-card";
 import { resolveAgentColor } from "../../lib/agent-colors";
+import { useAttachmentRejectionDialog } from "../attachment-rejection-dialog";
 
 // Stable empty reference so the feed store selector doesn't return a new
 // object every render when this agent has no feeds yet (which would otherwise
@@ -79,6 +80,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   const setMissionPanelOpen = useUIStore((s) => s.setMissionPanelOpen);
   const missionPanelOpen = useUIStore((s) => s.missionPanelOpen);
   const addToast = useUIStore((s) => s.addToast);
+  const attachmentValidation = useAttachmentRejectionDialog();
   const handleNotice = useCallback(
     (message: string) => addToast({ title: message }),
     [addToast],
@@ -288,7 +290,6 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     async (text: string, files: File[]) => {
       const agentMode = pendingAgentMode ?? agentModes?.[0]?.id;
       const mode = agentModes?.find((m) => m.id === agentMode);
-      setPendingAgentMode(null);
 
       // Check if worktree mode is enabled
       let worktreePath: string | undefined;
@@ -330,6 +331,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         : text;
       pushFeedItem(path, sessionKey, { feed_type: "user_message", data: visible });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
+      setPendingAgentMode(null);
       // createMission bypassed useCreateActivity so invalidate manually.
       queryClient.invalidateQueries({ queryKey: queryKeys.activity(path) });
       analytics.track("mission_created", { agent_mode: agentMode ?? "default" });
@@ -356,11 +358,6 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
 
   const handleSendMessage = useCallback(
     async (sessionKey: string, text: string, files: File[]) => {
-      const visible = files.length > 0
-        ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
-        : text;
-      pushFeedItem(path, sessionKey, { feed_type: "user_message", data: visible });
-      setLoading((prev) => ({ ...prev, [sessionKey]: true }));
       const activity = (rawItems ?? []).find(
         (t) => (t.session_key ?? `activity-${t.id}`) === sessionKey,
       );
@@ -372,12 +369,17 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       const paths = await tauriAttachments.save(scopeId, files);
       const prompt = withAttachmentPaths(text, paths);
       const mode = agentModes?.find((m) => m.id === activity?.agent);
-      tauriChat.send(path, prompt, sessionKey, {
+      await tauriChat.send(path, prompt, sessionKey, {
         mode: mode?.promptFile,
         workingDirOverride: activity?.worktree_path ?? undefined,
         providerOverride: chatProvider ?? undefined,
         modelOverride: chatModel ?? undefined,
       });
+      const visible = files.length > 0
+        ? `${text}${text ? "\n\n" : ""}Attached: ${files.map((f) => f.name).join(", ")}`
+        : text;
+      pushFeedItem(path, sessionKey, { feed_type: "user_message", data: visible });
+      setLoading((prev) => ({ ...prev, [sessionKey]: true }));
     },
     [path, pushFeedItem, rawItems, agentModes, chatProvider, chatModel],
   );
@@ -469,6 +471,8 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         drafts={boardDrafts}
         onDraftChange={handleDraftChange}
         onNotice={handleNotice}
+        prepareAttachments={attachmentValidation.prepareAttachments}
+        onAttachmentRejections={attachmentValidation.onAttachmentRejections}
         onOpenLink={handleOpenLink}
         actions={agentModes ? cardActions : undefined}
         panelActions={panelActions}
@@ -503,6 +507,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         renderLink={panel.renderLink}
       />
       {panel.pickerDialog}
+      {attachmentValidation.dialog}
     </div>
   );
 }

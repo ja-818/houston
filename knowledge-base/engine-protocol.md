@@ -218,8 +218,23 @@ string[] }`; clients should render this as session-owned project artifacts.
 **Attachments**
 | Method | Path | Description |
 |---|---|---|
-| POST | `/v1/attachments` | Save base64 attachments under scope_id |
-| DELETE | `/v1/attachments/:scope_id` | Delete all for scope |
+| POST | `/v1/attachments/uploads` | Create per-file upload sessions for a scope |
+| PUT | `/v1/attachments/uploads/:upload_id/content` | Stream raw file bytes for one upload |
+| GET | `/v1/attachments/:scope_id` | List attachment manifests for a scope |
+| DELETE | `/v1/attachments/:scope_id` | Delete all attachments for a scope |
+
+Attachment uploads are binary, one file per `PUT`. The create call declares
+`scopeId`, `name`, `size`, and optional `mime`; the content call sends raw bytes
+directly, not base64 JSON. The engine writes to a temp file, counts bytes,
+computes SHA-256, rejects size mismatches or over-limit files, then atomically
+commits a manifest + prompt-readable file path under
+`<home>/cache/attachments/scopes/<scopeId>/`.
+
+There is no user-facing attachment count cap. The SDK chunks large selections
+into multiple create requests so a user can attach many files, such as dozens of
+bank statements, while the engine still bounds each pending upload reservation.
+Current limits: 25 upload sessions per create request, 100MB per file, 250MB per
+create request, and 500MB per scope.
 
 **Mobile tunnel**
 | Method | Path | Description |

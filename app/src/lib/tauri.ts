@@ -178,28 +178,11 @@ export const tauriChat = {
 
 // ─── Composer attachments ─────────────────────────────────────────────
 
-async function fileToBase64(file: File): Promise<string> {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(
-      null,
-      bytes.subarray(i, i + chunk) as unknown as number[],
-    );
-  }
-  return btoa(binary);
-}
-
 export const tauriAttachments = {
   save: async (scopeId: string, files: File[]): Promise<string[]> => {
     if (files.length === 0) return [];
-    const payload = await Promise.all(
-      files.map(async (f) => ({ name: f.name, dataBase64: await fileToBase64(f) })),
-    );
     return call<string[]>("save_attachments", () =>
-      getEngine().saveAttachments(scopeId, payload),
+      getEngine().saveAttachments(scopeId, files),
     );
   },
   delete: (scopeId: string) =>

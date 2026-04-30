@@ -77,6 +77,10 @@ export interface AIBoardProps {
   /** Emitted by ChatPanel to surface short notices to the user
    *  (e.g. duplicate-file drop). Forwarded as-is; app decides display. */
   onNotice?: (message: string) => void
+  /** Lets apps reject unsupported files before they enter the composer draft. */
+  prepareAttachments?: import("@houston-ai/chat").ChatPanelProps["prepareAttachments"]
+  /** Emitted when `prepareAttachments` rejects any incoming files. */
+  onAttachmentRejections?: import("@houston-ai/chat").ChatPanelProps["onAttachmentRejections"]
   /** Called when the user clicks the open button on an inline link. Forwarded to ChatPanel. */
   onOpenLink?: import("@houston-ai/chat").ChatPanelProps["onOpenLink"]
   /** Custom renderer for markdown links. Forwarded to ChatPanel. */
@@ -177,6 +181,8 @@ export function AIBoard({
   afterMessages,
   renderUserMessage,
   onNotice,
+  prepareAttachments,
+  onAttachmentRejections,
   onOpenLink,
   renderLink,
   footer,
@@ -274,12 +280,12 @@ export function AIBoard({
         onDraftChange?.(activeDraftKey, "")
         return
       }
-      // Clear draft immediately so the user sees the send
-      onDraftChange?.(activeDraftKey, "")
       if (selectedItem && onSendMessage) {
         await onSendMessage(sessionKeyFor(selectedItem.id), text, files)
+        onDraftChange?.(activeDraftKey, "")
       } else if (newPanelOpen && onCreateConversation) {
         const activityId = await onCreateConversation(text, files)
+        onDraftChange?.(activeDraftKey, "")
         // Select the new activity so the feed renders. We deliberately
         // leave `newPanelOpen` truthy: there's a brief race where the
         // freshly-created activity isn't yet in `items` (the parent
@@ -408,6 +414,8 @@ export function AIBoard({
           renderUserMessage={renderUserMessage}
           afterMessages={renderedAfterMessages}
           onNotice={onNotice}
+          prepareAttachments={prepareAttachments}
+          onAttachmentRejections={onAttachmentRejections}
           onOpenLink={onOpenLink}
           renderLink={renderLink}
           footer={typeof footer === "function" ? footer({ hasMessages: activeFeed.length > 0 }) : footer}

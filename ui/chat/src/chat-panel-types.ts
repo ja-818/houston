@@ -6,10 +6,22 @@ import type { FeedItem } from "./types";
 
 export type ChatStatus = "ready" | "streaming" | "submitted";
 
+export interface AttachmentRejection {
+  file: File;
+  reason: string;
+}
+
+export interface PreparedAttachments {
+  accepted: File[];
+  rejected: AttachmentRejection[];
+}
+
+export type PrepareAttachments = (incoming: File[], existing: File[]) => PreparedAttachments;
+
 export interface ChatPanelProps {
   sessionKey: string;
   feedItems: FeedItem[];
-  onSend: (text: string, files: File[]) => void;
+  onSend: (text: string, files: File[]) => void | Promise<void>;
   onStop?: () => void;
   onBack?: () => void;
   isLoading: boolean;
@@ -20,6 +32,8 @@ export interface ChatPanelProps {
   attachments?: File[];
   onAttachmentsChange?: (files: File[]) => void;
   onNotice?: (message: string) => void;
+  prepareAttachments?: PrepareAttachments;
+  onAttachmentRejections?: (rejections: AttachmentRejection[]) => void;
   footer?: ReactNode;
   composerHeader?: ReactNode;
   canSendEmpty?: boolean;
