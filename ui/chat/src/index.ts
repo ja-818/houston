@@ -1,6 +1,10 @@
 // === Types ===
-export type { FeedItem, RunStatus } from "./types";
-export type { ToolEntry, ChatMessage, FileChangeEntry } from "./feed-to-messages";
+export type { FeedItem, RunStatus, ToolRuntimeErrorEntry } from "./types";
+export type {
+  ToolEntry,
+  ChatMessage,
+  FileChangeEntry,
+} from "./feed-to-messages";
 export type { TurnEndSummary } from "./turn-tools";
 
 // === AI Elements: Conversation ===

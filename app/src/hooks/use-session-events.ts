@@ -8,6 +8,7 @@ import { useAgentStore } from "../stores/agents";
 import { useSessionStatusStore } from "../stores/session-status";
 import { subscribeHoustonEvents, listenOsEvent } from "../lib/events";
 import { logger } from "../lib/logger";
+import { hasToolRuntimeError } from "../components/tool-runtime-feed";
 import {
   consumePendingNav,
   describePendingNotificationNav,
@@ -76,14 +77,17 @@ export function useSessionEvents() {
             // state. Suppress the generic "Session error: ..." system message
             // so the feed doesn't show a raw error *and* the card.
             const isAuth = useUIStore.getState().authRequired !== null;
-            if (!isAuth) {
+            const feedItems =
+              useFeedStore.getState().items[agent_path]?.[session_key] ?? [];
+            const hasRuntimeCard = hasToolRuntimeError(feedItems);
+            if (!isAuth && !hasRuntimeCard) {
               h.pushFeedItem(agent_path, session_key, {
                 feed_type: "system_message",
                 data: `Session error: ${error}`,
               } as FeedItem);
             } else {
               logger.info(
-                `[auth] suppressing Session error system_message for ${agent_path}/${session_key} — card handles it`,
+                `[session] suppressing Session error system_message for ${agent_path}/${session_key}`,
               );
             }
           }

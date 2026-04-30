@@ -48,6 +48,17 @@
     "tryAgain": "Try again",
     "launchError": "Could not open sign-in. Try again."
   },
+  "toolRuntimeError": {
+    "title": "Something got stuck",
+    "body": "A local tool did not start correctly. Try again, and report it if this keeps happening.",
+    "report": "Report bug",
+    "reporting": "Sending report...",
+    "reportSuccessTitle": "Report sent",
+    "reportSuccessDescription": "Houston received the logs.",
+    "reportErrorTitle": "Could not send report",
+    "reportErrorDescription": "Try again in a moment.",
+    "retryErrorTitle": "Could not try again"
+  },
   "updateChecker": {
     "cardLabel": "Houston update available",
     "title": "Houston, we have an update!",

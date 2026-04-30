@@ -1,68 +1,31 @@
-use super::codex_command;
 use super::codex_parser;
 use super::manager::SessionUpdate;
 use super::parser;
+use super::stderr_filter::{stderr_feed_item, StderrState};
 use super::types::{FeedItem, Provider};
-use crate::auth_error::{is_auth_retry_noise, AUTH_RETRY_MARKER};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
 
-/// Read all stderr lines, emitting each as a `SystemMessage` feed item.
+/// Read all stderr lines, emitting only user-actionable feed items.
 /// Returns the collected lines so the caller can include them in error reports.
 pub async fn read_stderr_lines(
     stderr: tokio::process::ChildStderr,
     tx: mpsc::UnboundedSender<SessionUpdate>,
 ) -> Vec<String> {
     let mut lines = Vec::new();
-    let mut sent_auth_checking = false;
+    let mut state = StderrState::default();
     let reader = BufReader::new(stderr);
     let mut reader_lines = reader.lines();
     while let Ok(Some(line)) = reader_lines.next_line().await {
         tracing::debug!("cli stderr: {line}");
-        if is_auth_retry_noise(&line) {
-            // Send one internal marker; session_runner owns user-visible copy
-            // and AuthRequired emission.
-            if !sent_auth_checking {
-                sent_auth_checking = true;
-                let _ = tx.send(SessionUpdate::Feed(FeedItem::SystemMessage(
-                    AUTH_RETRY_MARKER.to_string(),
-                )));
+        if let Some(item) = stderr_feed_item(&line, &mut state) {
+            if tx.send(SessionUpdate::Feed(item)).is_err() {
+                break;
             }
-        } else if is_meaningful_stderr(&line) {
-            let _ = tx.send(SessionUpdate::Feed(FeedItem::SystemMessage(format!(
-                "stderr: {line}",
-            ))));
         }
         lines.push(line);
     }
     lines
-}
-
-/// Filter out stderr noise that shouldn't be shown to users.
-fn is_meaningful_stderr(line: &str) -> bool {
-    let trimmed = line.trim();
-    if trimmed.is_empty() {
-        return false;
-    }
-    // Codex progress noise
-    if trimmed.starts_with("Reading prompt from stdin") {
-        return false;
-    }
-    // Common non-error stderr patterns
-    if trimmed.starts_with("Downloading") || trimmed.starts_with("Loading") {
-        return false;
-    }
-    // Auth retry noise (e.g. "Error: Reconnecting... 1/5 (unexpected status 401 Unauthorized...)")
-    // These are internal retries — the session runner handles the auth failure at exit.
-    if is_auth_retry_noise(trimmed) {
-        return false;
-    }
-    // If Codex lost the local rollout backing a stored resume id, the manager
-    // retries fresh. Do not show the transient stderr line to the user.
-    if codex_command::is_missing_rollout_error(trimmed) {
-        return false;
-    }
-    true
 }
 
 /// Read all stdout lines, parsing each as NDJSON and sending parsed feed items

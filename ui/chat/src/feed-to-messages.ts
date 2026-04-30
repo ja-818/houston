@@ -6,7 +6,7 @@
  * their corresponding tool_result items.
  */
 
-import type { FeedItem } from "./types";
+import type { FeedItem, ToolRuntimeErrorEntry } from "./types";
 
 export interface ToolEntry {
   name: string;
@@ -26,6 +26,7 @@ export interface ChatMessage {
   isStreaming: boolean;
   reasoning?: { content: string; isStreaming: boolean };
   tools: ToolEntry[];
+  runtimeError?: ToolRuntimeErrorEntry;
   fileChanges: FileChangeEntry[];
   /** Source channel if the message came from an external channel. */
   source?: string;
@@ -175,6 +176,20 @@ export function feedItemsToMessages(items: FeedItem[]): ChatMessage[] {
             }
           }
         }
+        break;
+      }
+
+      case "tool_runtime_error": {
+        flush();
+        messages.push({
+          key: `tool-runtime-error-${messages.length}`,
+          from: "system",
+          content: "A local tool failed to start.",
+          isStreaming: false,
+          runtimeError: item.data,
+          tools: [],
+          fileChanges: [],
+        });
         break;
       }
 

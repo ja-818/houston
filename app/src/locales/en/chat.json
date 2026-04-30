@@ -15,6 +15,9 @@
   "errors": {
     "sessionStart": "Failed to start session: {{error}}"
   },
+  "toolRuntimeError": {
+    "retryPrompt": "Try again."
+  },
   "attachmentIssues": {
     "title": "Some files were not attached",
     "description": "Houston kept your prompt and the files it can use.",

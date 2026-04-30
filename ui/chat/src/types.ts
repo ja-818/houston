@@ -7,6 +7,7 @@ export type FeedItem =
   | { feed_type: "thinking"; data: string }
   | { feed_type: "thinking_streaming"; data: string }
   | { feed_type: "user_message"; data: string }
+  | { feed_type: "tool_runtime_error"; data: ToolRuntimeErrorEntry }
   | { feed_type: "tool_call"; data: { name: string; input: unknown } }
   | { feed_type: "tool_result"; data: { content: string; is_error: boolean } }
   | { feed_type: "system_message"; data: string }
@@ -22,6 +23,11 @@ export type FeedItem =
         duration_ms: number | null;
       };
     };
+
+export interface ToolRuntimeErrorEntry {
+  kind: "local_tool" | "provider_process";
+  details: string;
+}
 
 export type RunStatus =
   | "running"

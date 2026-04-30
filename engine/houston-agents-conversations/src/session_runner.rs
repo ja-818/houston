@@ -311,6 +311,10 @@ fn serialize_for_persist(item: &FeedItem) -> Option<(String, String)> {
     match item {
         FeedItem::AssistantText(t) => Some(("assistant_text".into(), json_str(t))),
         FeedItem::UserMessage(t) => Some(("user_message".into(), json_str(t))),
+        FeedItem::ToolRuntimeError { kind, details } => {
+            let data = serde_json::json!({ "kind": kind, "details": details });
+            Some(("tool_runtime_error".into(), data.to_string()))
+        }
         FeedItem::ToolCall { name, input } => {
             let data = serde_json::json!({ "name": name, "input": input });
             Some(("tool_call".into(), data.to_string()))
@@ -388,5 +392,18 @@ mod tests {
             ),
             AuthFeedAction::RequireNow
         );
+    }
+
+    #[test]
+    fn serializes_tool_runtime_error_for_history() {
+        let item = FeedItem::ToolRuntimeError {
+            kind: houston_terminal_manager::ToolRuntimeErrorKind::LocalTool,
+            details: "exec failed".to_string(),
+        };
+
+        let (feed_type, data) = serialize_for_persist(&item).expect("serializes");
+
+        assert_eq!(feed_type, "tool_runtime_error");
+        assert_eq!(data, r#"{"details":"exec failed","kind":"local_tool"}"#);
     }
 }

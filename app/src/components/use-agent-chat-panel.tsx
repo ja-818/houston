@@ -65,6 +65,8 @@ import { NewMissionPickerDialog } from "./new-mission-picker-dialog";
 import { UserActionMessage } from "./user-action-message";
 import { SelectedActionChip } from "./selected-action-chip";
 import { ProviderReconnectCard } from "./shell/provider-reconnect-card";
+import { ToolRuntimeErrorCard } from "./shell/tool-runtime-error-card";
+import { isToolRuntimeErrorMessage } from "./tool-runtime-feed";
 import { useChatDisplayLabels } from "./use-chat-display-labels";
 import {
   filterProviderAuthFeedItems,
@@ -127,7 +129,7 @@ export function useAgentChatPanel({
   selectedSessionKey,
   onSelectSession,
 }: UseAgentChatPanelArgs): AgentChatPanelProps {
-  const { t } = useTranslation("board");
+  const { t } = useTranslation(["board", "chat"]);
   const { processLabels, getThinkingMessage } = useChatDisplayLabels();
   const queryClient = useQueryClient();
 
@@ -347,10 +349,29 @@ export function useAgentChatPanel({
   );
   const renderSystemMessage = useCallback(
     (msg: ChatMessage) => {
+      if (isToolRuntimeErrorMessage(msg)) {
+        return (
+          <ToolRuntimeErrorCard
+            error={msg.runtimeError}
+            onRetry={async () => {
+              if (!path || !selectedSessionKey) return;
+              const text = t("chat:toolRuntimeError.retryPrompt");
+              await tauriChat.send(path, text, selectedSessionKey, {
+                providerOverride: chatProvider ?? undefined,
+                modelOverride: chatModel ?? undefined,
+              });
+              pushFeedItem(path, selectedSessionKey, {
+                feed_type: "user_message",
+                data: text,
+              });
+            }}
+          />
+        );
+      }
       if (isProviderAuthMessage(msg.content)) return null;
       return undefined;
     },
-    [],
+    [chatModel, chatProvider, path, pushFeedItem, selectedSessionKey, t],
   );
   const mapFeedItems = useCallback(
     ({ items }: { sessionKey: string; items: FeedItem[] }) =>

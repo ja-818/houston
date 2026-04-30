@@ -12,6 +12,7 @@ pub mod manager;
 pub mod parser;
 pub mod session_io;
 pub mod session_pump;
+mod stderr_filter;
 pub mod types;
 
 // Re-export key types for convenience.
@@ -20,4 +21,5 @@ pub use manager::{SessionHandle, SessionManager, SessionUpdate};
 pub use parser::{extract_session_id, parse_event, StreamAccumulator};
 pub use types::{
     ClaudeEvent, ContentBlock, FeedItem, FileChanges, Provider, SessionFeedBuffer, SessionStatus,
+    ToolRuntimeErrorKind,
 };

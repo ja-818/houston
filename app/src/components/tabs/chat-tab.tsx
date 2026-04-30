@@ -29,6 +29,8 @@ import { ChatModelSelector } from "../chat-model-selector";
 import { useChatDisplayLabels } from "../use-chat-display-labels";
 import { getDefaultModel } from "../../lib/providers";
 import { ProviderReconnectCard } from "../shell/provider-reconnect-card";
+import { ToolRuntimeErrorCard } from "../shell/tool-runtime-error-card";
+import { isToolRuntimeErrorMessage } from "../tool-runtime-feed";
 import { useQueuedMessageLabels } from "../use-queued-message-labels";
 import {
   filterProviderAuthFeedItems,
@@ -233,6 +235,16 @@ export default function ChatTab({ agent }: TabProps) {
         getThinkingMessage={getThinkingMessage}
         renderTurnSummary={renderTurnSummary}
         renderSystemMessage={(msg) => {
+          if (isToolRuntimeErrorMessage(msg)) {
+            return (
+              <ToolRuntimeErrorCard
+                error={msg.runtimeError}
+                onRetry={() =>
+                  messageQueue.sendOrQueue(t("toolRuntimeError.retryPrompt"), [])
+                }
+              />
+            );
+          }
           if (isProviderAuthMessage(msg.content)) {
             return null;
           }

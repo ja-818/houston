@@ -1,5 +1,5 @@
 use super::session_io;
-use super::types::{FeedItem, Provider, SessionStatus};
+use super::types::{FeedItem, Provider, SessionStatus, ToolRuntimeErrorKind};
 use crate::auth_error::is_auth_error;
 use crate::codex_command;
 use std::process::Stdio;
@@ -322,12 +322,17 @@ async fn run_cli_process(
                     } else {
                         stderr_lines.join("\n")
                     };
-                    let _ = tx.send(SessionUpdate::Feed(FeedItem::ToolResult {
-                        content: format!("Process stderr:\n{stderr_summary}"),
-                        is_error: true,
-                    }));
+                    if !stderr_lines
+                        .iter()
+                        .any(|line| crate::stderr_filter::is_tool_runtime_stderr(line))
+                    {
+                        let _ = tx.send(SessionUpdate::Feed(FeedItem::ToolRuntimeError {
+                            kind: ToolRuntimeErrorKind::ProviderProcess,
+                            details: stderr_summary,
+                        }));
+                    }
                     let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
-                        "{cli_name} exited with {status}"
+                        "{cli_name} hit a runtime error"
                     ))));
                     CliRunOutcome::Failed
                 }

@@ -48,6 +48,17 @@
     "tryAgain": "Intentar de nuevo",
     "launchError": "No se pudo abrir el inicio de sesión. Intenta otra vez."
   },
+  "toolRuntimeError": {
+    "title": "Algo se atascó",
+    "body": "Una herramienta local no se inició correctamente. Intenta de nuevo y repórtalo si sigue pasando.",
+    "report": "Reportar error",
+    "reporting": "Enviando reporte...",
+    "reportSuccessTitle": "Reporte enviado",
+    "reportSuccessDescription": "Houston recibió los registros.",
+    "reportErrorTitle": "No se pudo enviar el reporte",
+    "reportErrorDescription": "Intenta otra vez en un momento.",
+    "retryErrorTitle": "No se pudo intentar de nuevo"
+  },
   "updateChecker": {
     "cardLabel": "Actualización de Houston disponible",
     "title": "¡Houston, tenemos una actualización!",

@@ -129,6 +129,11 @@ because the diff cannot be assigned to one model safely. On successful
 non-overlapping completion, the engine may emit and persist a `FeedItem` with
 `feed_type: "file_changes"` and `data: { created: string[], modified:
 string[] }`; clients should render this as session-owned project artifacts.
+Provider/tool execution failures that need user recovery UI are emitted as
+`feed_type: "tool_runtime_error"` with `data: { kind: "local_tool" |
+"provider_process", details: string }`. Clients should render a user-safe retry
+and report-bug surface; `details` is diagnostic context for reports and logs,
+not user-facing copy.
 
 **Agent data** (`?agent_path=` query; writes emit event)
 | Method | Path | Description |

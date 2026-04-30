@@ -15,6 +15,9 @@
   "errors": {
     "sessionStart": "Não foi possível iniciar a sessão: {{error}}"
   },
+  "toolRuntimeError": {
+    "retryPrompt": "Tente de novo."
+  },
   "attachmentIssues": {
     "title": "Alguns arquivos não foram anexados",
     "description": "Houston manteve sua mensagem e os arquivos que pode usar.",
