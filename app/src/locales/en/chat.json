@@ -8,6 +8,10 @@
     "attachmentsOnly": "Attachments",
     "attached": "Attached: {{names}}"
   },
+  "attachmentMessage": {
+    "count_one": "1 file attached",
+    "count_other": "{{count}} files attached"
+  },
   "empty": {
     "title": "Start a conversation",
     "description": "Type a message to talk to your assistant."

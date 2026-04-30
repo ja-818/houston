@@ -192,6 +192,13 @@ export type { ProgressPanelProps } from "./progress-panel";
 // (desktop, mobile) can render the same card.
 export { decodeActionMessage, resolveActionImage } from "./action-message";
 export type { ActionInvocation, ActionInvocationField } from "./action-message";
+export { decodeAttachmentMessage, normalizeAttachmentReferences } from "./attachment-message";
+export type { AttachmentInvocation, AttachmentReference } from "./attachment-message";
+export {
+  UserAttachmentBadge,
+  UserAttachmentMessage,
+} from "./user-attachment-message";
+export type { UserAttachmentMessageLabels } from "./user-attachment-message";
 
 // === Utilities ===
 export { Typewriter } from "./typewriter";

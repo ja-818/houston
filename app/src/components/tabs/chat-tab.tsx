@@ -1,6 +1,10 @@
 import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChatPanel } from "@houston-ai/chat";
+import {
+  ChatPanel,
+  decodeAttachmentMessage,
+  UserAttachmentMessage,
+} from "@houston-ai/chat";
 import type { FeedItem } from "@houston-ai/chat";
 import {
   Empty,
@@ -14,8 +18,8 @@ import { useWorkspaceStore } from "../../stores/workspaces";
 import { useDraftStore, useDraftText, useDraftFiles } from "../../stores/drafts";
 import { isActiveSessionStatus, useSessionStatus } from "../../stores/session-status";
 import { useSessionMessageQueue } from "../../hooks/use-session-message-queue";
-import { tauriChat, tauriAttachments, tauriSystem, tauriConfig, withAttachmentPaths } from "../../lib/tauri";
-import { formatVisibleMessageText } from "../../lib/queued-chat";
+import { tauriChat, tauriAttachments, tauriSystem, tauriConfig } from "../../lib/tauri";
+import { buildAttachmentPrompt } from "../../lib/attachment-message";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
 import { useConnectedToolkits, useConnections } from "../../hooks/queries";
 import {
@@ -40,6 +44,12 @@ import { useAttachmentRejectionDialog } from "../attachment-rejection-dialog";
 export default function ChatTab({ agent }: TabProps) {
   const { t } = useTranslation("chat");
   const queuedLabels = useQueuedMessageLabels();
+  const attachmentLabels = useMemo(
+    () => ({
+      attachmentCount: (count: number) => t("attachmentMessage.count", { count }),
+    }),
+    [t],
+  );
   const { processLabels, getThinkingMessage } = useChatDisplayLabels();
   const attachmentValidation = useAttachmentRejectionDialog();
   const { isSpecialTool, renderToolResult, renderTurnSummary } = useFileToolRenderer(agent.folderPath);
@@ -176,18 +186,13 @@ export default function ChatTab({ agent }: TabProps) {
       let started = false;
       try {
         const paths = await tauriAttachments.save(attachmentScope, files);
-        const prompt = withAttachmentPaths(text, paths);
+        const prompt = buildAttachmentPrompt(text, files, paths);
         await tauriChat.send(agentPath, prompt, sessionKey, {
           providerOverride: chatProvider ?? undefined,
           modelOverride: chatModel ?? undefined,
         });
         started = true;
-        const visible = formatVisibleMessageText(
-          text,
-          files,
-          (names) => t("queue.attached", { names }),
-        );
-        pushFeedItem(agentPath, sessionKey, { feed_type: "user_message", data: visible });
+        pushFeedItem(agentPath, sessionKey, { feed_type: "user_message", data: prompt });
         analytics.track("chat_message_sent");
         setComposerText("");
         setComposerFiles([]);
@@ -240,6 +245,16 @@ export default function ChatTab({ agent }: TabProps) {
             return null;
           }
           return undefined;
+        }}
+        renderUserMessage={(msg) => {
+          const invocation = decodeAttachmentMessage(msg.content);
+          if (!invocation) return undefined;
+          return (
+            <UserAttachmentMessage
+              invocation={invocation}
+              labels={attachmentLabels}
+            />
+          );
         }}
         afterMessages={
           <ProviderReconnectCard

@@ -8,6 +8,10 @@
     "attachmentsOnly": "Anexos",
     "attached": "Anexo: {{names}}"
   },
+  "attachmentMessage": {
+    "count_one": "1 arquivo anexado",
+    "count_other": "{{count}} arquivos anexados"
+  },
   "empty": {
     "title": "Comece uma conversa",
     "description": "Digite uma mensagem para falar com seu assistente."

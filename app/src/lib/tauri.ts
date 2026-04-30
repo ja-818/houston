@@ -30,6 +30,7 @@ import type {
 import { getEngine } from "./engine";
 import { osPickDirectory } from "./os-bridge";
 import { logger } from "./logger";
+export { withAttachmentPaths } from "./attachment-message";
 
 /** Wrap an engine call and surface errors as toasts — never fail silently. */
 async function call<T>(
@@ -188,14 +189,6 @@ export const tauriAttachments = {
   delete: (scopeId: string) =>
     call<void>("delete_attachments", () => getEngine().deleteAttachments(scopeId)),
 };
-
-/** Format a prompt with attachment paths appended. Unchanged. */
-export function withAttachmentPaths(text: string, paths: string[]): string {
-  if (paths.length === 0) return text;
-  const list = paths.map((p) => `- ${p}`).join("\n");
-  const block = `[User attached these files. Read them with the Read tool if needed:\n${list}]`;
-  return text.length > 0 ? `${text}\n\n${block}` : block;
-}
 
 // ─── Agent-data files (`.houston/**`) ─────────────────────────────────
 

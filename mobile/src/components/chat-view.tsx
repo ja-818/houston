@@ -7,7 +7,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ChatPanel, decodeActionMessage, type FeedItem } from "@houston-ai/chat";
+import {
+  ChatPanel,
+  UserAttachmentMessage,
+  decodeActionMessage,
+  decodeAttachmentMessage,
+  type FeedItem,
+} from "@houston-ai/chat";
 import {
   useChatHistory,
   useCreateMission,
@@ -122,8 +128,10 @@ export function ChatView() {
           }
           renderUserMessage={(msg) => {
             const invocation = decodeActionMessage(msg.content);
-            if (!invocation) return undefined;
-            return <UserActionMessage invocation={invocation} />;
+            if (invocation) return <UserActionMessage invocation={invocation} />;
+            const attachmentInvocation = decodeAttachmentMessage(msg.content);
+            if (!attachmentInvocation) return undefined;
+            return <UserAttachmentMessage invocation={attachmentInvocation} />;
           }}
         />
       </div>

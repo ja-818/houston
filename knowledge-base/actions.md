@@ -74,7 +74,7 @@ Step-by-step instructions Claude follows when the action runs.
    - composer model selector + Actions button
    - Composio link card renderer
    - file-tool result renderer
-   - `renderUserMessage` — decodes the action marker into a card
+   - `renderUserMessage` — decodes action + attachment markers into cards
 5. Both **BoardTab** (per-agent kanban) and **Dashboard** (Mission Control / cross-agent kanban) consume this hook so the right panel is identical in both views.
 
 ## Action invocation marker (chat persistence)
@@ -82,7 +82,7 @@ Step-by-step instructions Claude follows when the action runs.
 When the user runs an action, the persisted user_message body is:
 
 ```
-<!--houston:action {"skill":"research-company","displayName":"Research a company","image":"...","description":"...","integrations":["tavily"],"fields":[],"message":"Focus on pricing."}-->
+<!--houston:action {"skill":"research-company","displayName":"Research a company","image":"...","description":"...","integrations":["tavily"],"fields":[],"message":"Focus on pricing.","attachments":[]}-->
 
 Use the research-company skill.
 
@@ -91,8 +91,27 @@ Focus on pricing.
 
 - The HTML-comment marker is inert text to Claude (it ignores it) but carries everything the chat renderer needs to draw the card. Single source of truth = single persisted body.
 - The marker `message` is the user's optional composer text. The body is the Claude-facing prompt and always starts with `Use the <skill> skill.`.
+- If files were uploaded with the action, `attachments` carries `{name,path}` entries. The renderer shows only the count badge; the Claude-facing body still contains the `[User attached these files...]` path block.
 - Decoder lives in `@houston-ai/chat`'s `action-message.ts` so desktop AND mobile render the same card from the same payload.
 - Encoder (`encodeActionMessage`) + Claude-prompt assembler (`buildActionClaudePrompt`) live in `app/src/lib/action-message.ts` — only the desktop sends actions today.
+
+## Attachment message marker (chat persistence)
+
+Regular messages with uploaded files follow the same "single persisted body"
+pattern as Actions:
+
+```
+<!--houston:attachments {"message":"Summarize this","files":[{"name":"brief.pdf","path":"/Users/.../brief.pdf"}]}-->
+
+Summarize this
+
+[User attached these files. Read them with the Read tool if needed:
+- /Users/.../brief.pdf]
+```
+
+- The model receives the same path block as before, so file access behavior does not change.
+- The UI decodes the marker and renders the user text plus a compact paperclip badge ("1 file attached" / "N files attached"). Absolute paths are never displayed.
+- Decoder + shared badge renderer live in `@houston-ai/chat` (`attachment-message.ts`, `user-attachment-message.tsx`). Desktop encoder lives in `app/src/lib/attachment-message.ts`.
 
 ## Authoring an action via Claude
 

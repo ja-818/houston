@@ -9,8 +9,8 @@ import {
   useSessionStatusStore,
 } from "../stores/session-status";
 import { useAllConversations } from "../hooks/queries";
-import { tauriActivity, tauriChat, tauriAttachments, withAttachmentPaths } from "../lib/tauri";
-import { formatVisibleMessageText } from "../lib/queued-chat";
+import { tauriActivity, tauriChat, tauriAttachments } from "../lib/tauri";
+import { buildAttachmentPrompt } from "../lib/attachment-message";
 import type { Agent } from "../lib/types";
 import { createElement } from "react";
 import { AgentCardAvatar } from "./shell/agent-card-avatar";
@@ -145,14 +145,9 @@ export function useMissionControl(agents: Agent[]) {
       if (!agentPath) return;
       try {
         const paths = await tauriAttachments.save(`activity-${activityId}`, files);
-        const prompt = withAttachmentPaths(text, paths);
+        const prompt = buildAttachmentPrompt(text, files, paths);
         await tauriChat.send(agentPath, prompt, sessionKey);
-        const visible = formatVisibleMessageText(
-          text,
-          files,
-          (names) => t("queue.attached", { names }),
-        );
-        pushFeedItem(agentPath, sessionKey, { feed_type: "user_message", data: visible });
+        pushFeedItem(agentPath, sessionKey, { feed_type: "user_message", data: prompt });
         setLoading((prev) => ({ ...prev, [sessionKey]: true }));
       } catch (err) {
         setLoading((prev) => ({ ...prev, [sessionKey]: false }));

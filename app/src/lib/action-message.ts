@@ -17,6 +17,7 @@
 
 import {
   decodeActionMessage as decodeActionMessageFromChat,
+  type AttachmentReference,
   type ActionInvocation,
   type ActionInvocationField,
 } from "@houston-ai/chat";
@@ -38,6 +39,7 @@ export function encodeActionMessage(
   skill: SkillSummary,
   userText: string,
   claudePrompt: string,
+  attachments: readonly AttachmentReference[] = [],
 ): string {
   const trimmedText = userText.trim();
   const payload: ActionInvocation = {
@@ -48,6 +50,7 @@ export function encodeActionMessage(
     integrations: skill.integrations,
     fields: [],
     message: trimmedText,
+    attachments: [...attachments],
   };
   const json = JSON.stringify(payload);
   return `${MARKER_PREFIX}${json}${MARKER_SUFFIX}\n\n${claudePrompt}`;

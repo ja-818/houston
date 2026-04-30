@@ -1,9 +1,14 @@
+import {
+  UserAttachmentBadge,
+  type UserAttachmentMessageLabels,
+} from "@houston-ai/chat";
 import { SkillIcon } from "./skill-icon";
 import { IntegrationLogos } from "./integration-logos";
 import type { ActionInvocation } from "../lib/action-message";
 
 interface Props {
   invocation: ActionInvocation;
+  attachmentLabels?: UserAttachmentMessageLabels;
 }
 
 /**
@@ -15,8 +20,16 @@ interface Props {
  * The card sits in the right column of the conversation (where user
  * bubbles live) so the speaker attribution stays the same.
  */
-export function UserActionMessage({ invocation }: Props) {
-  const { displayName, image, description, integrations, fields, message } = invocation;
+export function UserActionMessage({ invocation, attachmentLabels }: Props) {
+  const {
+    displayName,
+    image,
+    description,
+    integrations,
+    fields,
+    message,
+    attachments,
+  } = invocation;
   return (
     <div className="flex max-w-md flex-col items-end gap-2">
       <div className="inline-block rounded-2xl bg-secondary p-4 text-left">
@@ -62,6 +75,7 @@ export function UserActionMessage({ invocation }: Props) {
           <span className="whitespace-pre-wrap break-words">{message}</span>
         </div>
       )}
+      <UserAttachmentBadge files={attachments} labels={attachmentLabels} />
     </div>
   );
 }
