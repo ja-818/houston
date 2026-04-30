@@ -2,9 +2,8 @@
 name: plan-contract-pushback
 description: "After reviewing a contract, plan exactly what to push back on. I sort the issues into must-haves, nice-to-haves, and not-worth-fighting, write the exact wording you can paste into your counter-email, and add a fallback if the other side says no. You need to have reviewed the contract first."
 version: 1
-tags: [legal, contracts, redline]
 category: Contracts
-featured: yes
+featured: no
 image: scroll
 ---
 

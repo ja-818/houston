@@ -104,7 +104,7 @@ field twice.
 Markdown. 3-5 verbatim samples of the user's outbound support
 writing plus a short tone-notes block (greeting habits, closing
 habits, sentence length, formality, apology style, quirks).
-Written by `voice-calibration` and by the first skill that drafts
+Written by `calibrate-my-voice` and by the first skill that drafts
 a reply.
 
 ---
@@ -115,10 +115,10 @@ a reply.
 
 The support positioning doc. **Every skill reads this before it
 writes a reply, article, or campaign.** Owned and updated
-exclusively by `define-support-context` (routing section also
-updated by `tune-routing-rules`).
+exclusively by `set-up-my-support-info` (routing section also
+updated by `tune-my-routing`).
 
-Structure (filled in by `define-support-context`):
+Structure (filled in by `set-up-my-support-info`):
 
 - Company overview (name, site, 30s pitch, stage).
 - Product surface (what we support / what we don't).
@@ -175,39 +175,39 @@ Rules:
 
 | File | Written by | Notes |
 |---|---|---|
-| `conversations.json` | `triage-incoming` | Flat index of every ticket with routing category, priority, assignee, lastActivity. |
-| `customers.json` | `triage-incoming` + `customer-view` | Customer records with plan, MRR, slug. |
-| `health-scores.json` | `customer-view` (view=health) | GREEN / YELLOW / RED with 3 signals + reasoning. |
-| `churn-flags.json` | `customer-view` (view=churn-risk) + `detect-signal` | Open flags per customer with signal + recommended action. |
-| `followups.json` | `promise-tracker` | Open commitments with due dates. |
-| `bug-candidates.json` | `detect-signal` (signal=bug) | Repro steps + source conversation id. |
-| `requests.json` | `detect-signal` (signal=feature-request) | Feature asks with requesting customer slugs + counts. |
-| `patterns.json` | `detect-signal` (signal=repeat-question) | Repeating question clusters (≥3 hits). |
-| `known-issues.json` | `write-article` (type=known-issue) | Public status entries (article id + incident id). |
+| `conversations.json` | `triage-a-ticket` | Flat index of every ticket with routing category, priority, assignee, lastActivity. |
+| `customers.json` | `triage-a-ticket` + `look-up-a-customer` | Customer records with plan, MRR, slug. |
+| `health-scores.json` | `look-up-a-customer` (view=health) | GREEN / YELLOW / RED with 3 signals + reasoning. |
+| `churn-flags.json` | `look-up-a-customer` (view=churn-risk) + `flag-a-signal` | Open flags per customer with signal + recommended action. |
+| `followups.json` | `track-my-promises` | Open commitments with due dates. |
+| `bug-candidates.json` | `flag-a-signal` (signal=bug) | Repro steps + source conversation id. |
+| `requests.json` | `flag-a-signal` (signal=feature-request) | Feature asks with requesting customer slugs + counts. |
+| `patterns.json` | `flag-a-signal` (signal=repeat-question) | Repeating question clusters (≥3 hits). |
+| `known-issues.json` | `write-an-article` (type=known-issue) | Public status entries (article id + incident id). |
 
 ### Artifact folders (all at agent root)
 
 | Folder | Written by | Notes |
 |---|---|---|
-| `conversations/{id}/thread.json + draft.md + notes.md` | `triage-incoming`, `draft-reply`, `thread-summary` | Per-conversation working dir. |
-| `dossiers/{slug}.md` | `customer-view` (view=dossier) | |
-| `timelines/{slug}.md` | `customer-view` (view=timeline) | |
-| `briefings/{YYYY-MM-DD}.md` | `scan-inbox` (scope=morning-brief) | |
-| `sla-reports/{YYYY-MM-DD}.md` | `scan-inbox` (scope=sla-breach) | |
-| `stale-rescues/{YYYY-MM-DD}.md` | `scan-inbox` (scope=stale-threads) | |
-| `articles/{slug}.md` | `write-article` (type=from-ticket, refresh-stale) | Also mirrored to connected Notion / Intercom KB / Google Docs if connected. |
-| `known-issues/{slug}.md` | `write-article` (type=known-issue) | Customer-facing status page. |
-| `broadcasts/{YYYY-MM-DD}-{slug}.md` | `write-article` (type=broadcast-shipped) | "You asked, we shipped" notes. |
-| `gaps/{YYYY-MM-DD}.md` | `gap-surface` | Ranked docs gaps with source tickets. |
-| `onboarding/{segment}.md` | `draft-lifecycle-message` (type=welcome-series) | |
-| `renewals/{account}-{YYYY-MM-DD}.md` | `draft-lifecycle-message` (type=renewal) | Day-90 / Day-60 / Day-30 sequence. |
-| `expansions/{account}.md` | `draft-lifecycle-message` (type=expansion-nudge) | |
-| `saves/{account}.md` | `draft-lifecycle-message` (type=churn-save) | |
-| `qbrs/{account}-{YYYY-MM-DD}.md` | `review` (scope=qbr) | 4-section QBR outline. |
-| `playbooks/{incident-type}.md` | `draft-escalation-playbook` | |
-| `voc/{YYYY-MM-DD}.md` | `synthesize-voice-of-customer` | Voice-of-customer synthesis. |
-| `reviews/{YYYY-MM-DD}.md` | `review` (scope=weekly) | |
-| `digests/{YYYY-MM-DD}.md` | `review` (scope=help-center-digest) | |
+| `conversations/{id}/thread.json + draft.md + notes.md` | `triage-a-ticket`, `draft-a-reply`, `catch-me-up-on-a-thread` | Per-conversation working dir. |
+| `dossiers/{slug}.md` | `look-up-a-customer` (view=dossier) | |
+| `timelines/{slug}.md` | `look-up-a-customer` (view=timeline) | |
+| `briefings/{YYYY-MM-DD}.md` | `check-my-inbox` (scope=morning-brief) | |
+| `sla-reports/{YYYY-MM-DD}.md` | `check-my-inbox` (scope=sla-breach) | |
+| `stale-rescues/{YYYY-MM-DD}.md` | `check-my-inbox` (scope=stale-threads) | |
+| `articles/{slug}.md` | `write-an-article` (type=from-ticket, refresh-stale) | Also mirrored to connected Notion / Intercom KB / Google Docs if connected. |
+| `known-issues/{slug}.md` | `write-an-article` (type=known-issue) | Customer-facing status page. |
+| `broadcasts/{YYYY-MM-DD}-{slug}.md` | `write-an-article` (type=broadcast-shipped) | "You asked, we shipped" notes. |
+| `gaps/{YYYY-MM-DD}.md` | `find-my-docs-gaps` | Ranked docs gaps with source tickets. |
+| `onboarding/{segment}.md` | `draft-a-lifecycle-message` (type=welcome-series) | |
+| `renewals/{account}-{YYYY-MM-DD}.md` | `draft-a-lifecycle-message` (type=renewal) | Day-90 / Day-60 / Day-30 sequence. |
+| `expansions/{account}.md` | `draft-a-lifecycle-message` (type=expansion-nudge) | |
+| `saves/{account}.md` | `draft-a-lifecycle-message` (type=churn-save) | |
+| `qbrs/{account}-{YYYY-MM-DD}.md` | `review-my-support` (scope=qbr) | 4-section QBR outline. |
+| `playbooks/{incident-type}.md` | `draft-a-playbook` | |
+| `voc/{YYYY-MM-DD}.md` | `mine-my-tickets` | Voice-of-customer synthesis. |
+| `reviews/{YYYY-MM-DD}.md` | `review-my-support` (scope=weekly) | |
+| `digests/{YYYY-MM-DD}.md` | `review-my-support` (scope=help-center-digest) | |
 
 ---
 

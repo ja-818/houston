@@ -2,7 +2,6 @@
 name: review-a-contract
 description: "Read a contract someone sent you and tell you what's in it. Pick how deep: a quick verdict on whether it's safe to sign, a fast NDA check, or a clause-by-clause map without a verdict. Every clause that needs attention gets a clear note and, when needed, suggested wording to push back with."
 version: 1
-tags: [legal, contracts]
 category: Contracts
 featured: yes
 image: scroll
@@ -25,6 +24,7 @@ User name mode in plain English ("traffic-light this", "just extract the clauses
 ## When to use
 
 - Explicit: "review this contract", "traffic-light this NDA", "is this signable?", "what's in this agreement", "extract clauses".
+- Plain-English asks map to a `mode`: "fully review this customer contract / MSA" / "is this MSA safe to sign" → `full`; "quick check on this NDA" / "is this NDA OK to sign" → `nda-traffic-light`; "just lay out the clauses" / "pull out the clauses, no verdict" / "review the IP clause" (run `full` and lead with the IP section) → `clauses-only` or `full` with IP focus.
 - Implicit: called by `sort-my-legal-inbox` when detects MSA / NDA / DPA and routes to review. Chained into `plan-contract-pushback` when output has any Red items.
 
 ## Ledger fields I read

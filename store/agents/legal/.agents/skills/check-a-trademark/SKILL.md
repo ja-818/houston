@@ -2,9 +2,8 @@
 name: check-a-trademark
 description: "Quickly check if a name is free to use as a trademark. I search the official US trademark database for exact, sound-alike, and look-alike hits, then rate the risk Low / Medium / High and tell you what to do next. Heads up: this is a quick check, not a full legal clearance — for that you need a real trademark lawyer."
 version: 1
-tags: [legal, ip, trademark]
 category: IP
-featured: yes
+featured: no
 image: scroll
 integrations: [firecrawl]
 ---

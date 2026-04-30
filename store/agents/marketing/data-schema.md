@@ -51,7 +51,7 @@ interface ContextLedger {
       path: "context/marketing-context.md";
       lastUpdatedAt?: string;
     };
-    icp?: {
+    idealCustomer?: {
       industry: string[];
       roles: string[];
       pains: string[];
@@ -118,12 +118,12 @@ content / emails.
 
 The positioning doc. **Every skill reads this before it writes any
 copy, content, or campaign.** Owned and updated exclusively by
-`define-positioning`.
+`set-up-my-marketing-info`.
 
-Structure (filled in by `define-positioning`):
+Structure (filled in by `set-up-my-marketing-info`):
 
 - Company overview (name, site, 30s pitch, stage).
-- ICP (industry, roles, pains, JTBD, triggers, anchor accounts).
+- Ideal customer (industry, roles, pains, JTBD, triggers, anchor accounts).
 - Positioning statement.
 - Category & differentiators.
 - Brand voice notes.
@@ -173,33 +173,33 @@ Rules:
 
 | Folder | Written by | Notes |
 |---|---|---|
-| `personas/{slug}.md` | `profile-icp` | One per ICP segment. |
-| `competitor-briefs/{source}-{slug}.md` | `monitor-competitors` | `source` = `product` / `ads` / `social-feed`. |
-| `research/{slug}.md` | `synthesize-research` | Deep-research briefs. |
-| `call-insights/{YYYY-MM-DD}.md` | `mine-sales-calls` | Batch per session. |
-| `analyses/{subject}-{YYYY-MM-DD}.md` | `analyze` | `subject` = `funnel` / `content-gap` / `marketing-health`. |
-| `audits/{surface}-{slug}-{YYYY-MM-DD}.md` | `audit` | `surface` = `site-seo` / `ai-search` / `landing-page` / `form`. |
-| `keyword-map.md` + `keyword-clusters/{slug}.md` | `research-keywords` | Living index + per-cluster detail. |
-| `blog-posts/{slug}.md` | `write-content` (blog) | Optional Google Doc mirror. |
-| `case-studies/{customer-slug}.md` | `write-case-study` | |
-| `repurposed/{source}-to-{target}.md` | `repurpose-content` | |
-| `backlink-plans/{YYYY-MM-DD}.md` | `find-backlinks` | |
-| `campaigns/{type}-{slug}.md` | `plan-campaign` | `type` = `paid` / `launch` / `lifecycle-drip` / `welcome` / `churn-save` / `announcement`. |
-| `ad-copy/{campaign-slug}.md` | `generate-ad-copy` | |
-| `ab-tests/{slug}.md` | `design-ab-test` | |
-| `tracking-plans/{slug}.md` | `setup-tracking` | |
-| `posts/linkedin-{slug}.md` | `write-content` (linkedin) | |
-| `threads/x-{slug}.md` | `write-content` (x-thread) | |
-| `newsletters/{YYYY-MM-DD}.md` | `write-content` (newsletter) | |
-| `community-replies/{source-slug}.md` | `write-content` (reddit) | |
-| `social-calendars/{YYYY-WNN}.md` + `social-calendar.md` | `plan-social-calendar` | Living doc + per-week detail. |
-| `feed-digests/{platform}-{YYYY-MM-DD}.md` | `monitor-competitors` (social-feed) | |
-| `linkedin-digests/{YYYY-MM-DD}.md` | `digest-linkedin-activity` | |
-| `podcast-pitches/{YYYY-MM-DD}.md` | `pitch-podcast` | |
-| `page-copy/{surface}-{slug}.md` | `write-page-copy` | `surface` = `homepage` / `pricing` / `about` / `landing` / `signup-flow` / `onboarding` / `paywall` / `popup`. |
-| `copy-edits/{slug}.md` | `edit-copy` | |
-| `headline-variants/{page-slug}.md` | `write-headline-variants` | |
-| `cta-variants/{page-slug}.md` | `write-cta-variants` | |
+| `personas/{slug}.md` | `profile-my-customer` | One per ideal customer segment. |
+| `competitor-briefs/{source}-{slug}.md` | `watch-my-competitors` | `source` = `product` / `ads` / `social-feed`. |
+| `research/{slug}.md` | `research-a-topic` | Deep-research briefs. |
+| `call-insights/{YYYY-MM-DD}.md` | `mine-my-sales-calls` | Batch per session. |
+| `analyses/{subject}-{YYYY-MM-DD}.md` | `check-my-marketing` | `subject` = `funnel` / `content-gap` / `marketing-health`. |
+| `audits/{surface}-{slug}-{YYYY-MM-DD}.md` | `audit-a-surface` | `surface` = `site-seo` / `ai-search` / `landing-page` / `form`. |
+| `keyword-map.md` + `keyword-clusters/{slug}.md` | `research-my-seo` (focus=keywords) | Living index + per-cluster detail. |
+| `blog-posts/{slug}.md` | `write-a-post` (channel=blog) | Optional Google Doc mirror. |
+| `case-studies/{customer-slug}.md` | `write-a-case-study` | |
+| `repurposed/{source}-to-{target}.md` | `repurpose-my-content` | |
+| `backlink-plans/{YYYY-MM-DD}.md` | `research-my-seo` (focus=backlinks) | |
+| `campaigns/{type}-{slug}.md` | `plan-a-campaign` | `type` = `paid` / `launch` / `lifecycle-drip` / `welcome` / `churn-save` / `announcement`. |
+| `ad-copy/{campaign-slug}.md` | `write-copy-variants` (job=ad-copy) | |
+| `ab-tests/{slug}.md` | `measure-my-marketing` (scope=ab-test) | |
+| `tracking-plans/{slug}.md` | `measure-my-marketing` (scope=tracking-plan) | |
+| `posts/linkedin-{slug}.md` | `write-a-post` (channel=linkedin) | |
+| `threads/x-{slug}.md` | `write-a-post` (channel=x-thread) | |
+| `newsletters/{YYYY-MM-DD}.md` | `write-a-post` (channel=newsletter) | |
+| `community-replies/{source-slug}.md` | `write-a-post` (channel=reddit) | |
+| `social-calendars/{YYYY-WNN}.md` + `social-calendar.md` | `plan-my-social-week` | Living doc + per-week detail. |
+| `feed-digests/{platform}-{YYYY-MM-DD}.md` | `watch-my-competitors` (source=social-feed) | |
+| `linkedin-digests/{YYYY-MM-DD}.md` | `measure-my-marketing` (scope=linkedin-digest) | |
+| `podcast-pitches/{YYYY-MM-DD}.md` | `pitch-me-on-podcasts` | |
+| `page-copy/{surface}-{slug}.md` | `write-my-page-copy` | `surface` = `homepage` / `pricing` / `about` / `landing` / `signup-flow` / `onboarding` / `paywall` / `popup`. |
+| `copy-edits/{slug}.md` | `write-copy-variants` (job=edit) | |
+| `headline-variants/{page-slug}.md` | `write-copy-variants` (job=headlines) | |
+| `cta-variants/{page-slug}.md` | `write-copy-variants` (job=ctas) | |
 
 ---
 

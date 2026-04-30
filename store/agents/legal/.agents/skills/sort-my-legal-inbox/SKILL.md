@@ -2,9 +2,8 @@
 name: sort-my-legal-inbox
 description: "Sweep your inbox for legal stuff (contracts to review, NDAs, customer data requests, anything that needs a lawyer's attention) and tell you what needs you and what doesn't. I just sort and summarize, I never reply."
 version: 1
-tags: [legal, inbox]
 category: Inbox
-featured: yes
+featured: no
 image: scroll
 integrations: [gmail, outlook]
 ---

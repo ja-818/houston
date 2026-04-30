@@ -2,9 +2,8 @@
 name: answer-a-security-questionnaire
 description: "A big customer sent you a security questionnaire? I read it, fill in everything I already know about your company, and group the rest by topic so you can knock out many in one sitting. Every answer I save reuses next time, so the second one is much faster than the first."
 version: 1
-tags: [legal, compliance, security]
 category: Compliance
-featured: yes
+featured: no
 image: scroll
 integrations: [googlesheets, googledocs, googledrive, airtable]
 ---

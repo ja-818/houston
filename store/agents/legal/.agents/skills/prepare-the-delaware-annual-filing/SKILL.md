@@ -2,9 +2,8 @@
 name: prepare-the-delaware-annual-filing
 description: "Get ready for your Delaware annual report and franchise tax (due March 1 every year). I run the math two ways and pick the cheaper one, which is usually 10x to 100x lower than the scary number Delaware shows by default. You get a step-by-step pack of exactly what to enter on the state's website. You file, I prep."
 version: 1
-tags: [legal, entity, delaware]
 category: Entity
-featured: yes
+featured: no
 image: scroll
 integrations: [googledocs]
 ---

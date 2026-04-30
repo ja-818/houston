@@ -2,7 +2,6 @@
 name: audit-compliance
 description: "Check that your legal compliance is still in good shape. Pick what to check: your privacy policy, your privacy vendor list, or your contract templates. I surface what's drifted or out of date and what to fix. I never change anything on my own."
 version: 1
-tags: [legal, compliance]
 category: Compliance
 featured: yes
 image: scroll
@@ -25,6 +24,7 @@ User name scope plain English ("audit my privacy", "refresh templates", "update 
 ## When to use
 
 - Explicit: "audit my privacy posture", "update my subprocessor list", "refresh my template library", "what's drifted", "what's stale".
+- Plain-English asks map to a `scope`: "is my privacy policy still current" / "does my privacy policy match what we actually do" → `privacy-posture`; "refresh my privacy vendor list" / "have we added new tools that touch customer data" → `subprocessors`; "are my contract templates still current" / "any template older than a year I should refresh" → `template-library`.
 - Implicit: scheduled monthly cadence (privacy-posture, subprocessors); new vendor added (subprocessors); new landing-page surface ships (privacy-posture); template library referenced older than 12 months in any other skill (template-library).
 
 ## Ledger fields I read

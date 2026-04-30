@@ -1,0 +1,61 @@
+[
+  {
+    "from": "0.1.4",
+    "to": "0.1.5",
+    "renames": {
+      "broadcast-what-we-shipped-to-customers-who-asked": "write-article",
+      "calibrate-your-voice-from-your-sent-replies": "voice-calibration",
+      "capture-a-feature-request-with-customer-attribution": "detect-signal",
+      "churn-risk-scan-on-a-specific-account": "customer-view",
+      "draft-30-60-90-pre-renewal-outreach": "draft-lifecycle-message",
+      "draft-a-5-email-welcome-series-for-new-signups": "draft-lifecycle-message",
+      "draft-a-public-known-issue-status-page": "write-article",
+      "draft-a-reply-in-your-voice": "draft-reply",
+      "draft-an-expansion-nudge-grounded-in-a-ceiling-signal": "draft-lifecycle-message",
+      "draft-the-p1-playbook-before-the-next-incident": "draft-escalation-playbook",
+      "find-repeat-questions-that-deserve-an-article": "detect-signal",
+      "full-customer-timeline-story-of-the-relationship": "customer-view",
+      "log-a-bug-candidate-from-a-ticket": "detect-signal",
+      "mine-the-tickets-for-what-customers-are-actually-saying": "synthesize-voice-of-customer",
+      "morning-brief-what-actually-needs-me-today": "scan-inbox",
+      "prep-a-qbr-wins-asks-shipped-friction-next": "review",
+      "refresh-articles-wrong-since-your-last-ship": "write-article",
+      "save-an-at-risk-account-without-the-guilt-trip": "draft-lifecycle-message",
+      "score-account-health-green-yellow-red": "customer-view",
+      "set-up-your-support-context-the-source-of-truth": "define-support-context",
+      "summarize-a-long-thread-before-you-reply": "thread-summary",
+      "the-monday-support-review": "review",
+      "track-a-promise-you-just-made": "promise-tracker",
+      "triage-an-inbound-ticket-against-your-routing-rules": "triage-incoming",
+      "turn-a-resolved-ticket-into-a-kb-article": "write-article",
+      "update-your-routing-rules-when-reality-changes": "tune-routing-rules",
+      "weekly-help-center-digest": "review",
+      "what-docs-gap-should-i-write-next": "gap-surface",
+      "what-s-breaching-sla-right-now": "scan-inbox",
+      "what-s-waiting-on-me-stale-thread-rescue": "scan-inbox",
+      "who-is-this-customer-full-dossier": "customer-view"
+    }
+  },
+  {
+    "from": "0.1.6",
+    "to": "0.2.0",
+    "renames": {
+      "define-support-context": "set-up-my-support-info",
+      "scan-inbox": "check-my-inbox",
+      "triage-incoming": "triage-a-ticket",
+      "thread-summary": "catch-me-up-on-a-thread",
+      "draft-reply": "draft-a-reply",
+      "customer-view": "look-up-a-customer",
+      "promise-tracker": "track-my-promises",
+      "detect-signal": "flag-a-signal",
+      "write-article": "write-an-article",
+      "gap-surface": "find-my-docs-gaps",
+      "draft-lifecycle-message": "draft-a-lifecycle-message",
+      "draft-escalation-playbook": "draft-a-playbook",
+      "synthesize-voice-of-customer": "mine-my-tickets",
+      "review": "review-my-support",
+      "voice-calibration": "calibrate-my-voice",
+      "tune-routing-rules": "tune-my-routing"
+    }
+  }
+]

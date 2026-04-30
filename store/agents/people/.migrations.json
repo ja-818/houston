@@ -1,0 +1,55 @@
+[
+  {
+    "from": "0.1.4",
+    "to": "0.1.5",
+    "renames": {
+      "answer-a-policy-question-and-escalate-if-needed": "answer-policy-question",
+      "build-the-compliance-calendar": "compliance-calendar",
+      "build-the-leveling-ladder-ic-manager-l1-l5": "define-people-context",
+      "calibrate-my-hr-voice-from-past-outbound": "voice-calibration",
+      "check-who-s-been-quiet-for-3-weeks": "collect-checkins",
+      "collect-this-week-s-1-1-check-ins-across-the-team": "collect-checkins",
+      "debrief-candidate-s-loop-hire-or-no-hire": "debrief-loop",
+      "draft-a-30-60-90-plan-for-a-new-hire-starting-monday": "draft-onboarding-plan",
+      "draft-a-pip-with-escalation-check-first": "draft-performance-doc",
+      "draft-a-stay-conversation-for-employee": "draft-performance-doc",
+      "draft-an-offer-letter-for-candidate-at-level": "draft-offer",
+      "draft-the-people-context-doc-that-anchors-every-artifact": "define-people-context",
+      "draft-the-pto-policy-reply-template": "answer-policy-question",
+      "prep-me-before-my-1-1-with-employee": "employee-dossier",
+      "prep-me-to-interview-candidate": "prep-interviewer",
+      "prep-the-q-n-review-cycle": "prep-review-cycle",
+      "review-a-pto-comp-promotion-expense-request": "run-approval-flow",
+      "schedule-a-panel-loop-for-candidate": "coordinate-interviews",
+      "score-a-linkedin-profile-0-100-against-the-role": "evaluate-candidate",
+      "score-retention-risk-across-the-team": "analyze",
+      "screen-a-resume-stack-and-rank-against-the-rubric": "evaluate-candidate",
+      "source-candidates-from-github-linkedin-or-oss": "source-candidates",
+      "synthesize-our-employer-brand-from-glassdoor-feedback": "analyze",
+      "the-monday-people-review": "analyze",
+      "update-the-rubric-for-an-open-req": "source-candidates",
+      "welcome-email-first-morning-checklist": "draft-onboarding-plan",
+      "welcome-slack-message-in-your-voice": "draft-onboarding-plan",
+      "what-s-my-i-9-w-4-status-across-the-team": "compliance-calendar"
+    }
+  },
+  {
+    "from": "0.1.6",
+    "to": "0.1.7",
+    "renames": {
+      "answer-policy-question": "answer-a-policy-question",
+      "compliance-calendar": "track-compliance-deadlines",
+      "coordinate-interviews": "coordinate-an-interview-loop",
+      "debrief-loop": "debrief-an-interview-loop",
+      "define-people-context": "set-up-my-people-info",
+      "draft-offer": "draft-a-people-document",
+      "draft-onboarding-plan": "draft-a-people-document",
+      "draft-performance-doc": "draft-a-people-document",
+      "employee-dossier": "profile-an-employee",
+      "evaluate-candidate": "evaluate-a-candidate",
+      "prep-interviewer": "prep-an-interviewer",
+      "prep-review-cycle": "prep-the-review-cycle",
+      "voice-calibration": "calibrate-my-voice"
+    }
+  }
+]

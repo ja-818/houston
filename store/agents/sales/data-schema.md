@@ -51,7 +51,7 @@ interface ContextLedger {
       path: "context/sales-context.md";
       lastUpdatedAt?: string;
     };
-    icp?: {
+    idealCustomer?: {
       industry: string[];
       roles: string[];
       pains: string[];
@@ -72,7 +72,7 @@ interface ContextLedger {
       slug: "hubspot" | "salesforce" | "attio" | "pipedrive" | "close" | "other";
       dealStages: string[];        // ordered stage names
       ownerMap?: Record<string, string>;
-      leadRouting?: "green-ae-yellow-sdr-red-drop" | "custom";
+      leadRouting?: "green-assign-yellow-nurture-red-drop" | "custom";
       capturedAt: string;
     };
     meetings?: {
@@ -117,12 +117,12 @@ formality, quirks). Written by the first skill that drafts outreach.
 
 The sales playbook. **Every skill reads this before it writes any
 outreach, proposal, or plan.** Owned and updated exclusively by
-`define-playbook`.
+`set-up-my-sales-info`.
 
-Structure (filled in by `define-playbook`):
+Structure (filled in by `set-up-my-sales-info`):
 
 - Company overview (name, site, 30s pitch, stage).
-- ICP (industry, size, region, stage, anchor accounts).
+- Ideal customer (industry, size, region, stage, anchor accounts).
 - Buying committee (champion, economic buyer, blocker, influencers).
 - Disqualifiers (3-5 hard nos).
 - Qualification framework (MEDDPICC / BANT / custom questions).
@@ -144,20 +144,20 @@ spans every folder  -  there's no per-domain sub-index.
 
 ### Entity indexes (single files, not per-record)
 
-- `leads.json`  -  flat array of lead rows touched by `find-leads` /
-  `research-account` / `score`. Row includes `id`, `slug`,
-  `company`, `contactName`, `email`, `source`, `fitScore`,
+- `leads.json`  -  flat array of lead rows touched by `find-me-leads`
+  / `research-an-account` / `score-my-pipeline`. Row includes `id`,
+  `slug`, `company`, `contactName`, `email`, `source`, `fitScore`,
   `lastTouchAt`, `status`.
-- `deals.json`  -  flat array of deals tracked via `prep-meeting` /
-  `capture-call-notes` / `draft-proposal` / `score
+- `deals.json`  -  flat array of deals tracked via `prep-a-meeting`
+  / `capture-my-call-notes` / `write-a-proposal` / `score-my-pipeline
   subject=deal-health`. Row includes `id`, `slug`, `company`,
-  `stage`, `arr`, `closeDate`, `healthScore`, `lastCallAt`,
+  `stage`, `annualRevenue`, `closeDate`, `healthScore`, `lastCallAt`,
   `lastFollowupAt`.
 - `customers.json`  -  flat array of current customers touched by
-  `plan-onboarding` / `score subject=customer-health` /
-  `surface-expansion` / `prep-meeting type=qbr` / `draft-outreach
-  stage=renewal|churn-save`. Row includes `id`, `slug`, `company`,
-  `arr`, `renewalDate`, `healthColor`, `lastQbrAt`.
+  `plan-an-onboarding` / `score-my-pipeline subject=customer-health`
+  / `find-my-expansions` / `prep-a-meeting type=account-review` /
+  `write-my-outreach stage=renewal|churn-save`. Row includes `id`,
+  `slug`, `company`, `annualRevenue`, `renewalDate`, `healthColor`, `lastAccountReviewAt`.
 
 ### `outputs.json`  -  the single index
 
@@ -168,14 +168,14 @@ interface OutputRow extends BaseRecord {
     | "lead-batch" | "account-brief" | "contact-enrichment" | "warm-paths"
     | "score"
     | "outreach"
-    | "call-prep" | "qbr-prep" | "call-notes" | "call-analysis"
+    | "call-prep" | "account-review-prep" | "call-notes" | "call-analysis"
     | "objection-reframe"
     | "proposal" | "close-plan"
     | "forecast" | "pipeline-report" | "crm-sweep" | "crm-query"
     | "routing-decision" | "task-queued"
     | "analysis"
     | "onboarding-plan" | "expansion-brief"
-    | "daily-brief";
+    | "brief";
   title: string;
   summary: string;              // 2-3 sentences  -  what this doc concludes
   path: string;                 // relative to agent root
@@ -194,22 +194,22 @@ Rules:
 
 | Folder | Written by | Notes |
 |---|---|---|
-| `personas/{segment}.md` | `profile-icp` | Sales-flavored (buying committee). |
-| `battlecards/{competitor}.md` | `build-battlecard` | Per-prospect-vs-competitor card. |
-| `leads/{slug}/*.md` | `find-leads`, `research-account` | `dossier.md`, `research.md`, `warm-paths.md`, `qualify.md`. |
-| `accounts/{slug}/*.md` | `research-account` (depth=full-brief) | Full cited account brief. |
-| `calls/{slug}/*.md` | `capture-call-notes`, `analyze` (subject=discovery-call) | `notes-{date}.md`, `analysis-{date}.md`. |
-| `deals/{slug}/*.md` | `prep-meeting`, `draft-outreach`, `draft-proposal`, `draft-close-plan` | `call-prep-{date}.md`, `followup-{date}.md`, `proposal-{date}.md`, `close-plan.md`. |
-| `customers/{slug}/*.md` | `plan-onboarding`, `prep-meeting` (type=qbr), `draft-outreach` (stage=renewal|churn-save), `surface-expansion` | `onboarding-plan.md`, `qbr-{quarter}.md`, `renewal-{date}.md`, `save-{date}.md`, `expansion-{date}.md`. |
-| `call-insights/{YYYY-MM-DD}.md` | `analyze` (subject=call-insights) | Cross-call synthesis. |
-| `outreach/{channel}-{slug}-{date}.md` | `draft-outreach` | `channel` = `email` / `script` / `linkedin` / `inbound-reply`. |
-| `briefs/{YYYY-MM-DD}.md` | `daily-brief` | Today's calendar + approvals + top-3 moves. |
-| `forecasts/{YYYY-WNN}.md` | `run-forecast` | Weekly roll-up. |
-| `pipeline-reports/{YYYY-WNN}.md` | `manage-crm` (action=query), `analyze` (subject=pipeline) | Pipeline readouts. |
-| `analyses/{subject}-{YYYY-MM-DD}.md` | `analyze` | `subject` = `win-loss` / `sales-health` / `pipeline` / `discovery-call` / `call-insights`. |
-| `scores/{subject}-{YYYY-MM-DD}.md` | `score` | `subject` = `lead` / `icp-fit` / `deal-health` / `customer-health`. |
-| `crm-reports/{action}-{YYYY-MM-DD}.md` | `manage-crm` | `action` = `clean` / `query` / `route`. |
-| `tasks/{YYYY-MM-DD}.md` | `manage-crm` (action=queue-followup) | Task-queue log. |
+| `personas/{segment}.md` | `profile-my-buyer` | Sales-flavored (buying committee). |
+| `battlecards/{competitor}.md` | `build-a-battlecard` | Per-prospect-vs-competitor card. |
+| `leads/{slug}/*.md` | `find-me-leads`, `research-an-account` | `dossier.md`, `research.md`, `warm-paths.md`, `qualify.md`. |
+| `accounts/{slug}/*.md` | `research-an-account` (depth=full-brief) | Full cited account brief. |
+| `calls/{slug}/*.md` | `capture-my-call-notes`, `check-my-sales` (subject=discovery-call) | `notes-{date}.md`, `analysis-{date}.md`. |
+| `deals/{slug}/*.md` | `prep-a-meeting`, `write-my-outreach`, `write-a-proposal`, `write-a-close-plan` | `call-prep-{date}.md`, `followup-{date}.md`, `proposal-{date}.md`, `close-plan.md`. |
+| `customers/{slug}/*.md` | `plan-an-onboarding`, `prep-a-meeting` (type=account-review), `write-my-outreach` (stage=renewal|churn-save), `find-my-expansions` | `onboarding-plan.md`, `account-review-{quarter}.md`, `renewal-{date}.md`, `save-{date}.md`, `expansion-{date}.md`. |
+| `call-insights/{YYYY-MM-DD}.md` | `check-my-sales` (subject=call-insights) | Cross-call synthesis. |
+| `outreach/{channel}-{slug}-{date}.md` | `write-my-outreach` | `channel` = `email` / `script` / `linkedin` / `inbound-reply`. |
+| `briefs/{YYYY-MM-DD}.md` | `brief-me-for-today` | Today's calendar + approvals + top-3 moves. |
+| `forecasts/{YYYY-WNN}.md` | `run-my-forecast` | Weekly roll-up. |
+| `pipeline-reports/{YYYY-WNN}.md` | `manage-my-crm` (action=query), `check-my-sales` (subject=pipeline) | Pipeline readouts. |
+| `analyses/{subject}-{YYYY-MM-DD}.md` | `check-my-sales` | `subject` = `win-loss` / `sales-health` / `pipeline` / `discovery-call` / `call-insights`. |
+| `scores/{subject}-{YYYY-MM-DD}.md` | `score-my-pipeline` | `subject` = `lead` / `lead-fit` / `deal-health` / `customer-health`. |
+| `crm-reports/{action}-{YYYY-MM-DD}.md` | `manage-my-crm` | `action` = `clean` / `query` / `route`. |
+| `tasks/{YYYY-MM-DD}.md` | `manage-my-crm` (action=queue-followup) | Task-queue log. |
 
 ---
 

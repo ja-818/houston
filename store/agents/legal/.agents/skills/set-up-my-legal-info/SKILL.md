@@ -2,7 +2,6 @@
 name: set-up-my-legal-info
 description: "Tell me the basics about your company so I can give you better legal help. I ask a few quick questions about your entity, cap table, contracts in force, templates, and any open risks. You only need to do this once, and I keep it updated as things change."
 version: 1
-tags: [legal, setup]
 category: Setup
 featured: yes
 image: scroll

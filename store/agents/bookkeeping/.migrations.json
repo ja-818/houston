@@ -1,0 +1,41 @@
+[
+  {
+    "from": "0.1.4",
+    "to": "0.1.5",
+    "renames": {
+      "add-a-party-rule": "categorize-transactions",
+      "analyze-variance-vs-budget-prior-period": "run-variance-analysis",
+      "are-the-books-clean-books-in-shape-audit": "audit-books",
+      "backfill-from-quickbooks-xero-prior-spreadsheet": "import-historical-books",
+      "book-depreciation-for-the-period": "prep-journal-entry",
+      "book-the-payroll-je-from-the-provider": "prep-journal-entry",
+      "build-the-asc-606-revenue-recognition-schedule": "calculate-revenue-recognition",
+      "categorize-founder-reimbursements-from-a-batch": "handle-expense-receipt",
+      "categorize-the-pending-transactions-queue": "categorize-transactions",
+      "classify-r-and-d-spend-for-the-credit-section-174": "classify-rd-expenses",
+      "compute-saas-metrics-arr-mrr-gross-margin-nrr": "prep-investor-financials",
+      "cutoff-check-what-got-booked-in-the-wrong-period": "run-monthly-close",
+      "draft-a-standard-journal-entry": "prep-journal-entry",
+      "draft-a-startup-optimized-chart-of-accounts": "build-chart-of-accounts",
+      "draft-the-bookkeeping-brief-that-anchors-every-other-output": "define-bookkeeping-context",
+      "draft-the-trial-balance": "generate-financial-statements",
+      "flag-cross-account-transfers": "reconcile-account",
+      "generate-the-balance-sheet": "generate-financial-statements",
+      "generate-the-cash-flow-statement": "generate-financial-statements",
+      "generate-the-p-and-l-with-period-over-period-comparison": "generate-financial-statements",
+      "hand-off-the-books-to-the-tax-preparer": "hand-off-to-tax",
+      "post-the-prior-period-s-reversing-entries": "prep-journal-entry",
+      "prep-the-1099-list-for-the-year": "track-vendor-1099s",
+      "prep-the-investor-board-financials-package": "prep-investor-financials",
+      "process-a-pile-of-bank-credit-card-statements": "process-statements",
+      "reconcile-an-account-against-the-statement": "reconcile-account",
+      "refresh-the-accruals-register": "review-accruals",
+      "run-the-monthly-close": "run-monthly-close",
+      "set-the-opening-trial-balance": "define-bookkeeping-context",
+      "state-by-state-sales-tax-nexus-check": "assess-sales-tax-nexus",
+      "support-an-audit-investor-dd-request": "audit-books",
+      "turn-a-receipt-into-a-categorized-expense": "handle-expense-receipt",
+      "what-s-our-burn-and-runway": "build-burn-runway-report"
+    }
+  }
+]

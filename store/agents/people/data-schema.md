@@ -49,7 +49,7 @@ interface ContextLedger {
       path: "context/people-context.md";
       lastUpdatedAt?: string;
     };
-    icp?: {
+    idealCustomer?: {
       // Usually unused for HR. Kept for parity with other verticals.
       industry?: string[];
       roles?: string[];
@@ -61,7 +61,7 @@ interface ContextLedger {
   };
   domains: {
     people?: {
-      hris?: "gusto" | "deel" | "rippling" | "justworks" | "other";
+      hrPlatform?: "gusto" | "deel" | "rippling" | "justworks" | "other";
       ats?: "ashby" | "greenhouse" | "lever" | "workable" | "other";
       chat?: "slack" | "discord" | "other";
       roster?: { name: string; role?: string; level?: string; slug: string }[];
@@ -102,7 +102,7 @@ continues. Never asks the same field twice.
 Markdown. 3-5 verbatim samples of the founder's writing (HR comms
 specifically) plus a short tone-notes block (greeting habits,
 closing habits, sentence length, formality, hard-news register).
-Written by `voice-calibration`; also mirrored into the voice-notes
+Written by `calibrate-my-voice`; also mirrored into the voice-notes
 section of `context/people-context.md`.
 
 ---
@@ -112,12 +112,12 @@ section of `context/people-context.md`.
 ### `context/people-context.md`
 
 The shared people doc. **Every skill reads this before it writes
-anything substantive**  -  offer, PIP, policy reply, stay script,
+anything substantive**  -  offer, performance improvement plan (PIP), policy reply, stay script,
 retention score, review cycle. Owned exclusively by
-`define-people-context`; voice-notes section is appended by
-`voice-calibration`.
+`set-up-my-people-info`; voice-notes section is appended by
+`calibrate-my-voice`.
 
-Structure (filled in by `define-people-context`):
+Structure (filled in by `set-up-my-people-info`):
 
 - Company values (4-6 with 1-line definitions).
 - Team shape (headcount by function, open reqs).
@@ -153,9 +153,8 @@ interface OutputRow extends BaseRecord {
     | "voice-calibration"
     | "candidate-evaluation" | "sourcing-list" | "interview-loop" | "offer"
     | "onboarding-plan" | "employee-dossier"
-    | "checkin-batch" | "review-cycle" | "performance-doc"
-    | "analysis"
-    | "approval" | "policy-reply" | "compliance-update";
+    | "review-cycle" | "performance-doc"
+    | "policy-reply" | "compliance-update";
   title: string;
   summary: string;
   path: string;
@@ -175,22 +174,19 @@ Rules:
 
 | Folder | Written by | Notes |
 |---|---|---|
-| `reqs/{role-slug}.md` | `source-candidates` / `evaluate-candidate` (seeded) | Criteria rubric per open role. |
+| `reqs/{role-slug}.md` | `source-candidates` / `evaluate-a-candidate` (seeded) | Criteria rubric per open role. |
 | `sourcing-lists/{role-slug}-{YYYY-MM-DD}.md` | `source-candidates` | Ranked sourcing batches. |
-| `candidates/{candidate-slug}.md` | `evaluate-candidate` | Appended dated sections (Screen / LinkedIn Score / Interview). |
-| `interview-loops/{candidate-slug}.md` | `prep-interviewer` / `coordinate-interviews` | Brief + schedule + debrief. |
-| `interview-loops/{candidate-slug}-debrief.md` | `debrief-loop` | Hire / no-hire memo. |
-| `offers/{candidate-slug}.md` | `draft-offer` | Always `status: "draft"`. |
-| `onboarding-plans/{employee-slug}.md` | `draft-onboarding-plan` | Day 0 / Week 1 / 30-60-90. |
-| `employee-dossiers/{employee-slug}.md` | `employee-dossier` | Aggregated profile. |
-| `checkins/{YYYY-MM-DD}.md` | `collect-checkins` | Batch per session. |
-| `review-cycles/{cycle-slug}.md` | `prep-review-cycle` | Templates + timeline. |
-| `performance-docs/pip-{employee-slug}.md` | `draft-performance-doc` (type=pip) | Draft only; may be an escalation note if the check fires. |
-| `performance-docs/stay-conversation-{employee-slug}.md` | `draft-performance-doc` (type=stay-conversation) | Verbal script, not email. |
-| `analyses/{subject}-{YYYY-MM-DD}.md` | `analyze` | `subject` = `people-health` / `retention-risk` / `employer-brand`. |
-| `approvals/{request-slug}.md` | `run-approval-flow` | |
-| `compliance-calendar.md` | `compliance-calendar` | Living doc at agent root. |
-| `leveling-drafts/{YYYY-MM-DD}.md` | `define-people-context` (leveling branch) | Optional draft file if the founder wants a standalone leveling artifact. |
+| `candidates/{candidate-slug}.md` | `evaluate-a-candidate` | Appended dated sections (Screen / LinkedIn Score / Interview). |
+| `interview-loops/{candidate-slug}.md` | `prep-an-interviewer` / `coordinate-an-interview-loop` | Brief + schedule + debrief. |
+| `interview-loops/{candidate-slug}-debrief.md` | `debrief-an-interview-loop` | Hire / no-hire memo. |
+| `offers/{candidate-slug}.md` | `draft-a-people-document` (type=offer-letter) | Always `status: "draft"`. |
+| `onboarding-plans/{employee-slug}.md` | `draft-a-people-document` (type=onboarding-plan) | Day 0 / Week 1 / 30-60-90 + welcome Slack + welcome email. |
+| `employee-dossiers/{employee-slug}.md` | `profile-an-employee` | Aggregated profile. |
+| `review-cycles/{cycle-slug}.md` | `prep-the-review-cycle` | Templates + timeline. |
+| `performance-docs/pip-{employee-slug}.md` | `draft-a-people-document` (type=pip) | Draft only; may be an escalation note if the check fires. |
+| `performance-docs/stay-conversation-{employee-slug}.md` | `draft-a-people-document` (type=stay-conversation) | Verbal script, not email. |
+| `compliance-calendar.md` | `track-compliance-deadlines` | Living doc at agent root. |
+| `leveling-drafts/{YYYY-MM-DD}.md` | `set-up-my-people-info` (leveling branch) | Optional draft file if the founder wants a standalone leveling artifact. |
 
 ---
 

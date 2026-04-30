@@ -61,7 +61,7 @@ interface ContextLedger {
       capturedAt: string;
     };
     suspenseCode?: {
-      code: string;                      // GL code, stored as string
+      code: string;                      // account code, stored as string
       name: string;                      // e.g. "Suspense"
       capturedAt: string;
     };
@@ -97,7 +97,7 @@ interface ContextLedger {
     };
     investors?: {
       cadence: "monthly" | "quarterly" | "both";
-      anchorKpis: string[];              // e.g. ["ARR","Gross Margin","Burn","Runway"]
+      anchorKpis: string[];              // e.g. ["Annual Revenue","Gross Margin","Burn","Runway"]
       format: "email" | "gdoc" | "notion" | "other";
       capturedAt: string;
     };
@@ -121,7 +121,7 @@ field twice.
 
 ### Other `config/` files
 
-- `config/chart-of-accounts.json`  -  the authoritative CoA. Shape:
+- `config/chart-of-accounts.json`  -  the authoritative chart of accounts. Shape:
   `[{code, name, type, parent?, statementSection, description?}]`
   where `type ∈ {"asset","liability","equity","revenue","cogs","expense"}`
   and `statementSection` groups lines on financial statements
@@ -132,7 +132,7 @@ field twice.
   rules: `{canonical_party: gl_code}`. Written by user confirmation
   inside `categorize-transactions` / `process-statements`.
 - `config/prior-categorizations.json`  -  rolling memory of vendor →
-  GL assignments, only for categorizations with `confidence ≥ 0.95`
+  account code assignments, only for categorizations with `confidence ≥ 0.95`
   or `source ∈ {rule, prior_year, transfer}`. Written atomically
   after each successful run.
 - `config/budget.json`  -  optional quarterly/rolling budget rows,
@@ -158,7 +158,7 @@ Structure (filled in by `define-bookkeeping-context`):
 - Accounting posture (cash vs. accrual, framework, any mid-year
   switches with date).
 - Bank accounts and credit cards (grouped by `last4`; each tied
-  to a GL code).
+  to an account code).
 - Revenue model (subscription / usage / services; ASC 606 posture).
 - Payroll posture (provider, cadence, team size, stock-comp plan).
 - Compliance footprint (state-filing footprint, R&D-credit posture,
@@ -166,7 +166,7 @@ Structure (filled in by `define-bookkeeping-context`):
 - Investor cadence (monthly / quarterly / none, anchor KPIs).
 - Tax preparer details (name, email, last year filed).
 - Hard nos (what I never do without sign-off  -  e.g., "don't book
-  SBC without founder approval of 409A valuation").
+  stock-based compensation without founder approval of 409A valuation").
 
 Not indexed in `outputs.json`  -  it's a live document, not a
 deliverable.
@@ -199,8 +199,8 @@ interface OutputRow extends BaseRecord {
 Rules:
 
 - Mark `draft` while iterating. Flip to `ready` after user sign-off.
-  `posted` only after the user confirms the underlying JE / filing
-  has been entered into QBO / Xero / the tax return.
+  `posted` only after the user confirms the underlying journal entry / filing
+  has been entered into QuickBooks Online / Xero / the tax return.
 - On update: refresh `updatedAt`, **never** touch `createdAt`.
 - **Never** overwrite the whole array  -  read, merge, write.
 
@@ -209,7 +209,7 @@ Rules:
 - `run-index.json`  -  every run (`process-statements` or
   `run-monthly-close`) with `{id, period, status, sheetUrl?,
   accountsIncluded[], suspenseTotal, pnlNetIncome}`.
-- `journal-entries.json`  -  every drafted JE with
+- `journal-entries.json`  -  every drafted journal entry with
   `{id, date, type, memo, lines[], status, postedTo?}`.
 - `accruals.json`  -  active + reversed accruals register.
 - `recon-breaks.json`  -  unmatched items across reconciliations
@@ -231,7 +231,7 @@ Rules:
 | `expenses/{YYYY-MM-DD}-{slug}.md` | `handle-expense-receipt` | One receipt = one file. |
 | `closes/{YYYY-MM}/package.md` | `run-monthly-close` | Top-level close narrative + links to every sub-artifact. |
 | `closes/{YYYY-MM}/cutoff-check.md` | `run-monthly-close` (subflow) | Unrecorded liabilities + cutoff issues. |
-| `journal-entries/{YYYY-MM}/{slug}.md` | `prep-journal-entry` | Per JE  -  human-readable with balanced lines. |
+| `journal-entries/{YYYY-MM}/{slug}.md` | `prep-journal-entry` | Per journal entry  -  human-readable with balanced lines. |
 | `accruals/register.md` | `review-accruals` | Living register  -  rewritten on each run. |
 | `revrec/{customer-slug}/{contract-slug}.json` | `calculate-revenue-recognition` | ASC 606 schedule per contract. |
 | `financials/{YYYY-MM}/{statement}.md` | `generate-financial-statements` | `statement` ∈ pnl / balance-sheet / cash-flow / trial-balance. |
@@ -269,8 +269,8 @@ Gate 2 re-dispatches may need them.
 
 ## Journal-entry schema
 
-Every JE  -  whether drafted by `prep-journal-entry`, embedded in a
-close package, or written as part of a revrec schedule  -  follows:
+Every journal entry  -  whether drafted by `prep-journal-entry`, embedded in a
+close package, or written as part of a revenue recognition schedule  -  follows:
 
 ```ts
 interface JournalEntry extends BaseRecord {
@@ -282,7 +282,7 @@ interface JournalEntry extends BaseRecord {
   reversesEntryId?: string;              // links back to the original if reversing
   period: string;                        // "YYYY-MM" accounting period
   lines: {
-    glCode: string;                      // text, validated against CoA
+    glCode: string;                      // text, validated against chart of accounts
     glName: string;
     debit: number;                       // 0 if credit-only
     credit: number;                      // 0 if debit-only
@@ -303,7 +303,7 @@ interface JournalEntry extends BaseRecord {
   reversing entry's sign convention to be the opposite of the
   original.
 - Never write `status: "posted"` without an explicit user
-  confirmation that the entry was posted to the GL.
+  confirmation that the entry was posted to the general ledger.
 
 ---
 

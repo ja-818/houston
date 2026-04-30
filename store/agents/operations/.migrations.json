@@ -1,0 +1,79 @@
+[
+  {
+    "from": "0.1.4",
+    "to": "0.1.5",
+    "renames": {
+      "analyze-an-experiment-ship-kill-iterate": "analyze",
+      "check-data-quality-on-a-table": "analyze",
+      "daily-anomaly-sweep-anything-weird": "analyze",
+      "audit-my-saas-spend-what-am-i-paying-for": "audit-saas-spend",
+      "prep-me-for-my-2pm-meeting": "brief",
+      "the-morning-brief-what-needs-me-today": "brief",
+      "turn-a-brain-dump-into-today-s-plan": "brief",
+      "turn-my-last-call-into-decisions-follow-ups": "brief",
+      "plan-a-trip-end-to-end": "coordinate-travel",
+      "draft-the-operating-doc-that-anchors-every-other-output": "define-operating-context",
+      "draft-a-renewal-negotiation-email": "draft-message",
+      "draft-replies-to-the-inbound-emails": "draft-message",
+      "draft-the-cancel-email-for-a-saas": "draft-message",
+      "draft-trial-outreach-to-a-supplier": "draft-message",
+      "reference-check-email-for-a-vendor": "draft-message",
+      "track-this-follow-up-so-i-don-t-drop-it": "draft-message",
+      "evaluate-a-supplier-against-my-criteria": "evaluate-supplier",
+      "pull-the-auto-renew-clauses-from-every-contract": "extract-contract-clauses",
+      "find-the-bottleneck-what-s-stuck": "identify-bottleneck",
+      "log-a-decision-with-the-full-context": "log-decision",
+      "draft-this-month-s-investor-update": "prep-package",
+      "prep-the-q-n-board-pack": "prep-package",
+      "compliance-check-is-this-vendor-clean": "research-compliance",
+      "score-this-inbound-against-my-criteria": "run-approval-flow",
+      "the-monday-operations-review": "run-review",
+      "the-weekly-metrics-rollup": "run-review",
+      "ask-a-data-question-i-ll-write-the-sql": "run-sql-query",
+      "book-a-meeting-with-someone-3-times-proposed": "schedule-meeting",
+      "spec-a-dashboard-i-can-actually-build": "spec-dashboard",
+      "weekly-research-brief-on-a-topic": "synthesize-signal",
+      "start-tracking-a-metric": "track-metric",
+      "refresh-the-okrs-what-s-on-and-off-track": "track-okr",
+      "build-my-renewal-calendar": "track-renewals",
+      "scan-my-calendar-for-the-week": "triage",
+      "triage-my-inbox-what-needs-me-today": "triage"
+    }
+  },
+  {
+    "from": "0.1.6",
+    "to": "0.1.7",
+    "renames": {
+      "define-operating-context": "set-up-my-ops-info",
+      "brief": "brief-me",
+      "run-review": "run-my-ops-review",
+      "log-decision": "log-a-decision",
+      "identify-bottleneck": "find-my-bottlenecks",
+      "track-okr": "track-my-okrs",
+      "prep-package": "prep-an-investor-package",
+      "synthesize-signal": "research-a-topic",
+      "triage": "triage-a-surface",
+      "schedule-meeting": "book-a-meeting",
+      "coordinate-travel": "plan-a-trip",
+      "draft-message": "draft-a-message",
+      "collect-updates": "collect-my-team-updates",
+      "run-approval-flow": "score-an-inbound",
+      "audit-saas-spend": "audit-my-saas-spend",
+      "track-renewals": "track-my-renewals",
+      "extract-contract-clauses": "read-a-contract",
+      "evaluate-supplier": "vet-a-vendor",
+      "research-compliance": "vet-a-vendor",
+      "track-metric": "set-up-tracking",
+      "spec-dashboard": "set-up-tracking",
+      "analyze": "analyze-my-data",
+      "run-sql-query": "ask-a-data-question"
+    }
+  },
+  {
+    "from": "0.1.7",
+    "to": "0.1.8",
+    "renames": {
+      "track-my-okrs": "track-my-goals"
+    }
+  }
+]

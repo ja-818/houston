@@ -86,5 +86,39 @@
       "traffic-light-an-inbound-nda": "quick-check-on-an-nda",
       "triage-your-legal-inbox-for-what-needs-you": "sort-todays-legal-mail"
     }
+  },
+  {
+    "from": "0.2.1",
+    "to": "0.2.2",
+    "renames": {
+      "answer-a-customer-data-request": "draft-a-legal-document",
+      "auto-answer-an-enterprise-security-questionnaire": "answer-a-security-questionnaire",
+      "calculate-my-delaware-franchise-tax": "prepare-the-delaware-annual-filing",
+      "check-my-contract-templates-are-still-current": "audit-compliance",
+      "check-my-legal-deadlines": "track-deadlines-and-signatures",
+      "check-my-privacy-policy-is-current": "audit-compliance",
+      "draft-a-board-consent": "draft-a-legal-document",
+      "draft-a-contractor-agreement": "draft-a-legal-document",
+      "draft-a-customer-contract": "draft-a-legal-document",
+      "draft-an-nda": "draft-a-legal-document",
+      "draft-or-update-my-privacy-policy": "draft-a-legal-document",
+      "draft-terms-of-service": "draft-a-legal-document",
+      "fully-review-a-customer-contract": "review-a-contract",
+      "is-this-name-free": "check-a-trademark",
+      "log-a-signed-agreement": "track-deadlines-and-signatures",
+      "nudge-pending-signatures": "track-deadlines-and-signatures",
+      "plan-pushback-after-a-review": "plan-contract-pushback",
+      "prepare-a-first-hire-offer": "prepare-a-job-offer",
+      "prepare-a-handoff-to-a-lawyer": "draft-a-legal-document",
+      "prepare-a-trademark-handoff-to-a-lawyer": "draft-a-legal-document",
+      "pull-out-the-clauses-of-a-contract": "review-a-contract",
+      "quick-check-on-an-nda": "review-a-contract",
+      "record-my-legal-basics": "set-up-my-legal-info",
+      "refresh-my-privacy-vendor-list": "audit-compliance",
+      "review-an-ip-clause-in-a-contract": "review-a-contract",
+      "sort-todays-legal-mail": "sort-my-legal-inbox",
+      "weekly-legal-review": "track-deadlines-and-signatures",
+      "write-a-quick-legal-memo": "answer-a-legal-question"
+    }
   }
 ]

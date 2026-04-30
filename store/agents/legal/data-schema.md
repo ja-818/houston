@@ -199,7 +199,6 @@ Rules:
 | `intake-summaries/{YYYY-MM-DD}.md` | `sort-my-legal-inbox` | |
 | `annual-filings/{YYYY}-delaware.md` | `prepare-the-delaware-annual-filing` | |
 | `tm-searches/{mark-slug}-{YYYY-MM-DD}.md` | `check-a-trademark` | |
-| `offer-packets/{candidate-slug}-{YYYY-MM-DD}/` | `prepare-a-job-offer` | 4 files: offer letter, CIIAA, option grant notice, exercise agreement + index. |
 | `dsr-responses/{request-id}-{YYYY-MM-DD}/` | `draft-a-legal-document` (type=dsr-response) | 3 files: acknowledgment, identity verification, export cover note. |
 
 ---

@@ -51,7 +51,7 @@ interface ContextLedger {
       path: "context/operations-context.md";
       lastUpdatedAt?: string;
     };
-    icp?: {
+    idealCustomer?: {
       industry: string[];
       roles: string[];
       capturedAt: string;
@@ -107,11 +107,11 @@ field twice.
 - `config/voice.md`  -  3-5 verbatim samples + tone notes. Written
   the first time a drafting skill runs.
 - `config/metrics.json`  -  metric registry. Written/updated by
-  `track-metric`.
+  `set-up-tracking` (scope=metric).
 - `config/schemas.json`  -  table schemas + freshness expectations.
-  Lazy-introspected by `run-sql-query` / `analyze subject=data-qa`.
+  Lazy-introspected by `ask-a-data-question` / `analyze-my-data subject=data-qa`.
 - `config/dashboards.json`  -  dashboard specs. Written by
-  `spec-dashboard`.
+  `set-up-tracking` (scope=dashboard).
 
 ---
 
@@ -121,9 +121,9 @@ field twice.
 
 The operating doc. **Every skill reads this before it writes any
 substantive artifact.** Owned and updated exclusively by
-`define-operating-context`.
+`set-up-my-ops-info`.
 
-Structure (filled in by `define-operating-context`):
+Structure (filled in by `set-up-my-ops-info`):
 
 - Company overview (name, site, 30s pitch, stage, why now).
 - Active priorities (2-3 things this quarter).
@@ -153,7 +153,7 @@ interface OutputRow extends BaseRecord {
     | "triage" | "calendar-scan"
     | "reply-draft" | "followup-log" | "followup-draft" | "vendor-draft"
     | "signal" | "update-roundup" | "approval-decision"
-    | "decision" | "bottleneck" | "okr-snapshot"
+    | "decision" | "bottleneck" | "goal-snapshot"
     | "weekly-review" | "metrics-rollup"
     | "board-pack" | "investor-update"
     | "travel-plan" | "schedule-proposal"
@@ -181,7 +181,7 @@ Rules:
   `decisions/{slug}/decision.md`.
 - `bottlenecks.json`  -  named bottlenecks + hypothesis + owner +
   status.
-- `okr-history.json`  -  OKR snapshots over time.
+- `goal-history.json`  -  goal snapshots over time.
 - `metrics-daily.json`  -  daily metric snapshots.
 - `anomalies.json`  -  open + resolved anomaly records.
 - `followups.json`  -  commitment ledger (who / what / by when /
@@ -192,35 +192,35 @@ Rules:
 
 | Folder | Written by | Notes |
 |---|---|---|
-| `briefs/{YYYY-MM-DD}.md` | `brief` (mode=daily) | Plus `-dump.md` for brain-dump sub-mode. |
-| `meetings/{YYYY-MM-DD}-{slug}-pre.md` | `brief` (mode=meeting-pre) | Deep attendee pre-read. |
-| `meetings/{YYYY-MM-DD}-{slug}-post.md` | `brief` (mode=meeting-post) | Decisions + owners + follow-ups. |
-| `triage/{YYYY-MM-DD}.md` | `triage` (surface=inbox) | `-HH` suffix for second pass same day. |
-| `calendar-scans/{YYYY-MM-DD}.md` | `triage` (surface=calendar) | Upserts `calendar-conflicts.json`. |
-| `drafts/reply-{YYYY-MM-DD}-{slug}.md` | `draft-message` (type=reply) | Also saves inbox draft via Composio. |
-| `drafts/followup-{YYYY-MM-DD}-{slug}.md` | `draft-message` (type=followup, HANDLE) | |
-| `drafts/vendor-{sub-type}-{vendor-slug}.md` | `draft-message` (type=vendor) | `sub-type` ∈ renewal / cancel / trial / reference-check. |
-| `signals/{slug}-{YYYY-MM-DD}.md` | `synthesize-signal` | Cited briefs. |
-| `updates/{YYYY-MM-DD}.md` | `collect-updates` | Team update roundup. |
-| `reviews/{YYYY-MM-DD}.md` | `run-review` (period=weekly) | Monday review. |
-| `rollups/{YYYY-MM-DD}.md` | `run-review` (period=metrics-rollup) | Cross-metric WoW. |
-| `approvals/{kind}-{slug}.md` | `run-approval-flow` | Rubric-scored. |
-| `decisions/{slug}/decision.md` | `log-decision` | Plus `decisions.json` row. |
-| `bottlenecks/{slug}.md` | `identify-bottleneck` | Plus `bottlenecks.json` row. |
-| `okrs/{yyyy-qq}.md` | `track-okr` | Plus `okr-history.json` snapshot. |
-| `board-packs/{yyyy-qq}/board-pack.md` | `prep-package` (type=board-pack) | Optional Google Doc mirror. |
-| `investor-updates/{yyyy-qq}/update.md` | `prep-package` (type=investor-update) | Optional Google Doc mirror. |
-| `meetings/{slug}-proposal.md` | `schedule-meeting` | Scheduling proposal + outreach draft. |
-| `trips/{slug}/` | `coordinate-travel` | Summary + itinerary + packing list. |
-| `saas-audits/{YYYY-MM-DD}.md` | `audit-saas-spend` | |
-| `contracts/{vendor-slug}/` | source of truth for contracts + `extract-contract-clauses` writes extract.md. | |
-| `renewals/calendar.md` + `renewals/{yyyy-qq}.md` | `track-renewals` | Living + quarterly digest. |
-| `evaluations/{supplier-slug}.md` | `evaluate-supplier` | |
-| `compliance-reports/{company-slug}.md` | `research-compliance` | |
-| `analyses/experiment-{slug}-{YYYY-MM-DD}.md` | `analyze` (subject=experiment) | |
-| `analyses/anomaly-sweep-{YYYY-MM-DD}.md` | `analyze` (subject=anomaly) | Plus `anomalies.json` upsert. |
-| `data-quality-reports/{YYYY-MM-DD}/report.md` | `analyze` (subject=data-qa) | |
-| `queries/{slug}/query.sql` + `result-latest.csv` | `run-sql-query` | Saved for reuse. |
+| `briefs/{YYYY-MM-DD}.md` | `brief-me` (mode=daily) | Plus `-dump.md` for brain-dump sub-mode. |
+| `meetings/{YYYY-MM-DD}-{slug}-pre.md` | `brief-me` (mode=meeting-pre) | Deep attendee pre-read. |
+| `meetings/{YYYY-MM-DD}-{slug}-post.md` | `brief-me` (mode=meeting-post) | Decisions + owners + follow-ups. |
+| `triage/{YYYY-MM-DD}.md` | `triage-a-surface` (surface=inbox) | `-HH` suffix for second pass same day. |
+| `calendar-scans/{YYYY-MM-DD}.md` | `triage-a-surface` (surface=calendar) | Upserts `calendar-conflicts.json`. |
+| `drafts/reply-{YYYY-MM-DD}-{slug}.md` | `draft-a-message` (type=reply) | Also saves inbox draft via Composio. |
+| `drafts/followup-{YYYY-MM-DD}-{slug}.md` | `draft-a-message` (type=followup, HANDLE) | |
+| `drafts/vendor-{sub-type}-{vendor-slug}.md` | `draft-a-message` (type=vendor) | `sub-type` ∈ renewal / cancel / trial / reference-check. |
+| `signals/{slug}-{YYYY-MM-DD}.md` | `research-a-topic` | Cited briefs. |
+| `updates/{YYYY-MM-DD}.md` | `collect-my-team-updates` | Team update roundup. |
+| `reviews/{YYYY-MM-DD}.md` | `run-my-ops-review` (period=weekly) | Monday review. |
+| `rollups/{YYYY-MM-DD}.md` | `run-my-ops-review` (period=metrics-rollup) | Cross-metric WoW. |
+| `approvals/{kind}-{slug}.md` | `score-an-inbound` | Rubric-scored. |
+| `decisions/{slug}/decision.md` | `log-a-decision` | Plus `decisions.json` row. |
+| `bottlenecks/{slug}.md` | `find-my-bottlenecks` | Plus `bottlenecks.json` row. |
+| `goals/{yyyy-qq}.md` | `track-my-goals` | Plus `goal-history.json` snapshot. |
+| `board-packs/{yyyy-qq}/board-pack.md` | `prep-an-investor-package` (type=board-pack) | Optional Google Doc mirror. |
+| `investor-updates/{yyyy-qq}/update.md` | `prep-an-investor-package` (type=investor-update) | Optional Google Doc mirror. |
+| `meetings/{slug}-proposal.md` | `book-a-meeting` | Scheduling proposal + outreach draft. |
+| `trips/{slug}/` | `plan-a-trip` | Summary + itinerary + packing list. |
+| `saas-audits/{YYYY-MM-DD}.md` | `audit-my-saas-spend` | |
+| `contracts/{vendor-slug}/` | source of truth for contracts + `read-a-contract` writes extract.md. | |
+| `renewals/calendar.md` + `renewals/{yyyy-qq}.md` | `track-my-renewals` | Living + quarterly digest. |
+| `evaluations/{supplier-slug}.md` | `vet-a-vendor` (aspect=fit) | |
+| `compliance-reports/{company-slug}.md` | `vet-a-vendor` (aspect=compliance) | |
+| `analyses/experiment-{slug}-{YYYY-MM-DD}.md` | `analyze-my-data` (subject=experiment) | |
+| `analyses/anomaly-sweep-{YYYY-MM-DD}.md` | `analyze-my-data` (subject=anomaly) | Plus `anomalies.json` upsert. |
+| `data-quality-reports/{YYYY-MM-DD}/report.md` | `analyze-my-data` (subject=data-qa) | |
+| `queries/{slug}/query.sql` + `result-latest.csv` | `ask-a-data-question` | Saved for reuse. |
 
 ---
 

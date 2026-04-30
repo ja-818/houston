@@ -2,7 +2,6 @@
 name: draft-a-legal-document
 description: "Draft a legal document for you, like an NDA, a customer contract, an offer letter, a privacy policy, terms of service, a board decision, a reply to a customer data request, or a brief to send a real lawyer. I work from your existing templates if I have them, or from market-standard wording with a clear note. Drafts only, never sent or signed."
 version: 1
-tags: [legal, drafting]
 category: Drafting
 featured: yes
 image: scroll
@@ -43,6 +42,7 @@ User names type in plain English ("draft NDA with Acme", "write our privacy poli
 ## When to use
 
 - Explicit: "draft {type}", "write our privacy policy", "respond to this DSR", "escalate this to counsel".
+- Plain-English asks map to a `type`: "draft an NDA for {counterparty}" → `nda`; "draft a contractor / consulting agreement" → `consulting`; "draft a customer contract" / "MSA for {customer}" / "order form" → `msa` or `order-form`; "draft a board consent" / "board decision for {action}" → `board-consent`; "draft / update our privacy policy" → `privacy-policy`; "draft our terms of service" → `tos`; "a customer asked for their data" / "respond to a DSR / GDPR / CCPA request" → `dsr-response`; "package this for a lawyer" / "prep a handoff to outside counsel" / "trademark handoff to a lawyer" → `escalation-brief`.
 - Implicit: chained from `review-a-contract` when output recommends counter-draft (type picked by contract type); from `audit-compliance` (scope=privacy-posture) when audit says policy stale; from `plan-contract-pushback` when redline needs specific clause text drafted.
 
 ## Ledger fields I read

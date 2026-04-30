@@ -2,9 +2,8 @@
 name: track-deadlines-and-signatures
 description: "Keep tabs on what's outstanding on the legal side. Pick what you need: chase pending signatures, log a freshly signed agreement, see what deadlines are coming up, or get a Monday rollup of the week. I keep a running list so nothing slips."
 version: 1
-tags: [legal, tracking]
 category: Tracking
-featured: yes
+featured: no
 image: scroll
 integrations: [googledrive, gmail, notion]
 ---
@@ -26,6 +25,7 @@ If user name scope plain English ("chase signatures", "log this deal", "what's d
 ## When to use
 
 - Explicit: "where are my signatures", "log {counterparty}'s executed {type}", "what's due soon / overdue", "Monday legal review", "weekly legal readout".
+- Plain-English asks map to a `scope`: "nudge / chase pending signatures" / "who hasn't signed yet" → `signatures`; "I just signed something, log it" / "log this signed agreement" / "track this auto-renewal" → `counterparties`; "check my legal deadlines" / "what's coming up in the next 90 days" → `deadlines`; "weekly legal review" / "Monday rollup" → `weekly-review`.
 - Implicit: chained from `review-a-contract` (any mode) to `counterparties` when contract hit executed status; from scheduled routines for `weekly-review` + `deadlines`; from `sort-my-legal-inbox` when detect executed-copy attachment for `counterparties`.
 
 ## Ledger fields I read
