@@ -67,22 +67,32 @@ Step-by-step instructions Claude follows when the action runs.
 1. **Engine** parses SKILL.md frontmatter via `serde_yml` (`engine/houston-skills/src/format.rs`). Unknown fields are silently ignored — old skills with `icon:` / `starter_prompt:` still parse.
 2. Engine returns the full `SkillSummaryResponse` on `GET /v1/skills`.
 3. **App** (`useSkills` query → `tauri.ts` → `engine-client`) maps the snake/camel-case wire shape back to app's `SkillSummary`.
-4. **`useAgentChatPanel`** (`app/src/components/use-agent-chat-panel.tsx`) — single source of truth for the per-agent panel UX. Owns:
+4. **Action cards** use `app/src/components/skill-card.tsx` across the chat empty state, picker, and Actions tab. Keep these in sync by reusing the component, not recreating card markup.
+5. **`useAgentChatPanel`** (`app/src/components/use-agent-chat-panel.tsx`) — single source of truth for the per-agent panel UX. Owns:
    - skill discovery (featured cards on empty state)
    - selected Action chip above the composer
    - Action-only send interception
    - composer model selector + Actions button
    - Composio link card renderer
    - file-tool result renderer
-   - `renderUserMessage` — decodes the action marker into a card
-5. Both **BoardTab** (per-agent kanban) and **Dashboard** (Mission Control / cross-agent kanban) consume this hook so the right panel is identical in both views.
+   - `renderUserMessage` — decodes action + attachment markers into cards
+6. Both **BoardTab** (per-agent kanban) and **Dashboard** (Mission Control / cross-agent kanban) consume this hook so the right panel is identical in both views.
+
+## Community search behavior
+
+`POST /v1/skills/community/search` calls `skills.sh`, which can rate-limit.
+Engine owns the resilience: successful searches are cached in-memory, outbound
+requests are globally spaced, and stale cached results are returned during a
+temporary 429/network failure. App search callers handle remaining failures
+inline in the Add Skills UI; they should not show global "Houston problem" bug
+toasts for marketplace search misses.
 
 ## Action invocation marker (chat persistence)
 
 When the user runs an action, the persisted user_message body is:
 
 ```
-<!--houston:action {"skill":"research-company","displayName":"Research a company","image":"...","description":"...","integrations":["tavily"],"fields":[],"message":"Focus on pricing."}-->
+<!--houston:action {"skill":"research-company","displayName":"Research a company","image":"...","description":"...","integrations":["tavily"],"fields":[],"message":"Focus on pricing.","attachments":[]}-->
 
 Use the research-company skill.
 
@@ -91,8 +101,27 @@ Focus on pricing.
 
 - The HTML-comment marker is inert text to Claude (it ignores it) but carries everything the chat renderer needs to draw the card. Single source of truth = single persisted body.
 - The marker `message` is the user's optional composer text. The body is the Claude-facing prompt and always starts with `Use the <skill> skill.`.
+- If files were uploaded with the action, `attachments` carries `{name,path}` entries. The renderer shows only the count badge; the Claude-facing body still contains the `[User attached these files...]` path block.
 - Decoder lives in `@houston-ai/chat`'s `action-message.ts` so desktop AND mobile render the same card from the same payload.
 - Encoder (`encodeActionMessage`) + Claude-prompt assembler (`buildActionClaudePrompt`) live in `app/src/lib/action-message.ts` — only the desktop sends actions today.
+
+## Attachment message marker (chat persistence)
+
+Regular messages with uploaded files follow the same "single persisted body"
+pattern as Actions:
+
+```
+<!--houston:attachments {"message":"Summarize this","files":[{"name":"brief.pdf","path":"/Users/.../brief.pdf"}]}-->
+
+Summarize this
+
+[User attached these files. Read them with the Read tool if needed:
+- /Users/.../brief.pdf]
+```
+
+- The model receives the same path block as before, so file access behavior does not change.
+- The UI decodes the marker and renders the user text plus a compact paperclip badge ("1 file attached" / "N files attached"). Absolute paths are never displayed.
+- Decoder + shared badge renderer live in `@houston-ai/chat` (`attachment-message.ts`, `user-attachment-message.tsx`). Desktop encoder lives in `app/src/lib/attachment-message.ts`.
 
 ## Authoring an action via Claude
 

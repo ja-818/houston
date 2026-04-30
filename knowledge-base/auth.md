@@ -125,6 +125,15 @@ OpenAI provider status should prefer `codex login status` over shallow
 Codex versions or unrelated config-load failures, because config drift should
 not look like sign-out.
 
+Provider status uses tri-state auth: `authenticated`, `unauthenticated`, or
+`unknown`. Reconnect UI renders from feed signals only when status confirms
+`unauthenticated`; `unknown` resolves the signal without a card.
+
+Claude Code can sometimes return `Error: Unknown error` for non-auth failures.
+Treat that shape as a prompt to run `claude auth status`, not as logout by
+itself. Emit `AuthRequired` only when the status probe confirms
+`unauthenticated`.
+
 Never mutate `~/.codex/config.toml` to make Codex read Houston agent
 instructions. Agent directories already expose `CLAUDE.md` through an
 `AGENTS.md` symlink, and global Codex config writes can land under the active

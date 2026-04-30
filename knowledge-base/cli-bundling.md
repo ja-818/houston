@@ -159,13 +159,17 @@ Mirrors `/v1/composio/*`:
   `ClaudeCliInstalling` / `ClaudeCliReady` / `ClaudeCliFailed` events.
 
 `ProviderStatus` (returned by `GET /v1/providers/<name>/status`) gains
-two new fields:
+three status fields beyond provider + CLI name:
 
 - `installSource: "bundled" | "managed" | "path" | "missing"` —
   Houston's view of where the binary came from. Renders as a chip in
   the provider settings UI.
 - `cliPath: string | null` — absolute path Houston will spawn.
   Surfaces in diagnostics.
+- `authState: "authenticated" | "unauthenticated" | "unknown"` —
+  tri-state provider auth. `unknown` means the CLI status probe failed
+  or returned an unrecognized shape; reconnect UI must not treat it as
+  logout.
 
 ## DMG size
 

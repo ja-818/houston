@@ -176,6 +176,12 @@ export function Sidebar({ children }: { children: ReactNode }) {
         onAdd={() => setDialogOpen(true)}
         onRename={handleRename}
         onDelete={handleDelete}
+        labels={{
+          addItem: t("shell:sidebar.addAgent"),
+          moreActions: t("shell:sidebar.agentActions"),
+          renameItem: t("common:actions.rename"),
+          deleteItem: t("common:actions.delete"),
+        }}
         footer={
           <div className="flex flex-col">
             <UserMenu />

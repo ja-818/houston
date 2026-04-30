@@ -73,11 +73,12 @@ PostHog → BigQuery plugin → target GCP project (burns credits). SQL-queryabl
 - **Rust panics:** Captured via sentry panic handler.
 - **Check:** User reports crash or weird behavior → Sentry dashboard BEFORE local logs.
 
-## In-app bug reports (Slack webhook)
+## In-app bug reports (Linear issue creation)
 
-- **Frontend:** `app/src/lib/error-toast.ts` shows the "Report bug" action. `app/src/lib/bug-report.ts` builds the Slack payload and attaches recent frontend + backend logs.
-- **Native delivery:** `app/src-tauri/src/bug_report.rs` posts to Slack with `reqwest`. Do not post the webhook from the webview; Slack webhooks can fail under browser CORS, and the URL does not belong in the JS bundle.
-- **Config:** `SLACK_BUG_WEBHOOK_URL` is read from runtime env for dev and `option_env!()` for release builds. CI passes it in `.github/workflows/release.yml`.
+- **Frontend:** `app/src/lib/error-toast.ts` shows the "Report bug" action. `app/src/lib/bug-report.ts` sends a provider-neutral bug report object with recent frontend + backend logs.
+- **Native delivery:** `app/src-tauri/src/bug_report/` creates a Linear issue with `reqwest` against `https://api.linear.app/graphql`. Do not post from the webview; the Linear API key does not belong in the JS bundle.
+- **Config:** `LINEAR_API_KEY` + `LINEAR_TEAM_ID` are read from runtime env, `app/.env.local`, `app/src-tauri/.env.local`, and `option_env!()` for release builds. CI passes them in `.github/workflows/release.yml`. Release builds embed the key in the native app, so never use a broad Linear key. Use a key restricted to "Create issues" and the target team only. Bug reports look up and apply the `User Bug` label; override with optional `LINEAR_BUG_LABEL_NAME`.
+- **Local smoke:** `cd app/src-tauri && LINEAR_API_KEY=... LINEAR_TEAM_ID=... cargo test creates_real_linear_issue_when_env_is_set -- --ignored` creates one real Linear issue.
 
 ## Required env vars
 
@@ -95,7 +96,8 @@ Shell (local builds) AND GitHub Secrets (CI):
 | `POSTHOG_HOST` | PostHog ingest host | `https://us.i.posthog.com` (or EU equivalent) |
 | `SUPABASE_URL` | Supabase project URL | Supabase → Project settings → API → Project URL |
 | `SUPABASE_ANON_KEY` | Supabase anon key (public-safe, RLS-gated) | Supabase → Project settings → API → Project API keys → `anon` `public` |
-| `SLACK_BUG_WEBHOOK_URL` | Incoming webhook for in-app bug reports | Slack App → Incoming Webhooks |
+| `LINEAR_API_KEY` | Create in-app bug-report issues | Linear → Settings → Account → Security & Access → Personal API keys |
+| `LINEAR_TEAM_ID` | Target team for in-app bug-report issues | Linear command menu → Copy model UUID on the target team |
 | `SENTRY_DSN` | Crash reporting DSN | sentry.io project settings |
 
 CI also needs as Secrets:

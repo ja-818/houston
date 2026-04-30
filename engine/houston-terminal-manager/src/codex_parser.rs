@@ -3,7 +3,7 @@
 //! Maps Codex events to the same `FeedItem` variants used by the Claude parser,
 //! so the rest of the stack (session_runner, frontend) is provider-agnostic.
 
-use super::auth_error::{AUTH_RETRY_MARKER, is_auth_retry_noise};
+use super::auth_error::{is_auth_retry_noise, AUTH_RETRY_MARKER};
 use super::types::FeedItem;
 use serde::Deserialize;
 

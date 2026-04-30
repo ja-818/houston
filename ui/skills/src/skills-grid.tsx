@@ -1,11 +1,11 @@
 /**
- * SkillsGrid — installed-skills surface.
+ * SkillsGrid - installed actions surface.
  *
  * Two layouts:
  *   - Empty: a centered `<Empty>` element on the host's white page (no card).
  *   - Has content: a meta row (count + Add CTA) above a gray section card
  *     containing the row list. Title is omitted because the host tab already
- *     labels this surface "Skills".
+ *     labels this surface "Actions".
  */
 import { useMemo, useState } from "react"
 import {
@@ -36,7 +36,7 @@ export interface SkillsGridProps {
   onSkillClick: (skill: Skill) => void
   /** Delete a skill by name. Enables per-row trash buttons when provided. */
   onDelete?: (name: string) => Promise<void>
-  /** Search skills.sh. Required to enable the marketplace modal. */
+  /** Search Skills.sh. Required to enable the marketplace modal. */
   onSearch?: (query: string) => Promise<CommunitySkill[]>
   /** Install a single community skill. Returns installed skill name. */
   onInstallCommunity?: (skill: CommunitySkill) => Promise<string>

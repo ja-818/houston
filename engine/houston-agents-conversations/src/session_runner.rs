@@ -7,9 +7,10 @@ use crate::session_id_tracker::SessionIdHandle;
 use crate::session_pids::SessionPidMap;
 use houston_db::Database;
 use houston_terminal_manager::auth_error::{is_auth_error, is_auth_retry_marker};
+use houston_terminal_manager::provider_auth::{probe_claude_auth_status, ProviderAuthState};
 use houston_terminal_manager::{FeedItem, Provider, SessionManager, SessionStatus, SessionUpdate};
 use houston_ui_events::{DynEventSink, HoustonEvent};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Result of a completed session.
 pub struct SessionResult {
@@ -35,16 +36,26 @@ pub struct PersistOptions {
 enum AuthFeedAction {
     None,
     DeferUntilExit,
+    VerifyProviderStatus,
     RequireNow,
 }
 
 fn classify_auth_feed_message(provider: Provider, message: &str) -> AuthFeedAction {
     if is_auth_retry_marker(message) {
         AuthFeedAction::DeferUntilExit
-    } else if is_auth_error(message) || is_opaque_claude_auth_error(provider, message) {
+    } else if is_auth_error(message) {
         AuthFeedAction::RequireNow
+    } else if is_opaque_claude_auth_error(provider, message) {
+        AuthFeedAction::VerifyProviderStatus
     } else {
         AuthFeedAction::None
+    }
+}
+
+async fn provider_auth_state(provider: Provider) -> ProviderAuthState {
+    match provider {
+        Provider::Anthropic => probe_claude_auth_status(Path::new("claude")).await,
+        Provider::OpenAI => ProviderAuthState::Unknown,
     }
 }
 
@@ -91,6 +102,7 @@ pub fn spawn_and_monitor(
     let key = session_key;
     let agent_path_for_events = agent_path;
     let mut persist = persist;
+    let original_user_message = persist.as_ref().and_then(|opts| opts.user_message.clone());
     tokio::spawn(async move {
         let mut response_text: Option<String> = None;
         let mut claude_session_id: Option<String> = None;
@@ -136,6 +148,40 @@ pub fn spawn_and_monitor(
                                     "[session_runner] auth retry marker detected — deferring AuthRequired until session exit"
                                 );
                                 continue;
+                            }
+                            AuthFeedAction::VerifyProviderStatus => {
+                                let auth_state = provider_auth_state(provider_kind).await;
+                                if auth_state != ProviderAuthState::Unauthenticated {
+                                    tracing::info!(
+                                        "[session_runner] opaque provider error was not confirmed as logout: provider={provider_str}, auth_state={auth_state:?}"
+                                    );
+                                } else {
+                                    saw_auth_error = true;
+                                    if !sent_auth_required {
+                                        sent_auth_required = true;
+                                        tracing::info!(
+                                            "[session_runner] emitting AuthRequired for provider={provider_str} after status verification"
+                                        );
+                                        sink.emit(HoustonEvent::AuthRequired {
+                                            provider: provider_str.clone(),
+                                            message: msg.clone(),
+                                        });
+                                    }
+                                    if !sent_auth_checking {
+                                        sent_auth_checking = true;
+                                        tracing::info!(
+                                            "[session_runner] auth issue detected ({msg:?}) — emitting Checking connection..."
+                                        );
+                                        sink.emit(HoustonEvent::FeedItem {
+                                            agent_path: agent_path_for_events.clone(),
+                                            session_key: key.clone(),
+                                            item: FeedItem::SystemMessage(
+                                                "Checking connection...".to_string(),
+                                            ),
+                                        });
+                                    }
+                                    continue;
+                                }
                             }
                             AuthFeedAction::RequireNow => {
                                 saw_auth_error = true;
@@ -199,6 +245,14 @@ pub fn spawn_and_monitor(
                 SessionUpdate::ResumeInvalid => {
                     if let Some(ref h) = session_id_handle {
                         h.clear_current_preserving_history().await;
+                    }
+                    claude_session_id = None;
+                    if let Some(ref mut opts) = persist {
+                        opts.claude_session_id = None;
+                        restore_pending_user_message(
+                            &mut opts.user_message,
+                            &original_user_message,
+                        );
                     }
                     continue;
                 }
@@ -264,9 +318,14 @@ pub fn spawn_and_monitor(
                     // slot). No feed marker needed — the card is anchored to
                     // store state, not to a specific FeedItem.
                     if let SessionStatus::Error(ref e) = status {
-                        let auth_error = saw_auth_error
-                            || is_auth_error(e)
-                            || is_opaque_claude_auth_error(provider_kind, e);
+                        let auth_error = if saw_auth_error || is_auth_error(e) {
+                            true
+                        } else if is_opaque_claude_auth_error(provider_kind, e) {
+                            provider_auth_state(provider_kind).await
+                                == ProviderAuthState::Unauthenticated
+                        } else {
+                            false
+                        };
                         tracing::info!(
                             "[session_runner] session error: {e:?} | saw_auth_error={saw_auth_error} | is_auth_error={auth_error} | provider={provider_str}"
                         );
@@ -311,6 +370,10 @@ fn serialize_for_persist(item: &FeedItem) -> Option<(String, String)> {
     match item {
         FeedItem::AssistantText(t) => Some(("assistant_text".into(), json_str(t))),
         FeedItem::UserMessage(t) => Some(("user_message".into(), json_str(t))),
+        FeedItem::ToolRuntimeError { kind, details } => {
+            let data = serde_json::json!({ "kind": kind, "details": details });
+            Some(("tool_runtime_error".into(), data.to_string()))
+        }
         FeedItem::ToolCall { name, input } => {
             let data = serde_json::json!({ "name": name, "input": input });
             Some(("tool_call".into(), data.to_string()))
@@ -351,12 +414,26 @@ fn is_opaque_claude_auth_error(provider: Provider, message: &str) -> bool {
     provider == Provider::Anthropic && message.trim() == "Error: Unknown error"
 }
 
+fn restore_pending_user_message(current: &mut Option<String>, original: &Option<String>) {
+    if current.is_none() {
+        *current = original.clone();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn treats_opaque_claude_result_error_as_auth() {
+    fn opaque_claude_result_error_requires_status_verification() {
+        assert_eq!(
+            classify_auth_feed_message(Provider::Anthropic, "Error: Unknown error"),
+            AuthFeedAction::VerifyProviderStatus
+        );
+    }
+
+    #[test]
+    fn identifies_opaque_claude_auth_error_shape() {
         assert!(is_opaque_claude_auth_error(
             Provider::Anthropic,
             "Error: Unknown error"
@@ -388,5 +465,38 @@ mod tests {
             ),
             AuthFeedAction::RequireNow
         );
+    }
+
+    #[test]
+    fn resume_invalid_restores_consumed_user_message() {
+        let original = Some("retry this".to_string());
+        let mut current = None;
+
+        restore_pending_user_message(&mut current, &original);
+
+        assert_eq!(current, original);
+    }
+
+    #[test]
+    fn resume_invalid_keeps_existing_user_message() {
+        let original = Some("first".to_string());
+        let mut current = Some("current".to_string());
+
+        restore_pending_user_message(&mut current, &original);
+
+        assert_eq!(current.as_deref(), Some("current"));
+    }
+
+    #[test]
+    fn serializes_tool_runtime_error_for_history() {
+        let item = FeedItem::ToolRuntimeError {
+            kind: houston_terminal_manager::ToolRuntimeErrorKind::LocalTool,
+            details: "exec failed".to_string(),
+        };
+
+        let (feed_type, data) = serialize_for_persist(&item).expect("serializes");
+
+        assert_eq!(feed_type, "tool_runtime_error");
+        assert_eq!(data, r#"{"details":"exec failed","kind":"local_tool"}"#);
     }
 }

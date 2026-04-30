@@ -21,9 +21,10 @@ import {
   useUpdateActivity,
 } from "../../hooks/queries";
 import { useAgentChatPanel } from "../use-agent-chat-panel";
-import { tauriActivity, tauriChat, tauriAttachments, tauriSystem, tauriWorktree, tauriShell, tauriTerminal, tauriConfig, tauriPreferences, withAttachmentPaths } from "../../lib/tauri";
+import { tauriActivity, tauriChat, tauriAttachments, tauriSystem, tauriWorktree, tauriShell, tauriTerminal, tauriConfig, tauriPreferences } from "../../lib/tauri";
 import { createMission } from "../../lib/create-mission";
 import { formatVisibleMessageText } from "../../lib/queued-chat";
+import { buildAttachmentPrompt } from "../../lib/attachment-message";
 import { queryKeys } from "../../lib/query-keys";
 import { analytics } from "../../lib/analytics";
 import type { TabProps } from "../../lib/types";
@@ -352,6 +353,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         files,
         (names) => t("chat:queue.attached", { names }),
       );
+      let userMessage = text;
       const { conversationId, sessionKey } = await createMission(
         { id: agent.id, name: agent.name, color: agent.color, folderPath: path },
         text,
@@ -364,11 +366,12 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           titleText: visible,
           buildPrompt: async (activityId) => {
             const saved = await tauriAttachments.save(`activity-${activityId}`, files);
-            return withAttachmentPaths(text, saved);
+            userMessage = buildAttachmentPrompt(text, files, saved);
+            return userMessage;
           },
         },
       );
-      pushFeedItem(path, sessionKey, { feed_type: "user_message", data: visible });
+      pushFeedItem(path, sessionKey, { feed_type: "user_message", data: userMessage });
       setLoading((prev) => ({ ...prev, [sessionKey]: true }));
       setPendingAgentMode(null);
       // createMission bypassed useCreateActivity so invalidate manually.
@@ -407,7 +410,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       const scopeId = activity ? `activity-${activity.id}` : sessionKey;
       try {
         const paths = await tauriAttachments.save(scopeId, files);
-        const prompt = withAttachmentPaths(text, paths);
+        const prompt = buildAttachmentPrompt(text, files, paths);
         const mode = agentModes?.find((m) => m.id === activity?.agent);
         await tauriChat.send(path, prompt, sessionKey, {
           mode: mode?.promptFile,
@@ -415,12 +418,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           providerOverride: chatProvider ?? undefined,
           modelOverride: chatModel ?? undefined,
         });
-        const visible = formatVisibleMessageText(
-          text,
-          files,
-          (names) => t("chat:queue.attached", { names }),
-        );
-        pushFeedItem(path, sessionKey, { feed_type: "user_message", data: visible });
+        pushFeedItem(path, sessionKey, { feed_type: "user_message", data: prompt });
         setLoading((prev) => ({ ...prev, [sessionKey]: true }));
       } catch (err) {
         setLoading((prev) => ({ ...prev, [sessionKey]: false }));

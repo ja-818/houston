@@ -129,6 +129,11 @@ because the diff cannot be assigned to one model safely. On successful
 non-overlapping completion, the engine may emit and persist a `FeedItem` with
 `feed_type: "file_changes"` and `data: { created: string[], modified:
 string[] }`; clients should render this as session-owned project artifacts.
+Provider/tool execution failures that need user recovery UI are emitted as
+`feed_type: "tool_runtime_error"` with `data: { kind: "local_tool" |
+"provider_process", details: string }`. Clients should render a user-safe retry
+and report-bug surface; `details` is diagnostic context for reports and logs,
+not user-facing copy.
 
 **Agent data** (`?agent_path=` query; writes emit event)
 | Method | Path | Description |
@@ -179,7 +184,7 @@ string[] }`; clients should render this as session-owned project artifacts.
 |---|---|---|
 | GET/POST | `/v1/skills` | List/create |
 | GET/PUT/DELETE | `/v1/skills/:name` | Load/save/delete |
-| POST | `/v1/skills/community/search` | Search community registry |
+| POST | `/v1/skills/community/search` | Search community registry, cached/throttled server-side |
 | POST | `/v1/skills/community/install` | Install community skill |
 | POST | `/v1/skills/repo/list` | List skills in a repo |
 | POST | `/v1/skills/repo/install` | Install from repo |
@@ -198,7 +203,7 @@ string[] }`; clients should render this as session-owned project artifacts.
 | Method | Path | Description |
 |---|---|---|
 | GET/PUT | `/v1/preferences/:key` | String KV (DB-backed) |
-| GET | `/v1/providers/:name/status` | `{cli_installed, authenticated, install_source, cli_path}` |
+| GET | `/v1/providers/:name/status` | `{cliInstalled, authState, installSource, cliPath}` |
 | POST | `/v1/providers/:name/login` | Launch CLI login |
 | GET | `/v1/agent-configs` | List installed agent definitions |
 

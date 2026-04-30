@@ -17,10 +17,12 @@
 
 import {
   decodeActionMessage as decodeActionMessageFromChat,
+  type AttachmentReference,
   type ActionInvocation,
   type ActionInvocationField,
 } from "@houston-ai/chat";
 import type { SkillSummary } from "./types";
+import { humanizeSkillName } from "./humanize-skill-name";
 
 export type { ActionInvocation, ActionInvocationField };
 
@@ -38,16 +40,18 @@ export function encodeActionMessage(
   skill: SkillSummary,
   userText: string,
   claudePrompt: string,
+  attachments: readonly AttachmentReference[] = [],
 ): string {
   const trimmedText = userText.trim();
   const payload: ActionInvocation = {
     skill: skill.name,
-    displayName: humanize(skill.name),
+    displayName: humanizeSkillName(skill.name),
     image: skill.image,
     description: skill.description,
     integrations: skill.integrations,
     fields: [],
     message: trimmedText,
+    attachments: [...attachments],
   };
   const json = JSON.stringify(payload);
   return `${MARKER_PREFIX}${json}${MARKER_SUFFIX}\n\n${claudePrompt}`;
@@ -65,11 +69,4 @@ export function buildActionClaudePrompt(
   const trimmed = userText.trim();
   if (!trimmed) return `Use the ${skill.name} skill.`;
   return `Use the ${skill.name} skill.\n\n${trimmed}`;
-}
-
-function humanize(slug: string): string {
-  const spaced = slug.replace(/[-_]+/g, " ").trim();
-  return spaced.length === 0
-    ? slug
-    : spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }

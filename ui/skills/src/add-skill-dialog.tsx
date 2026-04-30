@@ -44,7 +44,7 @@ type View = "store" | "repo"
 const TABS: View[] = ["store", "repo"]
 
 const DEFAULT_LABELS: Required<Omit<AddSkillDialogLabels, "store" | "repo">> = {
-  title: "Add skills",
+  title: "Add actions",
   description: "Install reusable procedures for your agent.",
   storeTab: "Skills.sh",
   repoTab: "GitHub",

@@ -6,6 +6,8 @@
     "yourAgents": "Tus agentes",
     "selectWorkspace": "Elige un espacio de trabajo",
     "connectPhone": "Conectar celular",
+    "addAgent": "Añadir agente",
+    "agentActions": "Acciones del agente",
     "needsYouCount_one": "{{count}} asunto necesita tu atención",
     "needsYouCount_other": "{{count}} asuntos necesitan tu atención",
     "runningCount_one": "{{count}} asunto en curso",
@@ -47,6 +49,17 @@
     "waiting": "Esperando el inicio de sesión en el navegador...",
     "tryAgain": "Intentar de nuevo",
     "launchError": "No se pudo abrir el inicio de sesión. Intenta otra vez."
+  },
+  "toolRuntimeError": {
+    "title": "Algo se atascó",
+    "body": "Una herramienta local no se inició correctamente. Intenta de nuevo y repórtalo si sigue pasando.",
+    "report": "Reportar error",
+    "reporting": "Enviando reporte...",
+    "reportSuccessTitle": "Reporte enviado",
+    "reportSuccessDescription": "Houston recibió los registros.",
+    "reportErrorTitle": "No se pudo enviar el reporte",
+    "reportErrorDescription": "Intenta otra vez en un momento.",
+    "retryErrorTitle": "No se pudo intentar de nuevo"
   },
   "updateChecker": {
     "cardLabel": "Actualización de Houston disponible",

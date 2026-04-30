@@ -6,11 +6,17 @@
 //! that want to `get`/`set` the preference directly.
 
 use crate::error::{CoreError, CoreResult};
+use houston_terminal_manager::provider_auth::{
+    probe_claude_auth_status, probe_codex_auth_status, ProviderAuthState,
+};
 use houston_terminal_manager::{claude_path, Provider};
 use serde::{Deserialize, Serialize};
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::time::Duration;
+
+mod resolve;
+use resolve::{resolve_claude, resolve_codex};
 
 pub const DEFAULT_PROVIDER_KEY: &str = "default_provider";
 
@@ -41,7 +47,7 @@ pub enum InstallSource {
 pub struct ProviderStatus {
     pub provider: String,
     pub cli_installed: bool,
-    pub authenticated: bool,
+    pub auth_state: ProviderAuthState,
     pub cli_name: String,
     /// Where Houston found the CLI binary. Used for UI labelling.
     pub install_source: InstallSource,
@@ -143,205 +149,39 @@ fn build_login_command(
 async fn check_claude_status() -> ProviderStatus {
     let (install_source, cli_path) = resolve_claude();
     let cli_installed = !matches!(install_source, InstallSource::Missing);
-    let authenticated = if let Some(path) = cli_path.as_deref() {
-        check_claude_auth(path).await
+    let auth_state = if let Some(path) = cli_path.as_deref() {
+        probe_claude_auth_status(path).await
     } else {
-        false
+        ProviderAuthState::Unauthenticated
     };
     ProviderStatus {
         provider: "anthropic".into(),
         cli_installed,
-        authenticated,
+        auth_state,
         cli_name: "claude".into(),
         install_source,
         cli_path: cli_path.map(|p| p.to_string_lossy().into_owned()),
     }
 }
 
-/// Resolve the active claude binary in priority order:
-///   1. **Managed** — installed by `houston-claude-installer` at the
-///      Houston-controlled location. We trust this most because we
-///      sha256-verified the download against the pinned manifest.
-///   2. **Path** — anything else on PATH (homebrew, npm, manual). Used
-///      verbatim; Houston does NOT validate the version when the
-///      binary is user-managed.
-///
-/// Claude is never bundled (proprietary license), so the `Bundled`
-/// branch is intentionally absent here — see the `cli-bundle` module
-/// doc for the policy reasoning.
-fn resolve_claude() -> (InstallSource, Option<PathBuf>) {
-    if houston_claude_installer::is_installed() {
-        return (
-            InstallSource::Managed,
-            Some(houston_claude_installer::cli_path()),
-        );
-    }
-    if let Some(path) = which_on_path("claude") {
-        return (InstallSource::Path, Some(path));
-    }
-    (InstallSource::Missing, None)
-}
-
-/// `claude --version` succeeds without auth; `claude auth status` returns
-/// the real `loggedIn` signal as JSON.
-async fn check_claude_auth(cli_path: &std::path::Path) -> bool {
-    let shell_path = claude_path::shell_path();
-    let result = tokio::time::timeout(
-        Duration::from_secs(5),
-        tokio::process::Command::new(cli_path)
-            .args(["auth", "status"])
-            .env("PATH", &shell_path)
-            .kill_on_drop(true)
-            .output(),
-    )
-    .await;
-
-    let output = match result {
-        Ok(Ok(o)) if o.status.success() => o.stdout,
-        _ => return false,
-    };
-
-    let text = String::from_utf8_lossy(&output);
-    serde_json::from_str::<serde_json::Value>(text.trim())
-        .ok()
-        .and_then(|v| v.get("loggedIn")?.as_bool())
-        .unwrap_or(false)
-}
-
 async fn check_codex_status() -> ProviderStatus {
     let (install_source, cli_path) = resolve_codex();
     let cli_installed = !matches!(install_source, InstallSource::Missing);
-    let authenticated = if let Some(path) = cli_path.as_deref() {
+    let auth_state = if let Some(path) = cli_path.as_deref() {
         let home = std::env::var("HOME").unwrap_or_default();
-        if check_codex_auth(path, &home).await {
-            true
-        } else {
-            false
-        }
+        probe_codex_auth_status(path, &home).await
     } else {
-        false
+        ProviderAuthState::Unauthenticated
     };
 
     ProviderStatus {
         provider: "openai".into(),
         cli_installed,
-        authenticated,
+        auth_state,
         cli_name: "codex".into(),
         install_source,
         cli_path: cli_path.map(|p| p.to_string_lossy().into_owned()),
     }
-}
-
-/// Resolve the active codex binary:
-///   1. **Bundled** — universal Mach-O at `Resources/bin/codex` shipped
-///      with the Houston `.app`. Production users never hit anything
-///      else.
-///   2. **Path** — user-installed copy (homebrew, manual). Allowed for
-///      developers who want to test against a newer codex than the
-///      pinned bundled version.
-fn resolve_codex() -> (InstallSource, Option<PathBuf>) {
-    if let Some(p) = houston_cli_bundle::bundled_codex_path() {
-        return (InstallSource::Bundled, Some(p));
-    }
-    if let Some(path) = which_on_path("codex") {
-        return (InstallSource::Path, Some(path));
-    }
-    (InstallSource::Missing, None)
-}
-
-/// Walk the resolved PATH (login shell + Houston-augmented dirs) for a
-/// command. Returns the first hit's absolute path.
-fn which_on_path(command: &str) -> Option<PathBuf> {
-    let shell_path = claude_path::shell_path();
-    for dir in std::env::split_paths(&shell_path) {
-        let candidate = dir.join(command);
-        if candidate.is_file() {
-            return Some(candidate);
-        }
-        #[cfg(windows)]
-        {
-            for ext in ["exe", "cmd", "bat", "ps1"] {
-                let c = dir.join(format!("{command}.{ext}"));
-                if c.is_file() {
-                    return Some(c);
-                }
-            }
-        }
-    }
-    None
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum CodexAuthProbe {
-    Authenticated,
-    Unauthenticated,
-    Unknown,
-}
-
-async fn check_codex_auth(cli_path: &std::path::Path, home: &str) -> bool {
-    match probe_codex_login_status(cli_path).await {
-        CodexAuthProbe::Authenticated => true,
-        CodexAuthProbe::Unauthenticated => false,
-        CodexAuthProbe::Unknown => check_codex_auth_file(home),
-    }
-}
-
-async fn probe_codex_login_status(cli_path: &std::path::Path) -> CodexAuthProbe {
-    let shell_path = claude_path::shell_path();
-    let result = tokio::time::timeout(
-        Duration::from_secs(5),
-        tokio::process::Command::new(cli_path)
-            .args(["login", "status", "-c", "model_reasoning_effort=high"])
-            .env("PATH", &shell_path)
-            .kill_on_drop(true)
-            .output(),
-    )
-    .await;
-
-    let output = match result {
-        Ok(Ok(o)) => o,
-        _ => return CodexAuthProbe::Unknown,
-    };
-    classify_codex_login_status_output(
-        output.status.success(),
-        &String::from_utf8_lossy(&output.stdout),
-        &String::from_utf8_lossy(&output.stderr),
-    )
-}
-
-fn classify_codex_login_status_output(success: bool, stdout: &str, stderr: &str) -> CodexAuthProbe {
-    let text = format!("{stdout}\n{stderr}").to_lowercase();
-    if text.contains("not logged in")
-        || text.contains("not authenticated")
-        || text.contains("please login")
-        || text.contains("please log in")
-        || text.contains("signed out")
-        || text.contains("no auth credentials")
-        || text.contains("run codex login")
-    {
-        return CodexAuthProbe::Unauthenticated;
-    }
-    if success && (text.contains("logged in") || text.contains("authenticated")) {
-        return CodexAuthProbe::Authenticated;
-    }
-    CodexAuthProbe::Unknown
-}
-
-fn check_codex_auth_file(home: &str) -> bool {
-    let auth_path = PathBuf::from(home).join(".codex").join("auth.json");
-    let content = match std::fs::read_to_string(&auth_path) {
-        Ok(c) => c,
-        Err(_) => return false,
-    };
-    serde_json::from_str::<serde_json::Value>(&content)
-        .ok()
-        .map(|v| {
-            v.get("OPENAI_API_KEY")
-                .and_then(|k| k.as_str())
-                .is_some_and(|s| !s.is_empty())
-                || v.get("tokens").is_some()
-        })
-        .unwrap_or(false)
 }
 
 #[cfg(test)]
@@ -379,24 +219,5 @@ mod tests {
         assert_eq!(command.cli_name, "claude");
         assert_eq!(command.path, path);
         assert_eq!(command.args, vec!["auth", "login", "--claudeai"]);
-    }
-
-    #[test]
-    fn codex_login_status_classifies_logged_in_output() {
-        let status = classify_codex_login_status_output(true, "Logged in using ChatGPT", "");
-        assert_eq!(status, CodexAuthProbe::Authenticated);
-    }
-
-    #[test]
-    fn codex_login_status_classifies_not_logged_in_output_first() {
-        let status = classify_codex_login_status_output(true, "Not logged in", "");
-        assert_eq!(status, CodexAuthProbe::Unauthenticated);
-    }
-
-    #[test]
-    fn codex_login_status_falls_back_on_config_errors() {
-        let stderr = "Error loading configuration: unknown variant `xhigh`";
-        let status = classify_codex_login_status_output(false, "", stderr);
-        assert_eq!(status, CodexAuthProbe::Unknown);
     }
 }

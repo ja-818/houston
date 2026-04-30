@@ -1,6 +1,10 @@
 // === Types ===
-export type { FeedItem, RunStatus } from "./types";
-export type { ToolEntry, ChatMessage, FileChangeEntry } from "./feed-to-messages";
+export type { FeedItem, RunStatus, ToolRuntimeErrorEntry } from "./types";
+export type {
+  ToolEntry,
+  ChatMessage,
+  FileChangeEntry,
+} from "./feed-to-messages";
 export type { TurnEndSummary } from "./turn-tools";
 
 // === AI Elements: Conversation ===
@@ -192,6 +196,13 @@ export type { ProgressPanelProps } from "./progress-panel";
 // (desktop, mobile) can render the same card.
 export { decodeActionMessage, resolveActionImage } from "./action-message";
 export type { ActionInvocation, ActionInvocationField } from "./action-message";
+export { decodeAttachmentMessage, normalizeAttachmentReferences } from "./attachment-message";
+export type { AttachmentInvocation, AttachmentReference } from "./attachment-message";
+export {
+  UserAttachmentBadge,
+  UserAttachmentMessage,
+} from "./user-attachment-message";
+export type { UserAttachmentMessageLabels } from "./user-attachment-message";
 
 // === Utilities ===
 export { Typewriter } from "./typewriter";

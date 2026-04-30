@@ -1,50 +1,12 @@
-import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { SkillsGrid, SkillDetailPage } from "@houston-ai/skills";
-import type { Skill, CommunitySkill } from "@houston-ai/skills";
+import { SkillDetailPage } from "@houston-ai/skills";
 import type { TabProps } from "../../lib/types";
-import {
-  useSkills,
-  useSkillDetail,
-  useSaveSkill,
-  useDeleteSkill,
-  useSearchCommunitySkills,
-  useInstallCommunitySkill,
-  useListSkillsFromRepo,
-  useInstallSkillFromRepo,
-} from "../../hooks/queries";
-import { useSkillSurfaceLabels } from "./use-skill-surface-labels";
+import { ActionsContent } from "./actions-content";
+import { useActionSurface } from "./use-action-surface";
 
 export default function SkillsTab({ agent }: TabProps) {
   const { t } = useTranslation("skills");
-  const { skillDetailLabels, skillsGridLabels } = useSkillSurfaceLabels();
-  const path = agent.folderPath;
-  const { data: summaries, isLoading: skillsLoading } = useSkills(path);
-  const [selectedSkillName, setSelectedSkillName] = useState<string | null>(null);
-  const { data: skillDetail } = useSkillDetail(path, selectedSkillName ?? undefined);
-  const saveSkill = useSaveSkill(path);
-  const deleteSkill = useDeleteSkill(path);
-  const installCommunity = useInstallCommunitySkill(path);
-  const listFromRepo = useListSkillsFromRepo();
-  const installFromRepo = useInstallSkillFromRepo(path);
-  const searchCommunity = useSearchCommunitySkills();
-
-  const skills: Skill[] = (summaries ?? []).map((s) => ({
-    id: s.name, name: s.name, description: s.description,
-    instructions: "", learnings: "", file_path: s.name,
-  }));
-
-  const selectedSkill = selectedSkillName && skillDetail
-    ? { id: selectedSkillName, name: skillDetail.name, description: skillDetail.description, instructions: skillDetail.content, learnings: "", file_path: selectedSkillName }
-    : null;
-
-  const handleSkillClick = useCallback((s: Skill) => setSelectedSkillName(s.name), []);
-  const handleSkillSave = useCallback(async (n: string, c: string) => { await saveSkill.mutateAsync({ name: n, content: c }); }, [saveSkill]);
-  const handleSkillDelete = useCallback(async (n: string) => { await deleteSkill.mutateAsync(n); setSelectedSkillName(null); }, [deleteSkill]);
-  const handleSearch = useCallback(async (q: string) => (await searchCommunity.mutateAsync(q)) as CommunitySkill[], [searchCommunity]);
-  const handleInstallCommunity = useCallback(async (s: CommunitySkill) => await installCommunity.mutateAsync({ source: s.source, skillId: s.skillId }), [installCommunity]);
-  const handleListFromRepo = useCallback(async (src: string) => await listFromRepo.mutateAsync(src), [listFromRepo]);
-  const handleInstallFromRepo = useCallback(async (src: string, s: import("@houston-ai/skills").RepoSkill[]) => await installFromRepo.mutateAsync({ source: src, skills: s }), [installFromRepo]);
+  const actions = useActionSurface(agent.folderPath);
 
   return (
     <div className="h-full overflow-auto">
@@ -53,19 +15,23 @@ export default function SkillsTab({ agent }: TabProps) {
         <p className="text-xs text-muted-foreground/60 mt-0.5 mb-3">
           {t("page.description")}
         </p>
-        {selectedSkill ? (
-          <SkillDetailPage skill={selectedSkill} onBack={() => setSelectedSkillName(null)} onSave={handleSkillSave} onDelete={handleSkillDelete} labels={skillDetailLabels} />
+        {actions.selectedSkill ? (
+          <SkillDetailPage
+            skill={actions.selectedSkill}
+            onBack={actions.clearSelectedSkill}
+            onSave={actions.handleSkillSave}
+            onDelete={actions.handleSkillDelete}
+            labels={actions.skillDetailLabels}
+          />
         ) : (
-          <SkillsGrid
-            skills={skills}
-            loading={skillsLoading}
-            onSkillClick={handleSkillClick}
-            onDelete={handleSkillDelete}
-            onSearch={handleSearch}
-            onInstallCommunity={handleInstallCommunity}
-            onListFromRepo={handleListFromRepo}
-            onInstallFromRepo={handleInstallFromRepo}
-            labels={skillsGridLabels}
+          <ActionsContent
+            skills={actions.skills}
+            loading={actions.skillsLoading}
+            onActionClick={actions.selectSkill}
+            onSearch={actions.handleSearch}
+            onInstallCommunity={actions.handleInstallCommunity}
+            onListFromRepo={actions.handleListFromRepo}
+            onInstallFromRepo={actions.handleInstallFromRepo}
           />
         )}
       </div>

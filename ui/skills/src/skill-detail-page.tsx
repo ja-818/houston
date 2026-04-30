@@ -1,10 +1,3 @@
-/**
- * SkillDetailPage — view and edit a skill's instructions.
- *
- * Visual: Mercury-style single header bar (back · live-title · Save · ⋯) and
- * a body that places the instructions inside a gray section card with a white
- * textarea well — same rhythm as the Routines editor.
- */
 import { useCallback, useEffect, useState } from "react"
 import {
   cn,
@@ -32,16 +25,16 @@ export interface SkillDetailPageLabels {
 }
 
 const DEFAULT_LABELS: Required<SkillDetailPageLabels> = {
-  notFound: "Skill not found",
-  backAria: "Back to skills",
+  notFound: "Action not found",
+  backAria: "Back to actions",
   saveChanges: "Save changes",
-  savingChanges: "Saving…",
+  savingChanges: "Saving...",
   moreActions: "More actions",
-  delete: "Delete skill",
+  delete: "Delete action",
   deleteTitle: (name) => `Delete "${name}"?`,
-  deleteDescription: "This removes the skill from your agent. You can reinstall it later.",
+  deleteDescription: "This removes the action from your agent. You can reinstall it later.",
   deleteConfirmLabel: "Delete",
-  instructionsPlaceholder: "Instructions for this skill…",
+  instructionsPlaceholder: "Instructions for this action...",
 }
 
 export interface SkillDetailPageProps {
@@ -100,10 +93,11 @@ export function SkillDetailPage({
   }
 
   const isDirty = instructions !== skill.instructions
+  const displayName = humanizeSkillName(skill.name)
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-background">
-      {/* Single action bar — back · context · primary on right */}
+      {/* Single action bar: back, context, primary action. */}
       <header className="px-4 py-2.5 shrink-0">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <Button
@@ -116,7 +110,7 @@ export function SkillDetailPage({
           </Button>
 
           <p className="text-sm font-medium text-foreground truncate min-w-0 flex-1">
-            {skill.name}
+            {displayName}
           </p>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -155,7 +149,7 @@ export function SkillDetailPage({
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={l.deleteTitle(skill.name)}
+        title={l.deleteTitle(displayName)}
         description={l.deleteDescription}
         confirmLabel={l.deleteConfirmLabel}
         onConfirm={handleConfirmDelete}
@@ -188,4 +182,10 @@ export function SkillDetailPage({
       </div>
     </div>
   )
+}
+
+function humanizeSkillName(slug: string): string {
+  const spaced = slug.replace(/[-_]+/g, " ").trim()
+  if (spaced.length === 0) return slug
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }

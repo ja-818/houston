@@ -14,13 +14,13 @@ export interface SkillsGridLabels {
 }
 
 export const DEFAULT_SKILLS_GRID_LABELS: Required<Omit<SkillsGridLabels, "addDialog">> = {
-  loading: "Loading skills…",
-  emptyTitle: "No skills installed",
-  emptyDescription: "Skills are reusable procedures your agent can lean on.",
-  addSkill: "Add skill",
+  loading: "Loading actions...",
+  emptyTitle: "No actions installed",
+  emptyDescription: "Actions are reusable procedures your agent can run.",
+  addSkill: "Add action",
   descriptionShort: "Reusable procedures your agent can lean on.",
   deleteTitle: (name) => `Delete "${name}"?`,
-  deleteTitleFallback: "Delete skill?",
-  deleteDescription: "This removes the skill from your agent. You can reinstall it later.",
+  deleteTitleFallback: "Delete action?",
+  deleteDescription: "This removes the action from your agent. You can reinstall it later.",
   deleteConfirmLabel: "Delete",
 }

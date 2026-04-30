@@ -16,47 +16,41 @@ export function useSkillSurfaceLabels() {
     instructionsPlaceholder: t("skills:detail.instructionsPlaceholder"),
   };
 
-  const skillsGridLabels = {
-    loading: t("skills:grid.loading"),
-    emptyTitle: t("skills:grid.emptyTitle"),
-    emptyDescription: t("skills:grid.emptyDescription"),
-    addSkill: t("skills:grid.addSkill"),
-    descriptionShort: t("skills:grid.descriptionShort"),
-    deleteTitle: (name: string) => t("skills:detail.deleteTitle", { name }),
-    deleteDescription: t("skills:detail.deleteDescription"),
-    deleteConfirmLabel: t("common:actions.delete"),
-    addDialog: {
-      title: t("skills:addDialog.title"),
-      description: t("skills:addDialog.description"),
-      storeTab: t("skills:addDialog.storeTab"),
-      repoTab: t("skills:addDialog.repoTab"),
-      store: {
-        searchPlaceholder: t("skills:addDialog.store.searchPlaceholder"),
-        noResults: (query: string) => t("skills:addDialog.store.noResults", { query }),
-        minQuery: t("skills:addDialog.store.minQuery"),
-        searchUnavailable: t("skills:addDialog.store.searchUnavailable"),
-        typeToSearch: t("skills:addDialog.store.typeToSearch"),
-        installCount: (count: number, formatted: string) =>
-          t("skills:addDialog.store.installCount", { count, formatted }),
-        installSkill: (name: string) => t("skills:addDialog.store.installSkill", { name }),
-        installedSkill: (name: string) =>
-          t("skills:addDialog.store.installedSkill", { name }),
-      },
-      repo: {
-        sourcePlaceholder: t("skills:addDialog.repo.sourcePlaceholder"),
-        findSkills: t("skills:addDialog.repo.findSkills"),
-        installSelected: (count: number) =>
-          t("skills:addDialog.repo.installSelected", { count }),
-        skillsFound: (count: number) => t("skills:addDialog.repo.skillsFound", { count }),
-        selectAll: t("skills:addDialog.repo.selectAll"),
-        deselectAll: t("skills:addDialog.repo.deselectAll"),
-        inputHint: t("skills:addDialog.repo.inputHint"),
-        installedSummary: (count: number, names: string) =>
-          t("skills:addDialog.repo.installedSummary", { count, names }),
-        installAnotherRepo: t("skills:addDialog.repo.installAnotherRepo"),
-      },
+  return { skillDetailLabels };
+}
+
+export function useActionDialogLabels() {
+  const { t } = useTranslation("skills");
+
+  return {
+    title: t("addDialog.title"),
+    description: t("addDialog.description"),
+    storeTab: t("addDialog.storeTab"),
+    repoTab: t("addDialog.repoTab"),
+    store: {
+      searchPlaceholder: t("addDialog.store.searchPlaceholder"),
+      noResults: (query: string) => t("addDialog.store.noResults", { query }),
+      minQuery: t("addDialog.store.minQuery"),
+      searchUnavailable: t("addDialog.store.searchUnavailable"),
+      typeToSearch: t("addDialog.store.typeToSearch"),
+      installCount: (count: number, formatted: string) =>
+        t("addDialog.store.installCount", { count, formatted }),
+      installSkill: (name: string) => t("addDialog.store.installSkill", { name }),
+      installedSkill: (name: string) =>
+        t("addDialog.store.installedSkill", { name }),
+    },
+    repo: {
+      sourcePlaceholder: t("addDialog.repo.sourcePlaceholder"),
+      findSkills: t("addDialog.repo.findSkills"),
+      installSelected: (count: number) =>
+        t("addDialog.repo.installSelected", { count }),
+      skillsFound: (count: number) => t("addDialog.repo.skillsFound", { count }),
+      selectAll: t("addDialog.repo.selectAll"),
+      deselectAll: t("addDialog.repo.deselectAll"),
+      inputHint: t("addDialog.repo.inputHint"),
+      installedSummary: (count: number, names: string) =>
+        t("addDialog.repo.installedSummary", { count, names }),
+      installAnotherRepo: t("addDialog.repo.installAnotherRepo"),
     },
   };
-
-  return { skillDetailLabels, skillsGridLabels };
 }
