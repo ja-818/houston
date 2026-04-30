@@ -7,7 +7,7 @@ import { supabase, isAuthConfigured } from "./supabase";
  *
  * Why a module-level cache instead of `supabase.auth.getSession()`:
  * call sites are inside non-async UI callbacks (toast actions) and
- * Slack webhook payload construction. The cache is kept fresh by
+ * bug-report payload construction. The cache is kept fresh by
  * subscribing once to `onAuthStateChange` at module load, mirroring
  * how `useSession` keeps the React tree in sync.
  */
