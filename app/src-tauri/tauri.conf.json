@@ -43,7 +43,7 @@
   "bundle": {
     "createUpdaterArtifacts": true,
     "active": true,
-    "targets": ["app", "dmg"],
+    "targets": ["app", "dmg", "msi"],
     "externalBin": ["binaries/houston-engine"],
     "resources": {
       "resources/bin": "bin",
@@ -53,6 +53,14 @@
       "signingIdentity": "-",
       "entitlements": "entitlements.plist",
       "minimumSystemVersion": "10.15"
+    },
+    "windows": {
+      "wix": {
+        "language": ["en-US"]
+      },
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      }
     },
     "icon": [
       "icons/32x32.png",
