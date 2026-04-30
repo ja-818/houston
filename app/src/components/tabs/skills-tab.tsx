@@ -27,7 +27,7 @@ export default function SkillsTab({ agent }: TabProps) {
   const installCommunity = useInstallCommunitySkill(path);
   const listFromRepo = useListSkillsFromRepo();
   const installFromRepo = useInstallSkillFromRepo(path);
-  const searchCommunity = useSearchCommunitySkills();
+  const { mutateAsync: searchCommunitySkills } = useSearchCommunitySkills();
 
   const skills: Skill[] = (summaries ?? []).map((s) => ({
     id: s.name, name: s.name, description: s.description,
@@ -41,7 +41,7 @@ export default function SkillsTab({ agent }: TabProps) {
   const handleSkillClick = useCallback((s: Skill) => setSelectedSkillName(s.name), []);
   const handleSkillSave = useCallback(async (n: string, c: string) => { await saveSkill.mutateAsync({ name: n, content: c }); }, [saveSkill]);
   const handleSkillDelete = useCallback(async (n: string) => { await deleteSkill.mutateAsync(n); setSelectedSkillName(null); }, [deleteSkill]);
-  const handleSearch = useCallback(async (q: string) => (await searchCommunity.mutateAsync(q)) as CommunitySkill[], [searchCommunity]);
+  const handleSearch = useCallback(async (q: string) => (await searchCommunitySkills(q)) as CommunitySkill[], [searchCommunitySkills]);
   const handleInstallCommunity = useCallback(async (s: CommunitySkill) => await installCommunity.mutateAsync({ source: s.source, skillId: s.skillId }), [installCommunity]);
   const handleListFromRepo = useCallback(async (src: string) => await listFromRepo.mutateAsync(src), [listFromRepo]);
   const handleInstallFromRepo = useCallback(async (src: string, s: import("@houston-ai/skills").RepoSkill[]) => await installFromRepo.mutateAsync({ source: src, skills: s }), [installFromRepo]);

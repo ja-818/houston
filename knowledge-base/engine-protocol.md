@@ -184,7 +184,7 @@ not user-facing copy.
 |---|---|---|
 | GET/POST | `/v1/skills` | List/create |
 | GET/PUT/DELETE | `/v1/skills/:name` | Load/save/delete |
-| POST | `/v1/skills/community/search` | Search community registry |
+| POST | `/v1/skills/community/search` | Search community registry, cached/throttled server-side |
 | POST | `/v1/skills/community/install` | Install community skill |
 | POST | `/v1/skills/repo/list` | List skills in a repo |
 | POST | `/v1/skills/repo/install` | Install from repo |

@@ -9,8 +9,19 @@
 use crate::{CreateSkillInput, SkillError};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::Path;
-use std::time::Duration;
+use std::sync::OnceLock;
+use std::time::{Duration, Instant};
+use tokio::sync::Mutex;
+
+const SEARCH_ENDPOINT: &str = "https://skills.sh/api/search";
+const SEARCH_RETRY_DELAY: Duration = Duration::from_secs(3);
+const SEARCH_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
+const SEARCH_STALE_TTL: Duration = Duration::from_secs(24 * 60 * 60);
+const SEARCH_MIN_INTERVAL: Duration = Duration::from_millis(750);
+
+static SEARCH_CACHE: OnceLock<Mutex<SearchCache>> = OnceLock::new();
 
 // ── Public types ──────────────────────────────────────────────────
 
@@ -44,6 +55,75 @@ struct SearchResponse {
     skills: Vec<CommunitySkill>,
 }
 
+#[derive(Clone)]
+struct CachedSearch {
+    skills: Vec<CommunitySkill>,
+    fetched_at: Instant,
+}
+
+#[derive(Default)]
+struct SearchCache {
+    entries: HashMap<String, CachedSearch>,
+    last_request_at: Option<Instant>,
+}
+
+impl SearchCache {
+    async fn search(
+        &mut self,
+        client: &Client,
+        endpoint: &str,
+        query: &str,
+        retry_delay: Duration,
+        fresh_ttl: Duration,
+        stale_ttl: Duration,
+        min_interval: Duration,
+    ) -> Result<Vec<CommunitySkill>, SkillError> {
+        let query = query.trim();
+        if query.chars().count() < 2 {
+            return Ok(Vec::new());
+        }
+
+        let key = normalize_search_query(query);
+        if let Some(cached) = self.entries.get(&key) {
+            if cached.fetched_at.elapsed() <= fresh_ttl {
+                return Ok(cached.skills.clone());
+            }
+        }
+
+        if let Some(last) = self.last_request_at {
+            let elapsed = last.elapsed();
+            if elapsed < min_interval {
+                tokio::time::sleep(min_interval - elapsed).await;
+            }
+        }
+        self.last_request_at = Some(Instant::now());
+
+        match search_skills_at(client, endpoint, query, retry_delay).await {
+            Ok(skills) => {
+                self.entries.insert(
+                    key,
+                    CachedSearch {
+                        skills: skills.clone(),
+                        fetched_at: Instant::now(),
+                    },
+                );
+                Ok(skills)
+            }
+            Err(err) => {
+                if let Some(cached) = self.entries.get(&key) {
+                    if cached.fetched_at.elapsed() <= stale_ttl {
+                        tracing::warn!(
+                            "[houston-skills] community search failed, returning cached results: {err}"
+                        );
+                        return Ok(cached.skills.clone());
+                    }
+                }
+                Err(err)
+            }
+        }
+    }
+}
+
 // ── GitHub API types ──────────────────────────────────────────────
 
 #[derive(Deserialize)]
@@ -64,13 +144,21 @@ struct GitTreeEntry {
 /// Search the skills.sh community directory.
 pub async fn search_skills(query: &str) -> Result<Vec<CommunitySkill>, SkillError> {
     let client = build_client()?;
-    search_skills_at(
-        &client,
-        "https://skills.sh/api/search",
-        query,
-        Duration::from_secs(1),
-    )
-    .await
+    let mut cache = SEARCH_CACHE
+        .get_or_init(|| Mutex::new(SearchCache::default()))
+        .lock()
+        .await;
+    cache
+        .search(
+            &client,
+            SEARCH_ENDPOINT,
+            query,
+            SEARCH_RETRY_DELAY,
+            SEARCH_CACHE_TTL,
+            SEARCH_STALE_TTL,
+            SEARCH_MIN_INTERVAL,
+        )
+        .await
 }
 
 /// Search endpoint implementation.
@@ -132,8 +220,7 @@ pub async fn install_skill(
     source: &str,
     skill_id: &str,
 ) -> Result<String, SkillError> {
-    std::fs::create_dir_all(skills_dir)
-        .map_err(|e| SkillError::Io(e.to_string()))?;
+    std::fs::create_dir_all(skills_dir).map_err(|e| SkillError::Io(e.to_string()))?;
 
     let client = build_client()?;
 
@@ -263,7 +350,9 @@ pub async fn list_skills_from_repo(source: &str) -> Result<Vec<RepoSkill>, Skill
         .map_err(|e| SkillError::Io(format!("Failed to parse repo tree: {e}")))?;
 
     if tree.truncated {
-        tracing::warn!("[houston-skills] repo tree for {source} was truncated — some skills may be missing");
+        tracing::warn!(
+            "[houston-skills] repo tree for {source} was truncated — some skills may be missing"
+        );
     }
 
     // Collect all blob paths named SKILL.md.
@@ -295,7 +384,12 @@ pub async fn list_skills_from_repo(source: &str) -> Result<Vec<RepoSkill>, Skill
             }
             Err(_) => (kebab_to_title(&id), String::new()),
         };
-        skills.push(RepoSkill { id, name, description, path });
+        skills.push(RepoSkill {
+            id,
+            name,
+            description,
+            path,
+        });
     }
 
     Ok(skills)
@@ -313,8 +407,7 @@ pub async fn install_from_repo(
 ) -> Result<Vec<String>, SkillError> {
     let normalized = normalize_source(source);
     let source = normalized.as_str();
-    std::fs::create_dir_all(skills_dir)
-        .map_err(|e| SkillError::Io(e.to_string()))?;
+    std::fs::create_dir_all(skills_dir).map_err(|e| SkillError::Io(e.to_string()))?;
 
     let client = build_client()?;
     let mut installed = Vec::new();
@@ -356,6 +449,10 @@ fn build_client() -> Result<Client, SkillError> {
         .map_err(|e| SkillError::Io(format!("HTTP client error: {e}")))
 }
 
+fn normalize_search_query(query: &str) -> String {
+    query.trim().to_lowercase()
+}
+
 /// Derive an install ID from a SKILL.md path within the repo.
 /// `research/SKILL.md` → `research`
 /// `tools/code-review/SKILL.md` → `code-review`
@@ -385,9 +482,7 @@ async fn find_skill_path_in_repo(
     source: &str,
     skill_id: &str,
 ) -> Result<Option<String>, SkillError> {
-    let tree_url = format!(
-        "https://api.github.com/repos/{source}/git/trees/HEAD?recursive=1"
-    );
+    let tree_url = format!("https://api.github.com/repos/{source}/git/trees/HEAD?recursive=1");
     let resp = client
         .get(&tree_url)
         .send()
@@ -560,12 +655,24 @@ mod tests {
     #[test]
     fn normalize_github_urls() {
         assert_eq!(normalize_source("owner/repo"), "owner/repo");
-        assert_eq!(normalize_source("https://github.com/owner/repo"), "owner/repo");
-        assert_eq!(normalize_source("https://github.com/owner/repo/"), "owner/repo");
-        assert_eq!(normalize_source("http://github.com/owner/repo"), "owner/repo");
+        assert_eq!(
+            normalize_source("https://github.com/owner/repo"),
+            "owner/repo"
+        );
+        assert_eq!(
+            normalize_source("https://github.com/owner/repo/"),
+            "owner/repo"
+        );
+        assert_eq!(
+            normalize_source("http://github.com/owner/repo"),
+            "owner/repo"
+        );
         assert_eq!(normalize_source("github.com/owner/repo"), "owner/repo");
         // Extra path segments are stripped
-        assert_eq!(normalize_source("https://github.com/owner/repo/tree/main"), "owner/repo");
+        assert_eq!(
+            normalize_source("https://github.com/owner/repo/tree/main"),
+            "owner/repo"
+        );
     }
 
     #[test]
@@ -576,7 +683,10 @@ mod tests {
     #[test]
     fn skill_id_from_nested_path() {
         assert_eq!(skill_id_from_path("research/SKILL.md", "repo"), "research");
-        assert_eq!(skill_id_from_path("tools/code-review/SKILL.md", "repo"), "code-review");
+        assert_eq!(
+            skill_id_from_path("tools/code-review/SKILL.md", "repo"),
+            "code-review"
+        );
     }
 
     #[test]
@@ -624,7 +734,10 @@ Some content without a heading.";
 
     #[test]
     fn kebab_to_title_basic() {
-        assert_eq!(kebab_to_title("react-best-practices"), "React Best Practices");
+        assert_eq!(
+            kebab_to_title("react-best-practices"),
+            "React Best Practices"
+        );
         assert_eq!(kebab_to_title("single"), "Single");
     }
 
@@ -655,14 +768,9 @@ Some content without a heading.";
     #[tokio::test]
     async fn search_ignores_queries_under_two_chars() {
         let client = build_client().unwrap();
-        let skills = search_skills_at(
-            &client,
-            "http://127.0.0.1:1/search",
-            " a ",
-            Duration::ZERO,
-        )
-        .await
-        .unwrap();
+        let skills = search_skills_at(&client, "http://127.0.0.1:1/search", " a ", Duration::ZERO)
+            .await
+            .unwrap();
 
         assert!(skills.is_empty());
     }
@@ -688,5 +796,109 @@ Some content without a heading.";
         .unwrap_err();
 
         assert!(matches!(err, SkillError::RateLimited(_)));
+    }
+
+    #[tokio::test]
+    async fn cached_search_reuses_fresh_results_without_network() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/search"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "skills": [{
+                    "id": "owner/repo/writing",
+                    "skillId": "writing",
+                    "name": "writing",
+                    "installs": 7,
+                    "source": "owner/repo"
+                }]
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = build_client().unwrap();
+        let mut cache = SearchCache::default();
+        let first = cache
+            .search(
+                &client,
+                &format!("{}/search", server.uri()),
+                "Writing",
+                Duration::ZERO,
+                Duration::from_secs(60),
+                Duration::from_secs(60),
+                Duration::ZERO,
+            )
+            .await
+            .unwrap();
+        let second = cache
+            .search(
+                &client,
+                "http://127.0.0.1:1/search",
+                " writing ",
+                Duration::ZERO,
+                Duration::from_secs(60),
+                Duration::from_secs(60),
+                Duration::ZERO,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(first[0].id, "owner/repo/writing");
+        assert_eq!(second[0].id, "owner/repo/writing");
+    }
+
+    #[tokio::test]
+    async fn cached_search_returns_stale_results_on_rate_limit() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/ok"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "skills": [{
+                    "id": "owner/repo/bookkeeping",
+                    "skillId": "bookkeeping",
+                    "name": "bookkeeping",
+                    "installs": 12,
+                    "source": "owner/repo"
+                }]
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/limited"))
+            .respond_with(ResponseTemplate::new(429))
+            .expect(2)
+            .mount(&server)
+            .await;
+
+        let client = build_client().unwrap();
+        let mut cache = SearchCache::default();
+        cache
+            .search(
+                &client,
+                &format!("{}/ok", server.uri()),
+                "bookkeeping",
+                Duration::ZERO,
+                Duration::ZERO,
+                Duration::from_secs(60),
+                Duration::ZERO,
+            )
+            .await
+            .unwrap();
+
+        let skills = cache
+            .search(
+                &client,
+                &format!("{}/limited", server.uri()),
+                "bookkeeping",
+                Duration::ZERO,
+                Duration::ZERO,
+                Duration::from_secs(60),
+                Duration::ZERO,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(skills[0].id, "owner/repo/bookkeeping");
     }
 }

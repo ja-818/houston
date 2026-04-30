@@ -77,6 +77,15 @@ Step-by-step instructions Claude follows when the action runs.
    - `renderUserMessage` — decodes action + attachment markers into cards
 5. Both **BoardTab** (per-agent kanban) and **Dashboard** (Mission Control / cross-agent kanban) consume this hook so the right panel is identical in both views.
 
+## Community search behavior
+
+`POST /v1/skills/community/search` calls `skills.sh`, which can rate-limit.
+Engine owns the resilience: successful searches are cached in-memory, outbound
+requests are globally spaced, and stale cached results are returned during a
+temporary 429/network failure. App search callers handle remaining failures
+inline in the Add Skills UI; they should not show global "Houston problem" bug
+toasts for marketplace search misses.
+
 ## Action invocation marker (chat persistence)
 
 When the user runs an action, the persisted user_message body is:

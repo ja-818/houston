@@ -33,28 +33,35 @@ import { osPickDirectory } from "./os-bridge";
 import { logger } from "./logger";
 export { withAttachmentPaths } from "./attachment-message";
 
-/** Wrap an engine call and surface errors as toasts — never fail silently. */
+interface EngineCallOptions {
+  toast?: boolean;
+}
+
+/** Wrap an engine call and surface errors as toasts unless caller handles them inline. */
 async function call<T>(
   label: string,
   fn: () => Promise<T>,
   context?: Record<string, unknown>,
+  options?: EngineCallOptions,
 ): Promise<T> {
   try {
     return await fn();
   } catch (err) {
-    await surfaceToast(label, err, context);
+    await surfaceError(label, err, context, options);
     throw err;
   }
 }
 
-async function surfaceToast(
+async function surfaceError(
   label: string,
   err: unknown,
   context?: Record<string, unknown>,
+  options?: EngineCallOptions,
 ): Promise<void> {
   const message =
     err instanceof Error ? err.message : typeof err === "string" ? err : String(err);
   logger.error(`[engine:${label}] ${message}`, context ? JSON.stringify(context) : undefined);
+  if (options?.toast === false) return;
   const { showErrorToast } = await import("./error-toast");
   showErrorToast(label, message);
 }
@@ -265,6 +272,8 @@ export const tauriSkills = {
         installs: s.installs,
         source: s.source,
       })),
+      undefined,
+      { toast: false },
     ),
   installCommunity: (agentPath: string, source: string, skillId: string) =>
     call<string>("install_community_skill", () =>

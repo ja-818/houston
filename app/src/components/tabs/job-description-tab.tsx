@@ -68,7 +68,7 @@ export default function JobDescriptionTab({ agent }: TabProps) {
   const installCommunity = useInstallCommunitySkill(path);
   const listFromRepo = useListSkillsFromRepo();
   const installFromRepo = useInstallSkillFromRepo(path);
-  const searchCommunity = useSearchCommunitySkills();
+  const { mutateAsync: searchCommunitySkills } = useSearchCommunitySkills();
 
   // Learnings
   const { data: learningsData } = useLearnings(path);
@@ -120,9 +120,9 @@ export default function JobDescriptionTab({ agent }: TabProps) {
 
   const handleSearch = useCallback(
     async (query: string) => {
-      return (await searchCommunity.mutateAsync(query)) as CommunitySkill[];
+      return (await searchCommunitySkills(query)) as CommunitySkill[];
     },
-    [searchCommunity],
+    [searchCommunitySkills],
   );
 
   const handleInstallCommunity = useCallback(
