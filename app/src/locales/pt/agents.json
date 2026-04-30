@@ -20,6 +20,9 @@
     "addLearning": "Adicionar aprendizado",
     "helper": "Anotações rápidas que o agente vai juntando com o tempo.",
     "inputPlaceholder": "Digite um aprendizado e aperte Enter…",
+    "editAria": "Editar aprendizado",
+    "expandAria": "Expandir aprendizado",
+    "collapseAria": "Recolher aprendizado",
     "removeAria": "Remover aprendizado",
     "confirmRemoveTitle": "Remover este aprendizado?",
     "confirmRemoveDescription": "O agente vai perder esta nota. Você pode adicionar de novo depois.",
@@ -27,7 +30,7 @@
   },
   "subTabs": {
     "instructions": "Instruções",
-    "skills": "Habilidades",
+    "skills": "Ações",
     "learnings": "Aprendizados"
   },
   "tabLabels": {
@@ -38,7 +41,7 @@
     "integrations": "Integrações",
     "chat": "Chat",
     "board": "Quadro",
-    "skills": "Habilidades",
+    "skills": "Ações",
     "prompts": "Instruções",
     "events": "Eventos",
     "learnings": "Aprendizados",
@@ -57,13 +60,12 @@
       "placeholder": "Instrução para {{name}}..."
     },
     "skills": {
-      "title": "Habilidades",
-      "description": "Instruções reutilizáveis que os agentes podem usar."
+      "title": "Ações",
+      "description": "Procedimentos reutilizáveis que os agentes podem executar."
     },
     "learnings": {
       "title": "Aprendizados",
-      "description": "Os agentes salvam aprendizados enquanto trabalham. Você também pode adicionar os seus.",
-      "addPlaceholder": "Adicionar um aprendizado..."
+      "description": "Os agentes salvam aprendizados enquanto trabalham. Você também pode adicionar os seus."
     },
     "settings": {
       "title": "Configurações",

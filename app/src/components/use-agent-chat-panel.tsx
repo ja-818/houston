@@ -47,6 +47,7 @@ import {
 } from "../lib/tauri";
 import { createMission } from "../lib/create-mission";
 import { queryKeys } from "../lib/query-keys";
+import { humanizeSkillName } from "../lib/humanize-skill-name";
 import { useFileToolRenderer } from "../hooks/use-file-tool-renderer";
 import {
   ComposioLinkCard,
@@ -238,7 +239,7 @@ export function useAgentChatPanel({
       );
       const claudePrompt = buildActionClaudePrompt(skill, text);
       const encoded = encodeActionMessage(skill, visibleText, claudePrompt);
-      const friendlyTitle = humanize(skill.name);
+      const friendlyTitle = humanizeSkillName(skill.name);
 
       if (sessionKey) {
         // Mid-conversation: optimistic feed push + send, mirrors the
@@ -399,7 +400,7 @@ export function useAgentChatPanel({
             <SkillCard
               key={s.name}
               image={s.image}
-              title={humanize(s.name)}
+              title={humanizeSkillName(s.name)}
               description={s.description}
               integrations={s.integrations}
               onClick={() => applyAction(s)}
@@ -478,13 +479,6 @@ export function useAgentChatPanel({
     chatProvider,
     chatModel,
   };
-}
-
-function humanize(slug: string): string {
-  const spaced = slug.replace(/[-_]+/g, " ").trim();
-  return spaced.length === 0
-    ? slug
-    : spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
 function actionVisibleText(

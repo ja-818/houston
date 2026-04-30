@@ -20,6 +20,9 @@
     "addLearning": "Add learning",
     "helper": "Quick notes the agent picks up over time.",
     "inputPlaceholder": "Type a learning and press Enter…",
+    "editAria": "Edit learning",
+    "expandAria": "Expand learning",
+    "collapseAria": "Collapse learning",
     "removeAria": "Remove learning",
     "confirmRemoveTitle": "Remove this learning?",
     "confirmRemoveDescription": "The agent will lose this note. You can add it back later.",
@@ -27,7 +30,7 @@
   },
   "subTabs": {
     "instructions": "Instructions",
-    "skills": "Skills",
+    "skills": "Actions",
     "learnings": "Learnings"
   },
   "tabLabels": {
@@ -38,7 +41,7 @@
     "integrations": "Integrations",
     "chat": "Chat",
     "board": "Board",
-    "skills": "Skills",
+    "skills": "Actions",
     "prompts": "Prompts",
     "events": "Events",
     "learnings": "Learnings",
@@ -57,13 +60,12 @@
       "placeholder": "System prompt for {{name}}..."
     },
     "skills": {
-      "title": "Skills",
-      "description": "Reusable instructions the agents can use."
+      "title": "Actions",
+      "description": "Reusable procedures the agents can run."
     },
     "learnings": {
       "title": "Learnings",
-      "description": "Agents save learnings as they work. You can add them manually too.",
-      "addPlaceholder": "Add a learning..."
+      "description": "Agents save learnings as they work. You can add them manually too."
     },
     "settings": {
       "title": "Settings",

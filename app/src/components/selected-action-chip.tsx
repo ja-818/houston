@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { SkillIcon } from "./skill-icon";
 import { IntegrationLogos } from "./integration-logos";
 import type { SkillSummary } from "../lib/types";
+import { humanizeSkillName } from "../lib/humanize-skill-name";
 
 interface Props {
   skill: SkillSummary;
@@ -22,7 +23,7 @@ export function SelectedActionChip({ skill, onCancel }: Props) {
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold text-foreground">
-              {humanize(skill.name)}
+              {humanizeSkillName(skill.name)}
             </div>
             {skill.description && (
               <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
@@ -47,11 +48,4 @@ export function SelectedActionChip({ skill, onCancel }: Props) {
       </div>
     </div>
   );
-}
-
-function humanize(slug: string): string {
-  const spaced = slug.replace(/[-_]+/g, " ").trim();
-  return spaced.length === 0
-    ? slug
-    : spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }

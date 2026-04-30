@@ -1,13 +1,7 @@
 import { Spinner } from "@houston-ai/core";
 import type { SkillSummary } from "../lib/types";
 import { SkillCard } from "./skill-card";
-
-/** Turn a skill slug like "do-something_cool" into "Do something cool". */
-function humanizeSkillName(slug: string): string {
-  const spaced = slug.replace(/[-_]+/g, " ").trim();
-  if (spaced.length === 0) return slug;
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
+import { humanizeSkillName } from "../lib/humanize-skill-name";
 
 export function SkillList({
   agentReady,

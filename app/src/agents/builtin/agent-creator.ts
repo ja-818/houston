@@ -54,7 +54,7 @@ Guide users through creating a houston.json config file for their agent. Ask the
 - chat — AI chat interface
 - board — Kanban activity board
 - files — File browser
-- job-description — CLAUDE.md editor + skills + learnings
+- job-description — CLAUDE.md editor + actions + learnings
 - routines — Scheduled routines
 - integrations — Service integrations
 

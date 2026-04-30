@@ -67,7 +67,8 @@ Step-by-step instructions Claude follows when the action runs.
 1. **Engine** parses SKILL.md frontmatter via `serde_yml` (`engine/houston-skills/src/format.rs`). Unknown fields are silently ignored — old skills with `icon:` / `starter_prompt:` still parse.
 2. Engine returns the full `SkillSummaryResponse` on `GET /v1/skills`.
 3. **App** (`useSkills` query → `tauri.ts` → `engine-client`) maps the snake/camel-case wire shape back to app's `SkillSummary`.
-4. **`useAgentChatPanel`** (`app/src/components/use-agent-chat-panel.tsx`) — single source of truth for the per-agent panel UX. Owns:
+4. **Action cards** use `app/src/components/skill-card.tsx` across the chat empty state, picker, and Actions tab. Keep these in sync by reusing the component, not recreating card markup.
+5. **`useAgentChatPanel`** (`app/src/components/use-agent-chat-panel.tsx`) — single source of truth for the per-agent panel UX. Owns:
    - skill discovery (featured cards on empty state)
    - selected Action chip above the composer
    - Action-only send interception
@@ -75,7 +76,7 @@ Step-by-step instructions Claude follows when the action runs.
    - Composio link card renderer
    - file-tool result renderer
    - `renderUserMessage` — decodes the action marker into a card
-5. Both **BoardTab** (per-agent kanban) and **Dashboard** (Mission Control / cross-agent kanban) consume this hook so the right panel is identical in both views.
+6. Both **BoardTab** (per-agent kanban) and **Dashboard** (Mission Control / cross-agent kanban) consume this hook so the right panel is identical in both views.
 
 ## Action invocation marker (chat persistence)
 

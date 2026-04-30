@@ -1,5 +1,5 @@
 /**
- * SkillRow — one row in the Skills list.
+ * SkillRow - one row in the Actions list.
  *
  * Visual: transparent row sitting on a gray container card. Whole row
  * clickable; delete tucked into an overflow menu.
@@ -22,6 +22,8 @@ export interface SkillRowProps {
 }
 
 export function SkillRow({ skill, onClick, onDelete }: SkillRowProps) {
+  const displayName = humanizeSkillName(skill.name)
+
   return (
     <div
       onClick={onClick}
@@ -42,7 +44,7 @@ export function SkillRow({ skill, onClick, onDelete }: SkillRowProps) {
     >
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">
-          {skill.name}
+          {displayName}
         </p>
         {skill.description && (
           <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5 leading-snug">
@@ -65,7 +67,7 @@ export function SkillRow({ skill, onClick, onDelete }: SkillRowProps) {
             <DropdownMenuContent align="end" className="w-40">
               <DropdownMenuItem variant="destructive" onClick={onDelete}>
                 <Trash2 className="size-3.5" />
-                Delete skill
+                Delete action
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -73,4 +75,10 @@ export function SkillRow({ skill, onClick, onDelete }: SkillRowProps) {
       )}
     </div>
   )
+}
+
+function humanizeSkillName(slug: string): string {
+  const spaced = slug.replace(/[-_]+/g, " ").trim()
+  if (spaced.length === 0) return slug
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }

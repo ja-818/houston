@@ -1,7 +1,12 @@
 import { useTranslation } from "react-i18next";
 import type { TabProps } from "../../lib/types";
-import { useLearnings, useAddLearning, useRemoveLearning } from "../../hooks/queries";
-import { LearningsSection } from "./configure-sections";
+import {
+  useAddLearning,
+  useLearnings,
+  useRemoveLearning,
+  useUpdateLearning,
+} from "../../hooks/queries";
+import { LearningsContent } from "./learnings-content";
 
 export default function LearningsTab({ agent }: TabProps) {
   const { t } = useTranslation("agents");
@@ -9,6 +14,7 @@ export default function LearningsTab({ agent }: TabProps) {
   const { data: learningsData } = useLearnings(path);
   const addLearning = useAddLearning(path);
   const removeLearning = useRemoveLearning(path);
+  const updateLearning = useUpdateLearning(path);
 
   return (
     <div className="h-full overflow-auto">
@@ -17,10 +23,12 @@ export default function LearningsTab({ agent }: TabProps) {
         <p className="text-xs text-muted-foreground/60 mt-0.5 mb-3">
           {t("configure.learnings.description")}
         </p>
-        <LearningsSection
+        <LearningsContent
           entries={learningsData?.entries ?? []}
           onAdd={(txt) => addLearning.mutateAsync(txt)}
           onRemove={(i) => removeLearning.mutateAsync(i)}
+          onUpdate={(id, text) => updateLearning.mutateAsync({ id, text })}
+          layout="section"
         />
       </div>
     </div>
