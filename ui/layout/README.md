@@ -20,6 +20,12 @@ import "@houston-ai/layout/src/styles.css"
   selectedId={activeId}
   onSelect={setActiveId}
   onAdd={createProject}
+  labels={{
+    addItem: "Add project",
+    moreActions: "Project actions",
+    renameItem: "Rename",
+    deleteItem: "Delete",
+  }}
 />
 
 <TabBar
@@ -34,7 +40,7 @@ import "@houston-ai/layout/src/styles.css"
 
 ## Exports
 
-- `AppSidebar` -- project/chat list sidebar with logo, add, delete, keyboard shortcuts
+- `AppSidebar` -- project/chat list sidebar with logo, add, delete, keyboard shortcuts, and optional labels for app-level i18n
 - `TabBar` -- horizontal tab strip with badges and action slots
 - `SplitView` -- two-pane layout with resizable divider
 - `ResizablePanelGroup`, `ResizablePanel`, `ResizableHandle` -- lower-level resizable primitives

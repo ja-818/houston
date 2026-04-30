@@ -6,6 +6,8 @@
     "yourAgents": "Your Agents",
     "selectWorkspace": "Select workspace",
     "connectPhone": "Connect phone",
+    "addAgent": "Add agent",
+    "agentActions": "Agent actions",
     "needsYouCount_one": "{{count}} issue needs you",
     "needsYouCount_other": "{{count}} issues need you",
     "runningCount_one": "{{count}} issue running",

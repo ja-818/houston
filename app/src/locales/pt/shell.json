@@ -6,6 +6,8 @@
     "yourAgents": "Seus agentes",
     "selectWorkspace": "Escolha um espaço de trabalho",
     "connectPhone": "Conectar celular",
+    "addAgent": "Adicionar agente",
+    "agentActions": "Ações do agente",
     "needsYouCount_one": "{{count}} assunto precisa de você",
     "needsYouCount_other": "{{count}} assuntos precisam de você",
     "runningCount_one": "{{count}} assunto em execução",
