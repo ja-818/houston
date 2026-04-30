@@ -12,6 +12,8 @@ import {
 } from "./add-skill-dialog-store-labels"
 import { StoreRow } from "./add-skill-dialog-store-row"
 
+const SEARCH_DEBOUNCE_MS = 650
+
 export interface StoreViewProps {
   open: boolean
   onSearch: (query: string) => Promise<CommunitySkill[]>
@@ -93,7 +95,7 @@ export function StoreView({ open, onSearch, onInstall, labels }: StoreViewProps)
       } finally {
         if (mountedRef.current && searchSeqRef.current === requestId) setLoading(false)
       }
-    }, 350)
+    }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [query, onSearch])
 

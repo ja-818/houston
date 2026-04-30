@@ -30,6 +30,8 @@ export interface ChatPanelProps {
   emptyState?: ReactNode;
   value?: string;
   onValueChange?: (value: string) => void;
+  /** Increment/change this value to focus the composer textarea. */
+  composerFocusToken?: number;
   attachments?: File[];
   onAttachmentsChange?: (files: File[]) => void;
   onNotice?: (message: string) => void;

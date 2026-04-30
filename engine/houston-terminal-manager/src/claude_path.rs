@@ -51,8 +51,7 @@ pub fn init() {
         // Unix: ask the login shell for PATH (macOS `.app` bundle env is
         // stripped). Windows: start from the inherited process PATH.
         #[cfg(unix)]
-        let shell_resolved = resolve_login_shell_path()
-            .or_else(resolve_interactive_shell_path);
+        let shell_resolved = resolve_login_shell_path().or_else(resolve_interactive_shell_path);
         #[cfg(not(unix))]
         let shell_resolved: Option<OsString> = None;
 
@@ -94,8 +93,7 @@ pub fn init() {
                 if let Ok(entries) = std::fs::read_dir(&nvm_dir) {
                     for entry in entries.flatten() {
                         let bin = entry.path().join("bin");
-                        let has_cli = bin.join("claude").is_file()
-                            || bin.join("codex").is_file();
+                        let has_cli = bin.join("claude").is_file() || bin.join("codex").is_file();
                         if has_cli {
                             append_path(&mut final_path, &bin);
                             break;

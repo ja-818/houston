@@ -291,7 +291,7 @@ pub fn run() {
             logging::write_frontend_log,
             logging::read_recent_logs,
             // Native network delivery for bug reports. Avoids webview CORS and
-            // keeps the Slack webhook out of the JavaScript bundle.
+            // keeps Linear credentials out of the JavaScript bundle.
             bug_report::report_bug,
             // Engine handshake pull (race-free fallback for `EngineGate`).
             get_engine_handshake,

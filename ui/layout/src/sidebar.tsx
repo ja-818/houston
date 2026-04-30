@@ -3,6 +3,8 @@ import { Plus } from "lucide-react";
 import { ScrollArea } from "@houston-ai/core";
 import { SidebarNavItem } from "./sidebar-nav";
 import { SidebarItemRow } from "./sidebar-item-row";
+import type { SidebarItemRowLabels } from "./sidebar-item-row";
+import { sidebarClasses } from "./sidebar-classes";
 
 export interface SidebarItem {
   id: string;
@@ -39,8 +41,20 @@ export interface SidebarProps {
   sectionLabel?: string;
   /** Footer area rendered at the very bottom of the sidebar */
   footer?: ReactNode;
+  labels?: SidebarLabels;
   children?: ReactNode;
 }
+
+export interface SidebarLabels extends SidebarItemRowLabels {
+  addItem?: string;
+}
+
+const DEFAULT_LABELS: Required<SidebarLabels> = {
+  addItem: "Add item",
+  moreActions: "More actions",
+  renameItem: "Rename",
+  deleteItem: "Delete",
+};
 
 export function AppSidebar({
   logo,
@@ -55,11 +69,13 @@ export function AppSidebar({
   onRename,
   sectionLabel,
   footer,
+  labels,
   children,
 }: SidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const hasMenu = !!onDelete || !!onRename;
+  const l = { ...DEFAULT_LABELS, ...labels };
 
   const startRename = (id: string, currentName: string) => {
     setEditingId(id);
@@ -124,6 +140,7 @@ export function AppSidebar({
             )}
             {onAdd && (
               <button
+                aria-label={l.addItem}
                 onClick={onAdd}
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
@@ -135,7 +152,7 @@ export function AppSidebar({
 
         {/* Items list */}
         <ScrollArea className="flex-1 px-2">
-          <div className="space-y-0.5 pb-2">
+          <div className={sidebarClasses.itemsList}>
             {items.map((item) => (
               <SidebarItemRow
                 key={item.id}
@@ -151,6 +168,7 @@ export function AppSidebar({
                 onCancelEdit={() => setEditingId(null)}
                 onStartRename={onRename ? startRename : undefined}
                 onDelete={onDelete}
+                labels={l}
               />
             ))}
           </div>

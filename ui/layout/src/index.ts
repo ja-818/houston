@@ -1,5 +1,10 @@
 export { AppSidebar } from "./sidebar";
-export type { SidebarProps, SidebarItem, SidebarNavItemEntry } from "./sidebar";
+export type {
+  SidebarProps,
+  SidebarItem,
+  SidebarNavItemEntry,
+  SidebarLabels,
+} from "./sidebar";
 
 export { SidebarNavItem } from "./sidebar-nav";
 export type { SidebarNavItemProps } from "./sidebar-nav";

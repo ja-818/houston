@@ -6,7 +6,7 @@ import { getCurrentUserEmail } from "./current-user";
 /**
  * Surface an error to the user as a toast with a working "Report bug" action.
  * `command` is a short machine-readable tag (e.g. "list_workspaces",
- * "uncaught_error") that goes into the Slack payload for triage.
+ * "uncaught_error") that goes into the bug-report payload for triage.
  */
 export function showErrorToast(command: string, message: string): void {
   const timestamp = new Date().toISOString();

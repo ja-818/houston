@@ -55,7 +55,10 @@ async fn status_returns_shape_for_known_provider() {
     assert_eq!(body["provider"], "anthropic");
     assert_eq!(body["cliName"], "claude");
     assert!(body["cliInstalled"].is_boolean());
-    assert!(body["authenticated"].is_boolean());
+    assert!(matches!(
+        body["authState"].as_str(),
+        Some("authenticated" | "unauthenticated" | "unknown")
+    ));
 }
 
 #[tokio::test]

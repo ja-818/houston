@@ -104,7 +104,7 @@ export function osReadRecentLogs(
   return invoke<{ backend: string; frontend: string }>("read_recent_logs", { lines });
 }
 
-/** Send a prepared bug report to Houston's Slack intake from native code. */
+/** Send a prepared bug report to Houston's native bug-report intake. */
 export function osReportBug(payload: unknown): Promise<void> {
   return invoke<void>("report_bug", { payload });
 }

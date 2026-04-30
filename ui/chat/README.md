@@ -33,7 +33,7 @@ import "@houston-ai/chat/src/styles.css"
 
 ## How it works
 
-`ChatPanel` accepts an array of `FeedItem` discriminated unions (user messages, assistant text, thinking, tool calls, tool results, final results) and renders the full conversation. Status is derived automatically from the feed, or you can override it.
+`ChatPanel` accepts an array of `FeedItem` discriminated unions (user messages, assistant text, thinking, tool calls, tool results, runtime errors, final results) and renders the full conversation. Status is derived automatically from the feed, or you can override it.
 
 Thinking and tool activity are grouped into a single technical-details accordion per assistant turn. The active group stays open while work is happening, then collapses when the assistant returns user-facing text or the session becomes ready.
 

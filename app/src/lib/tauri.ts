@@ -25,34 +25,43 @@ import type {
 import type {
   ComposioAppEntry as EngineComposioAppEntry,
   ComposioStatus as EngineComposioStatus,
+  ProviderAuthState,
   ProviderStatus as EngineProviderStatus,
 } from "@houston-ai/engine-client";
 import { getEngine } from "./engine";
 import { osPickDirectory } from "./os-bridge";
 import { logger } from "./logger";
+export { withAttachmentPaths } from "./attachment-message";
 
-/** Wrap an engine call and surface errors as toasts — never fail silently. */
+interface EngineCallOptions {
+  toast?: boolean;
+}
+
+/** Wrap an engine call and surface errors as toasts unless caller handles them inline. */
 async function call<T>(
   label: string,
   fn: () => Promise<T>,
   context?: Record<string, unknown>,
+  options?: EngineCallOptions,
 ): Promise<T> {
   try {
     return await fn();
   } catch (err) {
-    await surfaceToast(label, err, context);
+    await surfaceError(label, err, context, options);
     throw err;
   }
 }
 
-async function surfaceToast(
+async function surfaceError(
   label: string,
   err: unknown,
   context?: Record<string, unknown>,
+  options?: EngineCallOptions,
 ): Promise<void> {
   const message =
     err instanceof Error ? err.message : typeof err === "string" ? err : String(err);
   logger.error(`[engine:${label}] ${message}`, context ? JSON.stringify(context) : undefined);
+  if (options?.toast === false) return;
   const { showErrorToast } = await import("./error-toast");
   showErrorToast(label, message);
 }
@@ -189,14 +198,6 @@ export const tauriAttachments = {
     call<void>("delete_attachments", () => getEngine().deleteAttachments(scopeId)),
 };
 
-/** Format a prompt with attachment paths appended. Unchanged. */
-export function withAttachmentPaths(text: string, paths: string[]): string {
-  if (paths.length === 0) return text;
-  const list = paths.map((p) => `- ${p}`).join("\n");
-  const block = `[User attached these files. Read them with the Read tool if needed:\n${list}]`;
-  return text.length > 0 ? `${text}\n\n${block}` : block;
-}
-
 // ─── Agent-data files (`.houston/**`) ─────────────────────────────────
 
 export const tauriAgent = {
@@ -271,6 +272,8 @@ export const tauriSkills = {
         installs: s.installs,
         source: s.source,
       })),
+      undefined,
+      { toast: false },
     ),
   installCommunity: (agentPath: string, source: string, skillId: string) =>
     call<string>("install_community_skill", () =>
@@ -573,6 +576,7 @@ export const tauriPreferences = {
 export interface ProviderStatus {
   provider: string;
   cli_installed: boolean;
+  auth_state: ProviderAuthState;
   authenticated: boolean;
   cli_name: string;
 }
@@ -586,7 +590,8 @@ export const tauriProvider = {
       return {
         provider: p.provider,
         cli_installed: p.cliInstalled,
-        authenticated: p.authenticated,
+        auth_state: p.authState,
+        authenticated: p.authState === "authenticated",
         cli_name: p.cliName,
       };
     }),

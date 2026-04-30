@@ -1,27 +1,8 @@
 use std::path::PathBuf;
 
 fn main() {
-    let mut dotenv_pairs: Vec<(String, String)> = Vec::new();
-
-    // Load .env file so env!() macros in slack.rs can read credentials at build time.
-    if let Ok(env_path) = std::fs::canonicalize(".env") {
-        for line in std::fs::read_to_string(&env_path)
-            .unwrap_or_default()
-            .lines()
-        {
-            let line = line.trim();
-            if line.is_empty() || line.starts_with('#') {
-                continue;
-            }
-            if let Some((key, value)) = line.split_once('=') {
-                let key = key.trim().to_string();
-                let value = value.trim().to_string();
-                println!("cargo:rustc-env={key}={value}");
-                dotenv_pairs.push((key, value));
-            }
-        }
-        println!("cargo:rerun-if-changed={}", env_path.display());
-    }
+    let dotenv_pairs = load_dotenv_pairs();
+    configure_bug_report_env(&dotenv_pairs);
     configure_auth_storage(&dotenv_pairs);
 
     // Stage the houston-engine binary into `binaries/houston-engine-<triple>`
@@ -46,6 +27,52 @@ fn main() {
     ensure_resources_bin_dir();
 
     tauri_build::build()
+}
+
+fn load_dotenv_pairs() -> Vec<(String, String)> {
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let app_root = manifest
+        .parent()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(".."));
+    let candidates = [
+        manifest.join(".env"),
+        manifest.join(".env.local"),
+        app_root.join(".env"),
+        app_root.join(".env.local"),
+    ];
+
+    let mut pairs = Vec::new();
+    for path in candidates {
+        println!("cargo:rerun-if-changed={}", path.display());
+        let Ok(content) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        for line in content.lines().filter_map(parse_dotenv_line) {
+            let (key, value) = line;
+            println!("cargo:rustc-env={key}={value}");
+            pairs.push((key, value));
+        }
+    }
+    pairs
+}
+
+fn parse_dotenv_line(line: &str) -> Option<(String, String)> {
+    let line = line.trim();
+    if line.is_empty() || line.starts_with('#') {
+        return None;
+    }
+    let (key, value) = line.split_once('=')?;
+    Some((key.trim().to_string(), value.trim().to_string()))
+}
+
+fn configure_bug_report_env(dotenv_pairs: &[(String, String)]) {
+    for key in ["LINEAR_API_KEY", "LINEAR_TEAM_ID", "LINEAR_BUG_LABEL_NAME"] {
+        println!("cargo:rerun-if-env-changed={key}");
+        if let Some(value) = env_value(key, dotenv_pairs) {
+            println!("cargo:rustc-env={key}={value}");
+        }
+    }
 }
 
 fn configure_auth_storage(dotenv_pairs: &[(String, String)]) {
@@ -79,6 +106,7 @@ fn env_value(key: &str, dotenv_pairs: &[(String, String)]) -> Option<String> {
         .or_else(|| {
             dotenv_pairs
                 .iter()
+                .rev()
                 .find(|(candidate, _)| candidate == key)
                 .map(|(_, value)| value.clone())
                 .filter(|value| !value.trim().is_empty())

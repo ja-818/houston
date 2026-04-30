@@ -9,6 +9,7 @@
 
 import { useState } from "react";
 import {
+  UserAttachmentBadge,
   type ActionInvocation,
   resolveActionImage,
 } from "@houston-ai/chat";
@@ -18,7 +19,15 @@ interface Props {
 }
 
 export function UserActionMessage({ invocation }: Props) {
-  const { displayName, image, description, integrations, fields, message } = invocation;
+  const {
+    displayName,
+    image,
+    description,
+    integrations,
+    fields,
+    message,
+    attachments,
+  } = invocation;
   return (
     <div className="flex max-w-sm flex-col items-end gap-2">
       <div className="inline-block rounded-2xl bg-secondary p-4 text-left">
@@ -66,6 +75,7 @@ export function UserActionMessage({ invocation }: Props) {
           <span className="whitespace-pre-wrap break-words">{message}</span>
         </div>
       )}
+      <UserAttachmentBadge files={attachments} />
     </div>
   );
 }

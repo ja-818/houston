@@ -91,6 +91,12 @@ Only two tables:
 
 Everything else lives in files.
 
+User-message rows may include leading `<!--houston:action ...-->` or
+`<!--houston:attachments ...-->` markers. These are display metadata only;
+the same row still contains the Claude-facing prompt body after the marker.
+Renderers decode the marker so non-technical users see cards/badges instead
+of file paths or internal prompt instructions.
+
 ## Session file-change attribution
 Chat sessions snapshot user-visible project files before and after the
 CLI run. The engine diffs those snapshots and persists a `file_changes`

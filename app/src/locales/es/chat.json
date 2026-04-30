@@ -8,12 +8,19 @@
     "attachmentsOnly": "Archivos adjuntos",
     "attached": "Adjunto: {{names}}"
   },
+  "attachmentMessage": {
+    "count_one": "1 archivo adjunto",
+    "count_other": "{{count}} archivos adjuntos"
+  },
   "empty": {
     "title": "Empieza una conversación",
     "description": "Escribe un mensaje para hablar con tu asistente."
   },
   "errors": {
     "sessionStart": "No se pudo iniciar la sesión: {{error}}"
+  },
+  "toolRuntimeError": {
+    "retryPrompt": "Intenta de nuevo."
   },
   "attachmentIssues": {
     "title": "Algunos archivos no se adjuntaron",

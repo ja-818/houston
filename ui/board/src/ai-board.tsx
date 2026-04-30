@@ -10,6 +10,12 @@ import { KanbanDetailPanel } from "./kanban-detail-panel"
 import type { KanbanCardLabels } from "./kanban-card"
 import type { KanbanItem, KanbanColumn } from "./types"
 
+export interface NewPanelOptions {
+  focusComposer?: boolean
+}
+
+export type NewPanelOpener = (options?: NewPanelOptions) => void
+
 export interface AIBoardProps {
   items: KanbanItem[]
   columns?: KanbanColumn[]
@@ -39,7 +45,7 @@ export interface AIBoardProps {
    * pushed a live item into a session the user hadn't yet hydrated. */
   onHistoryLoaded?: (sessionKey: string, items: FeedItem[]) => void
   /** Called with the openNewPanel function so the parent can trigger it externally (e.g. from a header button). */
-  onNewPanelOpenerReady?: (opener: () => void) => void
+  onNewPanelOpenerReady?: (opener: NewPanelOpener) => void
   /** Custom empty state for the chat panel when no messages exist. */
   chatEmptyState?: ReactNode
   /** Custom thinking indicator for the chat panel. */
@@ -203,6 +209,7 @@ export function AIBoard({
 }: AIBoardProps) {
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [newPanelOpen, setNewPanelOpen] = useState(false)
+  const [composerFocusToken, setComposerFocusToken] = useState<number | null>(null)
 
   const selectedId = controlledSelectedId !== undefined ? controlledSelectedId : internalSelectedId
   const rawSetSelectedId = onSelectProp ?? setInternalSelectedId
@@ -239,9 +246,12 @@ export function AIBoard({
 
   const selectedItem = items.find((i) => i.id === selectedId) ?? null
 
-  const openNewPanel = useCallback(() => {
+  const openNewPanel = useCallback((options?: NewPanelOptions) => {
     setSelectedId(null)
     setNewPanelOpen(true)
+    setComposerFocusToken((current) => (
+      options?.focusComposer ? (current ?? 0) + 1 : null
+    ))
   }, [setSelectedId])
 
   // Expose openNewPanel to parent
@@ -262,6 +272,7 @@ export function AIBoard({
   const handleCardSelect = useCallback(
     (item: KanbanItem) => {
       setNewPanelOpen(false)
+      setComposerFocusToken(null)
       setSelectedId(item.id)
     },
     [setSelectedId],
@@ -336,6 +347,7 @@ export function AIBoard({
 
   const closePanel = useCallback(() => {
     setNewPanelOpen(false)
+    setComposerFocusToken(null)
     setSelectedId(null)
   }, [setSelectedId])
 
@@ -421,6 +433,11 @@ export function AIBoard({
           thinkingIndicator={thinkingIndicator}
           value={drafts ? (drafts[activeDraftKey] ?? "") : undefined}
           onValueChange={onDraftChange ? (text: string) => onDraftChange(activeDraftKey, text) : undefined}
+          composerFocusToken={
+            newPanelOpen && !selectedItem && composerFocusToken !== null
+              ? composerFocusToken
+              : undefined
+          }
           isSpecialTool={isSpecialTool}
           renderToolResult={renderToolResult}
           processLabels={processLabels}

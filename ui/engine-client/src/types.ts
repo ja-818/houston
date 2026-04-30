@@ -328,11 +328,12 @@ export interface CommunitySkill {
  * with `#[serde(rename_all = "lowercase")]`.
  */
 export type CliInstallSource = "bundled" | "managed" | "path" | "missing";
+export type ProviderAuthState = "authenticated" | "unauthenticated" | "unknown";
 
 export interface ProviderStatus {
   provider: string;
   cliInstalled: boolean;
-  authenticated: boolean;
+  authState: ProviderAuthState;
   cliName: string;
   installSource: CliInstallSource;
   /** Absolute path to the CLI binary that will be spawned, or `null`

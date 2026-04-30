@@ -160,6 +160,14 @@ impl FileChanges {
     }
 }
 
+/// Runtime failure surfaced as an actionable, user-facing card.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ToolRuntimeErrorKind {
+    LocalTool,
+    ProviderProcess,
+}
+
 /// Processed feed items for rendering in the UI.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "feed_type", content = "data", rename_all = "snake_case")]
@@ -174,6 +182,11 @@ pub enum FeedItem {
     ThinkingStreaming(String),
     /// Message from the user (follow-up prompt).
     UserMessage(String),
+    /// A local/provider runtime failure. Details are diagnostic-only.
+    ToolRuntimeError {
+        kind: ToolRuntimeErrorKind,
+        details: String,
+    },
     /// Tool call made by the assistant.
     ToolCall {
         name: String,

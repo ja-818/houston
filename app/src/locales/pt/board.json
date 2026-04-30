@@ -31,6 +31,10 @@
   "toasts": {
     "attached": "Anexou: {{names}}"
   },
+  "attachmentMessage": {
+    "count_one": "1 arquivo anexado",
+    "count_other": "{{count}} arquivos anexados"
+  },
   "chatEmpty": {
     "heading": "Em que posso ajudar?",
     "subheading": "Toque uma ação para começar, ou escreva o que você precisa abaixo.",

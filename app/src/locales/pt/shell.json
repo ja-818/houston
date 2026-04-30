@@ -6,6 +6,8 @@
     "yourAgents": "Seus agentes",
     "selectWorkspace": "Escolha um espaço de trabalho",
     "connectPhone": "Conectar celular",
+    "addAgent": "Adicionar agente",
+    "agentActions": "Ações do agente",
     "needsYouCount_one": "{{count}} assunto precisa de você",
     "needsYouCount_other": "{{count}} assuntos precisam de você",
     "runningCount_one": "{{count}} assunto em execução",
@@ -47,6 +49,17 @@
     "waiting": "Aguardando o login no navegador...",
     "tryAgain": "Tentar de novo",
     "launchError": "Não foi possível abrir o login. Tente de novo."
+  },
+  "toolRuntimeError": {
+    "title": "Algo travou",
+    "body": "Uma ferramenta local não iniciou corretamente. Tente de novo e reporte se continuar acontecendo.",
+    "report": "Reportar erro",
+    "reporting": "Enviando relatório...",
+    "reportSuccessTitle": "Relatório enviado",
+    "reportSuccessDescription": "Houston recebeu os registros.",
+    "reportErrorTitle": "Não foi possível enviar o relatório",
+    "reportErrorDescription": "Tente de novo em instantes.",
+    "retryErrorTitle": "Não foi possível tentar de novo"
   },
   "updateChecker": {
     "cardLabel": "Atualização do Houston disponível",

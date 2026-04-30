@@ -20,6 +20,11 @@
  *     Use the X skill...
  */
 
+import {
+  normalizeAttachmentReferences,
+  type AttachmentReference,
+} from "./attachment-message.ts";
+
 const MARKER_RE = /^<!--houston:action (\{[\s\S]*?\})-->\s*\n?\n?/;
 
 export interface ActionInvocationField {
@@ -45,6 +50,8 @@ export interface ActionInvocation {
   fields: ActionInvocationField[];
   /** Optional text the user typed alongside the action. */
   message: string;
+  /** Files uploaded with the action. Paths are for model context, not UI display. */
+  attachments: AttachmentReference[];
 }
 
 /**
@@ -56,7 +63,8 @@ export function decodeActionMessage(body: string): ActionInvocation | null {
   const match = body.match(MARKER_RE);
   if (!match) return null;
   try {
-    const payload = JSON.parse(match[1]) as ActionInvocation;
+    const payload = JSON.parse(match[1]) as Partial<ActionInvocation> &
+      Record<string, unknown>;
     if (typeof payload?.skill !== "string") return null;
     return {
       skill: payload.skill,
@@ -66,6 +74,7 @@ export function decodeActionMessage(body: string): ActionInvocation | null {
       integrations: payload.integrations ?? [],
       fields: payload.fields ?? [],
       message: payload.message ?? "",
+      attachments: normalizeAttachmentReferences(payload.attachments),
     };
   } catch {
     return null;

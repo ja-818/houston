@@ -3,7 +3,7 @@
  * Follows the Vercel AI Elements chatbot example exactly.
  * Generic version: accepts feedItems/status as props, no store dependencies.
  */
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { feedItemsToMessages } from "./chat-helpers";
 import { ChatInput } from "./chat-input";
 import { ChatDropOverlay } from "./chat-drop-overlay";
@@ -46,6 +46,7 @@ export function ChatPanel({
   renderLink,
   value,
   onValueChange,
+  composerFocusToken,
   attachments,
   onAttachmentsChange,
   onNotice,
@@ -59,6 +60,7 @@ export function ChatPanel({
   canSendEmpty,
   composerOverride,
 }: ChatPanelProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const status = statusProp ?? deriveStatus(feedItems, isLoading);
   const messages = useMemo(() => feedItemsToMessages(feedItems), [feedItems]);
   const hasMessages = messages.length > 0;
@@ -90,6 +92,13 @@ export function ChatPanel({
   );
   const { isDraggingOver, dropProps } = useFileDropZone(addDroppedFiles);
 
+  useEffect(() => {
+    if (composerFocusToken === undefined) return;
+    panelRef.current
+      ?.querySelector<HTMLTextAreaElement>('textarea[name="message"]')
+      ?.focus();
+  }, [composerFocusToken]);
+
   // Wrap onSend so we clear internally-managed attachments after a send;
   // in controlled mode the parent is responsible for clearing.
   const handleSend = useCallback(
@@ -102,6 +111,7 @@ export function ChatPanel({
 
   return (
     <div
+      ref={panelRef}
       className="relative flex flex-1 flex-col min-h-0 overflow-hidden"
       {...dropProps}
     >

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AIBoard } from "@houston-ai/board";
-import type { KanbanColumnConfig } from "@houston-ai/board";
+import type { KanbanColumnConfig, NewPanelOpener } from "@houston-ai/board";
 import {
   Empty,
   EmptyHeader,
@@ -63,7 +63,7 @@ export function Dashboard() {
   // the new conversation is created (and selectedItem takes over) or
   // the user clicks a different card.
   const [pendingAgent, setPendingAgent] = useState<Agent | null>(null);
-  const openerRef = useRef<(() => void) | null>(null);
+  const openerRef = useRef<NewPanelOpener | null>(null);
   const emptyAutoOpenKeyRef = useRef<string | null>(null);
 
   const mc = useMissionControl(agents);
@@ -73,13 +73,13 @@ export function Dashboard() {
   // Control: we set the pending agent so the right panel scopes its
   // actions/model/etc. to that agent, then ask AIBoard to open the
   // empty new-conversation panel.
-  const handlePickAgent = useCallback((agent: Agent) => {
+  const handlePickAgent = useCallback((agent: Agent, options?: { focusComposer?: boolean }) => {
     setPendingAgent(agent);
     setMissionControlSelectedId(null);
-    openerRef.current?.();
+    openerRef.current?.({ focusComposer: options?.focusComposer ?? true });
   }, [setMissionControlSelectedId]);
 
-  const handleOpenerReady = useCallback((opener: () => void) => {
+  const handleOpenerReady = useCallback((opener: NewPanelOpener) => {
     openerRef.current = opener;
     setNewPanelOpenerReady(true);
   }, []);
@@ -143,7 +143,7 @@ export function Dashboard() {
     if (emptyAutoOpenKeyRef.current === emptyKey) return;
     emptyAutoOpenKeyRef.current = emptyKey;
     if (visibleAgents.length === 1) {
-      handlePickAgent(visibleAgents[0]);
+      handlePickAgent(visibleAgents[0], { focusComposer: false });
     } else if (visibleAgents.length > 1) {
       setAgentPickerOpen(true);
     }

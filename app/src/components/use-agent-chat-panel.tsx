@@ -29,6 +29,11 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@houston-ai/core";
 import { Play } from "lucide-react";
+import {
+  decodeAttachmentMessage,
+  UserAttachmentMessage,
+  type UserAttachmentMessageLabels,
+} from "@houston-ai/chat";
 
 import { useFeedStore } from "../stores/feeds";
 import { useWorkspaceStore } from "../stores/workspaces";
@@ -61,11 +66,14 @@ import {
   decodeActionMessage,
   encodeActionMessage,
 } from "../lib/action-message";
+import { attachmentReferences } from "../lib/attachment-message";
 import { SkillCard } from "./skill-card";
 import { NewMissionPickerDialog } from "./new-mission-picker-dialog";
 import { UserActionMessage } from "./user-action-message";
 import { SelectedActionChip } from "./selected-action-chip";
 import { ProviderReconnectCard } from "./shell/provider-reconnect-card";
+import { ToolRuntimeErrorCard } from "./shell/tool-runtime-error-card";
+import { isToolRuntimeErrorMessage } from "./tool-runtime-feed";
 import { useChatDisplayLabels } from "./use-chat-display-labels";
 import {
   filterProviderAuthFeedItems,
@@ -128,7 +136,7 @@ export function useAgentChatPanel({
   selectedSessionKey,
   onSelectSession,
 }: UseAgentChatPanelArgs): AgentChatPanelProps {
-  const { t } = useTranslation("board");
+  const { t } = useTranslation(["board", "chat"]);
   const { processLabels, getThinkingMessage } = useChatDisplayLabels();
   const queryClient = useQueryClient();
 
@@ -223,6 +231,12 @@ export function useAgentChatPanel({
   }, [onSelectSession]);
 
   const pushFeedItem = useFeedStore((s) => s.pushFeedItem);
+  const attachmentLabels = useMemo<UserAttachmentMessageLabels>(
+    () => ({
+      attachmentCount: (count) => t("attachmentMessage.count", { count }),
+    }),
+    [t],
+  );
 
   // While an Action is selected, the regular composer still owns text
   // and attachments. This hook only wraps the submitted message with the
@@ -232,13 +246,8 @@ export function useAgentChatPanel({
       const skill = activeAction;
       if (!skill || !agent || !path) return false;
 
-      const visibleText = actionVisibleText(
-        text,
-        files,
-        (names) => t("toasts.attached", { names }),
-      );
       const claudePrompt = buildActionClaudePrompt(skill, text);
-      const encoded = encodeActionMessage(skill, visibleText, claudePrompt);
+      const encoded = encodeActionMessage(skill, text, claudePrompt);
       const friendlyTitle = humanizeSkillName(skill.name);
 
       if (sessionKey) {
@@ -247,7 +256,12 @@ export function useAgentChatPanel({
         const scopeId = sessionKey;
         const attachmentPaths = await tauriAttachments.save(scopeId, files);
         const prompt = withAttachmentPaths(claudePrompt, attachmentPaths);
-        const encodedWithAttachments = encodeActionMessage(skill, visibleText, prompt);
+        const encodedWithAttachments = encodeActionMessage(
+          skill,
+          text,
+          prompt,
+          attachmentReferences(files, attachmentPaths),
+        );
         const mode = agentModes?.find((m) => m.id === undefined); // default mode
         await tauriChat.send(path, encodedWithAttachments, sessionKey, {
           mode: mode?.promptFile,
@@ -263,6 +277,7 @@ export function useAgentChatPanel({
         // kanban card reads "Research a company" instead of the marker.
         const agentMode = agentModes?.[0]?.id;
         const mode = agentModes?.find((m) => m.id === agentMode);
+        let encodedUserMessage = encoded;
 
         // Honour worktree mode if the agent's config opts in. Same
         // bootstrap as BoardTab's text-send path.
@@ -299,14 +314,20 @@ export function useAgentChatPanel({
             buildPrompt: async (activityId) => {
               const paths = await tauriAttachments.save(`activity-${activityId}`, files);
               const prompt = withAttachmentPaths(claudePrompt, paths);
-              return encodeActionMessage(skill, visibleText, prompt);
+              encodedUserMessage = encodeActionMessage(
+                skill,
+                text,
+                prompt,
+                attachmentReferences(files, paths),
+              );
+              return encodedUserMessage;
             },
             title: friendlyTitle,
           },
         );
         pushFeedItem(path, sessionKey, {
           feed_type: "user_message",
-          data: encoded,
+          data: encodedUserMessage,
         });
         queryClient.invalidateQueries({ queryKey: queryKeys.activity(path) });
         analytics.track("mission_created", {
@@ -341,17 +362,50 @@ export function useAgentChatPanel({
   const renderUserMessage = useCallback(
     (msg: { content: string }) => {
       const invocation = decodeActionMessage(msg.content);
-      if (!invocation) return undefined;
-      return <UserActionMessage invocation={invocation} />;
+      if (invocation) {
+        return (
+          <UserActionMessage
+            invocation={invocation}
+            attachmentLabels={attachmentLabels}
+          />
+        );
+      }
+      const attachmentInvocation = decodeAttachmentMessage(msg.content);
+      if (!attachmentInvocation) return undefined;
+      return (
+        <UserAttachmentMessage
+          invocation={attachmentInvocation}
+          labels={attachmentLabels}
+        />
+      );
     },
-    [],
+    [attachmentLabels],
   );
   const renderSystemMessage = useCallback(
     (msg: ChatMessage) => {
+      if (isToolRuntimeErrorMessage(msg)) {
+        return (
+          <ToolRuntimeErrorCard
+            error={msg.runtimeError}
+            onRetry={async () => {
+              if (!path || !selectedSessionKey) return;
+              const text = t("chat:toolRuntimeError.retryPrompt");
+              await tauriChat.send(path, text, selectedSessionKey, {
+                providerOverride: chatProvider ?? undefined,
+                modelOverride: chatModel ?? undefined,
+              });
+              pushFeedItem(path, selectedSessionKey, {
+                feed_type: "user_message",
+                data: text,
+              });
+            }}
+          />
+        );
+      }
       if (isProviderAuthMessage(msg.content)) return null;
       return undefined;
     },
-    [],
+    [chatModel, chatProvider, path, pushFeedItem, selectedSessionKey, t],
   );
   const mapFeedItems = useCallback(
     ({ items }: { sessionKey: string; items: FeedItem[] }) =>
@@ -479,15 +533,4 @@ export function useAgentChatPanel({
     chatProvider,
     chatModel,
   };
-}
-
-function actionVisibleText(
-  text: string,
-  files: File[],
-  formatAttached: (names: string) => string,
-): string {
-  const trimmed = text.trim();
-  if (files.length === 0) return trimmed;
-  const attached = formatAttached(files.map((f) => f.name).join(", "));
-  return trimmed ? `${trimmed}\n\n${attached}` : attached;
 }
