@@ -4,7 +4,7 @@ version = "0.4.5"
 edition = "2021"
 description = "Wire types for Houston Engine — REST DTOs, WS envelope, error codes, version const"
 license = "MIT"
-repository = "https://github.com/ja-818/houston"
+repository = "https://github.com/gethouston/houston"
 
 [dependencies]
 serde = { workspace = true }

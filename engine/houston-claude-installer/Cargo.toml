@@ -4,7 +4,7 @@ version = "0.4.5"
 edition = "2021"
 description = "Runtime installer for Anthropic Claude Code CLI — pinned URL + sha256-verified download"
 license = "MIT"
-repository = "https://github.com/ja-818/houston"
+repository = "https://github.com/gethouston/houston"
 
 [dependencies]
 serde = { workspace = true }

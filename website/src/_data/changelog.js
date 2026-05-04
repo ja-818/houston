@@ -1,6 +1,6 @@
 // Fetched at build time. Eleventy 3.x supports async data files.
 // Falls back to an empty list if GitHub is unreachable so builds never break.
-const REPO = "ja-818/houston";
+const REPO = "gethouston/houston";
 const PER_PAGE = 30;
 
 export default async function () {

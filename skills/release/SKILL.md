@@ -58,7 +58,7 @@ Duration: ~15-20 min (2-arch compile).
 4. **Write notes:** `.github/release-notes/0.3.X.md` — narrative, not a commit dump. Cover: what changed for the user, before-you-upgrade caveats (always include the macOS drag-install reminder), known limitations. Pattern from `.github/release-notes/0.4.0.md`. Skip only for trivial hotfixes.
 5. **Commit bump + notes:** `git add -A && git commit -m "release: v0.3.X"`
 6. **Tag + push:** `git tag v0.3.X && git push origin main --tags`
-7. **Wait CI:** ~10-15 min. Check `github.com/ja-818/houston/actions`
+7. **Wait CI:** ~10-15 min. Check `github.com/gethouston/houston/actions`
 8. **If CI fails:** `gh run view <id> --log-failed`, fix, commit. Re-tag = `git tag -d v0.3.X && git push origin :refs/tags/v0.3.X`, then re-tag + push.
 9. **STOP. Hand off draft to user.** The CI-created GH Release is a draft. Tell the user it's ready for review and link it. Do NOT publish it yourself — `gh release edit --draft=false` is the user's call. Publishing flips on auto-update for every installed Houston, so it's never auto-pilot.
 10. **After user publishes:** Installed apps show "Update available" w/in 30 min or next launch.

@@ -605,7 +605,7 @@ mod tests {
     #[test]
     fn parse_shorthand() {
         assert_eq!(
-            parse_github_ref("ja-818/houston-store").unwrap(),
+            parse_github_ref("gethouston/houston-store").unwrap(),
             ("ja-818".into(), "houston-store".into())
         );
     }
@@ -613,15 +613,15 @@ mod tests {
     #[test]
     fn parse_full_url() {
         assert_eq!(
-            parse_github_ref("https://github.com/ja-818/houston-store").unwrap(),
+            parse_github_ref("https://github.com/gethouston/houston-store").unwrap(),
             ("ja-818".into(), "houston-store".into())
         );
         assert_eq!(
-            parse_github_ref("https://github.com/ja-818/houston-store/").unwrap(),
+            parse_github_ref("https://github.com/gethouston/houston-store/").unwrap(),
             ("ja-818".into(), "houston-store".into())
         );
         assert_eq!(
-            parse_github_ref("https://github.com/ja-818/houston-store/tree/main").unwrap(),
+            parse_github_ref("https://github.com/gethouston/houston-store/tree/main").unwrap(),
             ("ja-818".into(), "houston-store".into())
         );
     }

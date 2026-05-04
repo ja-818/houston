@@ -2529,7 +2529,7 @@ visionPath: "vision/index.html"
     var lastSource = 'unknown';
 
     // Fetch latest release DMG URL
-    fetch('https://api.github.com/repos/ja-818/houston/releases/latest')
+    fetch('https://api.github.com/repos/gethouston/houston/releases/latest')
       .then(function(r) { return r.json(); })
       .then(function(data) {
         var dmg = data.assets && data.assets.find(function(a) { return a.name.endsWith('.dmg'); });

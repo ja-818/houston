@@ -4,7 +4,7 @@ version = "0.4.5"
 edition = "2021"
 description = "Outbound reverse tunnel client — engine dials Houston relay, multiplexes mobile HTTP+WS"
 license = "MIT"
-repository = "https://github.com/ja-818/houston"
+repository = "https://github.com/gethouston/houston"
 
 [dependencies]
 anyhow = { workspace = true }

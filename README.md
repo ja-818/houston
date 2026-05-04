@@ -19,8 +19,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ja-818/houston/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-0d0d0d" alt="MIT License"></a>
-  <a href="https://github.com/ja-818/houston/stargazers"><img src="https://img.shields.io/github/stars/ja-818/houston?color=0d0d0d" alt="Stars"></a>
+  <a href="https://github.com/gethouston/houston/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-0d0d0d" alt="MIT License"></a>
+  <a href="https://github.com/gethouston/houston/stargazers"><img src="https://img.shields.io/github/stars/gethouston/houston?color=0d0d0d" alt="Stars"></a>
 </p>
 
 ---
@@ -40,7 +40,7 @@
 ### Run the Houston app
 
 ```bash
-git clone https://github.com/ja-818/houston.git
+git clone https://github.com/gethouston/houston.git
 cd houston
 pnpm install
 cd app && pnpm tauri dev

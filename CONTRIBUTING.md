@@ -5,7 +5,7 @@ Thanks for your interest in contributing to Houston!
 ## Getting Started
 
 ```bash
-git clone https://github.com/ja-818/houston.git
+git clone https://github.com/gethouston/houston.git
 cd houston
 pnpm install
 cargo check --workspace

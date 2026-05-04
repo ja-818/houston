@@ -83,5 +83,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/ja-818/houston-engine:latest
-            ghcr.io/ja-818/houston-engine:${{ github.ref_name }}
+            ghcr.io/gethouston/houston-engine:latest
+            ghcr.io/gethouston/houston-engine:${{ github.ref_name }}
