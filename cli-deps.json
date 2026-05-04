@@ -62,7 +62,7 @@
       "windows-x64": {
         "source_repo": "https://github.com/gethouston/composio.git",
         "source_ref": "houston-windows-support",
-        "source_sha": "f51c0f2c6a9ba536fb44f200baa2b96fe816f69a",
+        "source_sha": "771a0bd7be8478b2cf6ca56a8d51158d4a24b1bb",
         "package_path": "ts/packages/cli",
         "bun_target": "bun-windows-x64-modern",
         "bun_version": "1.3.10",
