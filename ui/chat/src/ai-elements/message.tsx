@@ -29,6 +29,7 @@ import {
   useState,
 } from "react";
 import { Streamdown } from "streamdown";
+import { MarkdownCodeBlock } from "../markdown-code-block";
 
 const MessageAvatarContext = createContext<React.ReactNode | undefined>(undefined);
 
@@ -371,9 +372,13 @@ const streamdownPlugins = { cjk, code, math, mermaid };
 export const MessageResponse = memo(
   ({ className, onOpenLink, renderLink, ...props }: MessageResponseProps) => {
     const components = useMemo(() => {
-      if (!onOpenLink && !renderLink) return undefined;
+      const sharedComponents = {
+        code: MarkdownCodeBlock,
+      };
+      if (!onOpenLink && !renderLink) return sharedComponents;
       const fn = onOpenLink;
       return {
+        ...sharedComponents,
         a: ({ href, children, node: _node }: AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) => {
           // Raw auto-linked URL: children text equals href → plain text, no button
           if (!href || children === href) {

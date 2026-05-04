@@ -37,6 +37,8 @@ import "@houston-ai/chat/src/styles.css"
 
 Thinking and tool activity are grouped into a single technical-details accordion per assistant turn. The active group stays open while work is happening, then collapses when the assistant returns user-facing text or the session becomes ready.
 
+Markdown code fences and tool output blocks render visible copy controls. Copy uses the async Clipboard API with a WebView-safe fallback so code and Bash output remain copyable in desktop builds.
+
 The AI Elements are composable -- use `ChatPanel` for the batteries-included experience, or build your own layout with the primitives.
 
 ## Peer Dependencies

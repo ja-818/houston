@@ -46,6 +46,7 @@ import { SettingsView } from "./components/tabs/settings-view";
 import { WorkspaceSetupFlow } from "./components/shell/workspace-setup-flow";
 import { DetailPanelProvider } from "./components/shell/detail-panel-context";
 import { MissionSearchInput } from "./components/mission-search-input";
+import { shouldAllowNativeContextMenu } from "./lib/context-menu";
 
 export default function App() {
   useHoustonInit();
@@ -110,7 +111,10 @@ export default function App() {
   // to end users. Left enabled in dev so Inspect Element still works.
   useEffect(() => {
     if (!import.meta.env.PROD) return;
-    const handler = (e: MouseEvent) => e.preventDefault();
+    const handler = (e: MouseEvent) => {
+      if (shouldAllowNativeContextMenu(e.target)) return;
+      e.preventDefault();
+    };
     document.addEventListener("contextmenu", handler);
     return () => document.removeEventListener("contextmenu", handler);
   }, []);
