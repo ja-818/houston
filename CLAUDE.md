@@ -135,8 +135,12 @@ Ask: "Ready to commit? (yes/no/skip)" **STOP.** Yes → stage specific files, co
 |------|----|------|------------|
 | ui/ | `pnpm typecheck` | — | — |
 | engine/ | — | `cargo test --workspace` | `cargo build --workspace` |
+| engine/ Win check | — | `cargo check --target x86_64-pc-windows-gnu -p houston-engine-server` (needs mingw-w64) | — |
 | app/ | `cd app && pnpm tsc --noEmit` | `cd app/src-tauri && cargo check` | `cd app && pnpm tauri build` |
+| app/ Win MSI | — | — | `cd app && pnpm tauri build --target x86_64-pc-windows-msvc` (needs Windows host or `xwin` SDK) |
 | app/ i18n | `cd app && pnpm check-locales` | — | — |
+| CLI bundle (mac) | — | — | `./scripts/fetch-cli-deps.sh both` |
+| CLI bundle (win) | — | — | `./scripts/fetch-cli-deps.sh windows-x64` (Bun + jq + zstd required) |
 
 ### Engine sidecar staleness (dev only)
 

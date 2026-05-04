@@ -1,20 +1,25 @@
 {
   "$schema": "./cli-deps.schema.json",
-  "$comment": "Pinned versions for every CLI Houston ships or runtime-installs. Bundled (codex, composio) ride inside the .app under Contents/Resources/bin. claude-code cannot be bundled (proprietary license) so the runtime installer downloads it on first launch via houston-claude-installer using the URLs + sha256 below. Bumping a version: run `./scripts/bump-cli.sh <name> <version>`, then `./scripts/fetch-cli-deps.sh both` to refresh the staged copies + print the new checksums; pin the printed sha256 back into this file.",
+  "$comment": "Pinned versions for every CLI Houston ships or runtime-installs. Bundled (codex, composio) ride inside the .app / .msi under resources/bin. claude-code cannot be bundled (proprietary license) so the runtime installer downloads it on first launch via houston-claude-installer using the URLs + sha256 below. Bumping a version: run `./scripts/bump-cli.sh <name> <version>`, then `./scripts/fetch-cli-deps.sh both` to refresh the staged copies + print the new checksums; pin the printed sha256 back into this file. For Windows, composio is built from source (see `build` block) because upstream does not yet ship a Windows artifact.",
   "claude-code": {
     "version": "2.1.92",
     "bundled": false,
     "binary_name": "claude",
     "license": "PROPRIETARY",
     "install_target": "$HOME/.local/bin/claude",
+    "$install_target_comment": "On Windows the runtime installer writes to %LOCALAPPDATA%\\Programs\\claude\\claude.exe instead — the install_target field above is the POSIX-only path; see houston-claude-installer for the Windows resolution path.",
     "urls": {
       "darwin-arm64": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/{version}/darwin-arm64/claude",
       "darwin-x64": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/{version}/darwin-x64/claude",
+      "windows-x64": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/{version}/win32-x64/claude.exe",
+      "windows-arm64": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/{version}/win32-arm64/claude.exe",
       "manifest": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/{version}/manifest.json"
     },
     "checksums": {
       "darwin-arm64": "6d1b9657727dce81332b3cda11bfe0a8c83e2392e3c062a31022e10b0e71cdd1",
-      "darwin-x64": "d422b5cc974b3bc4b28f698144fd0316f3e17774babe0bc1eb76c2bb0858d0aa"
+      "darwin-x64": "d422b5cc974b3bc4b28f698144fd0316f3e17774babe0bc1eb76c2bb0858d0aa",
+      "windows-x64": "ebd9007c464d912593418f133a61d9f24866428530a81e88e910a24823066415",
+      "windows-arm64": "c258bce79aefac609f909e5abde92d1653bcef47d3577656d299d1d56f1604bb"
     }
   },
   "codex": {
@@ -23,14 +28,18 @@
     "binary_name": "codex",
     "license": "Apache-2.0",
     "ship_layout": "lipo-universal",
-    "$ship_layout_comment": "Both arch binaries are downloaded and combined with `lipo -create` into a single Mach-O fat binary at Contents/Resources/bin/codex.",
+    "$ship_layout_comment": "On macOS both arch binaries are downloaded and combined with `lipo -create` into a single Mach-O fat binary at Contents/Resources/bin/codex. On Windows there is no `lipo` equivalent and we ship the OS-native binary directly at resources/bin/codex.exe (per-arch builds; v1 only ships windows-x64).",
     "urls": {
       "darwin-arm64": "https://github.com/openai/codex/releases/download/rust-v{version}/codex-aarch64-apple-darwin.tar.gz",
-      "darwin-x64": "https://github.com/openai/codex/releases/download/rust-v{version}/codex-x86_64-apple-darwin.tar.gz"
+      "darwin-x64": "https://github.com/openai/codex/releases/download/rust-v{version}/codex-x86_64-apple-darwin.tar.gz",
+      "windows-x64": "https://github.com/openai/codex/releases/download/rust-v{version}/codex-x86_64-pc-windows-msvc.exe.zst",
+      "windows-arm64": "https://github.com/openai/codex/releases/download/rust-v{version}/codex-aarch64-pc-windows-msvc.exe.zst"
     },
     "checksums": {
       "darwin-arm64": "60f7039e63a7de8ae474136ac6f593ec1a913e1ddca0df59ade1f6d6eb5f7fd0",
-      "darwin-x64": "94e6ba8a552d4625beee857f513fb12bc20e560b9427c4a93733dbd86619f415"
+      "darwin-x64": "94e6ba8a552d4625beee857f513fb12bc20e560b9427c4a93733dbd86619f415",
+      "windows-x64": "92c0938d13e9e06e2844be1e50bfa2d246e295185aabe055a92d42fcdeb0b26d",
+      "windows-arm64": "cb1978aa318bd9180a8896bbfadc05b7581c752677df9ab6eb1f1903754fed20"
     }
   },
   "composio": {
@@ -39,7 +48,7 @@
     "binary_name": "composio",
     "license": "MIT",
     "ship_layout": "per-arch-dir",
-    "$ship_layout_comment": "Composio is a Bun-bundled JS app with arch-specific runtime + sibling .mjs/services files; cannot lipo. Each arch ships at Contents/Resources/bin/composio-{aarch64|x86_64}/ and the engine resolves at runtime via std::env::consts::ARCH. Cross-platform acp-adapters that the resolved arch can never execute are pruned at fetch time to keep the .app honest in size.",
+    "$ship_layout_comment": "Composio is a Bun-bundled JS app with arch-specific runtime + sibling .mjs/services files; cannot lipo. Each arch ships at resources/bin/composio-{aarch64|x86_64}/ on macOS and resources/bin/composio-x86_64/ on Windows (no aarch64 Windows build in v1) and the engine resolves at runtime via std::env::consts::ARCH. Cross-platform acp-adapters that the resolved arch can never execute are pruned at fetch time to keep the bundle honest in size.",
     "urls": {
       "darwin-arm64": "https://github.com/ComposioHQ/composio/releases/download/@composio/cli@{version}/composio-darwin-aarch64.zip",
       "darwin-x64": "https://github.com/ComposioHQ/composio/releases/download/@composio/cli@{version}/composio-darwin-x64.zip"
@@ -47,6 +56,19 @@
     "checksums": {
       "darwin-arm64": "fba0a57788ea50335507b2a38eccc67ebc051272f8393284b239875c4fdff8ef",
       "darwin-x64": "94af160e5bb10be80218dd9377c79a72d5c5ab7e172a65da0607ec4ee4d019c6"
+    },
+    "$build_comment": "Upstream ComposioHQ/composio does not yet publish Windows artifacts (issue #3057, closed: 'use WSL'). Until that ships, we build composio.exe from a fork at gethouston/composio that adds Windows targets to TARGET_MAP, win32 entries to RUN_CODEX_ACP_BINARY_TARGETS, and a Windows Credential Manager backend in cli-keyring. Builds are reproducible: pinned commit SHA, pinned Bun version, pinned bun_target. The `pnpm` package manager + Bun runtime installed on the build host must match the values in the fork's `package.json#packageManager` and `.bun-version` respectively.",
+    "build": {
+      "windows-x64": {
+        "source_repo": "https://github.com/gethouston/composio.git",
+        "source_ref": "houston-windows-support",
+        "source_sha": "f51c0f2c6a9ba536fb44f200baa2b96fe816f69a",
+        "package_path": "ts/packages/cli",
+        "bun_target": "bun-windows-x64-modern",
+        "bun_version": "1.3.10",
+        "artifact_basename": "composio-windows-x64",
+        "$artifact_basename_comment": "Bun appends `.exe` automatically for Windows targets; the staged binary is `dist/binaries/composio-windows-x64.exe` and companions live under `dist/binaries/companions/`."
+      }
     }
   }
 }

@@ -1,26 +1,71 @@
 # Bundled CLIs — codex, composio, claude-code
 
 Houston ships two upstream CLIs inside the signed/notarized desktop
-`.app` and runtime-downloads a third. The goal is zero terminal exposure
-for non-technical users — they install Houston, click in, and the chat
-agent works without ever opening a shell.
+bundle (`.app` on macOS, `.msi` on Windows) and runtime-downloads a
+third. The goal is zero terminal exposure for non-technical users —
+they install Houston, click in, and the chat agent works without ever
+opening a shell.
 
 ## What ships where
+
+### macOS
 
 | CLI         | License       | Distribution      | Where it lives                                                        |
 |-------------|---------------|-------------------|------------------------------------------------------------------------|
 | codex       | Apache-2.0    | Bundled (universal) | `Houston.app/Contents/Resources/bin/codex` — single Mach-O fat binary |
 | composio    | MIT           | Bundled (per-arch)  | `Resources/bin/composio-aarch64/`, `Resources/bin/composio-x86_64/`   |
-| claude-code | PROPRIETARY   | Runtime download    | `~/.local/bin/claude` (`%LOCALAPPDATA%\Programs\claude\claude.exe`)   |
+| claude-code | PROPRIETARY   | Runtime download    | `~/.local/bin/claude`                                                  |
 
-claude-code is licensed in a way that doesn't permit redistribution, so
-we can't bundle it. Instead the engine downloads + sha256-verifies on
-first launch using a manifest pinned in `cli-deps.json`.
+### Windows (x64 only in v1)
+
+| CLI         | License       | Distribution                | Where it lives                                                                          |
+|-------------|---------------|-----------------------------|------------------------------------------------------------------------------------------|
+| codex       | Apache-2.0    | Bundled (single arch)       | `<install>\resources\bin\codex.exe` — downloaded + zstd-decoded from upstream            |
+| composio    | MIT           | **Built from source (fork)** | `<install>\resources\bin\composio-x86_64\composio.exe`                                   |
+| claude-code | PROPRIETARY   | Runtime download            | `%LOCALAPPDATA%\Programs\claude\claude.exe`                                              |
+
+Three notes on Windows:
+
+1. **codex** ships a single per-arch binary on Windows because there is
+   no `lipo` equivalent — Windows binaries from openai/codex come as
+   `codex-{x86_64,aarch64}-pc-windows-msvc.exe.zst`. We use the `.zst`
+   variant, decompress with `zstd`, and stage at `resources/bin/codex.exe`.
+
+2. **composio** is BUILT FROM SOURCE on the Windows runner. Upstream
+   `ComposioHQ/composio` does not yet ship Windows artifacts (issue
+   #3057, closed: "use WSL for now"). Houston builds composio.exe on
+   every release using a pinned commit on a forked repo
+   (`gethouston/composio`, branch `houston-windows-support`) that adds:
+   - Windows targets (`bun-windows-x64-modern` etc.) to
+     `TARGET_MAP` in `build-binary-cross.ts`.
+   - `win32-x64` + `win32-arm64` entries in
+     `RUN_CODEX_ACP_BINARY_TARGETS` so the build pulls
+     `@zed-industries/codex-acp-win32-{x64,arm64}` from npm.
+   - A native `WindowsCredentialFFIStore` in `cli-keyring` that calls
+     `advapi32.dll`'s `Cred*` family via `bun:ffi` against the user's
+     Credential Manager (Generic Credentials,
+     `CRED_PERSIST_LOCAL_MACHINE`).
+   The fork's HEAD SHA + Bun version are pinned in
+   `cli-deps.json#composio.build."windows-x64"` and verified at fetch
+   time. The plan is to upstream these patches to ComposioHQ once
+   we've shaken out the runtime Windows-isms in production.
+
+3. **claude-code** ships native Windows binaries (`win32-x64`,
+   `win32-arm64`) directly from Anthropic's distribution manifest. The
+   runtime installer (`houston-claude-installer`) detects platform via
+   `host_platform_key()`, resolves the matching URL + SHA-256 from the
+   bundled `cli-deps.json`, and writes to
+   `%LOCALAPPDATA%\Programs\claude\claude.exe` (matching the upstream
+   PowerShell installer).
+
+claude-code's license doesn't permit redistribution, so we can't
+bundle it on either OS. Instead the engine downloads + sha256-verifies
+on first launch using a manifest pinned in `cli-deps.json`.
 
 codex is a Rust binary so we `lipo -create` the two arch tarballs into
-one universal binary. composio is a Bun-bundled JS app whose runtime is
-arch-specific — `lipo` can't combine them, so we ship both and the
-engine resolves the right directory at runtime via `std::env::consts::ARCH`.
+one universal binary on macOS. composio is a Bun-bundled JS app whose
+runtime is arch-specific — `lipo` can't combine them, so we ship per-
+arch directories on macOS and a single x64 directory on Windows.
 
 ## Pinned manifest — `cli-deps.json`
 
@@ -42,7 +87,16 @@ read pinned URLs + checksums without a separate network round-trip.
 
 ## Build pipeline
 
-`scripts/fetch-cli-deps.sh both`:
+The same `scripts/fetch-cli-deps.sh` handles both macOS and Windows; the
+mode arg selects the OS:
+
+- `./scripts/fetch-cli-deps.sh both` — macOS, both arches (production)
+- `./scripts/fetch-cli-deps.sh arm64` / `x64` — single-arch macOS dev
+- `./scripts/fetch-cli-deps.sh windows-x64` — Windows (production)
+- `./scripts/fetch-cli-deps.sh host` — auto-detect host
+
+### macOS (`both` mode)
+
 1. Downloads each bundled CLI for both arches using URLs from the manifest.
 2. Verifies sha256 against pinned checksums (mismatch is fatal).
 3. `lipo -create`s the two codex slices into a single universal Mach-O.
@@ -50,6 +104,26 @@ read pinned URLs + checksums without a separate network round-trip.
 5. Prunes cross-platform `acp-adapters/codex/<plat>/` directories that the
    resolved arch can never execute (~580 MB savings).
 6. Stages `cli-deps.json` itself for the runtime installer.
+
+### Windows (`windows-x64` mode)
+
+1. Downloads `codex-x86_64-pc-windows-msvc.exe.zst` from openai/codex,
+   verifies SHA-256, decompresses with `zstd`, stages as
+   `resources/bin/codex.exe`. No lipo step.
+2. Clones the gethouston/composio fork at the pinned commit SHA
+   (verified after clone — drift fails the build), runs
+   `pnpm install + pnpm exec tsdown + pnpm run build:binary:cross --
+   --target bun-windows-x64-modern` to produce `composio-windows-x64.exe`
+   plus companion `.mjs` modules and `acp-adapters/codex/<plat>/codex-acp.exe`
+   for every supported platform.
+3. Stages the binary as `resources/bin/composio-x86_64/composio.exe`,
+   flattens companion modules alongside it, prunes cross-platform
+   acp-adapter binaries keeping only `win32-x64` (~681M → ~235M).
+4. Stages `cli-deps.json` itself.
+
+The Windows mode also accepts a `COMPOSIO_FORK_PATH=/path/to/local/fork`
+env override that skips the remote clone and uses an existing tree —
+useful for iterating on fork patches before pushing to GitHub.
 
 `tauri.conf.json#bundle.resources` then maps the staging dir verbatim
 into the `.app`:
@@ -208,20 +282,94 @@ successfully run a separate installer for each provider CLI.
    route them in `engine_protocol::event_topic`.
 5. Add `/v1/<name>/*` REST routes mirroring `routes/claude.rs`.
 
+## Maintaining the gethouston/composio fork
+
+The Windows composio binary is built from a fork of upstream
+ComposioHQ/composio with three patches that upstream hasn't taken yet
+(see issue #3057). The fork lives at
+`https://github.com/gethouston/composio.git` on branch
+`houston-windows-support`. Houston pins the HEAD SHA in
+`cli-deps.json#composio.build."windows-x64".source_sha` and the fetch
+script verifies it after every clone.
+
+Workflow when bumping composio versions:
+
+1. On the gethouston/composio fork, rebase `houston-windows-support`
+   onto the new upstream tag (`@composio/cli@<NEW>`) and re-apply the
+   three patches if rebase doesn't auto-merge them:
+   - `feat(cli): add Windows targets to cross-compile + ACP adapter map`
+   - `feat(cli-keyring): native Windows Credential Manager backend (bun:ffi)`
+   - (any subsequent patch adding new Windows behavior)
+2. Push the rebased branch.
+3. In Houston, update `cli-deps.json`:
+   ```bash
+   ./scripts/bump-cli.sh composio <NEW_VERSION>
+   ```
+   then edit `composio.build."windows-x64".source_sha` to the new
+   fork HEAD SHA.
+4. Run `./scripts/fetch-cli-deps.sh windows-x64` locally to verify the
+   build still works.
+5. Open the upstream PR (`ComposioHQ/composio`) with the same patches —
+   the longer the gap between the fork and upstream the more painful
+   rebases get.
+
+The fork is the deliberate single-point-of-truth for Houston-side
+Windows support: it's small, the patches are mechanical, and it
+doesn't introduce a vendoring layer (composio source isn't checked
+into Houston). Upstream taking the patches deletes this section.
+
+## Windows signing — deferred
+
+The Windows MSI ships UNSIGNED in v1. Users see Microsoft Defender
+SmartScreen warning ("Windows protected your PC — Don't run / More
+info → Run anyway") on first install. Plan:
+
+1. SignPath Foundation (free OSS code signing) is approved for Houston
+   per `project_windows_signing` memory.
+2. Wire `signpath-foundation/signpath-action@v1` into the
+   `build-windows` job between `tauri-action` and the upload step.
+3. Submit the MSI + bundled `.exe` files for signing, wait for
+   completion, replace the unsigned artifacts before
+   `gh release upload`.
+4. Verify with `signtool verify /pa /v signed.msi`.
+
+Until that lands, the unsigned MSI is acceptable for personal
+testing — it installs fine, just with one extra confirmation click.
+
+Note that "Windows MSI signing" above refers to **OS code-signing**
+(SmartScreen / Mark-of-the-Web); it's distinct from the
+**Tauri-updater minisign signature** that gates auto-update. The
+updater signature IS produced and uploaded for Windows builds (see
+`build-windows`'s "Extend latest.json with Windows updater entry"
+step) and the in-app updater verifies against the public key
+embedded at build time — same signing key as the macOS .app.tar.gz
+flow. So Windows users on older Houston versions get the same
+auto-update prompt as macOS users, just with a SmartScreen warning
+when the new MSI runs until SignPath integration ships.
+
 ## Files involved
 
-- `cli-deps.json` — pinned versions, URLs, checksums.
-- `scripts/fetch-cli-deps.sh` — fetch + lipo + prune + stage.
+- `cli-deps.json` — pinned versions, URLs, checksums, Windows
+  build manifest (`composio.build."windows-x64"`).
+- `scripts/fetch-cli-deps.sh` — fetch + lipo + prune + stage; the
+  Windows path also clones+builds the composio fork.
 - `scripts/bump-cli.sh` — version bumper (clears stale checksums).
 - `scripts/install-claude-code.sh` — legacy bash installer; kept for
   manual recovery / debugging. The Rust runtime installer is the
   blessed path.
-- `app/src-tauri/tauri.conf.json#bundle.resources` — Tauri-side wiring.
+- `app/src-tauri/tauri.conf.json#bundle.{resources,windows}` — Tauri
+  side: bundle resources, MSI target, WiX config, WebView2 install
+  mode.
 - `app/src-tauri/build.rs` — ensures the staging dir exists for `pnpm tauri dev`.
-- `engine/houston-cli-bundle/` — resolver crate.
-- `engine/houston-claude-installer/` — runtime download crate.
-- `engine/houston-composio/src/install.rs` — bundle-aware composio resolver.
+- `engine/houston-cli-bundle/` — resolver crate (Windows-aware).
+- `engine/houston-claude-installer/` — runtime download crate
+  (Windows install dir at `%LOCALAPPDATA%\Programs\claude\`).
+- `engine/houston-composio/src/install.rs` — bundle-aware composio
+  resolver (Windows surfaces a clear "bundled-only" error in dev mode).
 - `engine/houston-engine-core/src/provider.rs` — `InstallSource` enum + status.
-- `engine/houston-terminal-manager/src/claude_path.rs` — PATH augmentation.
+- `engine/houston-terminal-manager/src/claude_path.rs` — PATH
+  augmentation, Windows-specific install dirs +
+  `.exe`/`.cmd`/`.bat` extension probing.
 - `engine/houston-engine-server/src/routes/claude.rs` — `/v1/claude/*`.
-- `.github/workflows/release.yml` — fetch + verify steps.
+- `.github/workflows/release.yml` — `build-macos` + `build-windows`
+  jobs, fetch + verify steps.

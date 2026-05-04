@@ -645,6 +645,281 @@ jobs:
 
           echo "::notice::Draft release created — review notes then publish at https://github.com/${{ github.repository }}/releases/tag/$GITHUB_REF_NAME"
 
+  # ============================================================================
+  # Windows MSI build — runs in parallel with build-macos and uploads the MSI
+  # to the same draft release once build-macos finishes creating it.
+  #
+  # Scope (v1, weekend test build):
+  #   * Windows x64 only — no ARM64 build, no NSIS installer.
+  #   * No SignPath signing — the MSI ships UNSIGNED. Windows users will see
+  #     a SmartScreen warning ("Don't run / More info → Run anyway") on
+  #     first install. This is acceptable for personal testing; before we
+  #     ship to actual users we'll wire SignPath Foundation (free OSS) into
+  #     a `sign-windows` job between this and the upload step.
+  #   * No auto-updater wiring — Windows entries are NOT added to
+  #     `latest.json`; users manually download a fresh MSI from the
+  #     GitHub release page when a new version drops.
+  #
+  # Build pipeline:
+  #   1. Stage CLI deps via `scripts/fetch-cli-deps.sh windows-x64`.
+  #      Codex is downloaded + zstd-decompressed; composio is BUILT FROM
+  #      SOURCE on this Windows runner using a pinned commit on the
+  #      gethouston/composio fork — see `cli-deps.json`'s
+  #      `composio.build."windows-x64"` block for the pin and the
+  #      `$build_comment` for why upstream can't ship Windows yet.
+  #   2. Build the houston-engine sidecar for x86_64-pc-windows-msvc.
+  #      Tauri's externalBin picks it up at `binaries/houston-engine.exe`
+  #      (build.rs::stage_engine_sidecar names it
+  #      `houston-engine-x86_64-pc-windows-msvc.exe` per Tauri's per-target
+  #      convention).
+  #   3. Run `pnpm tauri build --target x86_64-pc-windows-msvc` to produce
+  #      the MSI under
+  #      `target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi`.
+  #   4. Upload the MSI to the draft release created by the build-macos
+  #      job (declared via `needs:` so the upload happens after the
+  #      release exists).
+  build-windows:
+    needs: build-macos
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Setup Rust (windows-msvc target)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            app/src-tauri/target
+            target
+          key: ${{ runner.os }}-cargo-windows-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-windows-
+
+      # Bun + jq + zstd are required by `scripts/fetch-cli-deps.sh`. Bun
+      # is needed because the composio Windows binary is built FROM
+      # SOURCE on this runner via `bun build:binary:cross
+      # --target=bun-windows-x64-modern`. The version MUST match the pin
+      # in `cli-deps.json#composio.build."windows-x64".bun_version` —
+      # mismatched Bun produces a binary with subtle behavioral
+      # differences that bite at runtime, so we install via direct
+      # GitHub release download (deterministic) rather than the
+      # web-installer (which can drift if oven-sh changes the env-var
+      # contract on `install.ps1`).
+      - name: Install Bun (pinned to cli-deps.json)
+        shell: pwsh
+        run: |
+          $bunVersion = (Get-Content cli-deps.json | ConvertFrom-Json).composio.build.'windows-x64'.bun_version
+          Write-Host "Installing Bun $bunVersion (direct GitHub release download)"
+          $bunDir = "$HOME\.bun\bin"
+          New-Item -ItemType Directory -Force -Path $bunDir | Out-Null
+          $url = "https://github.com/oven-sh/bun/releases/download/bun-v$bunVersion/bun-windows-x64.zip"
+          $zipPath = "$env:TEMP\bun-windows-x64.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zipPath
+          Expand-Archive -Force -Path $zipPath -DestinationPath "$env:TEMP\bun-extract"
+          Copy-Item -Force "$env:TEMP\bun-extract\bun-windows-x64\bun.exe" "$bunDir\bun.exe"
+          Remove-Item -Recurse -Force "$env:TEMP\bun-extract", $zipPath
+          # Add bun to PATH for subsequent steps.
+          echo "$bunDir" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          $actual = & "$bunDir\bun.exe" --version
+          if ($actual.Trim() -ne $bunVersion) {
+            Write-Error "Bun version mismatch after install: got '$actual', expected '$bunVersion'"
+            exit 1
+          }
+          Write-Host "Pinned Bun OK: $actual"
+
+      - name: Install jq + zstd (Chocolatey)
+        shell: pwsh
+        run: |
+          choco install -y jq zstandard --no-progress
+          jq --version
+          zstd --version
+
+      # Stage bundled CLI binaries: codex.exe (downloaded + zstd) and
+      # composio-x86_64/composio.exe (built from gethouston/composio
+      # fork). The fetch script handles `pnpm install` + `tsdown` +
+      # `bun build:binary:cross` for the composio fork; full build is
+      # ~3-5 minutes on a warm runner.
+      - name: Stage bundled CLI dependencies (codex, composio Windows)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/fetch-cli-deps.sh windows-x64
+
+          echo "=== Staged bundle ==="
+          ls -lah app/src-tauri/resources/bin/
+          echo "=== Sizes ==="
+          du -sh app/src-tauri/resources/bin/*
+
+          # Sanity: every Windows artifact must be present.
+          test -f app/src-tauri/resources/bin/codex.exe
+          test -f app/src-tauri/resources/bin/composio-x86_64/composio.exe
+          test -f app/src-tauri/resources/bin/composio-x86_64/run-helpers-runtime.mjs
+          test -f app/src-tauri/resources/bin/composio-x86_64/acp-adapters/codex/win32-x64/codex-acp.exe
+          test -f app/src-tauri/resources/bin/cli-deps.json
+
+      # Build the engine sidecar for x86_64-pc-windows-msvc BEFORE
+      # `tauri build`. build.rs::stage_engine_sidecar copies it to
+      # `app/src-tauri/binaries/houston-engine-x86_64-pc-windows-msvc.exe`
+      # which is what Tauri's externalBin pattern expects.
+      - name: Build houston-engine sidecar (x86_64-pc-windows-msvc)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --release --target x86_64-pc-windows-msvc -p houston-engine-server
+          test -x "target/x86_64-pc-windows-msvc/release/houston-engine.exe" \
+            || { echo "::error::engine binary missing for x86_64-pc-windows-msvc"; exit 1; }
+          echo "Sidecar size:"
+          ls -lah target/x86_64-pc-windows-msvc/release/houston-engine.exe
+
+      - name: Build Tauri app (Windows MSI)
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: app
+          args: --target x86_64-pc-windows-msvc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The Tauri updater key signs the MSI for the auto-updater
+          # flow. We're not wiring auto-update for Windows in v1, but
+          # signing the artifact now keeps the code path active and
+          # the .sig file uploaded for when we do.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SLACK_BUG_WEBHOOK_URL: ${{ secrets.SLACK_BUG_WEBHOOK_URL }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
+      - name: Locate MSI + updater signature artifacts
+        id: artifacts-windows
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUNDLE="target/x86_64-pc-windows-msvc/release/bundle"
+
+          MSI=$(ls -t "$BUNDLE/msi/"*.msi 2>/dev/null | head -1 || true)
+          # Tauri's `createUpdaterArtifacts: true` emits an `<msi>.sig`
+          # next to the .msi (minisign signature over the .msi bytes).
+          # The Tauri updater on Windows verifies this against the
+          # public key embedded at build time and only proceeds if it
+          # matches. No `.sig` ⇒ no auto-update.
+          SIG=$(ls -t "$BUNDLE/msi/"*.msi.sig 2>/dev/null | head -1 || true)
+
+          missing=()
+          [ -f "$MSI" ] || missing+=("MSI")
+          [ -f "$SIG" ] || missing+=("MSI .sig (updater signature)")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Windows artifacts missing: ${missing[*]}"
+            echo "Bundle contents:"
+            ls -laR "$BUNDLE" 2>&1 | head -50
+            exit 1
+          fi
+
+          echo "msi=$MSI" >> "$GITHUB_OUTPUT"
+          echo "sig=$SIG" >> "$GITHUB_OUTPUT"
+          echo "Artifacts:"
+          echo "  .msi:     $MSI ($(du -sh "$MSI" | cut -f1))"
+          echo "  .msi.sig: $SIG ($(wc -c < "$SIG") bytes)"
+
+      - name: Upload Windows MSI + updater signature to draft release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Both files are required for users on older Houston builds
+          # to upgrade automatically: the .msi is the installer payload
+          # and the .sig is the minisign signature the in-app updater
+          # verifies before swallowing the new MSI.
+          # `--clobber` lets us re-run the workflow without renaming
+          # the artifact if a prior partial upload left one in place.
+          gh release upload "$GITHUB_REF_NAME" \
+            "${{ steps.artifacts-windows.outputs.msi }}" \
+            "${{ steps.artifacts-windows.outputs.sig }}" \
+            --clobber
+
+          echo "::notice::Windows MSI + .sig uploaded to draft https://github.com/${{ github.repository }}/releases/tag/$GITHUB_REF_NAME"
+          echo "::warning::This MSI is UNSIGNED (code-signing wise) — Windows SmartScreen will warn on first install. The updater minisign signature above is separate; it covers in-app auto-update verification, not OS code-signing. SignPath integration lands in a follow-up PR."
+
+      # Extend the macOS-only `latest.json` (uploaded by build-macos) with a
+      # `windows-x86_64` entry pointing at the just-uploaded MSI + its
+      # minisign signature. After this step, users on Houston for Windows
+      # who built with the same `TAURI_SIGNING_PRIVATE_KEY` will see an
+      # auto-update prompt the next time they launch.
+      #
+      # Why merge here instead of generating from scratch:
+      #   build-macos already produces the right schema (version / notes
+      #   / pub_date) and uploads it to the draft release. We just need
+      #   to add the Windows platform key and reupload with --clobber.
+      #   Generating latest.json from scratch in two places risks the
+      #   metadata drifting between OSes (date format, notes preview,
+      #   etc.) and is more painful to keep in sync.
+      - name: Extend latest.json with Windows updater entry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          MSI_NAME=$(basename "${{ steps.artifacts-windows.outputs.msi }}")
+          MSI_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$MSI_NAME"
+          MSI_SIG=$(cat "${{ steps.artifacts-windows.outputs.sig }}")
+
+          # Pull the existing latest.json down. build-macos uploads it
+          # before this job runs (we depend on build-macos via `needs`).
+          tmpdir=$(mktemp -d)
+          gh release download "$GITHUB_REF_NAME" \
+            --pattern 'latest.json' \
+            --dir "$tmpdir"
+
+          if [ ! -s "$tmpdir/latest.json" ]; then
+            echo "::error::latest.json not found in draft release; build-macos must have failed to upload it"
+            exit 1
+          fi
+
+          # Tauri's updater checks `windows-x86_64` for both NSIS and MSI
+          # installers (the format is detected from the URL extension at
+          # update time). We add a single entry pointing at the MSI; if
+          # we ever ship NSIS too, we keep the same key and let users
+          # opt into one-or-the-other via the URL the updater receives.
+          jq \
+            --arg sig "$MSI_SIG" \
+            --arg url "$MSI_URL" \
+            '.platforms["windows-x86_64"] = {signature: $sig, url: $url}' \
+            "$tmpdir/latest.json" > "$tmpdir/latest.next.json"
+
+          echo "Updated latest.json:"
+          cat "$tmpdir/latest.next.json"
+
+          mv "$tmpdir/latest.next.json" "$tmpdir/latest.json"
+          gh release upload "$GITHUB_REF_NAME" "$tmpdir/latest.json" --clobber
+          echo "::notice::latest.json now advertises macOS + Windows for the in-app updater"
+
       # Pings the team Slack channel so anyone can grab the DMG and try the
       # build before we publish. No-ops when SLACK_RELEASE_WEBHOOK_URL is
       # unset, so forks and personal builds stay quiet.

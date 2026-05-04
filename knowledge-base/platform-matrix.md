@@ -80,3 +80,46 @@ both.
   clear I/O error), but the features that depend on them are not
   expected to work on Windows without additional work. Left out of
   scope to keep this diff tight.
+
+## Wave 2 status (composio Windows + MSI build pipeline)
+
+Wave 2 landed alongside the gethouston/composio fork and the new
+`build-windows` GitHub Actions job. Status of the previously-listed
+gaps:
+
+1. **Composio CLI install** — RESOLVED. Production Windows builds
+   bundle composio.exe via the gethouston/composio fork (built from
+   source on the windows-latest runner). The dev-mode error message
+   stays as-is because there's no benefit to running composio
+   standalone outside a packaged Houston install. See
+   `knowledge-base/cli-bundling.md` for the build pipeline.
+2. **Claude / Codex CLI discovery** — VALIDATED for x64. Codex ships
+   native `codex-x86_64-pc-windows-msvc.exe` from openai/codex; we
+   download + zstd-decode + bundle. Claude Code's distribution
+   manifest exposes `win32-x64` + `win32-arm64` URLs which the
+   runtime installer resolves automatically. The `COMMON_CLAUDE_DIRS`
+   list still covers the npm + AppData scenarios.
+3. **nvm-windows** — STILL UNVALIDATED. Houston's bundled CLIs win
+   over PATH lookups in production, so this only matters for dev
+   builds running unbundled.
+4. **Process-group kill** — UNCHANGED.
+5. **MSVC target build** — VERIFIED via the new `build-windows` CI
+   job (`cargo build --release --target x86_64-pc-windows-msvc -p
+   houston-engine-server`). Mac-host cross-compile remains
+   unsupported (no `xwin` SDK) and is not on the roadmap.
+
+One new gap introduced in Wave 2:
+
+6. **Windows MSI signing** — Wave 2 ships UNSIGNED. SignPath
+   Foundation integration is blocked on operational provisioning
+   (project + secret rotation in CI). See cli-bundling.md "Windows
+   signing — deferred" for the wire-up plan. The Tauri-updater
+   minisign signature (covering in-app auto-update verification) IS
+   produced and uploaded — that's separate from OS code-signing.
+
+Auto-updater Windows entries are now wired: `build-windows`
+downloads the macOS-only `latest.json` uploaded by `build-macos`,
+adds a `windows-x86_64` entry pointing at the MSI + its minisign
+.sig, and re-uploads with `--clobber`. The Tauri updater plugin
+already runs on Windows; users on previous builds will see the
+update prompt automatically the next time they launch.
