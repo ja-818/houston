@@ -4,6 +4,7 @@
 //! concurrency control, and PATH resolution for AI CLI tools.
 
 pub mod auth_error;
+pub mod claude_install_path;
 pub mod claude_path;
 mod claude_runner;
 mod cli_process;

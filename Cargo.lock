@@ -2411,11 +2411,11 @@ dependencies = [
 name = "houston-claude-installer"
 version = "0.4.6"
 dependencies = [
- "dirs 5.0.1",
  "futures-util",
  "hex",
  "houston-cli-bundle",
  "houston-db",
+ "houston-terminal-manager",
  "houston-ui-events",
  "reqwest 0.12.28",
  "serde",

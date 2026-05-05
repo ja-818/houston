@@ -1,9 +1,32 @@
 use super::types::{Provider, SessionStatus};
+use crate::claude_install_path;
 use crate::cli_process::{run_cli_process, CliRunOutcome};
 use crate::provider_error::MALFORMED_PROVIDER_JSON_MESSAGE;
 use crate::session_update::SessionUpdate;
+use std::ffi::OsString;
 use tokio::process::Command;
 use tokio::sync::mpsc;
+
+/// Absolute path to the Houston-managed `claude` if the runtime installer
+/// dropped it (`~/.local/bin/claude` on Unix,
+/// `%LOCALAPPDATA%\Programs\claude\claude.exe` on Windows). Falls back to
+/// the bare name `"claude"` (PATH lookup) only when the installer hasn't
+/// run yet, e.g. dev checkouts without `cli-deps.json`.
+///
+/// Spawning the absolute path matters: we pin a specific claude-code
+/// version in `cli-deps.json` and pass flags
+/// (`--include-partial-messages`, `--dangerously-skip-permissions`, ...)
+/// that only newer versions support. PATH lookup can hit an older
+/// `claude` from npm-global, homebrew, or a prior install, which then
+/// rejects the flag with `error: unknown option '--include-partial-messages'`
+/// and the session dies before producing any output.
+fn claude_command_name() -> OsString {
+    if claude_install_path::is_installed() {
+        claude_install_path::cli_path().into_os_string()
+    } else {
+        OsString::from("claude")
+    }
+}
 
 /// Spawn a Claude CLI session (`claude -p --output-format stream-json`).
 pub(crate) async fn spawn_claude(
@@ -33,7 +56,7 @@ pub(crate) async fn spawn_claude(
         }
     }
 
-    let mut cmd = Command::new("claude");
+    let mut cmd = Command::new(claude_command_name());
     configure_claude_command(
         &mut cmd,
         resume_session_id.as_deref(),
@@ -80,7 +103,7 @@ async fn retry_fresh(
     disable_builtin_tools: bool,
     disable_all_tools: bool,
 ) {
-    let mut fresh_cmd = Command::new("claude");
+    let mut fresh_cmd = Command::new(claude_command_name());
     configure_claude_command(
         &mut fresh_cmd,
         None,

@@ -71,6 +71,22 @@ pub fn init() {
             prepend_path(&mut final_path, &dir);
         }
 
+        // Runtime-installed claude-code lives at a known absolute path
+        // (`~/.local/bin/claude` on Unix,
+        // `%LOCALAPPDATA%\Programs\claude\claude.exe` on Windows). Prepend
+        // its directory so the version Houston pinned + downloaded wins
+        // over any older `claude` from npm-global / homebrew / nvm / a
+        // prior install that happens to sit earlier in the user's shell
+        // PATH. Without this prepend, an older `claude` rejects the
+        // `--include-partial-messages` flag and every session dies before
+        // producing output. (Direct spawn in `claude_runner` already uses
+        // the absolute path; this PATH precedence is defense in depth for
+        // any other code that resolves `claude` via PATH.)
+        let claude_install_dir = crate::claude_install_path::install_dir();
+        if claude_install_dir.is_dir() {
+            prepend_path(&mut final_path, &claude_install_dir);
+        }
+
         // Expand `~` against the user home directory using the cross-platform
         // `dirs` resolver (HOME on Unix, USERPROFILE on Windows). Falls back
         // to the raw prefix if home can't be resolved — the directory check

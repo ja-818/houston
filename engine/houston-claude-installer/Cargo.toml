@@ -18,10 +18,15 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 sha2 = "0.10"
 hex = "0.4"
 futures-util = "0.3"
-dirs = "5"
 houston-cli-bundle = { workspace = true }
 houston-ui-events = { workspace = true }
 houston-db = { workspace = true }
+# Single source of truth for `cli_path` / `install_dir` / `is_installed`.
+# Lives in terminal-manager so the spawn-side code (`claude_path`,
+# `claude_runner`) and the install-side code (this crate) resolve the
+# exact same absolute path without forming a dependency cycle through
+# `houston-ui-events`.
+houston-terminal-manager = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

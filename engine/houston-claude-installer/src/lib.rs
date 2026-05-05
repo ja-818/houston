@@ -48,6 +48,15 @@ use sha2::{Digest, Sha256};
 use std::path::PathBuf;
 use tokio::io::AsyncWriteExt;
 
+// Path-resolution functions live in `houston-terminal-manager` so the
+// spawn-side code (`claude_path`, `claude_runner`) shares one source of
+// truth with the install-side code below. Re-exported here for callers
+// that import from this crate (e.g. `routes/claude.rs`,
+// `provider/resolve.rs`).
+pub use houston_terminal_manager::claude_install_path::{
+    binary_name, cli_path, install_dir, is_installed,
+};
+
 /// Engine-DB preferences key holding the last successfully-installed
 /// claude-code version. Lifecycle compares it against the manifest's
 /// pinned version on every boot.
@@ -56,63 +65,6 @@ const PREF_INSTALLED_VERSION: &str = "claude_code_installed_version";
 /// CLI key inside `cli-deps.json`. Constant so we don't string-literal
 /// the same value across modules.
 const CLI_KEY: &str = "claude-code";
-
-/// Final install target. `claude --version` uses this exact path; the
-/// upstream installer drops there too, so users who already had Claude
-/// Code installed via `claude.ai/install.sh` get an automatic upgrade.
-pub fn cli_path() -> PathBuf {
-    install_dir().join(binary_name())
-}
-
-/// Directory `cli_path()` lives in. Created on demand by `install()`.
-pub fn install_dir() -> PathBuf {
-    #[cfg(unix)]
-    {
-        // `~/.local/bin` is on PATH for most users via the shells'
-        // default profile; the engine also force-adds it via
-        // `claude_path` so it's always discoverable.
-        dirs::home_dir().unwrap_or_default().join(".local").join("bin")
-    }
-    #[cfg(windows)]
-    {
-        // `%LOCALAPPDATA%\Programs\claude\` is the conventional
-        // Windows install location for per-user CLIs and matches the
-        // upstream PowerShell installer.
-        dirs::data_local_dir()
-            .unwrap_or_default()
-            .join("Programs")
-            .join("claude")
-    }
-}
-
-fn binary_name() -> &'static str {
-    if cfg!(windows) {
-        "claude.exe"
-    } else {
-        "claude"
-    }
-}
-
-/// True if the binary exists and is executable. Does not validate the
-/// version — that's the lifecycle's job.
-pub fn is_installed() -> bool {
-    let p = cli_path();
-    if !p.is_file() {
-        return false;
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        if let Ok(meta) = std::fs::metadata(&p) {
-            return meta.permissions().mode() & 0o111 != 0;
-        }
-        false
-    }
-    #[cfg(not(unix))]
-    {
-        true
-    }
-}
 
 /// Lifecycle entry — call once at engine startup as a background task.
 ///
