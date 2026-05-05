@@ -138,13 +138,16 @@ Engine route: `POST /v1/store/workspaces/install-from-github`. Rust impl: `houst
 | Your AI Agents              |
 |   > Research Agent    [2]   |  sorted by lastOpenedAt
 |   > Project Manager         |
-|   + New Agent               |  pick agent definition
+|   + New Agent               |  row-style action, opens Store picker
 +-----------------------------+
 ```
 
 Agent rows show a count chip for `needs_you` activity items. If any
 activity item is `running`, the row avatar uses the same comet glow as
-running board cards.
+running board cards. The row `...` menu replaces the count chip on hover
+and keyboard focus. It keeps the count chip hidden while open. The first-level
+menu shows Rename, Change color, Delete; Change color opens the color picker
+submenu.
 
 ## Workspace
 - Storage: `~/.houston/workspaces/workspaces.json` (index) + one dir per workspace `~/.houston/workspaces/{Name}/`. `HOUSTON_DOCS` env var overrides the root.

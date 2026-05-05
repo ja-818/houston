@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { MoreHorizontal } from "lucide-react";
 import {
   cn,
@@ -54,6 +54,7 @@ export function SidebarItemRow({
   labels,
 }: SidebarItemRowProps) {
   const l = { ...DEFAULT_LABELS, ...labels };
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div
@@ -93,12 +94,18 @@ export function SidebarItemRow({
       {!isEditing && (item.trailing || hasMenu) && (
         <div className={sidebarItemRowClasses.actions}>
           {item.trailing && (
-            <span className={sidebarItemRowClasses.trailing}>
+            <span
+              className={cn(
+                sidebarItemRowClasses.trailing,
+                hasMenu && sidebarItemRowClasses.trailingWithMenu,
+                menuOpen && sidebarItemRowClasses.trailingMenuOpen,
+              )}
+            >
               {item.trailing}
             </span>
           )}
           {hasMenu && (
-            <DropdownMenu>
+            <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <button
                   aria-label={l.moreActions}
@@ -116,6 +123,7 @@ export function SidebarItemRow({
                     {l.renameItem}
                   </DropdownMenuItem>
                 )}
+                {item.menuContent}
                 {onDelete && (
                   <DropdownMenuItem
                     onClick={() => onDelete(item.id)}

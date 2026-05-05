@@ -11,8 +11,8 @@ import { UpdateChecker } from "./update-checker";
 import { UserMenu } from "./user-menu";
 import { PairDeviceDialog } from "./pair-device-dialog";
 import { CreateWorkspaceDialog } from "../../App";
-import { AgentSidebarIcon, NeedsYouChip } from "./agent-sidebar-status";
 import { useAgentActivitySummaries } from "./use-agent-activity-summaries";
+import { buildAgentSidebarItems } from "./agent-sidebar-items";
 
 export function Sidebar({ children }: { children: ReactNode }) {
   const { t } = useTranslation(["shell", "common"]);
@@ -26,6 +26,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
   const loadAgents = useAgentStore((s) => s.loadAgents);
   const renameAgent = useAgentStore((s) => s.rename);
   const deleteAgent = useAgentStore((s) => s.delete);
+  const updateAgentColor = useAgentStore((s) => s.updateColor);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [createWsOpen, setCreateWsOpen] = useState(false);
   const [pairOpen, setPairOpen] = useState(false);
@@ -42,35 +43,16 @@ export function Sidebar({ children }: { children: ReactNode }) {
   });
   const activitySummaries = useAgentActivitySummaries(agents);
 
-  const items = sorted.map((agent) => {
-    const summary = activitySummaries[agent.id] ?? {
-      needsYouCount: 0,
-      runningCount: 0,
-    };
-    const hasRunning = summary.runningCount > 0;
-    return {
-      id: agent.id,
-      name: agent.name,
-      icon: (
-        <AgentSidebarIcon
-          color={agent.color}
-          running={hasRunning}
-          runningLabel={t("shell:sidebar.runningCount", {
-            count: summary.runningCount,
-          })}
-        />
-      ),
-      trailing: (
-        summary.needsYouCount > 0 ? (
-          <NeedsYouChip
-            count={summary.needsYouCount}
-            label={t("shell:sidebar.needsYouCount", {
-              count: summary.needsYouCount,
-            })}
-          />
-        ) : undefined
-      ),
-    };
+  const items = buildAgentSidebarItems({
+    agents: sorted,
+    summaries: activitySummaries,
+    runningLabel: (count) =>
+      t("shell:sidebar.runningCount", { count }),
+    needsYouLabel: (count) =>
+      t("shell:sidebar.needsYouCount", { count }),
+    onChangeColor: (agentId, color) => {
+      void handleChangeColor(agentId, color);
+    },
   });
   const isTopLevel = viewMode === "dashboard" || viewMode === "connections" || viewMode === "settings";
 
@@ -100,6 +82,11 @@ export function Sidebar({ children }: { children: ReactNode }) {
     if (!currentWorkspace) return;
     await renameAgent(currentWorkspace.id, agentId, newName);
   };
+
+  async function handleChangeColor(agentId: string, color: string) {
+    if (!currentWorkspace) return;
+    await updateAgentColor(currentWorkspace.id, agentId, color);
+  }
 
   const handleDelete = (agentId: string) => {
     setPendingDeleteId(agentId);

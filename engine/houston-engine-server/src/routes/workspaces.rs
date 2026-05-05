@@ -7,7 +7,7 @@ use axum::{
     routing::{delete, get, patch, post},
     Json, Router,
 };
-use houston_engine_core::agents_crud::{self, Agent, CreateAgent, CreateAgentResult};
+use houston_engine_core::agents_crud::{self, Agent, CreateAgent, CreateAgentResult, UpdateAgent};
 use houston_engine_core::workspaces::{
     self, CreateWorkspace, RenameWorkspace, UpdateProvider, Workspace,
 };
@@ -27,7 +27,7 @@ pub fn router() -> Router<Arc<ServerState>> {
         )
         .route(
             "/workspaces/:id/agents/:agent_id",
-            delete(delete_agent),
+            patch(update_agent).delete(delete_agent),
         )
         .route(
             "/workspaces/:id/agents/:agent_id/rename",
@@ -97,6 +97,19 @@ async fn delete_agent(
 ) -> Result<(), ApiError> {
     agents_crud::delete(st.engine.paths.docs(), &id, &agent_id)?;
     Ok(())
+}
+
+async fn update_agent(
+    State(st): State<Arc<ServerState>>,
+    Path((id, agent_id)): Path<(String, String)>,
+    Json(req): Json<UpdateAgent>,
+) -> Result<Json<Agent>, ApiError> {
+    Ok(Json(agents_crud::update(
+        st.engine.paths.docs(),
+        &id,
+        &agent_id,
+        req,
+    )?))
 }
 
 #[derive(Deserialize)]

@@ -12,6 +12,8 @@ export interface SidebarItem {
   icon?: ReactNode;
   /** Optional right-aligned slot for row badges or status indicators. */
   trailing?: ReactNode;
+  /** Optional dropdown content rendered before built-in item actions. */
+  menuContent?: ReactNode;
 }
 
 export interface SidebarNavItemEntry {
@@ -74,7 +76,7 @@ export function AppSidebar({
 }: SidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
-  const hasMenu = !!onDelete || !!onRename;
+  const hasDefaultMenu = !!onDelete || !!onRename;
   const l = { ...DEFAULT_LABELS, ...labels };
 
   const startRename = (id: string, currentName: string) => {
@@ -130,23 +132,12 @@ export function AppSidebar({
           </nav>
         )}
 
-        {/* Section label + add button */}
-        {(sectionLabel || onAdd) && (
-          <div className="px-3 pt-3 pb-1 flex items-center justify-between">
-            {sectionLabel && (
-              <span className="text-xs font-medium text-muted-foreground">
-                {sectionLabel}
-              </span>
-            )}
-            {onAdd && (
-              <button
-                aria-label={l.addItem}
-                onClick={onAdd}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            )}
+        {/* Section label */}
+        {sectionLabel && (
+          <div className="px-3 pt-3 pb-1">
+            <div className="text-xs font-medium text-muted-foreground">
+              {sectionLabel}
+            </div>
           </div>
         )}
 
@@ -160,7 +151,7 @@ export function AppSidebar({
                 isActive={item.id === selectedId}
                 isEditing={editingId === item.id}
                 editValue={editValue}
-                hasMenu={hasMenu}
+                hasMenu={hasDefaultMenu || !!item.menuContent}
                 onSelect={onSelect}
                 onKeyDown={handleKeyDown}
                 onEditChange={setEditValue}
@@ -171,6 +162,20 @@ export function AppSidebar({
                 labels={l}
               />
             ))}
+            {onAdd && (
+              <button
+                aria-label={l.addItem}
+                onClick={onAdd}
+                className={sidebarClasses.addButton}
+              >
+                <span className={sidebarClasses.addButtonInner}>
+                  <Plus className={sidebarClasses.addButtonIcon} />
+                  <span className={sidebarClasses.addButtonLabel}>
+                    {l.addItem}
+                  </span>
+                </span>
+              </button>
+            )}
           </div>
         </ScrollArea>
 

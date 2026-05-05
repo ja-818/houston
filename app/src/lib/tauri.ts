@@ -139,6 +139,10 @@ export const tauriAgents = {
     call<void>("rename_agent", async () => {
       await getEngine().renameAgent(workspaceId, id, newName);
     }),
+  updateColor: (workspaceId: string, id: string, color: string) =>
+    call<Agent>("update_agent_color", async () =>
+      toAgent(await getEngine().updateAgent(workspaceId, id, { color })),
+    ),
 };
 
 // ─── Chat sessions ────────────────────────────────────────────────────

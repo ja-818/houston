@@ -110,6 +110,10 @@ export interface CreateAgentResult {
   agent: Agent;
 }
 
+export interface UpdateAgent {
+  color: string;
+}
+
 // ---------- Agents / agent-data files ----------
 
 export interface Activity {

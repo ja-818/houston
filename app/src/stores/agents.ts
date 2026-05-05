@@ -18,6 +18,7 @@ interface AgentState {
   create: (workspaceId: string, name: string, configId: string, color?: string, claudeMd?: string, installedPath?: string, seeds?: Record<string, string>, existingPath?: string) => Promise<CreatedAgent>;
   delete: (workspaceId: string, id: string) => Promise<void>;
   rename: (workspaceId: string, id: string, newName: string) => Promise<void>;
+  updateColor: (workspaceId: string, id: string, color: string) => Promise<void>;
 }
 
 export const useAgentStore = create<AgentState>((set, get) => ({
@@ -99,6 +100,14 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       ),
       current:
         s.current?.id === id ? { ...s.current, name: newName } : s.current,
+    }));
+  },
+
+  updateColor: async (workspaceId, id, color) => {
+    const updated = await tauriAgents.updateColor(workspaceId, id, color);
+    set((s) => ({
+      agents: s.agents.map((a) => (a.id === id ? updated : a)),
+      current: s.current?.id === id ? updated : s.current,
     }));
   },
 }));
