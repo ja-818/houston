@@ -93,3 +93,62 @@ async fn create_list_rename_delete_workspace() {
         .unwrap();
     assert!(del.status().is_success());
 }
+
+#[tokio::test]
+async fn update_workspace_agent_color() {
+    let (addr, tok, _docs) = spawn().await;
+    let c = reqwest::Client::new();
+
+    let ws: serde_json::Value = c
+        .post(format!("http://{addr}/v1/workspaces"))
+        .bearer_auth(&tok)
+        .json(&serde_json::json!({ "name": "alpha" }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let workspace_id = ws["id"].as_str().unwrap();
+
+    let created: serde_json::Value = c
+        .post(format!("http://{addr}/v1/workspaces/{workspace_id}/agents"))
+        .bearer_auth(&tok)
+        .json(&serde_json::json!({
+            "name": "Helper",
+            "configId": "blank",
+            "color": "charcoal"
+        }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let agent_id = created["agent"]["id"].as_str().unwrap();
+
+    let updated: serde_json::Value = c
+        .patch(format!(
+            "http://{addr}/v1/workspaces/{workspace_id}/agents/{agent_id}"
+        ))
+        .bearer_auth(&tok)
+        .json(&serde_json::json!({ "color": "forest" }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(updated["color"], "forest");
+
+    let list: serde_json::Value = c
+        .get(format!("http://{addr}/v1/workspaces/{workspace_id}/agents"))
+        .bearer_auth(&tok)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(list[0]["color"], "forest");
+}

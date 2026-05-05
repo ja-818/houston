@@ -98,6 +98,7 @@ module.
 | GET | `/v1/workspaces/:id/agents` | List agents in workspace |
 | POST | `/v1/workspaces/:id/agents` | Create agent |
 | DELETE | `/v1/workspaces/:id/agents/:agent_id` | Delete agent |
+| PATCH | `/v1/workspaces/:id/agents/:agent_id` | Update agent metadata (`color`) |
 | POST | `/v1/workspaces/:id/agents/:agent_id/rename` | Rename agent |
 | POST | `/v1/workspaces/install-from-github` | Import workspace template |
 

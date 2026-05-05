@@ -27,9 +27,23 @@ describe("sidebar item row layout", () => {
     ok(includes(sidebarClasses.itemsList, "min-w-full"));
   });
 
+  it("keeps add action shaped like an item row", () => {
+    ok(includes(sidebarClasses.addButton, "w-full"));
+    ok(includes(sidebarClasses.addButton, "rounded-lg"));
+    ok(includes(sidebarClasses.addButton, "text-accent-foreground"));
+    ok(includes(sidebarClasses.addButton, "hover:bg-accent/50"));
+    ok(includes(sidebarClasses.addButtonInner, "px-3"));
+    ok(includes(sidebarClasses.addButtonInner, "py-1.5"));
+    ok(includes(sidebarClasses.addButtonLabel, "truncate"));
+  });
+
   it("keeps menu trigger in its own visible slot", () => {
     ok(includes(sidebarItemRowClasses.menuButton, "size-7"));
     ok(includes(sidebarItemRowClasses.menuButton, "shrink-0"));
-    ok(!includes(sidebarItemRowClasses.menuButton, "opacity-0"));
+    ok(includes(sidebarItemRowClasses.menuButton, "opacity-0"));
+    ok(includes(sidebarItemRowClasses.menuButton, "group-hover:opacity-100"));
+    ok(includes(sidebarItemRowClasses.menuButton, "group-focus-within:opacity-100"));
+    ok(includes(sidebarItemRowClasses.trailingWithMenu, "group-hover:opacity-0"));
+    ok(includes(sidebarItemRowClasses.trailingMenuOpen, "opacity-0"));
   });
 });

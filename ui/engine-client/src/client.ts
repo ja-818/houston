@@ -64,6 +64,7 @@ import type {
   TunnelStatus,
   PairingCode,
   PushRegisterRequest,
+  UpdateAgent,
   UpdateProvider,
   VersionResponse,
   Workspace,
@@ -201,6 +202,13 @@ export class HoustonClient {
       "POST",
       `/workspaces/${this.seg(workspaceId)}/agents/${this.seg(agentId)}/rename`,
       { newName },
+    );
+  }
+  updateAgent(workspaceId: string, agentId: string, req: UpdateAgent): Promise<Agent> {
+    return this.request(
+      "PATCH",
+      `/workspaces/${this.seg(workspaceId)}/agents/${this.seg(agentId)}`,
+      req,
     );
   }
 

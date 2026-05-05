@@ -64,6 +64,12 @@ pub struct CreateAgentResult {
     pub agent: Agent,
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateAgent {
+    pub color: String,
+}
+
 fn houston_dir(folder: &Path) -> PathBuf {
     folder.join(".houston")
 }
@@ -334,6 +340,20 @@ pub fn rename(root: &Path, workspace_id: &str, id: &str, new_name: &str) -> Core
     }
 }
 
+pub fn update(root: &Path, workspace_id: &str, id: &str, req: UpdateAgent) -> CoreResult<Agent> {
+    let ws_dir = resolve_ws_folder(root, workspace_id)?;
+    let folder = find_agent_by_id(&ws_dir, id)?;
+    let color = req.color.trim();
+    if color.is_empty() {
+        return Err(CoreError::BadRequest("Agent color is required".into()));
+    }
+
+    let mut meta = read_agent_meta(&folder)?;
+    meta.color = Some(color.to_string());
+    write_agent_meta(&folder, &meta)?;
+    Ok(meta_to_agent(&folder, &meta))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -434,5 +454,39 @@ mod tests {
         assert_eq!(renamed.name, "m");
         delete(d.path(), &ws_id, &res.agent.id).unwrap();
         assert!(list(d.path(), &ws_id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn update_color_persists() {
+        let d = TempDir::new().unwrap();
+        let ws_id = setup_ws(d.path());
+        let res = create(
+            d.path(),
+            &ws_id,
+            CreateAgent {
+                name: "n".into(),
+                config_id: "gmail".into(),
+                color: None,
+                claude_md: None,
+                installed_path: None,
+                seeds: None,
+                existing_path: None,
+            },
+        )
+        .unwrap();
+
+        let updated = update(
+            d.path(),
+            &ws_id,
+            &res.agent.id,
+            UpdateAgent {
+                color: "forest".into(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(updated.color.as_deref(), Some("forest"));
+        let all = list(d.path(), &ws_id).unwrap();
+        assert_eq!(all[0].color.as_deref(), Some("forest"));
     }
 }
