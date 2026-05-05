@@ -1,0 +1,65 @@
+{
+  "id": "outbound",
+  "name": "Outbound",
+  "description": "Turn a single LinkedIn post into a paused cold email campaign in Instantly. I scrape the commenters or reactors, store them in Airtable, find verified emails through Apollo, co-write a 3-email sequence with you, then load it all into Instantly. The campaign always stays paused for your review - I never auto-launch.",
+  "icon": "Mail",
+  "category": "business",
+  "author": "Houston",
+  "tags": [
+    "outbound",
+    "cold-email",
+    "linkedin",
+    "prospecting",
+    "instantly",
+    "apollo",
+    "airtable",
+    "apify",
+    "sdr"
+  ],
+  "tabs": [
+    {
+      "id": "activity",
+      "label": "Activity",
+      "builtIn": "board",
+      "badge": "activity"
+    },
+    {
+      "id": "routines",
+      "label": "Routines",
+      "builtIn": "routines"
+    },
+    {
+      "id": "job-description",
+      "label": "Job Description",
+      "builtIn": "job-description"
+    },
+    {
+      "id": "files",
+      "label": "Files",
+      "builtIn": "files"
+    },
+    {
+      "id": "integrations",
+      "label": "Integrations",
+      "builtIn": "integrations"
+    }
+  ],
+  "defaultTab": "activity",
+  "agentSeeds": {
+    "outputs.json": "[]",
+    "leads.json": "[]",
+    "campaigns.json": "[]",
+    "config/context-ledger.json": "{\n  \"universal\": {},\n  \"domains\": {\n    \"sources\": {},\n    \"enrichment\": {},\n    \"sending\": {}\n  }\n}\n"
+  },
+  "version": "0.1.0",
+  "image": "envelope-with-arrow",
+  "integrations": [
+    "airtable",
+    "apify",
+    "apollo",
+    "gmail",
+    "instantly",
+    "linkedin",
+    "outlook"
+  ]
+}

@@ -292,6 +292,41 @@
       "version": "0.1.6",
       "content_hash": "95fb456c278a41ee13c189e01bebd5fcdd7bc5b4d91d1a07165a7a165f5e08cd",
       "bundled": true
+    },
+
+    {
+      "id": "outbound",
+      "name": "Outbound",
+      "description": "Turn a single LinkedIn post into a paused cold email campaign in Instantly. I scrape the commenters or reactors, store them in Airtable, find verified emails through Apollo, co-write a 3-email sequence with you, then load it all into Instantly. The campaign always stays paused for your review - I never auto-launch.",
+      "category": "business",
+      "author": "Houston",
+      "tags": [
+        "outbound",
+        "cold-email",
+        "linkedin",
+        "prospecting",
+        "instantly",
+        "apollo",
+        "airtable",
+        "apify",
+        "sdr"
+      ],
+      "icon_url": "envelope-with-arrow",
+      "integrations": [
+        "airtable",
+        "apify",
+        "apollo",
+        "gmail",
+        "instantly",
+        "linkedin",
+        "outlook"
+      ],
+      "repo": "houston-store/outbound",
+      "installs": 0,
+      "registered_at": "2026-05-05",
+      "version": "0.1.0",
+      "content_hash": "fbede2b9dd67615241ed40162847b7843c03ba020f6f6b5255c8e2d6d29ee3d0",
+      "bundled": true
     }
   ]
 }
