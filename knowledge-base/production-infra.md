@@ -110,9 +110,18 @@ CI also needs as Secrets:
 
 - **Workflow:** `.github/workflows/release.yml`
 - **Trigger:** Push tag matching `v*`
-- **Output:** Draft GitHub Release w/ signed+notarized DMG + `latest.json`
-- **Duration:** ~15-20 min (compile 2 arches + sign + notarize)
+- **Output:** Draft GitHub Release w/ signed+notarized DMG + signed MSI + `latest.json`
+- **Duration:** ~25-30 min wall-clock (mac + win run in parallel; mac is the long pole at ~25 min including Apple notarization).
 - **Draft = QA gate.** Users don't see until published on GitHub.
+
+### Job graph
+```
+prep (ubuntu, ~30s)               creates empty draft + release-notes.md artifact
+  ├── build-macos (mac, ~25m)     builds, signs, notarizes, uploads DMG/tar/sig/latest.json
+  └── build-windows (win, ~20m)   builds, uploads MSI + .sig
+        └── finalize (ubuntu, ~30s) extends latest.json with windows-x86_64 entry, posts Slack
+```
+Mac and Windows run in parallel because they only need the empty draft `prep` creates, not each other's output. `finalize` stitches `latest.json` together (the macOS-only base from build-macos plus the Windows entry assembled from the MSI .sig in the draft) and posts the team Slack notification. Slack lives in `finalize` (not Windows) because it needs `release-notes.md` and the file is published as a workflow artifact by `prep`.
 
 ## macOS Universal (arm64 + Intel)
 

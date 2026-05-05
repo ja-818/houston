@@ -39,7 +39,117 @@ permissions:
   contents: write
 
 jobs:
+  # Lightweight orchestration job that runs before the heavy builds. It
+  # creates the draft GitHub Release with finalized notes and exports
+  # `release-notes.md` as a workflow artifact so the macOS, Windows, and
+  # finalize jobs can read it without re-running the notes builder. This
+  # job exists so build-macos and build-windows can run IN PARALLEL — they
+  # each only need the draft to upload into, not each other's output.
+  prep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      # Resolve `release-notes.md`. Two paths:
+      #
+      # 1. Author-written notes at `.github/release-notes/<version>.md`
+      #    — preferred. Whoever drives the release (Claude in our flow,
+      #    or a human) drops a markdown file alongside the version-bump
+      #    commit, tagged commit, etc. Used verbatim.
+      #
+      # 2. Auto-generated fallback grouping conventional-commit subjects
+      #    in `git log <prev-tag>..HEAD` by prefix:
+      #      Features (feat) / Fixes (fix) / Docs (docs) /
+      #      CI & infra (ci) / Changes (refactor|perf|style|test)
+      #    `chore:` and untyped commits are hidden. Use this when a fast
+      #    hotfix doesn't justify hand-written notes.
+      #
+      # Either way the release stays a draft, so the author can still
+      # polish before publishing.
+      - name: Build release notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          AUTHORED=".github/release-notes/${VERSION}.md"
+
+          if [ -f "$AUTHORED" ]; then
+            echo "Using author-written notes from $AUTHORED"
+            cp "$AUTHORED" release-notes.md
+          else
+            echo "No $AUTHORED — falling back to auto-generated changelog"
+
+            PREV_TAG=$(git tag --sort=-v:refname --list 'v*' | grep -v "^${GITHUB_REF_NAME}$" | head -1)
+            if [ -z "$PREV_TAG" ]; then
+              echo "No previous tag; diffing against HEAD~50"
+              RANGE="HEAD~50..HEAD"
+              COMPARE=""
+            else
+              RANGE="$PREV_TAG..HEAD"
+              COMPARE="**Full changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...${GITHUB_REF_NAME}"
+            fi
+
+            section() {
+              local title="$1"; shift
+              local pattern="$1"; shift
+              local matches
+              matches=$(git log "$RANGE" --no-merges --pretty='- %s' | grep -E "^- ($pattern)(\([^)]+\))?:" || true)
+              if [ -n "$matches" ]; then
+                printf '\n### %s\n\n%s\n' "$title" "$matches"
+              fi
+            }
+
+            {
+              echo "## Houston v$VERSION"
+              section "Features"  "feat"
+              section "Fixes"     "fix"
+              section "Docs"      "docs"
+              section "CI & infra" "ci"
+              section "Changes"   "refactor|perf|style|test"
+              echo
+              # Keep the upgrade reminder everyone needs — drag-install
+              # doesn't reliably replace a running .app.
+              echo "### Before you upgrade"
+              echo ""
+              echo "- Quit Houston before installing. macOS doesn't always replace a running app. If in doubt: \`rm -rf /Applications/Houston.app\` and drag the new copy in."
+              echo ""
+              if [ -n "$COMPARE" ]; then
+                echo "$COMPARE"
+              fi
+            } > release-notes.md
+          fi
+
+          echo "----- release-notes.md -----"
+          cat release-notes.md
+          echo "----- end -----"
+
+      - name: Create empty draft release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Houston v$VERSION" \
+            --notes-file release-notes.md \
+            --draft
+
+          echo "::notice::Empty draft release created at https://github.com/${{ github.repository }}/releases/tag/$GITHUB_REF_NAME — macOS + Windows builds will upload artifacts in parallel."
+
+      # Hand release-notes.md to downstream jobs (Slack notifier in
+      # finalize, updater-manifest builder in build-macos) without each of
+      # them re-running the notes-resolution logic on its own runner.
+      - name: Upload release-notes.md artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+          retention-days: 1
+
   build-macos:
+    needs: prep
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
@@ -508,76 +618,14 @@ jobs:
             > checksums-sha256.txt
           cat checksums-sha256.txt
 
-      # Resolve `release-notes.md`. Two paths:
-      #
-      # 1. Author-written notes at `.github/release-notes/<version>.md`
-      #    — preferred. Whoever drives the release (Claude in our flow,
-      #    or a human) drops a markdown file alongside the version-bump
-      #    commit, tagged commit, etc. Used verbatim.
-      #
-      # 2. Auto-generated fallback grouping conventional-commit subjects
-      #    in `git log <prev-tag>..HEAD` by prefix:
-      #      Features (feat) / Fixes (fix) / Docs (docs) /
-      #      CI & infra (ci) / Changes (refactor|perf|style|test)
-      #    `chore:` and untyped commits are hidden. Use this when a fast
-      #    hotfix doesn't justify hand-written notes.
-      #
-      # Either way the release stays a draft, so the author can still
-      # polish before publishing.
-      - name: Build release notes
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          AUTHORED=".github/release-notes/${VERSION}.md"
-
-          if [ -f "$AUTHORED" ]; then
-            echo "Using author-written notes from $AUTHORED"
-            cp "$AUTHORED" release-notes.md
-          else
-            echo "No $AUTHORED — falling back to auto-generated changelog"
-
-            PREV_TAG=$(git tag --sort=-v:refname --list 'v*' | grep -v "^${GITHUB_REF_NAME}$" | head -1)
-            if [ -z "$PREV_TAG" ]; then
-              echo "No previous tag; diffing against HEAD~50"
-              RANGE="HEAD~50..HEAD"
-              COMPARE=""
-            else
-              RANGE="$PREV_TAG..HEAD"
-              COMPARE="**Full changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...${GITHUB_REF_NAME}"
-            fi
-
-            section() {
-              local title="$1"; shift
-              local pattern="$1"; shift
-              local matches
-              matches=$(git log "$RANGE" --no-merges --pretty='- %s' | grep -E "^- ($pattern)(\([^)]+\))?:" || true)
-              if [ -n "$matches" ]; then
-                printf '\n### %s\n\n%s\n' "$title" "$matches"
-              fi
-            }
-
-            {
-              echo "## Houston v$VERSION"
-              section "Features"  "feat"
-              section "Fixes"     "fix"
-              section "Docs"      "docs"
-              section "CI & infra" "ci"
-              section "Changes"   "refactor|perf|style|test"
-              echo
-              # Keep the upgrade reminder everyone needs — drag-install
-              # doesn't reliably replace a running .app.
-              echo "### Before you upgrade"
-              echo ""
-              echo "- Quit Houston before installing. macOS doesn't always replace a running app. If in doubt: \`rm -rf /Applications/Houston.app\` and drag the new copy in."
-              echo ""
-              if [ -n "$COMPARE" ]; then
-                echo "$COMPARE"
-              fi
-            } > release-notes.md
-          fi
-
-          echo "----- release-notes.md -----"
-          cat release-notes.md
-          echo "----- end -----"
+      # release-notes.md is built once in the `prep` job and shared via
+      # workflow artifact. We need it here because the updater-manifest
+      # step embeds the notes verbatim into latest.json so existing users
+      # see the new-version description on the auto-update prompt.
+      - name: Download release-notes.md artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
 
       - name: Generate updater manifest
         run: |
@@ -627,27 +675,34 @@ jobs:
           echo "latest.json:"
           cat latest.json
 
-      - name: Create draft release
+      # Draft release was already created in the `prep` job. We only need
+      # to upload the macOS-specific artifacts to it. `--clobber` makes
+      # this safe to re-run if a partial upload left a previous attempt
+      # behind.
+      #
+      # Note: latest.json uploaded here advertises macOS only. The
+      # `finalize` job pulls it back down after `build-windows` finishes
+      # and extends it with the Windows entry.
+      - name: Upload macOS artifacts to draft release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-
-          gh release create "$GITHUB_REF_NAME" \
-            --title "Houston v$VERSION" \
-            --notes-file release-notes.md \
-            --draft \
+          gh release upload "$GITHUB_REF_NAME" \
             "${{ steps.artifacts.outputs.dmg }}" \
             "${{ steps.artifacts.outputs.tar }}" \
             "${{ steps.artifacts.outputs.sig }}" \
             latest.json \
-            checksums-sha256.txt
+            checksums-sha256.txt \
+            --clobber
 
-          echo "::notice::Draft release created — review notes then publish at https://github.com/${{ github.repository }}/releases/tag/$GITHUB_REF_NAME"
+          echo "::notice::macOS artifacts uploaded to draft https://github.com/${{ github.repository }}/releases/tag/$GITHUB_REF_NAME"
 
   # ============================================================================
-  # Windows MSI build — runs in parallel with build-macos and uploads the MSI
-  # to the same draft release once build-macos finishes creating it.
+  # Windows MSI build — runs IN PARALLEL with build-macos. Both jobs only
+  # need the empty draft release that `prep` creates so they can upload
+  # into it. The `finalize` job runs after both finish and stitches
+  # `latest.json` together (Windows entry added to the macOS-only base
+  # uploaded by build-macos).
   #
   # Scope (v1, weekend test build):
   #   * Windows x64 only — no ARM64 build, no NSIS installer.
@@ -656,9 +711,6 @@ jobs:
   #     first install. This is acceptable for personal testing; before we
   #     ship to actual users we'll wire SignPath Foundation (free OSS) into
   #     a `sign-windows` job between this and the upload step.
-  #   * No auto-updater wiring — Windows entries are NOT added to
-  #     `latest.json`; users manually download a fresh MSI from the
-  #     GitHub release page when a new version drops.
   #
   # Build pipeline:
   #   1. Stage CLI deps via `scripts/fetch-cli-deps.sh windows-x64`.
@@ -675,11 +727,9 @@ jobs:
   #   3. Run `pnpm tauri build --target x86_64-pc-windows-msvc` to produce
   #      the MSI under
   #      `target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi`.
-  #   4. Upload the MSI to the draft release created by the build-macos
-  #      job (declared via `needs:` so the upload happens after the
-  #      release exists).
+  #   4. Upload the MSI + .sig to the draft release created by `prep`.
   build-windows:
-    needs: build-macos
+    needs: prep
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
@@ -866,41 +916,61 @@ jobs:
           echo "::notice::Windows MSI + .sig uploaded to draft https://github.com/${{ github.repository }}/releases/tag/$GITHUB_REF_NAME"
           echo "::warning::This MSI is UNSIGNED (code-signing wise) — Windows SmartScreen will warn on first install. The updater minisign signature above is separate; it covers in-app auto-update verification, not OS code-signing. SignPath integration lands in a follow-up PR."
 
-      # Extend the macOS-only `latest.json` (uploaded by build-macos) with a
-      # `windows-x86_64` entry pointing at the just-uploaded MSI + its
-      # minisign signature. After this step, users on Houston for Windows
-      # who built with the same `TAURI_SIGNING_PRIVATE_KEY` will see an
-      # auto-update prompt the next time they launch.
-      #
-      # Why merge here instead of generating from scratch:
-      #   build-macos already produces the right schema (version / notes
-      #   / pub_date) and uploads it to the draft release. We just need
-      #   to add the Windows platform key and reupload with --clobber.
-      #   Generating latest.json from scratch in two places risks the
-      #   metadata drifting between OSes (date format, notes preview,
-      #   etc.) and is more painful to keep in sync.
+  # ============================================================================
+  # Stitch the parallel mac + win builds into one finished draft release.
+  # Runs on a clean ubuntu runner — no source tree, no signing identities,
+  # no platform-specific tooling needed. Just `gh`, `jq`, and `curl`,
+  # which are all preinstalled on `ubuntu-latest`.
+  #
+  # Two responsibilities:
+  #   1. Extend the macOS-only `latest.json` (uploaded by build-macos)
+  #      with a `windows-x86_64` entry pointing at the MSI + .sig that
+  #      build-windows uploaded. After this, both Mac and Windows users
+  #      see auto-update prompts on next launch.
+  #   2. Notify Slack — moved here from build-windows because that step
+  #      needs `release-notes.md` and the file only existed on the macOS
+  #      runner. Now `prep` publishes it as a workflow artifact and any
+  #      downstream job downloads it.
+  finalize:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download release-notes.md artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      # Pull `latest.json` (mac entries) and the Windows `*.msi.sig`
+      # straight from the draft release. Using assets-on-the-draft as
+      # the handoff (instead of cross-job artifacts) avoids extra
+      # upload/download steps and keeps the source of truth in one
+      # place — the draft itself.
       - name: Extend latest.json with Windows updater entry
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
         run: |
           set -euo pipefail
-
-          MSI_NAME=$(basename "${{ steps.artifacts-windows.outputs.msi }}")
-          MSI_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$MSI_NAME"
-          MSI_SIG=$(cat "${{ steps.artifacts-windows.outputs.sig }}")
-
-          # Pull the existing latest.json down. build-macos uploads it
-          # before this job runs (we depend on build-macos via `needs`).
           tmpdir=$(mktemp -d)
           gh release download "$GITHUB_REF_NAME" \
             --pattern 'latest.json' \
+            --pattern '*.msi.sig' \
             --dir "$tmpdir"
 
           if [ ! -s "$tmpdir/latest.json" ]; then
             echo "::error::latest.json not found in draft release; build-macos must have failed to upload it"
             exit 1
           fi
+
+          SIG_FILE=$(ls "$tmpdir"/*.msi.sig 2>/dev/null | head -1 || true)
+          if [ -z "$SIG_FILE" ]; then
+            echo "::error::*.msi.sig not found in draft release; build-windows must have failed to upload it"
+            exit 1
+          fi
+
+          MSI_NAME=$(basename "$SIG_FILE" .sig)
+          MSI_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$MSI_NAME"
+          MSI_SIG=$(cat "$SIG_FILE")
 
           # Tauri's updater checks `windows-x86_64` for both NSIS and MSI
           # installers (the format is detected from the URL extension at
@@ -920,19 +990,12 @@ jobs:
           gh release upload "$GITHUB_REF_NAME" "$tmpdir/latest.json" --clobber
           echo "::notice::latest.json now advertises macOS + Windows for the in-app updater"
 
-      # Pings the team Slack channel so anyone can grab the DMG and try the
-      # build before we publish. No-ops when SLACK_RELEASE_WEBHOOK_URL is
-      # unset, so forks and personal builds stay quiet.
-      #
-      # NOTE: build-windows runs on a windows-latest runner whose default
-      # shell is PowerShell. The bash-syntax `if [ -z ... ]` below would
-      # otherwise be parsed by pwsh and fail with "Missing '(' after 'if'
-      # in if statement". `shell: bash` forces Git Bash (preinstalled on
-      # the runner image) so this step works identically on macOS and
-      # Windows.
+      # Pings the team Slack channel so anyone can grab the DMG and try
+      # the build before we publish. No-ops when
+      # SLACK_RELEASE_WEBHOOK_URL is unset, so forks and personal builds
+      # stay quiet.
       - name: Notify Slack of new draft release
         if: success()
-        shell: bash
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
