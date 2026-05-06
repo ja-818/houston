@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, CircleDashed, ExternalLink, Terminal, ChevronDown } from "lucide-react";
+import { Check, CircleDashed, ExternalLink, Terminal, ChevronDown, LogOut } from "lucide-react";
 import {
   Spinner,
   DropdownMenu,
@@ -103,6 +103,10 @@ export function ProviderPicker({ value, model: controlledModel, onSelect }: Prop
                 if (isSelected) onSelect(prov.id, m);
               }}
               onSelect={() => onSelect(prov.id, models[prov.id] ?? prov.defaultModel)}
+              onSignedOut={async () => {
+                await loadStatuses();
+                setExpanded(prov.id);
+              }}
               // Settle the expanded state based on what got clicked:
               //   - connected card              → collapse (no setup needed)
               //   - disconnected card currently expanded → collapse (toggle off)
@@ -148,6 +152,7 @@ function ProviderCard({
   onModelChange,
   onSelect,
   onExpand,
+  onSignedOut,
 }: {
   provider: ProviderInfo;
   connected: boolean;
@@ -157,8 +162,27 @@ function ProviderCard({
   onModelChange: (model: string) => void;
   onSelect: () => void;
   onExpand: () => void;
+  onSignedOut: () => void | Promise<void>;
 }) {
   const { t } = useTranslation("providers");
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSignOutError(null);
+    setSigningOut(true);
+    try {
+      await tauriProvider.launchLogout(provider.id);
+      await onSignedOut();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[provider-picker] launchLogout(${provider.id}) failed:`, msg);
+      setSignOutError(msg);
+    } finally {
+      setSigningOut(false);
+    }
+  };
   const handleClick = () => {
     onSelect();
     // Always settle the expansion state — the parent decides whether this
@@ -277,6 +301,37 @@ function ProviderCard({
 
       {/* Cost */}
       <p className="text-xs text-muted-foreground">{provider.cost}</p>
+
+      {/* Sign out — only when this provider is currently connected. Lets
+          the user clear local credentials (or revoke server-side tokens
+          for Codex) and then re-login through the existing setup flow. */}
+      {connected && (
+        <div className="w-full" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {signingOut ? (
+              <>
+                <Spinner className="h-3 w-3" />
+                {t("card.signingOut")}
+              </>
+            ) : (
+              <>
+                <LogOut className="h-3 w-3" />
+                {t("card.signOut")}
+              </>
+            )}
+          </button>
+          {signOutError && (
+            <p className="mt-1.5 text-xs text-destructive">
+              {t("card.signOutError", { provider: provider.name })}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

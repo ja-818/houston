@@ -428,6 +428,9 @@ export class HoustonClient {
   providerLogin(name: string): Promise<void> {
     return this.request("POST", `/providers/${this.seg(name)}/login`);
   }
+  providerLogout(name: string): Promise<void> {
+    return this.request("POST", `/providers/${this.seg(name)}/logout`);
+  }
 
   // ---------- store ----------
 

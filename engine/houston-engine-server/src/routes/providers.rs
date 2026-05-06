@@ -1,4 +1,4 @@
-//! `/v1/providers/:name/{status,login}` REST routes.
+//! `/v1/providers/:name/{status,login,logout}` REST routes.
 //!
 //! The `default_provider` preference is exposed through the generic
 //! `/v1/preferences/:key` endpoint, not here.
@@ -17,6 +17,7 @@ pub fn router() -> Router<Arc<ServerState>> {
     Router::new()
         .route("/providers/:name/status", get(status))
         .route("/providers/:name/login", post(login))
+        .route("/providers/:name/logout", post(logout))
 }
 
 async fn status(
@@ -33,5 +34,14 @@ async fn login(
 ) -> Result<(), ApiError> {
     let p = provider::parse(&name)?;
     provider::launch_login(p)?;
+    Ok(())
+}
+
+async fn logout(
+    State(_st): State<Arc<ServerState>>,
+    Path(name): Path<String>,
+) -> Result<(), ApiError> {
+    let p = provider::parse(&name)?;
+    provider::launch_logout(p).await?;
     Ok(())
 }
