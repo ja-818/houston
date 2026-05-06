@@ -11,13 +11,13 @@ import type { SidebarItem } from "./sidebar";
 import { sidebarItemRowClasses } from "./sidebar-classes";
 
 export interface SidebarItemRowLabels {
-  moreActions?: string;
+  moreOptions?: string;
   renameItem?: string;
   deleteItem?: string;
 }
 
 const DEFAULT_LABELS: Required<SidebarItemRowLabels> = {
-  moreActions: "More actions",
+  moreOptions: "More options",
   renameItem: "Rename",
   deleteItem: "Delete",
 };
@@ -108,7 +108,7 @@ export function SidebarItemRow({
             <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <button
-                  aria-label={l.moreActions}
+                  aria-label={l.moreOptions}
                   className={sidebarItemRowClasses.menuButton}
                   onClick={(e) => e.stopPropagation()}
                 >

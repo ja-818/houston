@@ -1,16 +1,16 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { describe, it } from "node:test";
 import {
-  buildActionPickerTabs,
-  FEATURED_ACTIONS_TAB_ID,
-  OTHER_ACTIONS_TAB_ID,
-  resolveActiveActionPickerTab,
-  shouldShowActionPickerTabs,
+  buildSkillPickerTabs,
+  FEATURED_SKILLS_TAB_ID,
+  OTHER_SKILLS_TAB_ID,
+  resolveActiveSkillPickerTab,
+  shouldShowSkillPickerTabs,
 } from "../src/components/new-mission-picker-tab-model.ts";
 
 describe("new mission picker tab model", () => {
-  it("omits Featured when no actions are featured", () => {
-    const tabs = buildActionPickerTabs({
+  it("omits Featured when no skills are featured", () => {
+    const tabs = buildSkillPickerTabs({
       categoryNames: ["Research"],
       hasFeatured: false,
       hasOther: true,
@@ -20,12 +20,12 @@ describe("new mission picker tab model", () => {
 
     deepStrictEqual(tabs, [
       { id: "Research", label: "Research" },
-      { id: OTHER_ACTIONS_TAB_ID, label: "Other" },
+      { id: OTHER_SKILLS_TAB_ID, label: "Other" },
     ]);
   });
 
-  it("keeps Featured first when featured actions exist", () => {
-    const tabs = buildActionPickerTabs({
+  it("keeps Featured first when featured skills exist", () => {
+    const tabs = buildSkillPickerTabs({
       categoryNames: ["Research"],
       hasFeatured: true,
       hasOther: false,
@@ -34,13 +34,13 @@ describe("new mission picker tab model", () => {
     });
 
     deepStrictEqual(tabs, [
-      { id: FEATURED_ACTIONS_TAB_ID, label: "Featured" },
+      { id: FEATURED_SKILLS_TAB_ID, label: "Featured" },
       { id: "Research", label: "Research" },
     ]);
   });
 
-  it("hides the tab bar when only one action tab exists", () => {
-    const tabs = buildActionPickerTabs({
+  it("hides the tab bar when only one skill tab exists", () => {
+    const tabs = buildSkillPickerTabs({
       categoryNames: ["Research"],
       hasFeatured: false,
       hasOther: false,
@@ -48,11 +48,11 @@ describe("new mission picker tab model", () => {
       otherLabel: "Other",
     });
 
-    strictEqual(shouldShowActionPickerTabs(tabs), false);
+    strictEqual(shouldShowSkillPickerTabs(tabs), false);
   });
 
-  it("shows the tab bar when multiple action tabs exist", () => {
-    const tabs = buildActionPickerTabs({
+  it("shows the tab bar when multiple skill tabs exist", () => {
+    const tabs = buildSkillPickerTabs({
       categoryNames: ["Research"],
       hasFeatured: false,
       hasOther: true,
@@ -60,15 +60,15 @@ describe("new mission picker tab model", () => {
       otherLabel: "Other",
     });
 
-    strictEqual(shouldShowActionPickerTabs(tabs), true);
+    strictEqual(shouldShowSkillPickerTabs(tabs), true);
   });
 
   it("falls back to the first tab when active tab is missing", () => {
     const tabs = [
       { id: "Research", label: "Research" },
-      { id: OTHER_ACTIONS_TAB_ID, label: "Other" },
+      { id: OTHER_SKILLS_TAB_ID, label: "Other" },
     ];
 
-    strictEqual(resolveActiveActionPickerTab(tabs, "missing"), "Research");
+    strictEqual(resolveActiveSkillPickerTab(tabs, "missing"), "Research");
   });
 });

@@ -55,7 +55,7 @@ export interface SidebarLabels extends SidebarItemRowLabels {
 
 const DEFAULT_LABELS: Required<SidebarLabels> = {
   addItem: "Add item",
-  moreActions: "More actions",
+  moreOptions: "More options",
   renameItem: "Rename",
   deleteItem: "Delete",
 };

@@ -1,26 +1,26 @@
 {
   "page": {
-    "title": "Actions",
+    "title": "Skills",
     "description": "Reusable procedures this agent can run."
   },
   "grid": {
-    "loading": "Loading actions...",
-    "emptyTitle": "No actions installed",
-    "emptyDescription": "Actions are reusable procedures your agent can run.",
-    "addSkill": "Add action",
+    "loading": "Loading skills...",
+    "emptyTitle": "No skills installed",
+    "emptyDescription": "Skills are reusable procedures your agent can run.",
+    "addSkill": "Add skill",
     "descriptionShort": "Reusable procedures your agent can run."
   },
   "addDialog": {
-    "title": "Add actions",
+    "title": "Add skills",
     "description": "Install reusable procedures for your agent.",
     "storeTab": "Skills.sh",
     "repoTab": "GitHub",
     "store": {
-      "searchPlaceholder": "Search actions...",
-      "noResults": "No actions found for \"{{query}}\"",
+      "searchPlaceholder": "Search skills...",
+      "noResults": "No skills found for \"{{query}}\"",
       "minQuery": "Type at least 2 characters to search",
-      "searchUnavailable": "Action search is busy. Wait a moment and try again.",
-      "typeToSearch": "Type to search for actions",
+      "searchUnavailable": "Skill search is busy. Wait a moment and try again.",
+      "typeToSearch": "Type to search for skills",
       "installCount_one": "{{formatted}} install",
       "installCount_other": "{{formatted}} installs",
       "installSkill": "Install {{name}}",
@@ -28,27 +28,27 @@
     },
     "repo": {
       "sourcePlaceholder": "owner/repo",
-      "findSkills": "Find actions",
+      "findSkills": "Find skills",
       "installSelected": "Install {{count}}",
-      "skillsFound_one": "1 action found",
-      "skillsFound_other": "{{count}} actions found",
+      "skillsFound_one": "1 skill found",
+      "skillsFound_other": "{{count}} skills found",
       "selectAll": "Select all",
       "deselectAll": "Deselect all",
       "inputHint": "Enter a public GitHub repo in owner/repo format",
-      "installedSummary_one": "Installed 1 action: {{names}}",
-      "installedSummary_other": "Installed {{count}} actions: {{names}}",
+      "installedSummary_one": "Installed 1 skill: {{names}}",
+      "installedSummary_other": "Installed {{count}} skills: {{names}}",
       "installAnotherRepo": "Install from another repo"
     }
   },
   "detail": {
-    "notFound": "Action not found",
-    "backAria": "Back to actions",
-    "moreActions": "More actions",
+    "notFound": "Skill not found",
+    "backAria": "Back to skills",
+    "moreOptions": "More options",
     "saveChanges": "Save changes",
     "savingChanges": "Saving...",
-    "delete": "Delete action",
+    "delete": "Delete skill",
     "deleteTitle": "Delete \"{{name}}\"?",
-    "deleteDescription": "This removes the action from your agent. You can reinstall it later.",
-    "instructionsPlaceholder": "Instructions for this action..."
+    "deleteDescription": "This removes the skill from your agent. You can reinstall it later.",
+    "instructionsPlaceholder": "Instructions for this skill..."
   }
 }

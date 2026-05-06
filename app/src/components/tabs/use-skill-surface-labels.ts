@@ -8,7 +8,7 @@ export function useSkillSurfaceLabels() {
     backAria: t("skills:detail.backAria"),
     saveChanges: t("skills:detail.saveChanges"),
     savingChanges: t("skills:detail.savingChanges"),
-    moreActions: t("skills:detail.moreActions"),
+    moreOptions: t("skills:detail.moreOptions"),
     delete: t("skills:detail.delete"),
     deleteTitle: (name: string) => t("skills:detail.deleteTitle", { name }),
     deleteDescription: t("skills:detail.deleteDescription"),
@@ -19,7 +19,7 @@ export function useSkillSurfaceLabels() {
   return { skillDetailLabels };
 }
 
-export function useActionDialogLabels() {
+export function useSkillDialogLabels() {
   const { t } = useTranslation("skills");
 
   return {

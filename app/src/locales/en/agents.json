@@ -34,7 +34,7 @@
   },
   "subTabs": {
     "instructions": "Instructions",
-    "skills": "Actions",
+    "skills": "Skills",
     "learnings": "Learnings"
   },
   "tabLabels": {
@@ -45,7 +45,7 @@
     "integrations": "Integrations",
     "chat": "Chat",
     "board": "Board",
-    "skills": "Actions",
+    "skills": "Skills",
     "prompts": "Prompts",
     "events": "Events",
     "learnings": "Learnings",
@@ -64,7 +64,7 @@
       "placeholder": "System prompt for {{name}}..."
     },
     "skills": {
-      "title": "Actions",
+      "title": "Skills",
       "description": "Reusable procedures the agents can run."
     },
     "learnings": {

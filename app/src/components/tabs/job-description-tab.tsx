@@ -14,8 +14,8 @@ import type { TabProps } from "../../lib/types";
 import { useUIStore } from "../../stores/ui";
 import { LearningsContent } from "./learnings-content";
 import { InstructionsContent, type SubTab } from "./job-description-parts";
-import { ActionsContent } from "./actions-content";
-import { useActionSurface } from "./use-action-surface";
+import { SkillsContent } from "./skills-content";
+import { useSkillSurface } from "./use-skill-surface";
 import {
   SidebarSectionNav,
   type SidebarSectionItem,
@@ -24,7 +24,7 @@ import {
 export default function JobDescriptionTab({ agent }: TabProps) {
   const { t } = useTranslation("agents");
   const path = agent.folderPath;
-  const actions = useActionSurface(path);
+  const surface = useSkillSurface(path);
   const [activeTab, setActiveTab] = useState<SubTab>("instructions");
   const targetTab = useUIStore((s) => s.jobDescriptionTarget);
   const setTargetTab = useUIStore((s) => s.setJobDescriptionTarget);
@@ -40,9 +40,9 @@ export default function JobDescriptionTab({ agent }: TabProps) {
   useEffect(() => {
     if (!targetTab) return;
     setActiveTab(targetTab);
-    actions.clearSelectedSkill();
+    surface.clearSelectedSkill();
     setTargetTab(null);
-  }, [targetTab, setTargetTab, actions.clearSelectedSkill]);
+  }, [targetTab, setTargetTab, surface.clearSelectedSkill]);
 
   const items = useMemo<SidebarSectionItem<SubTab>[]>(
     () => [
@@ -54,14 +54,14 @@ export default function JobDescriptionTab({ agent }: TabProps) {
   );
 
   // Skill detail view takes over the whole pane.
-  if (activeTab === "skills" && actions.selectedSkill) {
+  if (activeTab === "skills" && surface.selectedSkill) {
     return (
       <SkillDetailPage
-        skill={actions.selectedSkill}
-        onBack={actions.clearSelectedSkill}
-        onSave={actions.handleSkillSave}
-        onDelete={actions.handleSkillDelete}
-        labels={actions.skillDetailLabels}
+        skill={surface.selectedSkill}
+        onBack={surface.clearSelectedSkill}
+        onSave={surface.handleSkillSave}
+        onDelete={surface.handleSkillDelete}
+        labels={surface.skillDetailLabels}
       />
     );
   }
@@ -86,14 +86,14 @@ export default function JobDescriptionTab({ agent }: TabProps) {
 
         {activeTab === "skills" && (
           <div className="max-w-3xl mx-auto w-full px-6 pb-12 pt-6 flex-1 flex flex-col">
-            <ActionsContent
-              skills={actions.skills}
-              loading={actions.skillsLoading}
-              onActionClick={actions.selectSkill}
-              onSearch={actions.handleSearch}
-              onInstallCommunity={actions.handleInstallCommunity}
-              onListFromRepo={actions.handleListFromRepo}
-              onInstallFromRepo={actions.handleInstallFromRepo}
+            <SkillsContent
+              skills={surface.skills}
+              loading={surface.skillsLoading}
+              onSkillClick={surface.selectSkill}
+              onSearch={surface.handleSearch}
+              onInstallCommunity={surface.handleInstallCommunity}
+              onListFromRepo={surface.handleListFromRepo}
+              onInstallFromRepo={surface.handleInstallFromRepo}
             />
           </div>
         )}

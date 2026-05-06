@@ -34,21 +34,21 @@
     "title": "Which agent should run this?",
     "description": "Pick an agent to open a fresh conversation."
   },
-  "actionPicker": {
-    "title": "Pick an action",
-    "description": "Browse the actions this agent already knows how to do.",
-    "descriptionWithAgent": "Browse the actions {{name}} already knows how to do.",
+  "skillPicker": {
+    "title": "Pick a skill",
+    "description": "Browse the skills this agent already knows how to do.",
+    "descriptionWithAgent": "Browse the skills {{name}} already knows how to do.",
     "agentLabel": "Agent",
     "agentPlaceholder": "Select an agent...",
     "blank": "Blank conversation",
     "blankDescription": "Open a new chat and type your own prompt.",
     "featuredTab": "Featured",
     "otherTab": "Other",
-    "empty": "No actions yet.",
-    "pickAgentFirst": "Pick an agent to see its actions.",
-    "skillsLoading": "Loading actions...",
-    "skillsEmpty": "No actions in this category yet.",
-    "scrollTabsLeft": "Scroll action tabs left",
-    "scrollTabsRight": "Scroll action tabs right"
+    "empty": "No skills yet.",
+    "pickAgentFirst": "Pick an agent to see its skills.",
+    "skillsLoading": "Loading skills...",
+    "skillsEmpty": "No skills in this category yet.",
+    "scrollTabsLeft": "Scroll skill tabs left",
+    "scrollTabsRight": "Scroll skill tabs right"
   }
 }

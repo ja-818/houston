@@ -13,12 +13,12 @@ import { Plus } from "lucide-react";
 import { SkillCard } from "../skill-card";
 import type { SkillSummary } from "../../lib/types";
 import { humanizeSkillName } from "../../lib/humanize-skill-name";
-import { useActionDialogLabels } from "./use-skill-surface-labels";
+import { useSkillDialogLabels } from "./use-skill-surface-labels";
 
-export function ActionsContent({
+export function SkillsContent({
   skills,
   loading,
-  onActionClick,
+  onSkillClick,
   onSearch,
   onInstallCommunity,
   onListFromRepo,
@@ -26,14 +26,14 @@ export function ActionsContent({
 }: {
   skills: SkillSummary[];
   loading: boolean;
-  onActionClick: (name: string) => void;
+  onSkillClick: (name: string) => void;
   onSearch?: (query: string) => Promise<CommunitySkill[]>;
   onInstallCommunity?: (skill: CommunitySkill) => Promise<string>;
   onListFromRepo?: (source: string) => Promise<RepoSkill[]>;
   onInstallFromRepo?: (source: string, skills: RepoSkill[]) => Promise<string[]>;
 }) {
   const { t } = useTranslation("skills");
-  const addDialogLabels = useActionDialogLabels();
+  const addDialogLabels = useSkillDialogLabels();
   const [dialogOpen, setDialogOpen] = useState(false);
   const sorted = useMemo(
     () => [...skills].sort((a, b) => a.name.localeCompare(b.name)),
@@ -106,7 +106,7 @@ export function ActionsContent({
             title={humanizeSkillName(skill.name)}
             description={skill.description}
             integrations={skill.integrations}
-            onClick={() => onActionClick(skill.name)}
+            onClick={() => onSkillClick(skill.name)}
           />
         ))}
       </div>

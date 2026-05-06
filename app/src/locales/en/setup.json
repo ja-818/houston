@@ -66,7 +66,7 @@
         "doneTitle": "Mission complete",
         "doneBody": "Your assistant just did real work with your real apps. Take a quick tour of the UI, then you're done.",
         "placeholder": "Reply to your assistant...",
-        "actions": {
+        "skills": {
           "morning-brief": {
             "title": "Morning brief",
             "description": "Read today's calendar and important email, then prepare a short brief."

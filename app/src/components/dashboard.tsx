@@ -171,8 +171,8 @@ export function Dashboard() {
 
   // The agent currently scoping the right panel: either the agent the
   // selected card belongs to, or the agent the user picked for a new
-  // mission. Drives the per-agent composer features (skills, action
-  // selected Action, model selector) provided by `useAgentChatPanel`.
+  // mission. Drives the per-agent composer features (skills, selected
+  // Skill, model selector) provided by `useAgentChatPanel`.
   const activeAgent = useMemo<Agent | null>(() => {
     if (selectedItem) {
       const path = selectedItem.metadata?.agentPath as string | undefined;

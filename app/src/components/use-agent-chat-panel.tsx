@@ -7,12 +7,12 @@
  * scope) and the hook returns ready-to-use AIBoard props:
  *
  *   - chatEmptyState      — featured-skill cards + "see more"
- *   - composerHeader      — selected Action chip above the prompt input
- *   - footer              — model selector + "Actions" button
- *   - renderUserMessage   — decode + render action-invocation card
+ *   - composerHeader      — selected Skill chip above the prompt input
+ *   - footer              — model selector + "Skills" button
+ *   - renderUserMessage   — decode + render skill-invocation card
  *   - tool / link helpers — file tool renderer, Composio link card
  *
- * The hook also owns the action submission pipeline (createMission
+ * The hook also owns the Skill submission pipeline (createMission
  * for new conversations, tauriChat.send for follow-ups) so we don't
  * duplicate the encoding + feed-push logic in two places.
  */
@@ -62,15 +62,15 @@ import { ChatModelSelector } from "./chat-model-selector";
 import { getDefaultModel } from "../lib/providers";
 import { analytics } from "../lib/analytics";
 import {
-  buildActionClaudePrompt,
-  decodeActionMessage,
-  encodeActionMessage,
-} from "../lib/action-message";
+  buildSkillClaudePrompt,
+  decodeSkillMessage,
+  encodeSkillMessage,
+} from "../lib/skill-message";
 import { attachmentReferences } from "../lib/attachment-message";
 import { SkillCard } from "./skill-card";
 import { NewMissionPickerDialog } from "./new-mission-picker-dialog";
-import { UserActionMessage } from "./user-action-message";
-import { SelectedActionChip } from "./selected-action-chip";
+import { UserSkillMessage } from "./user-skill-message";
+import { SelectedSkillChip } from "./selected-skill-chip";
 import { ProviderReconnectCard } from "./shell/provider-reconnect-card";
 import { ToolRuntimeErrorCard } from "./shell/tool-runtime-error-card";
 import { isToolRuntimeErrorMessage } from "./tool-runtime-feed";
@@ -90,24 +90,24 @@ interface UseAgentChatPanelArgs {
   agent: Agent | null;
   /** That agent's catalog definition (for agentModes etc.). */
   agentDef: AgentDefinition | null;
-  /** Currently-open session key, if any. Drives action routing. */
+  /** Currently-open session key, if any. Drives Skill routing. */
   selectedSessionKey: string | null;
-  /** Called with the new conversation id after an action's "Start". */
+  /** Called with the new conversation id after a Skill's "Start". */
   onSelectSession?: (id: string) => void;
 }
 
 interface AgentChatPanelProps {
-  /** Renders skill cards + "see more" when no action is in flight. */
+  /** Renders skill cards + "see more" when no Skill is in flight. */
   chatEmptyState: AIBoardProps["chatEmptyState"];
-  /** Selected Action chip rendered above the prompt input. */
+  /** Selected Skill chip rendered above the prompt input. */
   composerHeader: AIBoardProps["composerHeader"];
-  /** Submit can run the selected Action without extra text. */
+  /** Submit can run the selected Skill without extra text. */
   canSendEmpty: AIBoardProps["canSendEmpty"];
-  /** Intercepts composer submit while an Action is selected. */
+  /** Intercepts composer submit while a Skill is selected. */
   onComposerSubmit: AIBoardProps["onComposerSubmit"];
-  /** Composer footer with model selector + Actions button. */
+  /** Composer footer with model selector + Skills button. */
   footer: AIBoardProps["footer"];
-  /** Decodes action-invocation user messages into a card. */
+  /** Decodes skill-invocation user messages into a card. */
   renderUserMessage: AIBoardProps["renderUserMessage"];
   /** Forwarded to AIBoard / ChatPanel for tool rendering. */
   isSpecialTool: ChatPanelProps["isSpecialTool"];
@@ -205,24 +205,24 @@ export function useAgentChatPanel({
   const { isSpecialTool, renderToolResult, renderTurnSummary } =
     useFileToolRenderer(path ?? "");
 
-  // ── Skills + selected-action state ────────────────────────────────────
+  // ── Skills + selected-skill state ─────────────────────────────────────
   const { data: allSkills } = useSkills(path ?? undefined);
   const emptySkillShowcase = useMemo(() => {
     const skills = allSkills ?? [];
     const featured = skills.filter((s) => s.featured);
     return (featured.length > 0 ? featured : skills).slice(0, 3);
   }, [allSkills]);
-  const moreActionsCount = Math.max(
+  const moreSkillsCount = Math.max(
     0,
     (allSkills?.length ?? 0) - emptySkillShowcase.length,
   );
 
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [activeAction, setActiveAction] = useState<SkillSummary | null>(null);
-  // Drop selected Action when the agent / session changes so it doesn't
+  const [activeSkill, setActiveSkill] = useState<SkillSummary | null>(null);
+  // Drop selected Skill when the agent / session changes so it doesn't
   // leak across contexts.
   useEffect(() => {
-    setActiveAction(null);
+    setActiveSkill(null);
   }, [path, selectedSessionKey]);
 
   const onSelectSessionRef = useRef(onSelectSession);
@@ -238,16 +238,16 @@ export function useAgentChatPanel({
     [t],
   );
 
-  // While an Action is selected, the regular composer still owns text
+  // While a Skill is selected, the regular composer still owns text
   // and attachments. This hook only wraps the submitted message with the
-  // hidden Action marker + deterministic "Use the X skill" prompt.
-  const handleActionComposerSubmit = useCallback<NonNullable<AIBoardProps["onComposerSubmit"]>>(
+  // hidden Skill marker + deterministic "Use the X skill" prompt.
+  const handleSkillComposerSubmit = useCallback<NonNullable<AIBoardProps["onComposerSubmit"]>>(
     async ({ sessionKey, text, files }) => {
-      const skill = activeAction;
+      const skill = activeSkill;
       if (!skill || !agent || !path) return false;
 
-      const claudePrompt = buildActionClaudePrompt(skill, text);
-      const encoded = encodeActionMessage(skill, text, claudePrompt);
+      const claudePrompt = buildSkillClaudePrompt(skill, text);
+      const encoded = encodeSkillMessage(skill, text, claudePrompt);
       const friendlyTitle = humanizeSkillName(skill.name);
 
       if (sessionKey) {
@@ -256,7 +256,7 @@ export function useAgentChatPanel({
         const scopeId = sessionKey;
         const attachmentPaths = await tauriAttachments.save(scopeId, files);
         const prompt = withAttachmentPaths(claudePrompt, attachmentPaths);
-        const encodedWithAttachments = encodeActionMessage(
+        const encodedWithAttachments = encodeSkillMessage(
           skill,
           text,
           prompt,
@@ -314,7 +314,7 @@ export function useAgentChatPanel({
             buildPrompt: async (activityId) => {
               const paths = await tauriAttachments.save(`activity-${activityId}`, files);
               const prompt = withAttachmentPaths(claudePrompt, paths);
-              encodedUserMessage = encodeActionMessage(
+              encodedUserMessage = encodeSkillMessage(
                 skill,
                 text,
                 prompt,
@@ -335,11 +335,11 @@ export function useAgentChatPanel({
         });
         onSelectSessionRef.current?.(conversationId);
       }
-      setActiveAction(null);
+      setActiveSkill(null);
       return true;
     },
     [
-      activeAction,
+      activeSkill,
       agent,
       path,
       agentModes,
@@ -352,19 +352,19 @@ export function useAgentChatPanel({
   );
 
   // Picking a skill from a card or the picker pins it above the regular
-  // composer. The user can add text or send the Action by itself.
-  const applyAction = useCallback(
-    (skill: SkillSummary) => setActiveAction(skill),
+  // composer. The user can add text or send the Skill by itself.
+  const applySkill = useCallback(
+    (skill: SkillSummary) => setActiveSkill(skill),
     [],
   );
 
   // ── Built JSX bundles ─────────────────────────────────────────────────
   const renderUserMessage = useCallback(
     (msg: { content: string }) => {
-      const invocation = decodeActionMessage(msg.content);
+      const invocation = decodeSkillMessage(msg.content);
       if (invocation) {
         return (
-          <UserActionMessage
+          <UserSkillMessage
             invocation={invocation}
             attachmentLabels={attachmentLabels}
           />
@@ -426,18 +426,18 @@ export function useAgentChatPanel({
   );
 
   const composerHeader = useMemo<AIBoardProps["composerHeader"]>(() => {
-    if (!agent || !activeAction) return undefined;
+    if (!agent || !activeSkill) return undefined;
     return (
-      <SelectedActionChip
-        skill={activeAction}
-        onCancel={() => setActiveAction(null)}
+      <SelectedSkillChip
+        skill={activeSkill}
+        onCancel={() => setActiveSkill(null)}
       />
     );
-  }, [agent, activeAction]);
+  }, [agent, activeSkill]);
 
   const chatEmptyState = useMemo<AIBoardProps["chatEmptyState"]>(() => {
     if (!agent) return undefined;
-    if (activeAction) return null;
+    if (activeSkill) return null;
     if (emptySkillShowcase.length === 0) return undefined;
     return (
       <div className="self-stretch w-full h-full overflow-y-auto">
@@ -457,23 +457,23 @@ export function useAgentChatPanel({
               title={humanizeSkillName(s.name)}
               description={s.description}
               integrations={s.integrations}
-              onClick={() => applyAction(s)}
+              onClick={() => applySkill(s)}
             />
           ))}
-          {moreActionsCount > 0 && (
+          {moreSkillsCount > 0 && (
             <Button
               size="sm"
               className="self-center mt-1 rounded-full gap-1.5"
               onClick={() => setPickerOpen(true)}
             >
               <Play className="size-3 fill-current" />
-              {t("chatEmpty.seeMore", { count: moreActionsCount })}
+              {t("chatEmpty.seeMore", { count: moreSkillsCount })}
             </Button>
           )}
         </div>
       </div>
     );
-  }, [agent, activeAction, emptySkillShowcase, moreActionsCount, t, applyAction]);
+  }, [agent, activeSkill, emptySkillShowcase, moreSkillsCount, t, applySkill]);
 
   const footer = useMemo<AIBoardProps["footer"]>(() => {
     if (!agent) return undefined;
@@ -486,7 +486,7 @@ export function useAgentChatPanel({
           className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
         >
           <Play className="size-3 fill-current" />
-          {t("composerAction.browse")}
+          {t("composerSkill.browse")}
         </button>
         <ChatModelSelector
           provider={effectiveProvider}
@@ -506,7 +506,7 @@ export function useAgentChatPanel({
       hideBlank
       onSkill={(_agentPath, skillName) => {
         const skill = (allSkills ?? []).find((s) => s.name === skillName);
-        if (skill) applyAction(skill);
+        if (skill) applySkill(skill);
       }}
     />
   ) : null;
@@ -514,8 +514,8 @@ export function useAgentChatPanel({
   return {
     chatEmptyState,
     composerHeader,
-    canSendEmpty: activeAction != null,
-    onComposerSubmit: handleActionComposerSubmit,
+    canSendEmpty: activeSkill != null,
+    onComposerSubmit: handleSkillComposerSubmit,
     footer,
     renderUserMessage,
     isSpecialTool,

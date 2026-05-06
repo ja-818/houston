@@ -66,7 +66,7 @@
         "doneTitle": "Misión completada",
         "doneBody": "Tu asistente acaba de hacer trabajo real con tus apps reales. Toma un tour rápido del UI y listo.",
         "placeholder": "Responde a tu asistente...",
-        "actions": {
+        "skills": {
           "morning-brief": {
             "title": "Resumen matutino",
             "description": "Lee el calendario de hoy y los correos importantes, y prepara un resumen breve."

@@ -64,13 +64,13 @@ copies the package to `~/.houston/agents/<agent-id>/` and writes
 `.source.json` with `source: "houston-store"`, `version`, and
 `content_hash`. Creating a workspace agent from that installed
 definition copies packaged `.agents/skills/*` into the user's agent
-root so chat Actions are available immediately.
+root so chat Skills are available immediately.
 
 Store agents must not use custom Overview dashboards or manifest
 `useCases` for starter workflows. If a workflow should be visible to
 users, package it as a real skill under `.agents/skills/*/SKILL.md`.
 Store-packaged skills must not include legacy `inputs` or
-`prompt_template` frontmatter. The chat Action picker selects the
+`prompt_template` frontmatter. The chat Skill picker selects the
 workflow, then the regular composer stays visible for free-form context.
 Store manifests must also not seed `.houston/activity.json` or
 `.houston/activity/activity.json`; fresh Store agents start with an empty
@@ -85,9 +85,9 @@ newer package. The desktop catalog reloads after updates so existing
 workspace agents pick up new tabs/defaults from the refreshed manifest.
 
 After a bundled package update, Houston copies newly-added packaged
-Actions into existing workspace agents with the same `config_id`.
-Existing Action bodies are not overwritten; user edits win. Matching
-Action frontmatter is refreshed from the bundled package so descriptions,
+Skills into existing workspace agents with the same `config_id`.
+Existing Skill bodies are not overwritten; user edits win. Matching
+Skill frontmatter is refreshed from the bundled package so descriptions,
 integrations, images, category, and featured state can update with a release.
 
 ## GitHub import flow
@@ -115,7 +115,7 @@ First-run onboarding is a minimal guided setup, not a static tour or dense HUD:
 7. Normal UI opens with a command-center coach explaining parallel missions,
    multiple agents, library installs, and Routines.
 
-Skipping onboarding still creates the default Personal assistant, but skips the tutorial Action/Routine/run artifacts.
+Skipping onboarding still creates the default Personal assistant, but skips the tutorial Skill/Routine/run artifacts.
 
 ## Workspace templates
 
@@ -179,7 +179,7 @@ submenu.
 The final system prompt is `<product_prompt>\n\n---\n\n<agent_context>`, built in two layers:
 
 **Product layer (owned by the embedding app, not the engine).**
-Lives in `app/src-tauri/src/houston_prompt/` for the Houston desktop app. Covers the app-context dictionary, concise user voice, the silent interaction loop (classify request, check info, check integrations, decide approval, execute, consider memory), Actions/memory guidance, Routines guidance, and Composio guidance. Passed to the engine at boot via env vars `HOUSTON_APP_SYSTEM_PROMPT` + `HOUSTON_APP_ONBOARDING_PROMPT` — the engine keeps them as opaque strings. Callers can also override per-session via the `systemPrompt` field on `startSession`.
+Lives in `app/src-tauri/src/houston_prompt/` for the Houston desktop app. Covers the app-context dictionary, concise user voice, the silent interaction loop (classify request, check info, check integrations, decide approval, execute, consider memory), Skills/memory guidance, Routines guidance, and Composio guidance. Passed to the engine at boot via env vars `HOUSTON_APP_SYSTEM_PROMPT` + `HOUSTON_APP_ONBOARDING_PROMPT` — the engine keeps them as opaque strings. Callers can also override per-session via the `systemPrompt` field on `startSession`.
 
 **Agent-context layer (engine-owned).**
 Built in `engine/houston-engine-core/src/agents/prompt.rs::build_agent_context`:

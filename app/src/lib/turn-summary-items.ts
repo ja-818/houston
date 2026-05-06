@@ -1,6 +1,6 @@
 import type { FileChangeEntry, ToolEntry } from "@houston-ai/chat";
 
-export type SemanticUpdateKind = "instructions" | "actions" | "learnings";
+export type SemanticUpdateKind = "instructions" | "skills" | "learnings";
 export type FileUpdateKind = "created" | "modified";
 
 export type TurnSummaryItem =
@@ -35,9 +35,9 @@ function classifyPath(path: string, agentPath: string): SemanticUpdateKind | nul
   if (fileName === "claude.md" || fileName === "agents.md") return "instructions";
   if (relative === ".houston/learnings/learnings.json") return "learnings";
   if (relative.includes("/.agents/skills/") || relative.includes("/.claude/skills/")) {
-    return "actions";
+    return "skills";
   }
-  if (fileName === "skill.md" || fileName === "skills.md") return "actions";
+  if (fileName === "skill.md" || fileName === "skills.md") return "skills";
   return null;
 }
 

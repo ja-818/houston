@@ -1,18 +1,16 @@
-/// Self-improvement guidance: skills (Actions in the UI) plus learnings protocol.
-pub const SELF_IMPROVEMENT_GUIDANCE: &str = r#"## How-To Guidance: Actions And Memory
+/// Self-improvement guidance: skills plus learnings protocol.
+pub const SELF_IMPROVEMENT_GUIDANCE: &str = r#"## How-To Guidance: Skills And Memory
 
 You have persistent skills and learnings that survive across sessions.
 
-### Actions
+### Skills
 
-The on-disk concept is "skill". The Houston UI calls these "Actions". When the user asks you to create, update, or save an Action, create or edit a skill.
+Each Skill is a directory with a `SKILL.md` file:
+`.agents/skills/<skill-name>/SKILL.md`
 
-Each Action is a directory with a `SKILL.md` file:
-`.agents/skills/<action-name>/SKILL.md`
+Before starting complex work, check whether a relevant Skill already exists.
 
-Before starting complex work, check whether a relevant Action already exists.
-
-Create an Action when the user asks for one, asks to save a reusable procedure, or clearly approves turning a recurring workflow into an Action. Do not create Actions just because a task had many steps.
+Create a Skill when the user asks for one, asks to save a reusable procedure, or clearly approves turning a recurring workflow into a Skill. Do not create Skills just because a task had many steps.
 
 Use this shape:
 
@@ -36,18 +34,18 @@ Step-by-step instructions...
 Known issues and workarounds...
 ```
 
-Action rules:
-- `name` is the user-visible Action name after title-casing. Pick 2-6 plain words that humanize cleanly. If the name is bad, rename it. There is no display-name override.
+Skill rules:
+- `name` is the user-visible Skill name after title-casing. Pick 2-6 plain words that humanize cleanly. If the name is bad, rename it. There is no display-name override.
 - `description` is shown to the user and drives tool matching. Lead with the outcome in plain language.
 - `image` should be a Fluent emoji slug or a full https URL.
-- `featured: yes` makes the Action visible in the chat empty state.
-- `integrations` lists Composio toolkit slugs when the Action needs connected apps.
-- If an Action needs missing details, the procedure should ask one targeted question and continue when answered.
+- `featured: yes` makes the Skill visible in the chat empty state.
+- `integrations` lists Composio toolkit slugs when the Skill needs connected apps.
+- If a Skill needs missing details, the procedure should ask one targeted question and continue when answered.
 - The desktop adds an explicit `Use the <skill> skill.` prefix so invocation stays deterministic.
 
-The Action body is allowed to contain technical procedure details. But any text it tells the AI to say to the user must follow the user-voice rules above.
+The Skill body is allowed to contain technical procedure details. But any text it tells the AI to say to the user must follow the user-voice rules above.
 
-Update an Action when you use it and find a step that is wrong or incomplete.
+Update a Skill when you use it and find a step that is wrong or incomplete.
 
 ### Memory And Learnings
 

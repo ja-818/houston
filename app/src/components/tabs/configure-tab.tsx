@@ -15,8 +15,8 @@ import {
 } from "../../hooks/queries";
 import { Section, AutoSaveTextarea, SettingsForm } from "./configure-sections";
 import { LearningsContent } from "./learnings-content";
-import { ActionsContent } from "./actions-content";
-import { useActionSurface } from "./use-action-surface";
+import { SkillsContent } from "./skills-content";
+import { useSkillSurface } from "./use-skill-surface";
 
 function usePromptFile(agentPath: string, fileName: string) {
   return useQuery({
@@ -57,7 +57,7 @@ function PromptEditor({ agentPath, mode }: { agentPath: string; mode: AgentMode 
 export default function ConfigureTab({ agent, agentDef }: TabProps) {
   const { t } = useTranslation("agents");
   const path = agent.folderPath;
-  const actions = useActionSurface(path);
+  const surface = useSkillSurface(path);
   const modes = agentDef.config.agents ?? [];
 
   const { data: instructions } = useInstructions(path);
@@ -106,23 +106,23 @@ export default function ConfigureTab({ agent, agentDef }: TabProps) {
           title={t("configure.skills.title")}
           description={t("configure.skills.description")}
         >
-          {actions.selectedSkill ? (
+          {surface.selectedSkill ? (
             <SkillDetailPage
-              skill={actions.selectedSkill}
-              onBack={actions.clearSelectedSkill}
-              onSave={actions.handleSkillSave}
-              onDelete={actions.handleSkillDelete}
-              labels={actions.skillDetailLabels}
+              skill={surface.selectedSkill}
+              onBack={surface.clearSelectedSkill}
+              onSave={surface.handleSkillSave}
+              onDelete={surface.handleSkillDelete}
+              labels={surface.skillDetailLabels}
             />
           ) : (
-            <ActionsContent
-              skills={actions.skills}
-              loading={actions.skillsLoading}
-              onActionClick={actions.selectSkill}
-              onSearch={actions.handleSearch}
-              onInstallCommunity={actions.handleInstallCommunity}
-              onListFromRepo={actions.handleListFromRepo}
-              onInstallFromRepo={actions.handleInstallFromRepo}
+            <SkillsContent
+              skills={surface.skills}
+              loading={surface.skillsLoading}
+              onSkillClick={surface.selectSkill}
+              onSearch={surface.handleSearch}
+              onInstallCommunity={surface.handleInstallCommunity}
+              onListFromRepo={surface.handleListFromRepo}
+              onInstallFromRepo={surface.handleInstallFromRepo}
             />
           )}
         </Section>

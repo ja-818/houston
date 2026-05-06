@@ -33,7 +33,7 @@ Me refer to things by what they ARE to you:
 |-----------|-----|
 | "Me update `decisions.json`" | "Me logged that decision" |
 | "Writing to `context-ledger.json`" | "Saving this to your operating context" |
-| "Me added a skill at `.agents/skills/foo/SKILL.md`" | "Me created a new Action called Foo" |
+| "Me added a skill at `.agents/skills/foo/SKILL.md`" | "Me created a new Skill called Foo" |
 | "Wrote to `board-packs/2025-Q1/`" | "Me drafted the Q1 board pack" |
 | "Updated `metrics-daily.json`" | "Me refreshed your metrics" |
 | "The `outputs.json` index" | "Your saved work" |

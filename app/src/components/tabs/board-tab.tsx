@@ -143,8 +143,8 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     return item?.session_key ?? `activity-${selectedId}`;
   }, [selectedId, rawItems]);
 
-  // All the per-agent panel features (skill cards, selected Action, model
-  // selector, Actions button, tool/link renderers) come from this hook
+  // All the per-agent panel features (skill cards, selected Skill, model
+  // selector, Skills button, tool/link renderers) come from this hook
   // so the cross-agent Mission Control view can reuse them.
   const panel = useAgentChatPanel({
     agent,
@@ -599,8 +599,8 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
             />
           }
           cardLabels={cardLabels}
-          // Per-agent panel features (skill cards, selected Action, model
-          // selector, Actions button, tool/link renderers) all come
+          // Per-agent panel features (skill cards, selected Skill, model
+          // selector, Skills button, tool/link renderers) all come
           // from the shared `useAgentChatPanel` hook so Mission Control
           // and the per-agent BoardTab share one implementation.
           chatEmptyState={panel.chatEmptyState}

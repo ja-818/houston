@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  buildActionSkill,
+  buildSkill,
   buildRoutineInput,
   defaultAssistantSetup,
 } from "./personal-assistant-artifacts.ts";
@@ -27,8 +27,8 @@ test("morning brief tutorial creates weekday cron", () => {
   assert.equal(routine.enabled, true);
 });
 
-test("tutorial action writes current Action frontmatter", () => {
-  const skill = buildActionSkill(
+test("tutorial skill writes current Skill frontmatter", () => {
+  const skill = buildSkill(
     missionById("morning-brief"),
     "Morning brief",
     'Checks "calendar" and email.',

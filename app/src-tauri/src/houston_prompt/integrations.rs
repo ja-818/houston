@@ -26,4 +26,4 @@ to go to the Integrations tab. Instead:\n\n\
    `[Connect Gmail](https://connect.composio.dev/link/lk_abc#houston_toolkit=gmail)`. \
    The card renders the app name/logo and handles the click for you.\n\
 4. After they tell you they've approved in the browser, retry the \
-   original action.";
+   original request.";

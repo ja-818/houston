@@ -1,14 +1,14 @@
 /**
- * App-side helpers for the encoded "user ran an action" chat message.
+ * App-side helpers for the encoded "user ran a Skill" chat message.
  *
  * Decoding + types are owned by `@houston-ai/chat` so the desktop and
  * mobile UIs render the same card. This file keeps the encoder and the
  * Claude-prompt assembler — pieces only the desktop needs since mobile
- * doesn't currently send actions, only display them.
+ * doesn't currently send Skills, only display them.
  *
  * Persisted format (single line + body):
  *
- *     <!--houston:action {"skill":"...","message":"..."}-->
+ *     <!--houston:skill {"skill":"...","message":"..."}-->
  *
  *     Use the X skill.
  *
@@ -16,34 +16,34 @@
  */
 
 import {
-  decodeActionMessage as decodeActionMessageFromChat,
+  decodeSkillMessage as decodeSkillMessageFromChat,
   type AttachmentReference,
-  type ActionInvocation,
-  type ActionInvocationField,
+  type SkillInvocation,
+  type SkillInvocationField,
 } from "@houston-ai/chat";
 import type { SkillSummary } from "./types";
 import { humanizeSkillName } from "./humanize-skill-name";
 
-export type { ActionInvocation, ActionInvocationField };
+export type { SkillInvocation, SkillInvocationField };
 
 /** Re-export so existing app callers don't need to know the new home. */
-export const decodeActionMessage = decodeActionMessageFromChat;
+export const decodeSkillMessage = decodeSkillMessageFromChat;
 
-const MARKER_PREFIX = "<!--houston:action ";
+const MARKER_PREFIX = "<!--houston:skill ";
 const MARKER_SUFFIX = "-->";
 
 /**
- * Wrap an explicit Claude prompt with the action marker so the chat
+ * Wrap an explicit Claude prompt with the Skill marker so the chat
  * renderer can show a card and the engine can persist a single value.
  */
-export function encodeActionMessage(
+export function encodeSkillMessage(
   skill: SkillSummary,
   userText: string,
   claudePrompt: string,
   attachments: readonly AttachmentReference[] = [],
 ): string {
   const trimmedText = userText.trim();
-  const payload: ActionInvocation = {
+  const payload: SkillInvocation = {
     skill: skill.name,
     displayName: humanizeSkillName(skill.name),
     image: skill.image,
@@ -58,11 +58,11 @@ export function encodeActionMessage(
 }
 
 /**
- * Build the explicit prompt sent to Claude for an action invocation.
+ * Build the explicit prompt sent to Claude for a Skill invocation.
  * Always names the skill so invocation is deterministic. Structured
  * inputs and prompt templates are legacy metadata and are ignored.
  */
-export function buildActionClaudePrompt(
+export function buildSkillClaudePrompt(
   skill: SkillSummary,
   userText: string,
 ): string {

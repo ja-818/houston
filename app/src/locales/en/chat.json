@@ -57,7 +57,7 @@
     "newFiles_one": "1 new file",
     "newFiles_other": "{{count}} new files",
     "instructionsUpdated": "Instructions updated",
-    "actionsUpdated": "Actions updated",
+    "skillsUpdated": "Skills updated",
     "learningsUpdated": "Learnings updated"
   },
   "filesUpdated_one": "1 file updated",

@@ -5,20 +5,20 @@
 //! assembles per-agent context from disk, while this module defines how the
 //! Houston desktop agent behaves and speaks.
 
-mod actions_memory;
 mod base;
 mod integrations;
 mod onboarding;
 mod routines;
+mod skills_memory;
 
-pub use actions_memory::SELF_IMPROVEMENT_GUIDANCE;
 pub use base::HOUSTON_SYSTEM_PROMPT;
 pub use integrations::COMPOSIO_GUIDANCE;
 pub use onboarding::ONBOARDING_GUIDANCE;
 pub use routines::ROUTINES_GUIDANCE;
+pub use skills_memory::SELF_IMPROVEMENT_GUIDANCE;
 
 /// Build the composite system prompt the engine uses as its fallback.
-/// Order: base identity, actions/memory guidance, routines guidance, Composio guidance.
+/// Order: base identity, skills/memory guidance, routines guidance, Composio guidance.
 pub fn system_prompt() -> String {
     format!(
         "{HOUSTON_SYSTEM_PROMPT}\n\n---\n\n{SELF_IMPROVEMENT_GUIDANCE}\n\n---\n\n{ROUTINES_GUIDANCE}{COMPOSIO_GUIDANCE}"
@@ -60,7 +60,7 @@ mod tests {
     }
 
     #[test]
-    fn action_guidance_omits_legacy_fields() {
+    fn skill_guidance_omits_legacy_fields() {
         let prompt = system_prompt();
 
         assert!(!prompt.contains("tags:"));
@@ -69,7 +69,7 @@ mod tests {
     }
 
     #[test]
-    fn onboarding_uses_current_action_layout() {
+    fn onboarding_uses_current_skill_layout() {
         let prompt = onboarding_prompt();
 
         assert!(prompt.contains(".agents/skills/core-workflow/SKILL.md"));

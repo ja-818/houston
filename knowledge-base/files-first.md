@@ -82,7 +82,7 @@ All writes: temp file + rename. Path-traversal safe via `houston-agent-files::sa
 ## Skills discovery
 Skills live at `.agents/skills/<name>/SKILL.md`. Houston mirrors to `.claude/skills/<name>` via symlink (Claude Code reads). Flat `.md` under `.agents/skills/` auto-migrated to `<name>/SKILL.md` on next `list_skills`.
 
-Same files surface in the UI as **"Actions"** (per-user vocabulary). Frontmatter drives card image, category tabs, featured-state showcase, and integration logos. Selecting an Action pins it above the regular composer; free-form text remains in chat. Full schema + render pipeline → [`actions.md`](actions.md).
+Same files surface in the UI as **Skills**. Frontmatter drives card image, category tabs, featured-state showcase, and integration logos. Selecting a Skill pins it above the regular composer; free-form text remains in chat. Full schema + render pipeline → [`skills.md`](skills.md).
 
 ## SQLite (minimal)
 Only two tables:
@@ -91,8 +91,9 @@ Only two tables:
 
 Everything else lives in files.
 
-User-message rows may include leading `<!--houston:action ...-->` or
-`<!--houston:attachments ...-->` markers. These are display metadata only;
+User-message rows may include leading `<!--houston:skill ...-->` or
+`<!--houston:attachments ...-->` markers (the legacy `<!--houston:action ...-->`
+prefix is still decoded for chat history written before the rename). These are display metadata only;
 the same row still contains the Claude-facing prompt body after the marker.
 Renderers decode the marker so non-technical users see cards/badges instead
 of file paths or internal prompt instructions.

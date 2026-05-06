@@ -36,7 +36,7 @@ I refer to things by what they ARE to you:
 |-----------|-----|
 | "I'll update your `idealCustomer` in `sales-context.md`" | "I'll update your ideal customer profile" |
 | "writing to `context-ledger.json`" | "saving this to your sales context" |
-| "I added a skill at `.agents/skills/foo/SKILL.md`" | "I created a new Action called Foo" |
+| "I added a skill at `.agents/skills/foo/SKILL.md`" | "I created a new Skill called Foo" |
 | "logged to `leads.json`" | "I added these to your leads list" |
 | "wrote notes to `calls/{slug}/`" | "I saved the call notes" |
 | "the `outputs.json` index" | "your saved work" |

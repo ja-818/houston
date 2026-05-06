@@ -11,11 +11,11 @@ import { useSkills } from "../hooks/queries";
 import { SkillCard } from "./skill-card";
 import { SkillList } from "./new-mission-picker-skill-list";
 import {
-  buildActionPickerTabs,
-  FEATURED_ACTIONS_TAB_ID,
-  OTHER_ACTIONS_TAB_ID,
-  resolveActiveActionPickerTab,
-  shouldShowActionPickerTabs,
+  buildSkillPickerTabs,
+  FEATURED_SKILLS_TAB_ID,
+  OTHER_SKILLS_TAB_ID,
+  resolveActiveSkillPickerTab,
+  shouldShowSkillPickerTabs,
 } from "./new-mission-picker-tab-model";
 import { ScrollableTabs } from "./new-mission-picker-tabs";
 import type { Agent, SkillSummary } from "../lib/types";
@@ -32,7 +32,7 @@ interface Props {
   agents?: Agent[];
   onBlank?: (agentPath: string | undefined) => void;
   onSkill: (agentPath: string, skillName: string) => void;
-  /** Hide the "Blank conversation" card in the action-only picker. */
+  /** Hide the "Blank conversation" card in the skill-only picker. */
   hideBlank?: boolean;
 }
 
@@ -61,41 +61,41 @@ export function NewMissionPickerDialog({
     const featured: SkillSummary[] = [];
     for (const s of skills ?? []) {
       if (s.featured) featured.push(s);
-      const cat = s.category?.trim() || OTHER_ACTIONS_TAB_ID;
+      const cat = s.category?.trim() || OTHER_SKILLS_TAB_ID;
       const list = byCategory.get(cat) ?? [];
       list.push(s);
       byCategory.set(cat, list);
     }
     const names = Array.from(byCategory.keys())
-      .filter((c) => c !== OTHER_ACTIONS_TAB_ID)
+      .filter((c) => c !== OTHER_SKILLS_TAB_ID)
       .sort((a, b) => a.localeCompare(b));
     return { categoryNames: names, byCategory, featured };
   }, [skills]);
 
-  const hasOther = byCategory.has(OTHER_ACTIONS_TAB_ID);
+  const hasOther = byCategory.has(OTHER_SKILLS_TAB_ID);
   const hasFeatured = featured.length > 0;
 
   const tabs = useMemo(
-    () => buildActionPickerTabs({
+    () => buildSkillPickerTabs({
       categoryNames,
       hasFeatured,
       hasOther,
-      featuredLabel: t("actionPicker.featuredTab"),
-      otherLabel: t("actionPicker.otherTab"),
+      featuredLabel: t("skillPicker.featuredTab"),
+      otherLabel: t("skillPicker.otherTab"),
     }),
     [categoryNames, hasFeatured, hasOther, t],
   );
 
   const [activeTab, setActiveTab] = useState<string>("");
   const firstTabId = tabs[0]?.id ?? "";
-  const activeTabId = resolveActiveActionPickerTab(tabs, activeTab);
+  const activeTabId = resolveActiveSkillPickerTab(tabs, activeTab);
 
   useEffect(() => {
     if (open) setActiveTab(firstTabId);
   }, [open, activeAgentPath, firstTabId]);
 
   const skillsForActiveTab: SkillSummary[] =
-    activeTabId === FEATURED_ACTIONS_TAB_ID
+    activeTabId === FEATURED_SKILLS_TAB_ID
       ? featured
       : byCategory.get(activeTabId) ?? [];
 
@@ -125,18 +125,18 @@ export function NewMissionPickerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl h-[80vh] flex flex-col gap-0 p-0 overflow-hidden">
         <DialogHeader className="shrink-0 px-6 pt-6 pb-3">
-          <DialogTitle>{t("actionPicker.title")}</DialogTitle>
+          <DialogTitle>{t("skillPicker.title")}</DialogTitle>
           <DialogDescription>
             {lockedAgent
-              ? t("actionPicker.descriptionWithAgent", { name: lockedAgent.name })
-              : t("actionPicker.description")}
+              ? t("skillPicker.descriptionWithAgent", { name: lockedAgent.name })
+              : t("skillPicker.description")}
           </DialogDescription>
         </DialogHeader>
 
         {!lockedAgent && agents.length > 1 && (
           <div className="shrink-0 px-6 pb-3">
             <label htmlFor="nmp-agent" className="text-sm font-medium block mb-1.5">
-              {t("actionPicker.agentLabel")}
+              {t("skillPicker.agentLabel")}
             </label>
             <select
               id="nmp-agent"
@@ -144,7 +144,7 @@ export function NewMissionPickerDialog({
               onChange={(e) => setPickedAgentPath(e.target.value)}
               className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">{t("actionPicker.agentPlaceholder")}</option>
+              <option value="">{t("skillPicker.agentPlaceholder")}</option>
               {agents.map((a) => (
                 <option key={a.id} value={a.folderPath}>
                   {a.name}
@@ -154,13 +154,13 @@ export function NewMissionPickerDialog({
           </div>
         )}
 
-        {shouldShowActionPickerTabs(tabs) && (
+        {shouldShowSkillPickerTabs(tabs) && (
           <ScrollableTabs
             tabs={tabs}
             activeTab={activeTabId}
             onTabChange={setActiveTab}
-            scrollLeftLabel={t("actionPicker.scrollTabsLeft")}
-            scrollRightLabel={t("actionPicker.scrollTabsRight")}
+            scrollLeftLabel={t("skillPicker.scrollTabsLeft")}
+            scrollRightLabel={t("skillPicker.scrollTabsRight")}
           />
         )}
 
@@ -169,8 +169,8 @@ export function NewMissionPickerDialog({
             {showBlankCard && (
               <SkillCard
                 image="speech-balloon"
-                title={t("actionPicker.blank")}
-                description={t("actionPicker.blankDescription")}
+                title={t("skillPicker.blank")}
+                description={t("skillPicker.blankDescription")}
                 onClick={handleBlank}
                 disabled={!!lockedAgent && needsAgent}
               />
@@ -181,10 +181,10 @@ export function NewMissionPickerDialog({
               loading={skillsLoading}
               skills={sortedSkills}
               emptyLabel={
-                activeTabId ? t("actionPicker.skillsEmpty") : t("actionPicker.empty")
+                activeTabId ? t("skillPicker.skillsEmpty") : t("skillPicker.empty")
               }
-              pickAgentLabel={t("actionPicker.pickAgentFirst")}
-              loadingLabel={t("actionPicker.skillsLoading")}
+              pickAgentLabel={t("skillPicker.pickAgentFirst")}
+              loadingLabel={t("skillPicker.skillsLoading")}
               hideEmpty={showBlankCard && sortedSkills.length === 0}
               onSkill={handleSkill}
             />
