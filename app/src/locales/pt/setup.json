@@ -14,5 +14,80 @@
     "description": "O Houston usa <emph>sua própria</emph> assinatura. Nunca vemos suas credenciais.",
     "finishPage": "Começar",
     "finishDialog": "Criar espaço de trabalho"
+  },
+  "tutorial": {
+    "brand": "Houston",
+    "counter": "Missão {{current}} de {{total}}",
+    "eyebrow": "Missão {{number}}",
+    "upNext": "A seguir",
+    "welcome": {
+      "title": "Bem-vindo ao Houston",
+      "tagline": "O Houston é onde você constrói Agentes que funcionam com as mesmas ferramentas que você usa para trabalhar.",
+      "stepsTitle": "O tutorial vai guiar você para criar seu primeiro agente:",
+      "steps": {
+        "meet": "Conheça seu assistente",
+        "brain": "Conecte um provedor de IA para ele pensar",
+        "try": "Teste uma missão real com seu assistente"
+      },
+      "start": "Começar tutorial",
+      "skip": "Pular tutorial"
+    },
+    "toolkits": {
+      "gmail": "Gmail",
+      "googlecalendar": "Google Calendar"
+    },
+    "defaults": {
+      "workspaceName": "Pessoal",
+      "assistantName": "Assistente pessoal",
+      "focus": "Me ajude a ficar organizado, preparar meu dia, redigir mensagens, proteger tempo de foco e acompanhar pendências.",
+      "approvalRule": "Pergunte antes de enviar mensagens, criar eventos de calendário ou mudar algo nos apps conectados.",
+      "firstWorkflow": "Configure meu primeiro fluxo útil do dia"
+    },
+    "missions": {
+      "meet": {
+        "title": "Conheça seu assistente",
+        "body": "Dê um nome e uma cor para seu assistente. Você pode mudar depois.",
+        "begin": "Começar treinamento"
+      },
+      "brain": {
+        "title": "Dê um cérebro",
+        "body": "Seu assistente precisa de um provedor de IA para pensar e escrever. O Houston usa sua própria assinatura.",
+        "continue": "Criar meu assistente",
+        "creating": "Criando",
+        "continueHint": "O Houston vai criar seu assistente e abrir a próxima missão."
+      },
+      "try": {
+        "title": "Teste uma missão real",
+        "body": "Chat real com seu assistente. Escolha uma sugestão ou escreva uma resposta. Se precisar de Gmail ou Calendar, ele pede aqui mesmo no chat.",
+        "tipTitle": "Esse é o chat real",
+        "tipBody": "O mesmo chat que você vai usar depois do tutorial. Escolha uma sugestão para começar e responda naturalmente. Pedidos de conexão aparecem como cartões que seu assistente posta no chat.",
+        "workingTitle": "Trabalhando nisso",
+        "workingBody": "Responda no chat como você faria normalmente. O tutorial vai seguir automaticamente quando seu assistente terminar.",
+        "doneTitle": "Missão concluída",
+        "doneBody": "Seu assistente acabou de fazer trabalho real com seus apps reais. Faça um tour rápido do UI e pronto.",
+        "placeholder": "Responda ao seu assistente...",
+        "actions": {
+          "morning-brief": {
+            "title": "Resumo da manhã",
+            "description": "Lê a agenda de hoje e os e-mails importantes, e prepara um resumo curto."
+          },
+          "meeting-prep": {
+            "title": "Preparação de reunião",
+            "description": "Lê sua próxima reunião e o contexto próximo, e prepara notas."
+          },
+          "weekly-recap": {
+            "title": "Resumo semanal",
+            "description": "Resume a semana a partir da agenda e do e-mail num fechamento de sexta."
+          }
+        },
+        "chips": {
+          "morningBrief": "Me dá um resumo diário",
+          "meetingPrep": "Me prepara para a próxima reunião",
+          "weeklyRecap": "Me manda um resumo semanal nas sextas"
+        },
+        "composerHint": "Escolha uma missão para começar o chat.",
+        "continueChip": "Tutorial completo, ir para o UI"
+      }
+    }
   }
 }

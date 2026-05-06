@@ -14,7 +14,8 @@
     "runningCount_other": "{{count}} issues running"
   },
   "tabActions": {
-    "newMission": "New mission"
+    "newMission": "New mission",
+    "startTour": "Guide me"
   },
   "agentDelete": {
     "title": "Delete agent?",
@@ -28,6 +29,54 @@
     "githubPlaceholder": "owner/repo",
     "githubImport": "Import",
     "githubImporting": "Importing workspace and agents..."
+  },
+  "uiTour": {
+    "counter": "Tour {{current}} of {{total}}",
+    "next": "Next",
+    "skip": "Skip tour",
+    "done": "Got it",
+    "steps": {
+      "assistant": {
+        "title": "Your agents",
+        "body": "Every agent in this workspace lives here. Switch between them with one click."
+      },
+      "board": {
+        "title": "The agent's workspace",
+        "body": "This is where the selected agent works. Everything you see on the right is scoped to that agent."
+      },
+      "newMission": {
+        "title": "Start a new chat",
+        "body": "Click here to open a fresh conversation. Each one becomes a mission card."
+      },
+      "tabActivity": {
+        "title": "Activity",
+        "body": "The board of every conversation with this agent. Running, needs you, done."
+      },
+      "tabRoutines": {
+        "title": "Routines",
+        "body": "Schedule work to run in the background. Useful for daily briefs and recurring tasks."
+      },
+      "tabFiles": {
+        "title": "Files",
+        "body": "Docs your assistant can read or share with you. Drop anything here for context."
+      },
+      "tabJobDescription": {
+        "title": "Job Description",
+        "body": "Your assistant's standing instructions. Edit any time to change how it behaves."
+      },
+      "missionControl": {
+        "title": "Mission Control",
+        "body": "When you add more agents, this becomes the single board across all of them. One place to see everything."
+      },
+      "integrations": {
+        "title": "Integrations",
+        "body": "Tools your agents can use, like Gmail and Calendar. Connections live here, shared across all your agents."
+      },
+      "appTour": {
+        "title": "Replay the tour",
+        "body": "Forget how something works? Click this any time to run the tour again."
+      }
+    }
   },
   "agentUpdate": {
     "title": "Agent update available",

@@ -1,0 +1,260 @@
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Compass, Plus } from "lucide-react";
+import {
+  Button,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+  ToastContainer,
+  type Toast,
+} from "@houston-ai/core";
+import { TabBar } from "@houston-ai/layout";
+import { useActivity } from "../../hooks/queries";
+import { useAgentCatalogStore } from "../../stores/agent-catalog";
+import { useAgentStore } from "../../stores/agents";
+import { useUIStore } from "../../stores/ui";
+import { AgentRenderer } from "./experience-renderer";
+import { Dashboard } from "../dashboard";
+import { IntegrationsView } from "../tabs/integrations-view";
+import { SettingsView } from "../tabs/settings-view";
+import { Sidebar } from "./sidebar";
+import { HoustonLogo } from "./experience-card";
+import { CreateAgentDialog } from "./create-workspace-dialog";
+import { AgentUpdateBanner } from "./agent-update-banner";
+import { DetailPanelProvider } from "./detail-panel-context";
+import { MissionSearchInput } from "../mission-search-input";
+import { UiTour } from "./ui-tour";
+import { cn } from "@houston-ai/core";
+
+interface WorkspaceShellProps {
+  toasts: Toast[];
+  onDismissToast: (id: string) => void;
+}
+
+export function WorkspaceShell({ toasts, onDismissToast }: WorkspaceShellProps) {
+  const { t } = useTranslation(["agents", "shell", "board"]);
+  const currentAgent = useAgentStore((s) => s.current);
+  const getById = useAgentCatalogStore((s) => s.getById);
+  const viewMode = useUIStore((s) => s.viewMode);
+  const setViewMode = useUIStore((s) => s.setViewMode);
+  const onStartMission = useUIStore((s) => s.onStartMission);
+  const boardActions = useUIStore((s) => s.boardActions);
+  const missionPanelOpen = useUIStore((s) => s.missionPanelOpen);
+  const setCreateAgentDialogOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
+  const agentMissionSearchQuery = useUIStore((s) =>
+    currentAgent ? s.agentMissionSearchQueries[currentAgent.folderPath] ?? "" : "",
+  );
+  const agentMissionSearchLoading = useUIStore((s) =>
+    currentAgent ? s.agentMissionSearchLoading[currentAgent.folderPath] ?? false : false,
+  );
+  const setAgentMissionSearchQuery = useUIStore((s) => s.setAgentMissionSearchQuery);
+  const uiTourActive = useUIStore((s) => s.uiTourActive);
+  const setUiTourActive = useUIStore((s) => s.setUiTourActive);
+  const [panelContainer, setPanelContainer] = useState<HTMLDivElement | null>(null);
+  const agentDef = currentAgent ? getById(currentAgent.configId) : undefined;
+  const tabs = agentDef?.config.tabs ?? [];
+  const hasActivityTab = tabs.some((tab) => tab.id === "activity");
+  const { data: activities } = useActivity(currentAgent?.folderPath);
+  const needsYouCount = (activities ?? []).filter((a) => a.status === "needs_you").length;
+  const isAgentView =
+    viewMode !== "dashboard" && viewMode !== "connections" && viewMode !== "settings";
+
+  useEffect(() => {
+    if (isAgentView && tabs.length > 0 && !tabs.some((tab) => tab.id === viewMode)) {
+      setViewMode(agentDef?.config.defaultTab ?? tabs[0].id);
+    }
+  }, [agentDef, isAgentView, setViewMode, tabs, viewMode]);
+
+  return (
+    <DetailPanelProvider value={panelContainer}>
+      <div
+        className={cn(
+          "flex h-screen bg-background text-foreground",
+          uiTourActive && "pointer-events-none [&_*]:select-none",
+        )}
+      >
+        <Sidebar>
+          <div className="flex min-w-0 flex-1 overflow-hidden">
+            <main
+              data-tour-target="main"
+              className="flex min-w-0 flex-1 flex-col overflow-hidden"
+            >
+              {viewMode === "dashboard" ? (
+                <Dashboard />
+              ) : viewMode === "connections" ? (
+                <IntegrationsView title={t("shell:sidebar.integrations")} />
+              ) : viewMode === "settings" ? (
+                <SettingsView />
+              ) : currentAgent && agentDef && tabs.length > 0 && isAgentView ? (
+                <>
+                  <div data-tour-target="tabs">
+                  <TabBar
+                    title={currentAgent.name}
+                    tabs={tabs.map((tab) => ({
+                      id: tab.id,
+                      label: t(`agents:tabLabels.${tab.id}`, { defaultValue: tab.label }),
+                      badge: tab.badge === "activity" ? needsYouCount : undefined,
+                      disabled: tab.disabled,
+                      chip: tab.chip,
+                    }))}
+                    activeTab={viewMode}
+                    onTabChange={setViewMode}
+                    actions={
+                      <div data-keep-panel-open className="flex items-center gap-2">
+                        {currentAgent && hasActivityTab && (
+                          <MissionSearchInput
+                            value={agentMissionSearchQuery}
+                            isSearchingText={agentMissionSearchLoading}
+                            labels={{
+                              placeholder: t("board:search.placeholder"),
+                              clear: t("board:search.clear"),
+                              searchingText: t("board:search.searchingText"),
+                            }}
+                            className="relative w-[240px]"
+                            onChange={(value) => {
+                              setAgentMissionSearchQuery(currentAgent.folderPath, value);
+                              if (viewMode !== "activity") setViewMode("activity");
+                            }}
+                          />
+                        )}
+                        <Button
+                          data-tour-target="appTour"
+                          variant="ghost"
+                          className="rounded-full"
+                          onClick={() => setUiTourActive(true)}
+                        >
+                          {t("shell:tabActions.startTour")}
+                          <Compass className="size-4" />
+                        </Button>
+                        {onStartMission && (
+                          <Button
+                            data-tour-target="newMission"
+                            onClick={() => {
+                              setViewMode("activity");
+                              setTimeout(() => {
+                                useUIStore.getState().onStartMission?.();
+                              }, 50);
+                            }}
+                          >
+                            <HoustonLogo size={16} />
+                            {t("shell:tabActions.newMission")}
+                          </Button>
+                        )}
+                        {boardActions.map((action) => (
+                          <Button
+                            key={action.id}
+                            variant="secondary"
+                            onClick={() => {
+                              setViewMode("activity");
+                              setTimeout(() => action.onClick(), 50);
+                            }}
+                          >
+                            {action.label}
+                          </Button>
+                        ))}
+                      </div>
+                    }
+                  />
+                  </div>
+                  <main className="min-h-0 flex-1 overflow-hidden">
+                    <AgentRenderer
+                      agentDef={agentDef}
+                      agent={currentAgent}
+                      tabs={tabs}
+                      activeTabId={viewMode}
+                    />
+                  </main>
+                </>
+              ) : (
+                <div className="flex flex-1 flex-col items-center justify-center">
+                  <Empty className="border-0">
+                    <EmptyHeader>
+                      <EmptyTitle>{t("agents:empty.title")}</EmptyTitle>
+                      <EmptyDescription>{t("agents:empty.description")}</EmptyDescription>
+                    </EmptyHeader>
+                    <Button
+                      className="mt-4 rounded-full"
+                      onClick={() => setCreateAgentDialogOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                      {t("shell:newAgent.dialogTitle")}
+                    </Button>
+                  </Empty>
+                </div>
+              )}
+            </main>
+            {missionPanelOpen && (
+              <div
+                ref={setPanelContainer}
+                className="h-full overflow-hidden border-l border-border"
+                style={{ width: "45%", minWidth: 380 }}
+              />
+            )}
+          </div>
+        </Sidebar>
+        <CreateAgentDialog />
+        <AgentUpdateBanner />
+        <ToastContainer toasts={toasts} onDismiss={onDismissToast} />
+      </div>
+      {uiTourActive && (
+        <UiTour
+          steps={[
+            {
+              title: t("shell:uiTour.steps.assistant.title"),
+              body: t("shell:uiTour.steps.assistant.body"),
+              targetSelector: "[data-tour-target='agents']",
+            },
+            {
+              title: t("shell:uiTour.steps.board.title"),
+              body: t("shell:uiTour.steps.board.body"),
+              targetSelector: "[data-tour-target='main']",
+            },
+            {
+              title: t("shell:uiTour.steps.newMission.title"),
+              body: t("shell:uiTour.steps.newMission.body"),
+              targetSelector: "[data-tour-target='newMission']",
+            },
+            {
+              title: t("shell:uiTour.steps.tabActivity.title"),
+              body: t("shell:uiTour.steps.tabActivity.body"),
+              targetSelector: "[data-tour-target='tab-activity']",
+            },
+            {
+              title: t("shell:uiTour.steps.tabRoutines.title"),
+              body: t("shell:uiTour.steps.tabRoutines.body"),
+              targetSelector: "[data-tour-target='tab-routines']",
+            },
+            {
+              title: t("shell:uiTour.steps.tabFiles.title"),
+              body: t("shell:uiTour.steps.tabFiles.body"),
+              targetSelector: "[data-tour-target='tab-files']",
+            },
+            {
+              title: t("shell:uiTour.steps.tabJobDescription.title"),
+              body: t("shell:uiTour.steps.tabJobDescription.body"),
+              targetSelector: "[data-tour-target='tab-job-description']",
+            },
+            {
+              title: t("shell:uiTour.steps.missionControl.title"),
+              body: t("shell:uiTour.steps.missionControl.body"),
+              targetSelector: "[data-tour-target='nav-dashboard']",
+            },
+            {
+              title: t("shell:uiTour.steps.integrations.title"),
+              body: t("shell:uiTour.steps.integrations.body"),
+              targetSelector: "[data-tour-target='nav-connections']",
+            },
+            {
+              title: t("shell:uiTour.steps.appTour.title"),
+              body: t("shell:uiTour.steps.appTour.body"),
+              targetSelector: "[data-tour-target='appTour']",
+            },
+          ]}
+          onDismiss={() => setUiTourActive(false)}
+        />
+      )}
+    </DetailPanelProvider>
+  );
+}

@@ -18,7 +18,12 @@ interface WorkspaceState {
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   workspaces: [],
   current: null,
-  loading: false,
+  // Start true so App.tsx renders the loading splash on first paint instead of
+  // the tutorial. Returning users with an existing workspace would otherwise
+  // briefly fall through the `workspaces.length === 0` gate and mount the
+  // onboarding orchestrator before `loadWorkspaces()` resolves, which then
+  // pinned `tutorialActive=true` and trapped them in the tutorial.
+  loading: true,
 
   loadWorkspaces: async () => {
     set({ loading: true });

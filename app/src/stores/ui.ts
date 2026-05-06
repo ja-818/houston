@@ -30,6 +30,13 @@ interface UIState {
   /** Whether the mission chat panel is open (hides tab bar for full-height panel) */
   missionPanelOpen: boolean;
   jobDescriptionTarget: JobDescriptionTarget | null;
+  /** Pin the first-run tutorial UI in front of the workspace shell. Set true
+   * while the orchestrator is mid-flight, cleared on graduation or skip. */
+  tutorialActive: boolean;
+  /** Render the post-tutorial UI tour overlay over the workspace shell.
+   * Set when the user completes M3 Try and clicks "Tutorial complete";
+   * cleared when the user dismisses the final tour step. */
+  uiTourActive: boolean;
   setViewMode: (mode: string) => void;
   setAssistantPanelOpen: (open: boolean) => void;
   setActivityPanelId: (id: string | null) => void;
@@ -44,6 +51,8 @@ interface UIState {
   setAgentMissionSearchLoading: (agentPath: string, loading: boolean) => void;
   setMissionPanelOpen: (open: boolean) => void;
   setJobDescriptionTarget: (target: JobDescriptionTarget | null) => void;
+  setTutorialActive: (active: boolean) => void;
+  setUiTourActive: (active: boolean) => void;
 }
 
 let toastCounter = 0;
@@ -62,6 +71,8 @@ export const useUIStore = create<UIState>((set) => ({
   agentMissionSearchLoading: {},
   missionPanelOpen: false,
   jobDescriptionTarget: null,
+  tutorialActive: false,
+  uiTourActive: false,
 
   setViewMode: (viewMode) => set({ viewMode }),
   setAssistantPanelOpen: (assistantPanelOpen) => set({ assistantPanelOpen }),
@@ -108,4 +119,6 @@ export const useUIStore = create<UIState>((set) => ({
     }),
   setMissionPanelOpen: (missionPanelOpen) => set({ missionPanelOpen }),
   setJobDescriptionTarget: (jobDescriptionTarget) => set({ jobDescriptionTarget }),
+  setTutorialActive: (tutorialActive) => set({ tutorialActive }),
+  setUiTourActive: (uiTourActive) => set({ uiTourActive }),
 }));

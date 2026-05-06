@@ -14,5 +14,80 @@
     "description": "Houston uses <emph>your own</emph> subscription. We never see your credentials.",
     "finishPage": "Get started",
     "finishDialog": "Create workspace"
+  },
+  "tutorial": {
+    "brand": "Houston",
+    "counter": "Mission {{current}} of {{total}}",
+    "eyebrow": "Mission {{number}}",
+    "upNext": "Up next",
+    "welcome": {
+      "title": "Welcome to Houston",
+      "tagline": "Houston is where you build Agents that work with the same tools you use to work.",
+      "stepsTitle": "The tutorial will guide you to create your first agent by:",
+      "steps": {
+        "meet": "Meet your assistant",
+        "brain": "Connect an AI provider so it can think",
+        "try": "Try a real mission with your assistant"
+      },
+      "start": "Start tutorial",
+      "skip": "Skip tutorial"
+    },
+    "toolkits": {
+      "gmail": "Gmail",
+      "googlecalendar": "Google Calendar"
+    },
+    "defaults": {
+      "workspaceName": "Personal",
+      "assistantName": "Personal assistant",
+      "focus": "Help me stay organized, prepare my day, draft messages, protect focus time, and keep track of follow-ups.",
+      "approvalRule": "Ask before sending messages, creating calendar events, or changing anything in connected apps.",
+      "firstWorkflow": "Set up my first useful daily workflow"
+    },
+    "missions": {
+      "meet": {
+        "title": "Meet your assistant",
+        "body": "Give your assistant a name and a color. You can change them later.",
+        "begin": "Begin training"
+      },
+      "brain": {
+        "title": "Give it a brain",
+        "body": "Your assistant needs an AI provider to think and write. Houston uses your own subscription.",
+        "continue": "Create my assistant",
+        "creating": "Creating",
+        "continueHint": "Houston will create your assistant and open the next mission."
+      },
+      "try": {
+        "title": "Try a real mission",
+        "body": "Real chat with your assistant. Pick one of the suggestions or type a reply. If it needs Gmail or Calendar, it will ask right here in the chat.",
+        "tipTitle": "This is the real chat",
+        "tipBody": "Same chat you'll use after the tutorial. Pick a suggestion to start, then reply naturally. Connection requests show up as cards your assistant posts in the chat.",
+        "workingTitle": "Working on it",
+        "workingBody": "Reply in the chat as you would normally. The tutorial will continue automatically once your assistant finishes.",
+        "doneTitle": "Mission complete",
+        "doneBody": "Your assistant just did real work with your real apps. Take a quick tour of the UI, then you're done.",
+        "placeholder": "Reply to your assistant...",
+        "actions": {
+          "morning-brief": {
+            "title": "Morning brief",
+            "description": "Read today's calendar and important email, then prepare a short brief."
+          },
+          "meeting-prep": {
+            "title": "Meeting prep",
+            "description": "Read your next meeting and nearby context, then prepare notes."
+          },
+          "weekly-recap": {
+            "title": "Weekly recap",
+            "description": "Summarize the week from calendar and email into a Friday recap."
+          }
+        },
+        "chips": {
+          "morningBrief": "Give me a daily briefing",
+          "meetingPrep": "Prep me for my next meeting",
+          "weeklyRecap": "Send me a weekly recap on Fridays"
+        },
+        "composerHint": "Pick a mission to start the chat.",
+        "continueChip": "Tutorial complete, go to UI"
+      }
+    }
   }
 }

@@ -8,6 +8,8 @@ export interface SidebarNavItemProps {
   onClick: () => void;
   /** Optional right-aligned slot (e.g. a "Beta" badge, a count). */
   trailing?: ReactNode;
+  /** Extra DOM attributes (e.g. `data-tour-target`) spread onto the button. */
+  dataAttrs?: Record<string, string>;
 }
 
 export function SidebarNavItem({
@@ -16,10 +18,12 @@ export function SidebarNavItem({
   active,
   onClick,
   trailing,
+  dataAttrs,
 }: SidebarNavItemProps) {
   return (
     <button
       onClick={onClick}
+      {...dataAttrs}
       className={cn(
         "w-full flex items-center gap-2 text-sm py-1.5 px-2.5 rounded-lg transition-colors",
         active

@@ -5,6 +5,10 @@
     "switchedModel": "Cambiaste a {{provider}} ({{model}})",
     "timezoneSet": "Zona horaria puesta en {{zone}}"
   },
+  "empty": {
+    "title": "Aún no hay agentes",
+    "description": "Crea tu equipo de IA e inicia una misión."
+  },
   "instructions": {
     "emptyTitle": "Aún no hay instrucciones",
     "emptyDescription": "Dile a tu agente cómo debe pensar y actuar.",
