@@ -58,6 +58,10 @@ import {
   ComposioLinkCard,
   parseComposioToolkitFromHref,
 } from "./composio-link-card";
+import {
+  ComposioSigninCard,
+  isComposioSigninHref,
+} from "./composio-signin-card";
 import { ChatModelSelector } from "./chat-model-selector";
 import { getDefaultModel } from "../lib/providers";
 import { analytics } from "../lib/analytics";
@@ -188,6 +192,9 @@ export function useAgentChatPanel({
   );
   const renderLink = useCallback(
     ({ href, onOpen }: { href: string; onOpen: () => void }) => {
+      if (isComposioSigninHref(href)) {
+        return <ComposioSigninCard />;
+      }
       const toolkit = parseComposioToolkitFromHref(href);
       if (!toolkit) return undefined;
       return (

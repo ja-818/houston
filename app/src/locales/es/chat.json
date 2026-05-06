@@ -38,6 +38,13 @@
     "connected": "Conectado",
     "connect": "Conectar"
   },
+  "composioSignin": {
+    "appName": "Composio",
+    "description": "Inicia sesión para que tu asistente use tus apps",
+    "alreadySignedIn": "Ya iniciaste sesión en Composio",
+    "signedIn": "Conectado",
+    "signIn": "Iniciar sesión"
+  },
   "modelSelector": {
     "selectModel": "Elige un modelo",
     "model": "Modelo",

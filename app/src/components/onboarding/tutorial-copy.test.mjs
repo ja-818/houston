@@ -14,23 +14,23 @@ const t = (key, options) => {
   );
 };
 
-test("tutorial covers three mission stages in order", () => {
-  assert.deepEqual(TUTORIAL_STEPS, ["meet", "brain", "try"]);
+test("tutorial covers four mission stages in order", () => {
+  assert.deepEqual(TUTORIAL_STEPS, ["meet", "brain", "tools", "try"]);
 });
 
 test("mission meta exposes counter, title, body and the single next mission", () => {
   const meta = buildMissionMeta(t, "brain");
   assert.equal(meta.index, 1);
-  assert.equal(meta.total, 3);
+  assert.equal(meta.total, 4);
   assert.equal(meta.eyebrow, "setup:tutorial.eyebrow");
   assert.equal(meta.title, "setup:tutorial.missions.brain.title");
   assert.equal(meta.body, "setup:tutorial.missions.brain.body");
-  assert.equal(meta.nextTitle, "setup:tutorial.missions.try.title");
+  assert.equal(meta.nextTitle, "setup:tutorial.missions.tools.title");
 });
 
 test("final mission has no next mission", () => {
   const meta = buildMissionMeta(t, "try");
-  assert.equal(meta.index, 2);
+  assert.equal(meta.index, 3);
   assert.equal(meta.nextTitle, null);
 });
 

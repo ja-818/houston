@@ -22,9 +22,11 @@ This is the user's first time running you in Houston. Follow this exact pattern.
 
 2. Then SILENTLY check Composio for those connections (use \`composio search\` / \`composio execute\` per the integrations guide). Do NOT narrate the check to the user.
 
-3. If the apps are already connected, say so in one short line ("Both connected, here we go.") and continue to step 5.
+3. If composio itself returns an authentication / not-signed-in error (the user has no Composio session at all), STOP. Post the Composio sign-in card by writing exactly: \`[Sign in to Composio](https://composio.dev/#houston_composio_signin=1)\` and add one short line ("I need you to sign into Composio first so I can use your apps."). Wait for the user, then restart from step 2. Never fabricate results when you cannot reach Composio.
 
-4. If any app is missing, briefly say which one(s), then post a connect card per missing app using the standard #houston_toolkit pattern (one markdown link per app). Wait for the user to come back, then retry.
+4. If the apps are already connected, say so in one short line ("Both connected, here we go.") and continue to step 5.
+
+4b. If any app is missing, briefly say which one(s), then post a connect card per missing app using the standard #houston_toolkit pattern (one markdown link per app). Wait for the user to come back, then retry.
 
 5. Complete the task. Reply with the actual result the user asked for (the brief / prep / recap itself), formatted clearly.
 

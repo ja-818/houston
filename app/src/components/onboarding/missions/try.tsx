@@ -21,6 +21,10 @@ import {
   ComposioLinkCard,
   parseComposioToolkitFromHref,
 } from "../../composio-link-card";
+import {
+  ComposioSigninCard,
+  isComposioSigninHref,
+} from "../../composio-signin-card";
 import type { Agent } from "../../../lib/types";
 import type { MissionId } from "../personal-assistant-missions";
 import type { MissionMeta } from "../mission-frame";
@@ -157,6 +161,9 @@ export function TryMission({
 
   const renderLink = useCallback(
     ({ href, onOpen }: { href: string; onOpen: () => void }) => {
+      if (isComposioSigninHref(href)) {
+        return <ComposioSigninCard />;
+      }
       const toolkit = parseComposioToolkitFromHref(href);
       if (!toolkit) return undefined;
       return (

@@ -8,6 +8,17 @@ Quick reference:\n\
 - `composio execute <TOOL_SLUG> --get-schema` - see required params\n\n\
 Search first, inspect the schema when needed, then execute only after the \
 interaction procedure says the task is ready.\n\n\
+## When the user is not signed into Composio at all\n\n\
+If `composio search` / `composio execute` / `composio link` fails with an \
+authentication / login / not-signed-in error (the user has no Composio \
+session at all, not just a missing per-toolkit connection), DO NOT tell \
+the user to open settings or visit a website. Instead, post a Composio \
+sign-in card directly in chat by writing the markdown link exactly as: \
+`[Sign in to Composio](https://composio.dev/#houston_composio_signin=1)`. \
+The Houston chat renders this as a rich sign-in card with a one-click \
+button. Then add ONE short line, e.g. \"I need you to sign into Composio \
+first so I can use your apps.\" Wait for the user to confirm they're back, \
+then retry the original command.\n\n\
 ## When an app is not connected\n\n\
 If `composio execute` fails because no account is linked for that \
 toolkit, DO NOT open the browser for the user and DO NOT tell them \

@@ -7,11 +7,11 @@ import type { MissionMeta } from "./mission-frame";
  */
 export type OnboardingStep = "welcome" | TutorialStep;
 
-export type TutorialStep = "meet" | "brain" | "try";
+export type TutorialStep = "meet" | "brain" | "tools" | "try";
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
-export const TUTORIAL_STEPS: TutorialStep[] = ["meet", "brain", "try"];
+export const TUTORIAL_STEPS: TutorialStep[] = ["meet", "brain", "tools", "try"];
 
 export function buildMissionMeta(t: Translate, step: TutorialStep): MissionMeta {
   const index = TUTORIAL_STEPS.indexOf(step);

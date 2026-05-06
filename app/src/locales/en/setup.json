@@ -27,6 +27,7 @@
       "steps": {
         "meet": "Meet your assistant",
         "brain": "Connect an AI provider so it can think",
+        "tools": "Give it your own tools",
         "try": "Try a real mission with your assistant"
       },
       "start": "Start tutorial",
@@ -55,6 +56,17 @@
         "continue": "Create my assistant",
         "creating": "Creating",
         "continueHint": "Houston will create your assistant and open the next mission."
+      },
+      "tools": {
+        "title": "Give it your own tools",
+        "body": "Houston connects to Gmail, Calendar and 1000+ apps through Composio. Sign in once so your assistant can actually do work with your real apps.",
+        "cardTitle": "Composio",
+        "cardBody": "Sign in to let your assistant use your apps",
+        "cardSignedInBody": "Your assistant can now use your apps",
+        "signIn": "Sign in to Composio",
+        "signedInPill": "Signed in",
+        "continue": "Continue",
+        "continueHint": "Your assistant will ask for each app the first time it needs it."
       },
       "try": {
         "title": "Try a real mission",
