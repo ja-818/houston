@@ -10,7 +10,12 @@ import {
 } from "lucide-react";
 import { Button, cn } from "@houston-ai/core";
 import { tauriProvider, tauriSystem, type ProviderStatus } from "../../../lib/tauri";
-import { PROVIDERS, type ProviderInfo } from "../../../lib/providers";
+import {
+  PROVIDERS,
+  COMING_SOON_PROVIDERS,
+  type ProviderInfo,
+  type ComingSoonProviderInfo,
+} from "../../../lib/providers";
 
 interface BrainMissionProps {
   provider: string | null;
@@ -79,6 +84,9 @@ export function BrainMission({
             onRefresh={refresh}
             costLabel={prov.cost}
           />
+        ))}
+        {COMING_SOON_PROVIDERS.map((prov) => (
+          <ComingSoonCard key={prov.id} provider={prov} />
         ))}
       </div>
       <div className="flex justify-end">
@@ -175,6 +183,29 @@ function ProviderCard({
         </p>
       )}
     </button>
+  );
+}
+
+function ComingSoonCard({ provider }: { provider: ComingSoonProviderInfo }) {
+  const { t } = useTranslation("providers");
+  return (
+    <div
+      aria-disabled="true"
+      className={cn(
+        "flex w-full cursor-not-allowed flex-col gap-3 rounded-xl border bg-background/60 p-4 text-left",
+        "border-black/5 opacity-60 select-none",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium text-foreground">{provider.name}</p>
+          <p className="text-xs text-muted-foreground">{provider.subtitle}</p>
+        </div>
+        <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          {t("card.comingSoon")}
+        </span>
+      </div>
+    </div>
   );
 }
 

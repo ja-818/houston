@@ -7,7 +7,8 @@
     "modelDropdownLabel": "Modelo",
     "signOut": "Sair",
     "signingOut": "Saindo...",
-    "signOutError": "Não foi possível sair de {{provider}}"
+    "signOutError": "Não foi possível sair de {{provider}}",
+    "comingSoon": "Em breve"
   },
   "setup": {
     "headline": "Configurar {{provider}}",

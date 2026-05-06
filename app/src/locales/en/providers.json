@@ -7,7 +7,8 @@
     "modelDropdownLabel": "Model",
     "signOut": "Sign out",
     "signingOut": "Signing out...",
-    "signOutError": "Couldn't sign out of {{provider}}"
+    "signOutError": "Couldn't sign out of {{provider}}",
+    "comingSoon": "Coming soon"
   },
   "setup": {
     "headline": "Set up {{provider}}",
