@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, Blend, Settings, Smartphone } from "lucide-react";
-import { Badge, ConfirmDialog } from "@houston-ai/core";
+import { LayoutDashboard, Blend, Settings } from "lucide-react";
+import { ConfirmDialog } from "@houston-ai/core";
 import { AppSidebar, WorkspaceSwitcher } from "@houston-ai/layout";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useAgentStore } from "../../stores/agents";
@@ -9,7 +9,6 @@ import { useAgentCatalogStore } from "../../stores/agent-catalog";
 import { useUIStore } from "../../stores/ui";
 import { UpdateChecker } from "./update-checker";
 import { UserMenu } from "./user-menu";
-import { PairDeviceDialog } from "./pair-device-dialog";
 import { CreateWorkspaceDialog } from "../../App";
 import { useAgentActivitySummaries } from "./use-agent-activity-summaries";
 import { buildAgentSidebarItems } from "./agent-sidebar-items";
@@ -29,7 +28,6 @@ export function Sidebar({ children }: { children: ReactNode }) {
   const updateAgentColor = useAgentStore((s) => s.updateColor);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [createWsOpen, setCreateWsOpen] = useState(false);
-  const [pairOpen, setPairOpen] = useState(false);
 
   const getById = useAgentCatalogStore((s) => s.getById);
   const viewMode = useUIStore((s) => s.viewMode);
@@ -109,7 +107,6 @@ export function Sidebar({ children }: { children: ReactNode }) {
       onConfirm={confirmDelete}
     />
     <CreateWorkspaceDialog open={createWsOpen} onOpenChange={setCreateWsOpen} />
-    <PairDeviceDialog isOpen={pairOpen} onClose={() => setPairOpen(false)} />
     <div className="flex h-full flex-1 min-w-0">
       <AppSidebar
         header={
@@ -139,20 +136,6 @@ export function Sidebar({ children }: { children: ReactNode }) {
             label: t("shell:sidebar.settings"),
             icon: <Settings className="h-4 w-4" />,
             onClick: () => setViewMode("settings"),
-          },
-          {
-            id: "connect-phone",
-            label: t("shell:sidebar.connectPhone"),
-            icon: <Smartphone className="h-4 w-4" />,
-            trailing: (
-              <Badge
-                variant="outline"
-                className="h-4 px-1.5 text-[9px] font-semibold tracking-wider text-muted-foreground"
-              >
-                BETA
-              </Badge>
-            ),
-            onClick: () => setPairOpen(true),
           },
         ]}
         activeNavId={isTopLevel ? viewMode : undefined}

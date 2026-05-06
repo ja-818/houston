@@ -1,5 +1,20 @@
 {
   "title": "Configuración",
+  "nav": {
+    "account": "Cuenta",
+    "phone": "Conectar celular",
+    "workspace": "Espacio de trabajo",
+    "provider": "Proveedor de IA",
+    "timezone": "Zona horaria",
+    "language": "Idioma",
+    "appearance": "Apariencia",
+    "danger": "Zona de peligro"
+  },
+  "account": {
+    "title": "Cuenta",
+    "signOut": "Cerrar sesión",
+    "fallbackName": "Sesión iniciada"
+  },
   "workspace": {
     "title": "Espacio de trabajo",
     "nameLabel": "Nombre"
@@ -8,14 +23,26 @@
     "title": "Proveedor de IA",
     "description": "Houston usa <emph>tu propia</emph> suscripción. Nunca vemos tus credenciales."
   },
-  "phoneAccess": {
-    "title": "Acceso desde el celular",
-    "description": "Tu QR sigue siendo el mismo para que tu celular se reconecte cuando este Mac esté encendido y Houston esté abierto.",
-    "resetButton": "Desconectar todos los celulares",
-    "confirmTitle": "¿Desconectar todos los celulares?",
-    "confirmDescription": "Esto restablece el QR y cierra la sesión de todos los celulares conectados a este Mac. Escanea el nuevo QR para conectarte otra vez.",
-    "confirmLabel": "Desconectar",
-    "resetToast": "Acceso desde el celular restablecido"
+  "connectPhone": {
+    "title": "Conectar celular",
+    "description": "Escanea este código para manejar Houston desde tu iPhone. El mismo código sigue funcionando mientras este Mac esté encendido y Houston esté abierto.",
+    "loading": "Preparando la conexión con tu celular…",
+    "connectingStatus": "Conectando con el servicio del celular. Suele tomar unos segundos.",
+    "keepMacAwake": "Mantén este Mac despierto mientras usas Houston en tu celular.",
+    "alwaysOnHint": "Para acceso 24/7, <emph>Always On</emph> ejecuta Houston en nuestros servidores.",
+    "errors": {
+      "noInternet": "Houston necesita conexión a internet la primera vez que lo abres. Conéctate y reabre Houston para habilitar el emparejamiento del celular.",
+      "generic": "No se pudo generar un código de emparejamiento. Inténtalo de nuevo."
+    },
+    "reset": {
+      "title": "Desconectar todos los celulares",
+      "description": "Restablece el QR y cierra la sesión de todos los celulares conectados a este Mac.",
+      "button": "Desconectar todos los celulares",
+      "confirmTitle": "¿Desconectar todos los celulares?",
+      "confirmDescription": "Esto restablece el QR y cierra la sesión de todos los celulares conectados a este Mac. Escanea el nuevo QR para conectarte otra vez.",
+      "confirmLabel": "Desconectar",
+      "toast": "Acceso desde el celular restablecido"
+    }
   },
   "timezone": {
     "title": "Zona horaria",

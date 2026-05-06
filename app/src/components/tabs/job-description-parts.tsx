@@ -1,8 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Button,
@@ -14,36 +10,6 @@ import {
 import { FileText } from "lucide-react";
 
 export type SubTab = "instructions" | "skills" | "learnings";
-
-const SUB_TAB_IDS: SubTab[] = ["instructions", "skills", "learnings"];
-
-export function SubTabPills({
-  activeTab,
-  onChange,
-}: {
-  activeTab: SubTab;
-  onChange: (tab: SubTab) => void;
-}) {
-  const { t } = useTranslation("agents");
-  return (
-    <div className="flex gap-1 px-6 pt-4 pb-3 shrink-0">
-      {SUB_TAB_IDS.map((tabId) => (
-        <button
-          key={tabId}
-          onClick={() => onChange(tabId)}
-          className={cn(
-            "h-8 px-3 rounded-full text-xs font-medium transition-colors",
-            activeTab === tabId
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-black/[0.03] hover:text-foreground",
-          )}
-        >
-          {t(`subTabs.${tabId}`)}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 type SaveState = "idle" | "saving" | "saved";
 

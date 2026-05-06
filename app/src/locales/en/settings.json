@@ -1,5 +1,20 @@
 {
   "title": "Settings",
+  "nav": {
+    "account": "Account",
+    "phone": "Connect phone",
+    "workspace": "Workspace",
+    "provider": "AI provider",
+    "timezone": "Timezone",
+    "language": "Language",
+    "appearance": "Appearance",
+    "danger": "Danger zone"
+  },
+  "account": {
+    "title": "Account",
+    "signOut": "Sign out",
+    "fallbackName": "Signed in"
+  },
   "workspace": {
     "title": "Workspace",
     "nameLabel": "Name"
@@ -8,14 +23,26 @@
     "title": "AI provider",
     "description": "Houston uses <emph>your own</emph> subscription. We never see your credentials."
   },
-  "phoneAccess": {
-    "title": "Phone access",
-    "description": "Your QR stays the same so your phone can reconnect whenever this Mac is on and Houston is open.",
-    "resetButton": "Disconnect all phones",
-    "confirmTitle": "Disconnect all phones?",
-    "confirmDescription": "This resets the QR and signs out every phone currently connected to this Mac. Scan the new QR to connect again.",
-    "confirmLabel": "Disconnect",
-    "resetToast": "Phone access reset"
+  "connectPhone": {
+    "title": "Connect phone",
+    "description": "Scan this code to manage Houston from your iPhone. The same code keeps working as long as this Mac is on and Houston is open.",
+    "loading": "Getting ready to connect your phone…",
+    "connectingStatus": "Connecting to the phone service. This usually takes a few seconds.",
+    "keepMacAwake": "Keep this Mac awake while you use Houston on your phone.",
+    "alwaysOnHint": "For 24/7 access, <emph>Always On</emph> runs Houston on our servers.",
+    "errors": {
+      "noInternet": "Houston needs an internet connection the first time you open the app. Please connect and reopen Houston to enable phone pairing.",
+      "generic": "Couldn't prepare a pairing code. Please try again."
+    },
+    "reset": {
+      "title": "Disconnect all phones",
+      "description": "Resets the QR and signs out every phone currently connected to this Mac.",
+      "button": "Disconnect all phones",
+      "confirmTitle": "Disconnect all phones?",
+      "confirmDescription": "This resets the QR and signs out every phone currently connected to this Mac. Scan the new QR to connect again.",
+      "confirmLabel": "Disconnect",
+      "toast": "Phone access reset"
+    }
   },
   "timezone": {
     "title": "Timezone",

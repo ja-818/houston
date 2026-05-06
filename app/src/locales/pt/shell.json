@@ -5,7 +5,6 @@
     "settings": "Configurações",
     "yourAgents": "Seus agentes",
     "selectWorkspace": "Escolha um espaço de trabalho",
-    "connectPhone": "Conectar celular",
     "addAgent": "Novo agente",
     "agentActions": "Ações do agente",
     "color": "Cor",
@@ -105,17 +104,5 @@
   },
   "engineGate": {
     "starting": "Iniciando o motor do Houston…"
-  },
-  "pairDevice": {
-    "title": "Conecte seu celular",
-    "description": "Escaneie este código para usar o Houston no seu iPhone.",
-    "loading": "Preparando a conexão com seu celular…",
-    "connectingStatus": "Conectando ao serviço do celular. Costuma levar alguns segundos.",
-    "keepMacAwake": "Mantenha este Mac aberto enquanto você usa o Houston no celular.",
-    "alwaysOnHint": "Para acesso 24/7, <emph>Always On</emph> roda o Houston nos nossos servidores.",
-    "errors": {
-      "noInternet": "O Houston precisa de internet na primeira vez que você abre o app. Conecte-se e reabra o Houston para habilitar o pareamento do celular.",
-      "generic": "Não foi possível gerar um código de pareamento. Tente novamente."
-    }
   }
 }

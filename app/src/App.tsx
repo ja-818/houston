@@ -42,7 +42,7 @@ import { SignInScreen } from "./components/auth/sign-in-screen";
 import { AgentRenderer } from "./components/shell/experience-renderer";
 import { Dashboard } from "./components/dashboard";
 import { IntegrationsView } from "./components/tabs/integrations-view";
-import { SettingsView } from "./components/tabs/settings-view";
+import { SettingsView } from "./components/settings/settings-view";
 import { WorkspaceSetupFlow } from "./components/shell/workspace-setup-flow";
 import { DetailPanelProvider } from "./components/shell/detail-panel-context";
 import { MissionSearchInput } from "./components/mission-search-input";

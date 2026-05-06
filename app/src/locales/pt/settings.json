@@ -1,5 +1,20 @@
 {
   "title": "Configurações",
+  "nav": {
+    "account": "Conta",
+    "phone": "Conectar celular",
+    "workspace": "Espaço de trabalho",
+    "provider": "Provedor de IA",
+    "timezone": "Fuso horário",
+    "language": "Idioma",
+    "appearance": "Aparência",
+    "danger": "Zona de perigo"
+  },
+  "account": {
+    "title": "Conta",
+    "signOut": "Sair",
+    "fallbackName": "Sessão iniciada"
+  },
   "workspace": {
     "title": "Espaço de trabalho",
     "nameLabel": "Nome"
@@ -8,14 +23,26 @@
     "title": "Provedor de IA",
     "description": "O Houston usa <emph>sua própria</emph> assinatura. Nunca vemos suas credenciais."
   },
-  "phoneAccess": {
-    "title": "Acesso pelo celular",
-    "description": "Seu QR continua o mesmo para o celular reconectar quando este Mac estiver ligado e o Houston estiver aberto.",
-    "resetButton": "Desconectar todos os celulares",
-    "confirmTitle": "Desconectar todos os celulares?",
-    "confirmDescription": "Isso redefine o QR e sai de todos os celulares conectados a este Mac. Escaneie o novo QR para conectar de novo.",
-    "confirmLabel": "Desconectar",
-    "resetToast": "Acesso pelo celular redefinido"
+  "connectPhone": {
+    "title": "Conectar celular",
+    "description": "Escaneie este código para usar o Houston no seu iPhone. O mesmo código continua funcionando enquanto este Mac estiver ligado e o Houston estiver aberto.",
+    "loading": "Preparando a conexão com seu celular…",
+    "connectingStatus": "Conectando ao serviço do celular. Costuma levar alguns segundos.",
+    "keepMacAwake": "Mantenha este Mac aberto enquanto você usa o Houston no celular.",
+    "alwaysOnHint": "Para acesso 24/7, <emph>Always On</emph> roda o Houston nos nossos servidores.",
+    "errors": {
+      "noInternet": "O Houston precisa de internet na primeira vez que você abre o app. Conecte-se e reabra o Houston para habilitar o pareamento do celular.",
+      "generic": "Não foi possível gerar um código de pareamento. Tente novamente."
+    },
+    "reset": {
+      "title": "Desconectar todos os celulares",
+      "description": "Redefine o QR e sai de todos os celulares conectados a este Mac.",
+      "button": "Desconectar todos os celulares",
+      "confirmTitle": "Desconectar todos os celulares?",
+      "confirmDescription": "Isso redefine o QR e sai de todos os celulares conectados a este Mac. Escaneie o novo QR para conectar de novo.",
+      "confirmLabel": "Desconectar",
+      "toast": "Acesso pelo celular redefinido"
+    }
   },
   "timezone": {
     "title": "Fuso horário",
