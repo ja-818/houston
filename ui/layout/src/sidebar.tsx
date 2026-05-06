@@ -24,6 +24,8 @@ export interface SidebarNavItemEntry {
   onClick: () => void;
   /** Optional right-aligned slot (e.g. a "Beta" badge). */
   trailing?: ReactNode;
+  /** Extra DOM attributes (e.g. `data-tour-target`) on the rendered button. */
+  dataAttrs?: Record<string, string>;
 }
 
 export interface SidebarProps {
@@ -101,7 +103,10 @@ export function AppSidebar({
 
   return (
     <>
-      <aside className="w-[220px] bg-sidebar text-sidebar-foreground flex flex-col h-full shrink-0">
+      <aside
+        data-tour-target="sidebar"
+        className="w-[220px] bg-sidebar text-sidebar-foreground flex flex-col h-full shrink-0"
+      >
         {/* Header slot (e.g., WorkspaceSwitcher) */}
         {header}
 
@@ -127,11 +132,19 @@ export function AppSidebar({
                     : item.active
                 }
                 onClick={item.onClick}
+                dataAttrs={item.dataAttrs}
               />
             ))}
           </nav>
         )}
 
+        {/* Agents section: label + items list, wrapped together so the tour
+            can spotlight just this region. `flex-1 min-h-0` preserves the
+            existing scroll behavior for the items list. */}
+        <div
+          data-tour-target="agents"
+          className="flex min-h-0 flex-1 flex-col"
+        >
         {/* Section label */}
         {sectionLabel && (
           <div className="px-3 pt-3 pb-1">
@@ -178,6 +191,7 @@ export function AppSidebar({
             )}
           </div>
         </ScrollArea>
+        </div>
 
         {/* Footer slot (e.g., update notification) */}
         {footer}

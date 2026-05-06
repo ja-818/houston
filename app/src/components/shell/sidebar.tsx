@@ -9,7 +9,7 @@ import { useAgentCatalogStore } from "../../stores/agent-catalog";
 import { useUIStore } from "../../stores/ui";
 import { UpdateChecker } from "./update-checker";
 import { UserMenu } from "./user-menu";
-import { CreateWorkspaceDialog } from "../../App";
+import { CreateWorkspaceDialog } from "./workspace-dialog";
 import { useAgentActivitySummaries } from "./use-agent-activity-summaries";
 import { buildAgentSidebarItems } from "./agent-sidebar-items";
 
@@ -124,12 +124,14 @@ export function Sidebar({ children }: { children: ReactNode }) {
             label: t("shell:sidebar.missionControl"),
             icon: <LayoutDashboard className="h-4 w-4" />,
             onClick: () => setViewMode("dashboard"),
+            dataAttrs: { "data-tour-target": "nav-dashboard" },
           },
           {
             id: "connections",
             label: t("shell:sidebar.integrations"),
             icon: <Blend className="h-4 w-4" />,
             onClick: () => setViewMode("connections"),
+            dataAttrs: { "data-tour-target": "nav-connections" },
           },
           {
             id: "settings",

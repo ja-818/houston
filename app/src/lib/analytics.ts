@@ -20,6 +20,7 @@ export type AnalyticsEventName =
   | "chat_message_sent"
   | "chat_message_received"
   | "mission_created"
+  | "onboarding_completed"
   | "session_failed"
   | "app_error_shown";
 
@@ -27,6 +28,9 @@ type AnalyticsProperty =
   | "provider"
   | "config_id"
   | "agent_mode"
+  | "mission"
+  | "integrations_skipped"
+  | "tutorial_run"
   | "source"
   | "error_kind";
 type Props = Partial<Record<AnalyticsProperty, string | number | boolean>>;
@@ -42,6 +46,9 @@ const ALLOWED_PROPS = new Set<AnalyticsProperty>([
   "provider",
   "config_id",
   "agent_mode",
+  "mission",
+  "integrations_skipped",
+  "tutorial_run",
   "source",
   "error_kind",
 ]);

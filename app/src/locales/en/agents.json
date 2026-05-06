@@ -5,6 +5,10 @@
     "switchedModel": "Switched to {{provider}} ({{model}})",
     "timezoneSet": "Timezone set to {{zone}}"
   },
+  "empty": {
+    "title": "No agents yet",
+    "description": "Build your AI team and start a mission."
+  },
   "instructions": {
     "emptyTitle": "No instructions yet",
     "emptyDescription": "Tell your agent how it should think and act.",

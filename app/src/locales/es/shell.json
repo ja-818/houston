@@ -24,7 +24,8 @@
     "runningCount_other": "{{count}} asuntos en curso"
   },
   "tabActions": {
-    "newMission": "Nueva misión"
+    "newMission": "Nueva misión",
+    "startTour": "Guíame"
   },
   "agentDelete": {
     "title": "¿Eliminar el agente?",
@@ -38,6 +39,54 @@
     "githubPlaceholder": "usuario/repo",
     "githubImport": "Importar",
     "githubImporting": "Importando espacio de trabajo y agentes..."
+  },
+  "uiTour": {
+    "counter": "Tour {{current}} de {{total}}",
+    "next": "Siguiente",
+    "skip": "Saltar tour",
+    "done": "Entendido",
+    "steps": {
+      "assistant": {
+        "title": "Tus agentes",
+        "body": "Todos los agentes de este espacio viven aquí. Cambia entre ellos con un clic."
+      },
+      "board": {
+        "title": "El espacio del agente",
+        "body": "Aquí es donde trabaja el agente seleccionado. Todo lo que ves a la derecha pertenece a ese agente."
+      },
+      "newMission": {
+        "title": "Inicia un nuevo chat",
+        "body": "Haz clic aquí para abrir una conversación nueva. Cada una se vuelve una tarjeta de misión."
+      },
+      "tabActivity": {
+        "title": "Actividad",
+        "body": "El tablero de cada conversación con este agente. En marcha, esperando, listas."
+      },
+      "tabRoutines": {
+        "title": "Rutinas",
+        "body": "Programa trabajo para que corra en segundo plano. Útil para resúmenes diarios y tareas recurrentes."
+      },
+      "tabFiles": {
+        "title": "Archivos",
+        "body": "Documentos que tu asistente puede leer o compartir contigo. Arrastra lo que quieras para dar contexto."
+      },
+      "tabJobDescription": {
+        "title": "Descripción del Puesto",
+        "body": "Las instrucciones permanentes de tu asistente. Edítalas cuando quieras para cambiar cómo se comporta."
+      },
+      "missionControl": {
+        "title": "Centro de Misión",
+        "body": "Cuando agregues más agentes, esto se vuelve el tablero único de todos. Un solo lugar para verlo todo."
+      },
+      "integrations": {
+        "title": "Integraciones",
+        "body": "Herramientas que tus agentes pueden usar, como Gmail y Calendar. Las conexiones viven aquí, compartidas entre todos tus agentes."
+      },
+      "appTour": {
+        "title": "Repite el tour",
+        "body": "¿Olvidaste cómo funciona algo? Haz clic aquí cuando quieras para correr el tour de nuevo."
+      }
+    }
   },
   "agentUpdate": {
     "title": "Actualización del agente disponible",

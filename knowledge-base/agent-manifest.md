@@ -38,7 +38,9 @@ interface AgentTab {
 ```
 
 ## Locations
-- **Built-in:** `app/src/agents/builtin/` — currently one `blankAgent` (start-from-scratch). The richer catalog lives in Houston Store under `store/agents/*`.
+- **Built-in:** `app/src/agents/builtin/` — `personalAssistantAgent`
+  (default agent for new workspaces) + `blankAgent` (start-from-scratch).
+  The richer catalog lives in Houston Store under `store/agents/*`.
 - **Installed:** `~/.houston/agents/{id}/houston.json` — installed from bundled Houston Store or downloaded from GitHub.
 - **Override rule:** installed definition with same id as builtin → overrides builtin (dedup in `app/src/stores/agent-configs.ts`).
 
@@ -96,6 +98,24 @@ New Agent modal is Store-only for non-technical users.
 
 ## Agent creation
 Seeds agent CLAUDE.md from manifest `claudeMd` field or manifest's `CLAUDE.md` file. Fallback: generic template.
+
+## Default Personal assistant + tutorial
+
+Every newly-created workspace gets a `Personal assistant` instance from the
+built-in `personal-assistant` config. Users do not create it manually.
+First-run onboarding is a minimal guided setup, not a static tour or dense HUD:
+
+1. Welcome screen shows the Houston logo and two cards: start tutorial or skip.
+2. Tutorial card goes straight to creating the Personal assistant.
+3. User connects OpenAI or Claude Code, the agent's brain.
+4. User picks one real mission.
+5. User connects Composio apps, the agent's hands.
+6. Houston writes one Skill and one Routine, then starts real work when apps
+   are ready.
+7. Normal UI opens with a command-center coach explaining parallel missions,
+   multiple agents, library installs, and Routines.
+
+Skipping onboarding still creates the default Personal assistant, but skips the tutorial Action/Routine/run artifacts.
 
 ## Workspace templates
 

@@ -1,0 +1,275 @@
+import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  Check,
+  CircleDashed,
+  ExternalLink,
+  Loader2,
+  RefreshCw,
+  Terminal,
+} from "lucide-react";
+import { Button, cn } from "@houston-ai/core";
+import { tauriProvider, tauriSystem, type ProviderStatus } from "../../../lib/tauri";
+import { PROVIDERS, type ProviderInfo } from "../../../lib/providers";
+
+interface BrainMissionProps {
+  provider: string | null;
+  onSelect: (provider: string, model: string) => void;
+  onContinue: () => Promise<void> | void;
+}
+
+export function BrainMission({
+  provider,
+  onSelect,
+  onContinue,
+}: BrainMissionProps) {
+  const { t } = useTranslation(["setup", "providers", "common"]);
+  const [statuses, setStatuses] = useState<Record<string, ProviderStatus>>({});
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  const refresh = useCallback(async () => {
+    const [openai, anthropic] = await Promise.all([
+      tauriProvider.checkStatus("openai"),
+      tauriProvider.checkStatus("anthropic"),
+    ]);
+    setStatuses({ openai, anthropic });
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  // Poll while a disconnected provider is selected so the screen unblocks the
+  // moment the user finishes the browser sign-in flow.
+  useEffect(() => {
+    if (!provider) return;
+    const status = statuses[provider];
+    const connected = !!status?.cli_installed && !!status?.authenticated;
+    if (connected) return;
+    const id = window.setInterval(() => void refresh(), 3000);
+    return () => window.clearInterval(id);
+  }, [provider, refresh, statuses]);
+
+  const selectedConnected =
+    !!provider && !!statuses[provider]?.cli_installed && !!statuses[provider]?.authenticated;
+
+  const handleContinue = async () => {
+    if (!selectedConnected) return;
+    setSubmitting(true);
+    try {
+      await onContinue();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-1 flex-col gap-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {PROVIDERS.map((prov) => (
+          <ProviderCard
+            key={prov.id}
+            provider={prov}
+            status={statuses[prov.id]}
+            loading={loading}
+            selected={provider === prov.id}
+            onSelect={(modelId) => onSelect(prov.id, modelId)}
+            onRefresh={refresh}
+            costLabel={prov.cost}
+          />
+        ))}
+      </div>
+      <div className="flex justify-end">
+        <Button
+          className="rounded-full"
+          disabled={!selectedConnected || submitting}
+          onClick={() => void handleContinue()}
+        >
+          {submitting ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : null}
+          {submitting
+            ? t("setup:tutorial.missions.brain.creating")
+            : t("setup:tutorial.missions.brain.continue")}
+        </Button>
+      </div>
+      {selectedConnected && !submitting && (
+        <p className="text-xs text-muted-foreground">
+          {t("setup:tutorial.missions.brain.continueHint")}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ProviderCard({
+  provider,
+  status,
+  loading,
+  selected,
+  onSelect,
+  onRefresh,
+  costLabel,
+}: {
+  provider: ProviderInfo;
+  status: ProviderStatus | undefined;
+  loading: boolean;
+  selected: boolean;
+  onSelect: (modelId: string) => void;
+  onRefresh: () => Promise<void>;
+  costLabel: string;
+}) {
+  const { t } = useTranslation(["setup", "providers"]);
+  const installed = status?.cli_installed ?? false;
+  const authenticated = status?.authenticated ?? false;
+  const connected = installed && authenticated;
+  const [loginLaunched, setLoginLaunched] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  const handlePick = () => onSelect(provider.defaultModel);
+
+  const handleSignIn = async () => {
+    setLoginError(null);
+    handlePick();
+    try {
+      await tauriProvider.launchLogin(provider.id);
+      setLoginLaunched(true);
+    } catch (e) {
+      setLoginError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handlePick}
+      className={cn(
+        "group flex w-full flex-col gap-3 rounded-xl border bg-background p-4 text-left transition-all",
+        "border-black/5 hover:border-black/15 hover:shadow-[0_1px_0_rgba(0,0,0,0.05)]",
+        selected && "border-foreground shadow-[0_1px_0_rgba(0,0,0,0.05)]",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium text-foreground">{provider.name}</p>
+          <p className="text-xs text-muted-foreground">{provider.subtitle}</p>
+        </div>
+        <ProviderStatusPill loading={loading} connected={connected} />
+      </div>
+      <p className="text-xs text-muted-foreground">{costLabel}</p>
+      {selected && !connected && (
+        <SetupHint
+          provider={provider}
+          installed={installed}
+          loginLaunched={loginLaunched}
+          loginError={loginError}
+          onSignIn={() => void handleSignIn()}
+          onRefresh={() => void onRefresh()}
+        />
+      )}
+      {selected && connected && (
+        <p className="text-xs text-[#00a240]">
+          {t("providers:card.connected")}
+        </p>
+      )}
+    </button>
+  );
+}
+
+function ProviderStatusPill({
+  loading,
+  connected,
+}: {
+  loading: boolean;
+  connected: boolean;
+}) {
+  const { t } = useTranslation("providers");
+  if (loading) {
+    return <Loader2 className="size-4 animate-spin text-muted-foreground" />;
+  }
+  if (connected) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-[#00a240]">
+        <Check className="size-3" />
+        {t("card.connected")}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+      <CircleDashed className="size-3" />
+      {t("card.notConnected")}
+    </span>
+  );
+}
+
+function SetupHint({
+  provider,
+  installed,
+  loginLaunched,
+  loginError,
+  onSignIn,
+  onRefresh,
+}: {
+  provider: ProviderInfo;
+  installed: boolean;
+  loginLaunched: boolean;
+  loginError: string | null;
+  onSignIn: () => void;
+  onRefresh: () => void;
+}) {
+  const { t } = useTranslation(["setup", "providers"]);
+  return (
+    <div
+      className="rounded-lg bg-secondary/60 p-3"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {!installed && (
+        <div className="flex items-start gap-2 text-xs text-muted-foreground">
+          <Terminal className="mt-0.5 size-3.5 shrink-0" />
+          <span>
+            {t("providers:setup.installHint", { cli: provider.cliName })}{" "}
+            <a
+              href={provider.installUrl}
+              onClick={(e) => {
+                e.preventDefault();
+                void tauriSystem.openUrl(provider.installUrl);
+              }}
+              className="text-foreground underline underline-offset-2"
+            >
+              {t("providers:setup.installGuide")}
+              <ExternalLink className="ml-0.5 inline size-3" />
+            </a>
+          </span>
+        </div>
+      )}
+      {installed && !loginLaunched && (
+        <Button size="sm" className="rounded-full" onClick={onSignIn}>
+          <ExternalLink className="size-3.5" />
+          {t("providers:setup.signInWith", { provider: provider.name })}
+        </Button>
+      )}
+      {installed && loginLaunched && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="size-3.5 animate-spin" />
+          <span>{t("providers:setup.waiting")}</span>
+        </div>
+      )}
+      {!installed && (
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className="size-3" />
+          {t("providers:setup.installedCheckAgain")}
+        </button>
+      )}
+      {loginError && (
+        <p className="mt-2 text-xs text-destructive">{loginError}</p>
+      )}
+    </div>
+  );
+}

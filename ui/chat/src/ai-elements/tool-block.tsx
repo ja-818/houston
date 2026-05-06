@@ -8,6 +8,10 @@
  * - Auto-opens when the tool is active (running, no result yet)
  * - Auto-collapses ~800ms after the result arrives
  * - Shimmer animation while active (matches "Thinking..." treatment)
+ *
+ * Exception: Bash. The terminal output is noisy and most users don't want
+ * to read shell stdout, so Bash blocks stay collapsed by default. Click the
+ * chevron to inspect.
  */
 
 "use client";
@@ -80,18 +84,26 @@ export interface ToolBlockProps {
 
 export const ToolBlock = memo(
   ({ tool, isActive, toolLabels }: ToolBlockProps) => {
-    const [isOpen, setIsOpen] = useState(isActive);
+    // Bash output is shell stdout — opt out of the auto-open-while-active
+    // behavior so the chat stays clean. The user can still click to expand.
+    const shortName = tool.name.includes("__")
+      ? tool.name.split("__").pop()!
+      : tool.name;
+    const autoOpenWhileActive = shortName !== "Bash";
+
+    const [isOpen, setIsOpen] = useState(autoOpenWhileActive && isActive);
     const wasActiveRef = useRef(isActive);
     const hasAutoClosedRef = useRef(false);
 
-    // Auto-open when becoming active
+    // Auto-open when becoming active (unless this tool opted out).
     useEffect(() => {
+      if (!autoOpenWhileActive) return;
       if (isActive && !wasActiveRef.current) {
         setIsOpen(true);
         hasAutoClosedRef.current = false;
       }
       wasActiveRef.current = isActive;
-    }, [isActive]);
+    }, [isActive, autoOpenWhileActive]);
 
     // Auto-close after result arrives
     useEffect(() => {
