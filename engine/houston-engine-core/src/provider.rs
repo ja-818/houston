@@ -76,7 +76,7 @@ pub fn launch_login(provider: Provider) -> CoreResult<()> {
     let command = login_command(provider)?;
 
     tokio::spawn(async move {
-        let LoginCommand {
+        let ProviderCliCommand {
             cli_name,
             path,
             args,
@@ -110,14 +110,74 @@ pub fn launch_login(provider: Provider) -> CoreResult<()> {
     Ok(())
 }
 
-struct LoginCommand {
+/// Run the provider's logout flow synchronously. Unlike login (which
+/// spawns a browser and may take minutes), logout is non-interactive and
+/// completes in seconds: it revokes the refresh token server-side
+/// (Codex) or clears the OS Keychain entry (Claude Code on macOS) and
+/// then deletes the local credential file. We await it so the UI can
+/// flip the card to disconnected as soon as it's actually done.
+pub async fn launch_logout(provider: Provider) -> CoreResult<()> {
+    let ProviderCliCommand {
+        cli_name,
+        path,
+        args,
+        shell_path,
+    } = logout_command(provider)?;
+
+    let result = tokio::time::timeout(
+        Duration::from_secs(10),
+        tokio::process::Command::new(&path)
+            .args(&args)
+            .env("PATH", shell_path)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .kill_on_drop(true)
+            .output(),
+    )
+    .await;
+
+    match result {
+        Ok(Ok(output)) if output.status.success() => {
+            tracing::info!("[houston:provider] {cli_name} logout succeeded");
+            Ok(())
+        }
+        Ok(Ok(output)) => {
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            tracing::warn!(
+                "[houston:provider] {cli_name} logout exited with {}: {stderr}",
+                output.status
+            );
+            Err(CoreError::Internal(format!(
+                "{cli_name} logout failed: {}",
+                if stderr.is_empty() { "no stderr".into() } else { stderr }
+            )))
+        }
+        Ok(Err(e)) => {
+            tracing::warn!(
+                "[houston:provider] {cli_name} logout failed at {}: {e}",
+                path.display()
+            );
+            Err(CoreError::Internal(format!("{cli_name} logout failed: {e}")))
+        }
+        Err(_) => {
+            tracing::warn!("[houston:provider] {cli_name} logout timed out after 10s");
+            Err(CoreError::Internal(format!(
+                "{cli_name} logout timed out after 10s"
+            )))
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ProviderCliCommand {
     cli_name: &'static str,
     path: PathBuf,
     args: Vec<&'static str>,
     shell_path: OsString,
 }
 
-fn login_command(provider: Provider) -> CoreResult<LoginCommand> {
+fn login_command(provider: Provider) -> CoreResult<ProviderCliCommand> {
     let resolved_path = match provider {
         Provider::Anthropic => resolve_claude().1,
         Provider::OpenAI => resolve_codex().1,
@@ -125,11 +185,19 @@ fn login_command(provider: Provider) -> CoreResult<LoginCommand> {
     build_login_command(provider, resolved_path, claude_path::shell_path())
 }
 
+fn logout_command(provider: Provider) -> CoreResult<ProviderCliCommand> {
+    let resolved_path = match provider {
+        Provider::Anthropic => resolve_claude().1,
+        Provider::OpenAI => resolve_codex().1,
+    };
+    build_logout_command(provider, resolved_path, claude_path::shell_path())
+}
+
 fn build_login_command(
     provider: Provider,
     resolved_path: Option<PathBuf>,
     shell_path: OsString,
-) -> CoreResult<LoginCommand> {
+) -> CoreResult<ProviderCliCommand> {
     let (cli_name, args): (&'static str, Vec<&'static str>) = match provider {
         Provider::Anthropic => ("claude", vec!["auth", "login", "--claudeai"]),
         Provider::OpenAI => ("codex", vec!["login"]),
@@ -138,7 +206,33 @@ fn build_login_command(
     let path = resolved_path
         .ok_or_else(|| CoreError::BadRequest(format!("{cli_name} CLI is not installed")))?;
 
-    Ok(LoginCommand {
+    Ok(ProviderCliCommand {
+        cli_name,
+        path,
+        args,
+        shell_path,
+    })
+}
+
+fn build_logout_command(
+    provider: Provider,
+    resolved_path: Option<PathBuf>,
+    shell_path: OsString,
+) -> CoreResult<ProviderCliCommand> {
+    // `claude auth logout` clears the macOS Keychain entry (service
+    // `claude-code`) on Mac and `~/.claude/.credentials.json` on Linux.
+    // `codex logout` revokes the ChatGPT refresh token server-side then
+    // deletes `~/.codex/auth.json`. Both are documented top-level
+    // commands — see knowledge-base/auth.md.
+    let (cli_name, args): (&'static str, Vec<&'static str>) = match provider {
+        Provider::Anthropic => ("claude", vec!["auth", "logout"]),
+        Provider::OpenAI => ("codex", vec!["logout"]),
+    };
+
+    let path = resolved_path
+        .ok_or_else(|| CoreError::BadRequest(format!("{cli_name} CLI is not installed")))?;
+
+    Ok(ProviderCliCommand {
         cli_name,
         path,
         args,
@@ -219,5 +313,44 @@ mod tests {
         assert_eq!(command.cli_name, "claude");
         assert_eq!(command.path, path);
         assert_eq!(command.args, vec!["auth", "login", "--claudeai"]);
+    }
+
+    #[test]
+    fn logout_command_claude_uses_auth_logout() {
+        let path = PathBuf::from("/tmp/houston-test-claude");
+        let command = build_logout_command(
+            Provider::Anthropic,
+            Some(path.clone()),
+            OsString::from("/not/on/path"),
+        )
+        .unwrap();
+        assert_eq!(command.cli_name, "claude");
+        assert_eq!(command.path, path);
+        assert_eq!(command.args, vec!["auth", "logout"]);
+    }
+
+    #[test]
+    fn logout_command_codex_uses_top_level_logout() {
+        let path = PathBuf::from("/tmp/houston-test-codex");
+        let command = build_logout_command(
+            Provider::OpenAI,
+            Some(path.clone()),
+            OsString::from("/not/on/path"),
+        )
+        .unwrap();
+        assert_eq!(command.cli_name, "codex");
+        assert_eq!(command.path, path);
+        assert_eq!(command.args, vec!["logout"]);
+    }
+
+    #[test]
+    fn logout_command_errors_when_cli_missing() {
+        let err = build_logout_command(
+            Provider::OpenAI,
+            None,
+            OsString::from("/not/on/path"),
+        )
+        .unwrap_err();
+        assert!(matches!(err, CoreError::BadRequest(_)));
     }
 }

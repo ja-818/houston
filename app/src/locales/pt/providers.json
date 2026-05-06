@@ -4,7 +4,10 @@
     "notConnected": "Sem conexão",
     "ariaLabelConnected": "{{name}}, Conectado",
     "ariaLabelNotConnected": "{{name}}, Sem conexão",
-    "modelDropdownLabel": "Modelo"
+    "modelDropdownLabel": "Modelo",
+    "signOut": "Sair",
+    "signingOut": "Saindo...",
+    "signOutError": "Não foi possível sair de {{provider}}"
   },
   "setup": {
     "headline": "Configurar {{provider}}",
