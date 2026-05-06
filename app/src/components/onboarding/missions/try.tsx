@@ -82,7 +82,7 @@ export function TryMission({
   const { t } = useTranslation(["setup", "chat"]);
   const agentPath = agent.folderPath;
   const missionTitle = t(
-    `setup:tutorial.missions.try.actions.${selectedMissionId}.title`,
+    `setup:tutorial.missions.try.skills.${selectedMissionId}.title`,
   );
 
   // The session key is null until the user picks a chip and `createMission`

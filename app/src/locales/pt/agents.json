@@ -34,7 +34,7 @@
   },
   "subTabs": {
     "instructions": "Instruções",
-    "skills": "Ações",
+    "skills": "Skills",
     "learnings": "Aprendizados"
   },
   "tabLabels": {
@@ -45,7 +45,7 @@
     "integrations": "Integrações",
     "chat": "Chat",
     "board": "Quadro",
-    "skills": "Ações",
+    "skills": "Skills",
     "prompts": "Instruções",
     "events": "Eventos",
     "learnings": "Aprendizados",
@@ -64,7 +64,7 @@
       "placeholder": "Instrução para {{name}}..."
     },
     "skills": {
-      "title": "Ações",
+      "title": "Skills",
       "description": "Procedimentos reutilizáveis que os agentes podem executar."
     },
     "learnings": {

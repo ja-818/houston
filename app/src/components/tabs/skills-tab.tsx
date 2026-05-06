@@ -1,12 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { SkillDetailPage } from "@houston-ai/skills";
 import type { TabProps } from "../../lib/types";
-import { ActionsContent } from "./actions-content";
-import { useActionSurface } from "./use-action-surface";
+import { SkillsContent } from "./skills-content";
+import { useSkillSurface } from "./use-skill-surface";
 
 export default function SkillsTab({ agent }: TabProps) {
   const { t } = useTranslation("skills");
-  const actions = useActionSurface(agent.folderPath);
+  const surface = useSkillSurface(agent.folderPath);
 
   return (
     <div className="h-full overflow-auto">
@@ -15,23 +15,23 @@ export default function SkillsTab({ agent }: TabProps) {
         <p className="text-xs text-muted-foreground/60 mt-0.5 mb-3">
           {t("page.description")}
         </p>
-        {actions.selectedSkill ? (
+        {surface.selectedSkill ? (
           <SkillDetailPage
-            skill={actions.selectedSkill}
-            onBack={actions.clearSelectedSkill}
-            onSave={actions.handleSkillSave}
-            onDelete={actions.handleSkillDelete}
-            labels={actions.skillDetailLabels}
+            skill={surface.selectedSkill}
+            onBack={surface.clearSelectedSkill}
+            onSave={surface.handleSkillSave}
+            onDelete={surface.handleSkillDelete}
+            labels={surface.skillDetailLabels}
           />
         ) : (
-          <ActionsContent
-            skills={actions.skills}
-            loading={actions.skillsLoading}
-            onActionClick={actions.selectSkill}
-            onSearch={actions.handleSearch}
-            onInstallCommunity={actions.handleInstallCommunity}
-            onListFromRepo={actions.handleListFromRepo}
-            onInstallFromRepo={actions.handleInstallFromRepo}
+          <SkillsContent
+            skills={surface.skills}
+            loading={surface.skillsLoading}
+            onSkillClick={surface.selectSkill}
+            onSearch={surface.handleSearch}
+            onInstallCommunity={surface.handleInstallCommunity}
+            onListFromRepo={surface.handleListFromRepo}
+            onInstallFromRepo={surface.handleInstallFromRepo}
           />
         )}
       </div>

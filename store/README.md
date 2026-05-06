@@ -16,14 +16,14 @@ icon.png
 `store/catalog.json` is the curated index returned by the engine's
 `/v1/store/catalog` route. The desktop app shows those listings in
 the New Agent dialog as one searchable grid. Catalog entries include
-agent image slugs and integration slugs so cards match Action cards.
+agent image slugs and integration slugs so cards match Skill cards.
 Installing a listing copies the package into `~/.houston/agents/<agent-id>/`;
 creating an agent from that listing then copies packaged skills into the
 workspace agent's `.agents/skills/`.
 
-Every user-facing starter workflow must live as a packaged Action under
+Every user-facing starter workflow must live as a packaged Skill under
 `.agents/skills/*/SKILL.md`. Store agents do not ship a custom Overview
-dashboard or manifest `useCases`; the chat Actions picker is the source
+dashboard or manifest `useCases`; the chat Skills picker is the source
 of truth for those workflows.
 
 Store manifests must not seed `.houston/activity.json` or
@@ -33,10 +33,10 @@ Engine create ignores stale activity seeds from old installed packages,
 and Store update sync clears the known default intro card from existing
 agents only when it is the sole board item.
 
-Packaged Actions must not declare legacy `inputs` or `prompt_template`
-frontmatter. The Action picker only selects the workflow; the regular
+Packaged Skills must not declare legacy `inputs` or `prompt_template`
+frontmatter. The Skill picker only selects the workflow; the regular
 chat composer stays visible so the user can add context in plain
-language, or send the Action by itself and let the agent ask for missing
+language, or send the Skill by itself and let the agent ask for missing
 details.
 
 ## Updates
@@ -48,16 +48,16 @@ record against the bundled catalog and refresh local definitions when
 the release carries a newer package.
 
 When a bundled package updates, Houston also syncs newly-added packaged
-Actions into existing workspace agents whose `config_id` matches that
-Store agent. Existing Action folders keep their local body content, but
+Skills into existing workspace agents whose `config_id` matches that
+Store agent. Existing Skill folders keep their local body content, but
 their frontmatter metadata is refreshed from the bundled package. Result:
-new Houston-built workflows appear in existing agents, Action cards can
+new Houston-built workflows appear in existing agents, Skill cards can
 be updated across releases, and local procedure edits stay intact.
 
-### Migrations (renaming or removing Actions across versions)
+### Migrations (renaming or removing Skills across versions)
 
-Net-new Actions are picked up automatically. **Renaming** a packaged
-Action's slug (or removing it) is different — without help, users end
+Net-new Skills are picked up automatically. **Renaming** a packaged
+Skill's slug (or removing it) is different — without help, users end
 up with old + new copies side-by-side in their picker. To handle this
 cleanly, each agent package can ship a `.migrations.json` at its root
 listing the rename steps between published versions:

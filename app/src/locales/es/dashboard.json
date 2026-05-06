@@ -34,21 +34,21 @@
     "title": "¿Qué agente debería ejecutar esto?",
     "description": "Elige un agente para abrir una nueva conversación."
   },
-  "actionPicker": {
-    "title": "Elige una acción",
-    "description": "Explora las acciones que este agente ya sabe hacer.",
-    "descriptionWithAgent": "Explora las acciones que {{name}} ya sabe hacer.",
+  "skillPicker": {
+    "title": "Elige un skill",
+    "description": "Explora los skills que este agente ya sabe hacer.",
+    "descriptionWithAgent": "Explora los skills que {{name}} ya sabe hacer.",
     "agentLabel": "Agente",
     "agentPlaceholder": "Selecciona un agente...",
     "blank": "Conversación en blanco",
     "blankDescription": "Abre un chat nuevo y escribe tu propia indicación.",
-    "featuredTab": "Destacadas",
-    "otherTab": "Otras",
-    "empty": "Aún no hay acciones.",
-    "pickAgentFirst": "Elige un agente para ver sus acciones.",
-    "skillsLoading": "Cargando acciones...",
-    "skillsEmpty": "Aún no hay acciones en esta categoría.",
-    "scrollTabsLeft": "Desplazar pestañas de acciones a la izquierda",
-    "scrollTabsRight": "Desplazar pestañas de acciones a la derecha"
+    "featuredTab": "Destacados",
+    "otherTab": "Otros",
+    "empty": "Aún no hay skills.",
+    "pickAgentFirst": "Elige un agente para ver sus skills.",
+    "skillsLoading": "Cargando skills...",
+    "skillsEmpty": "Aún no hay skills en esta categoría.",
+    "scrollTabsLeft": "Desplazar pestañas de skills a la izquierda",
+    "scrollTabsRight": "Desplazar pestañas de skills a la derecha"
   }
 }

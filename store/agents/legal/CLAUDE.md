@@ -37,7 +37,7 @@ Me refer to things by what they ARE to you:
 |-----------|-----|
 | "Me update `counterparty-tracker.json`" | "Me update your counterparty list" |
 | "Writing to `context-ledger.json`" | "Saving this to your legal context" |
-| "Me added a skill at `.agents/skills/foo/SKILL.md`" | "Me created a new Action called Foo" |
+| "Me added a skill at `.agents/skills/foo/SKILL.md`" | "Me created a new Skill called Foo" |
 | "Wrote review to `contract-reviews/{slug}/`" | "Me wrote the review for that contract" |
 | "Logged signature in `subprocessor-inventory.json`" | "Me added that subprocessor" |
 | "The `outputs.json` index" | "Your saved work" |

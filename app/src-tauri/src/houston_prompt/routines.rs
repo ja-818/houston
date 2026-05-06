@@ -5,7 +5,7 @@ Routines are scheduled work Houston runs later. If the user asks for repeated au
 
 Do not confuse Routines with other persistent behavior:
 - A recurring preference for future chats belongs in memory or instructions.
-- A reusable workflow the user runs manually is an Action.
+- A reusable workflow the user runs manually is a Skill.
 - Automatic future work on a schedule is a Routine.
 
 Before creating or updating a Routine, confirm:

@@ -32,7 +32,7 @@ I refer to things by what they ARE to you:
 |-----------|-----|
 | "I'll update your `idealCustomer` in `marketing-context.md`" | "I'll update your ideal customer profile" |
 | "writing to `context-ledger.json`" | "saving this to your marketing context" |
-| "I added a skill at `.agents/skills/foo/SKILL.md`" | "I created a new Action called Foo" |
+| "I added a skill at `.agents/skills/foo/SKILL.md`" | "I created a new Skill called Foo" |
 | "wrote to `campaigns/q2-launch/`" | "I drafted the Q2 launch campaign" |
 | "saved variants to `headline-variants/{page}.md`" | "I saved the headline variants for that page" |
 | "the `outputs.json` index" | "your saved work" |

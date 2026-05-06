@@ -37,14 +37,14 @@
   },
   "chatEmpty": {
     "heading": "What can I help with?",
-    "subheading": "Tap an action to get started, or just type what you need below.",
-    "seeMore_one": "See {{count}} more action",
-    "seeMore_other": "See {{count}} more actions"
+    "subheading": "Tap a skill to get started, or just type what you need below.",
+    "seeMore_one": "See {{count}} more skill",
+    "seeMore_other": "See {{count}} more skills"
   },
-  "composerAction": {
-    "browse": "Actions"
+  "composerSkill": {
+    "browse": "Skills"
   },
-  "selectedAction": {
+  "selectedSkill": {
     "cancel": "Close"
   }
 }

@@ -10,7 +10,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ChatPanel,
   UserAttachmentMessage,
-  decodeActionMessage,
+  decodeSkillMessage,
   decodeAttachmentMessage,
   type FeedItem,
 } from "@houston-ai/chat";
@@ -26,7 +26,7 @@ import {
 import { useAgents } from "../hooks/use-agents";
 import { useVisualViewport } from "../hooks/use-keyboard-height";
 import { ChatHeader } from "./chat-header";
-import { UserActionMessage } from "./user-action-message";
+import { UserSkillMessage } from "./user-skill-message";
 
 export function ChatView() {
   const nav = useNavigate();
@@ -127,8 +127,8 @@ export function ChatView() {
             ) : undefined
           }
           renderUserMessage={(msg) => {
-            const invocation = decodeActionMessage(msg.content);
-            if (invocation) return <UserActionMessage invocation={invocation} />;
+            const invocation = decodeSkillMessage(msg.content);
+            if (invocation) return <UserSkillMessage invocation={invocation} />;
             const attachmentInvocation = decodeAttachmentMessage(msg.content);
             if (!attachmentInvocation) return undefined;
             return <UserAttachmentMessage invocation={attachmentInvocation} />;

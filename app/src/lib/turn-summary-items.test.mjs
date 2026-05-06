@@ -28,7 +28,7 @@ test("summarizes internal agent files as semantic updates", () => {
 
   assert.deepEqual(items, [
     { kind: "semantic", update: "instructions" },
-    { kind: "semantic", update: "actions" },
+    { kind: "semantic", update: "skills" },
     { kind: "semantic", update: "learnings" },
   ]);
 });
@@ -112,13 +112,13 @@ test("uses session file changes and ignores python helpers", () => {
 
 test("groups semantic updates and files separately", () => {
   const groups = groupTurnSummaryItems([
-    { kind: "semantic", update: "actions" },
+    { kind: "semantic", update: "skills" },
     { kind: "file", path: `${agentPath}/deck.pptx`, change: "created" },
     { kind: "file", path: `${agentPath}/notes.txt`, change: "modified" },
   ]);
 
   assert.deepEqual(groups.updates, [
-    { kind: "semantic", update: "actions" },
+    { kind: "semantic", update: "skills" },
     { kind: "file", path: `${agentPath}/notes.txt`, change: "modified" },
   ]);
   assert.deepEqual(groups.files, [

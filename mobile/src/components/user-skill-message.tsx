@@ -1,7 +1,7 @@
 /**
- * Mobile-friendly read-only card for an action-invocation user message.
+ * Mobile-friendly read-only card for a skill-invocation user message.
  *
- * Mirrors the desktop's UserActionMessage layout (icon + name +
+ * Mirrors the desktop's UserSkillMessage layout (icon + name +
  * description + integration logos + labelled values) but stays minimal:
  * no Composio catalog lookup (we fall back to favicons), no React
  * Query, just the decoded payload + plain `<img>` tags.
@@ -10,15 +10,15 @@
 import { useState } from "react";
 import {
   UserAttachmentBadge,
-  type ActionInvocation,
-  resolveActionImage,
+  type SkillInvocation,
+  resolveSkillImage,
 } from "@houston-ai/chat";
 
 interface Props {
-  invocation: ActionInvocation;
+  invocation: SkillInvocation;
 }
 
-export function UserActionMessage({ invocation }: Props) {
+export function UserSkillMessage({ invocation }: Props) {
   const {
     displayName,
     image,
@@ -32,7 +32,7 @@ export function UserActionMessage({ invocation }: Props) {
     <div className="flex max-w-sm flex-col items-end gap-2">
       <div className="inline-block rounded-2xl bg-secondary p-4 text-left">
         <div className="flex items-start gap-3">
-          <ImageBubble src={resolveActionImage(image)} />
+          <ImageBubble src={resolveSkillImage(image)} />
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-foreground">
               {displayName}

@@ -143,12 +143,11 @@ function SummarySection({
 }
 
 function semanticTarget(kind: SemanticUpdateKind): JobDescriptionTarget {
-  if (kind === "actions") return "skills";
   return kind;
 }
 
 function fallbackTab(kind: SemanticUpdateKind, tabIds: Set<string>): string {
-  if (kind === "actions" && tabIds.has("skills")) return "skills";
+  if (kind === "skills" && tabIds.has("skills")) return "skills";
   if (kind === "learnings" && tabIds.has("learnings")) return "learnings";
   if (kind === "instructions" && tabIds.has("prompts")) return "prompts";
   if (tabIds.has("configure")) return "configure";
@@ -157,7 +156,7 @@ function fallbackTab(kind: SemanticUpdateKind, tabIds: Set<string>): string {
 
 function semanticIcon(kind: SemanticUpdateKind) {
   if (kind === "instructions") return ScrollText;
-  if (kind === "actions") return Play;
+  if (kind === "skills") return Play;
   return Lightbulb;
 }
 
@@ -173,7 +172,7 @@ function itemIcon(item: TurnSummaryItem) {
 function itemLabel(item: TurnSummaryItem, t: TFunction<"chat">): string {
   if (item.kind === "semantic") {
     if (item.update === "instructions") return t("summary.instructionsUpdated");
-    if (item.update === "actions") return t("summary.actionsUpdated");
+    if (item.update === "skills") return t("summary.skillsUpdated");
     return t("summary.learningsUpdated");
   }
   return item.path.split("/").pop() ?? item.path;

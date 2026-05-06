@@ -22,7 +22,7 @@ import "@houston-ai/layout/src/styles.css"
   onAdd={createProject}
   labels={{
     addItem: "Add project",
-    moreActions: "Project actions",
+    moreOptions: "Project options",
     renameItem: "Rename",
     deleteItem: "Delete",
   }}

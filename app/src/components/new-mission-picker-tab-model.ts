@@ -1,12 +1,12 @@
-export const FEATURED_ACTIONS_TAB_ID = "__featured__";
-export const OTHER_ACTIONS_TAB_ID = "__other__";
+export const FEATURED_SKILLS_TAB_ID = "__featured__";
+export const OTHER_SKILLS_TAB_ID = "__other__";
 
 export interface PickerTab {
   id: string;
   label: string;
 }
 
-export function buildActionPickerTabs({
+export function buildSkillPickerTabs({
   categoryNames,
   hasFeatured,
   hasOther,
@@ -21,17 +21,17 @@ export function buildActionPickerTabs({
 }): PickerTab[] {
   return [
     ...(hasFeatured
-      ? [{ id: FEATURED_ACTIONS_TAB_ID, label: featuredLabel }]
+      ? [{ id: FEATURED_SKILLS_TAB_ID, label: featuredLabel }]
       : []),
     ...categoryNames.map((category) => ({
       id: category,
       label: category,
     })),
-    ...(hasOther ? [{ id: OTHER_ACTIONS_TAB_ID, label: otherLabel }] : []),
+    ...(hasOther ? [{ id: OTHER_SKILLS_TAB_ID, label: otherLabel }] : []),
   ];
 }
 
-export function resolveActiveActionPickerTab(
+export function resolveActiveSkillPickerTab(
   tabs: PickerTab[],
   activeTab: string,
 ): string {
@@ -39,6 +39,6 @@ export function resolveActiveActionPickerTab(
   return tabs[0]?.id ?? "";
 }
 
-export function shouldShowActionPickerTabs(tabs: PickerTab[]): boolean {
+export function shouldShowSkillPickerTabs(tabs: PickerTab[]): boolean {
   return tabs.length > 1;
 }

@@ -53,7 +53,7 @@ export function PersonalAssistantOnboarding({
 
   const mission = missionById(selectedMissionId);
   const missionTitle = t(
-    `setup:tutorial.missions.try.actions.${selectedMissionId}.title`,
+    `setup:tutorial.missions.try.skills.${selectedMissionId}.title`,
   );
 
   const missionStep = step === "welcome" ? null : (step as TutorialStep);

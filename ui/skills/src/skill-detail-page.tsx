@@ -16,7 +16,7 @@ export interface SkillDetailPageLabels {
   backAria?: string
   saveChanges?: string
   savingChanges?: string
-  moreActions?: string
+  moreOptions?: string
   delete?: string
   deleteTitle?: (name: string) => string
   deleteDescription?: string
@@ -25,16 +25,16 @@ export interface SkillDetailPageLabels {
 }
 
 const DEFAULT_LABELS: Required<SkillDetailPageLabels> = {
-  notFound: "Action not found",
-  backAria: "Back to actions",
+  notFound: "Skill not found",
+  backAria: "Back to skills",
   saveChanges: "Save changes",
   savingChanges: "Saving...",
-  moreActions: "More actions",
-  delete: "Delete action",
+  moreOptions: "More options",
+  delete: "Delete skill",
   deleteTitle: (name) => `Delete "${name}"?`,
-  deleteDescription: "This removes the action from your agent. You can reinstall it later.",
+  deleteDescription: "This removes the skill from your agent. You can reinstall it later.",
   deleteConfirmLabel: "Delete",
-  instructionsPlaceholder: "Instructions for this action...",
+  instructionsPlaceholder: "Instructions for this skill...",
 }
 
 export interface SkillDetailPageProps {
@@ -126,7 +126,7 @@ export function SkillDetailPage({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label={l.moreActions}
+                  aria-label={l.moreOptions}
                   disabled={deleting}
                 >
                   <MoreHorizontal className="size-4" />

@@ -10,7 +10,7 @@ interface Props {
   onCancel: () => void;
 }
 
-export function SelectedActionChip({ skill, onCancel }: Props) {
+export function SelectedSkillChip({ skill, onCancel }: Props) {
   const { t } = useTranslation("board");
 
   return (
@@ -34,7 +34,7 @@ export function SelectedActionChip({ skill, onCancel }: Props) {
           <button
             type="button"
             onClick={onCancel}
-            aria-label={t("selectedAction.cancel")}
+            aria-label={t("selectedSkill.cancel")}
             className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <X className="size-3.5" />

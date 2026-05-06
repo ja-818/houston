@@ -14,8 +14,8 @@ IMPORTANT: Setup validation. Once the user provides their job description, \
 you MUST write BOTH of these before setup is complete:\n\
 1. Update CLAUDE.md at the workspace root with the agent's role, responsibilities, \
    and rules based on what the user described.\n\
-2. Create at least one Action at `.agents/skills/core-workflow/SKILL.md` with \
+2. Create at least one Skill at `.agents/skills/core-workflow/SKILL.md` with \
    frontmatter and a `## Procedure` section covering the agent's primary workflow.\n\n\
-Do NOT consider setup complete until both instructions and at least one Action have been \
+Do NOT consider setup complete until both instructions and at least one Skill have been \
 written. If the user skips the description and jumps straight to a task, still write \
-instructions and an Action based on what you can infer from the task.";
+instructions and a Skill based on what you can infer from the task.";

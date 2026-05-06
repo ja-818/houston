@@ -50,7 +50,7 @@ only touch the engine note the engine crate version in parentheses.
   request", "Calculate my Delaware franchise tax"). Descriptions and
   form labels rewritten from internal jargon to founder voice. Internal
   procedures unchanged.
-- **`knowledge-base/actions.md` — naming rules section added.** Slugs
+- **`knowledge-base/skills.md` — naming rules section added.** Slugs
   must humanize cleanly; no insider acronyms; no `display_name`
   override; descriptions and form labels are user-facing copy.
 

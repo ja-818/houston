@@ -33,7 +33,7 @@ I refer to things by what they ARE to you:
 |-----------|-----|
 | "I'll update `conversations.json`" | "I'll update your ticket queue" |
 | "writing to `context-ledger.json`" | "saving this to your support context" |
-| "I added a skill at `.agents/skills/foo/SKILL.md`" | "I created a new Action called Foo" |
+| "I added a skill at `.agents/skills/foo/SKILL.md`" | "I created a new Skill called Foo" |
 | "wrote KB to `articles/{slug}.md`" | "I drafted the help-center article" |
 | "flagged in `churn-flags.json`" | "I flagged that account as a churn risk" |
 | "the `outputs.json` index" | "your saved work" |

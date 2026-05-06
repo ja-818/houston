@@ -190,12 +190,12 @@ export type { ProgressStep, StepStatus } from "./use-progress-steps";
 export { ProgressPanel } from "./progress-panel";
 export type { ProgressPanelProps } from "./progress-panel";
 
-// === Action Messages ===
+// === Skill Messages ===
 // Encoded user-message marker that signals "this message is the user
-// running an action". Decoded into a structured payload so consumers
+// running a Skill". Decoded into a structured payload so consumers
 // (desktop, mobile) can render the same card.
-export { decodeActionMessage, resolveActionImage } from "./action-message";
-export type { ActionInvocation, ActionInvocationField } from "./action-message";
+export { decodeSkillMessage, resolveSkillImage } from "./skill-message";
+export type { SkillInvocation, SkillInvocationField } from "./skill-message";
 export { decodeAttachmentMessage, normalizeAttachmentReferences } from "./attachment-message";
 export type { AttachmentInvocation, AttachmentReference } from "./attachment-message";
 export {

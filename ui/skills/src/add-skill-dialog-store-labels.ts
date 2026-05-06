@@ -9,11 +9,11 @@ export interface StoreViewLabels extends StoreRowLabels {
 }
 
 export const DEFAULT_STORE_VIEW_LABELS: Required<StoreViewLabels> = {
-  searchPlaceholder: "Search actions...",
-  noResults: (query) => `No actions found for "${query}"`,
+  searchPlaceholder: "Search skills...",
+  noResults: (query) => `No skills found for "${query}"`,
   minQuery: "Type at least 2 characters to search",
-  searchUnavailable: "Action search is busy. Wait a moment and try again.",
-  typeToSearch: "Type to search for actions",
+  searchUnavailable: "Skill search is busy. Wait a moment and try again.",
+  typeToSearch: "Type to search for skills",
   installCount: (_count, formatted) => `${formatted} installs`,
   installSkill: (name) => `Install ${name}`,
   installedSkill: (name) => `${name} installed`,

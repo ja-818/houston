@@ -1,54 +1,54 @@
 {
   "page": {
-    "title": "Ações",
+    "title": "Skills",
     "description": "Procedimentos reutilizáveis que este agente pode executar."
   },
   "grid": {
-    "loading": "Carregando ações...",
-    "emptyTitle": "Sem ações instaladas",
-    "emptyDescription": "Ações são procedimentos reutilizáveis que seu agente pode executar.",
-    "addSkill": "Adicionar ação",
+    "loading": "Carregando skills...",
+    "emptyTitle": "Sem skills instalados",
+    "emptyDescription": "Skills são procedimentos reutilizáveis que seu agente pode executar.",
+    "addSkill": "Adicionar skill",
     "descriptionShort": "Procedimentos reutilizáveis que seu agente pode executar."
   },
   "addDialog": {
-    "title": "Adicionar ações",
+    "title": "Adicionar skills",
     "description": "Instale procedimentos reutilizáveis para seu agente.",
     "storeTab": "Skills.sh",
     "repoTab": "GitHub",
     "store": {
-      "searchPlaceholder": "Buscar ações...",
-      "noResults": "Nenhuma ação encontrada para \"{{query}}\"",
+      "searchPlaceholder": "Buscar skills...",
+      "noResults": "Nenhum skill encontrado para \"{{query}}\"",
       "minQuery": "Digite pelo menos 2 caracteres para buscar",
-      "searchUnavailable": "A busca de ações está ocupada. Aguarde um momento e tente de novo.",
-      "typeToSearch": "Digite para buscar ações",
+      "searchUnavailable": "A busca de skills está ocupada. Aguarde um momento e tente de novo.",
+      "typeToSearch": "Digite para buscar skills",
       "installCount_one": "{{formatted}} instalação",
       "installCount_other": "{{formatted}} instalações",
       "installSkill": "Instalar {{name}}",
-      "installedSkill": "{{name}} instalada"
+      "installedSkill": "{{name}} instalado"
     },
     "repo": {
       "sourcePlaceholder": "owner/repo",
-      "findSkills": "Buscar ações",
+      "findSkills": "Buscar skills",
       "installSelected": "Instalar {{count}}",
-      "skillsFound_one": "1 ação encontrada",
-      "skillsFound_other": "{{count}} ações encontradas",
+      "skillsFound_one": "1 skill encontrado",
+      "skillsFound_other": "{{count}} skills encontrados",
       "selectAll": "Selecionar tudo",
       "deselectAll": "Desmarcar tudo",
       "inputHint": "Insira um repositório público do GitHub no formato owner/repo",
-      "installedSummary_one": "1 ação instalada: {{names}}",
-      "installedSummary_other": "{{count}} ações instaladas: {{names}}",
+      "installedSummary_one": "1 skill instalado: {{names}}",
+      "installedSummary_other": "{{count}} skills instalados: {{names}}",
       "installAnotherRepo": "Instalar de outro repositório"
     }
   },
   "detail": {
-    "notFound": "Ação não encontrada",
-    "backAria": "Voltar para ações",
-    "moreActions": "Mais ações",
+    "notFound": "Skill não encontrado",
+    "backAria": "Voltar para skills",
+    "moreOptions": "Mais opções",
     "saveChanges": "Salvar alterações",
     "savingChanges": "Salvando...",
-    "delete": "Excluir ação",
+    "delete": "Excluir skill",
     "deleteTitle": "Excluir \"{{name}}\"?",
-    "deleteDescription": "Isso remove a ação do seu agente. Você pode reinstalar depois.",
-    "instructionsPlaceholder": "Instruções para esta ação..."
+    "deleteDescription": "Isso remove o skill do seu agente. Você pode reinstalar depois.",
+    "instructionsPlaceholder": "Instruções para este skill..."
   }
 }

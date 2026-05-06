@@ -43,7 +43,7 @@ Set up and run: ${missionTitle}.
 ${setup.approvalRule.trim()}
 
 ## How to work
-- Prefer Actions for repeatable work.
+- Prefer Skills for repeatable work.
 - Prefer Routines for scheduled work.
 - Use connected apps through Composio when a task needs inbox, calendar, documents, or other accounts.
 - Ask one clear question when required information is missing.
@@ -52,7 +52,7 @@ ${setup.approvalRule.trim()}
 `;
 }
 
-export function buildActionSkill(
+export function buildSkill(
   mission: MissionTemplate,
   missionTitle: string,
   missionDescription: string,
@@ -71,7 +71,7 @@ integrations: [${integrations}]
 # ${missionTitle}
 
 ## Procedure
-Use this Action when the user wants ${missionTitle.toLowerCase()}.
+Use this Skill when the user wants ${missionTitle.toLowerCase()}.
 
 1. Confirm required connected apps are available: ${mission.integrations.join(", ")}.
 2. Read only the information needed for the request.
@@ -101,7 +101,7 @@ export function buildRoutineInput(
   };
 }
 
-export function actionSummary(
+export function skillSummary(
   mission: MissionTemplate,
   missionDescription: string,
 ): SkillSummary {

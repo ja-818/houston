@@ -1,8 +1,6 @@
-# Actions (a.k.a. Skills)
+# Skills
 
-Two names, one thing. **On disk + in code = "skill"** (matches Claude Code / industry). **In the UI + product copy = "Action"**. When the user asks the agent to "create an action", they mean a skill in `.agents/skills/`.
-
-Why the split: skill is jargon for non-technical users. Action is a verb they instantly understand. Files keep the original name so Claude Code's auto-discovery (`.claude/skills/<name>` → `../../.agents/skills/<name>` symlink) keeps working unchanged.
+A Skill is a reusable procedure stored as a markdown file with YAML frontmatter. Houston shows them in the picker, the chat empty state, and the per-agent Skills tab.
 
 ## File layout
 
@@ -15,12 +13,12 @@ Why the split: skill is jargon for non-technical users. Action is a verb they in
 Houston Store agent packages may also include `.agents/skills/*`.
 Install copies the package to `~/.houston/agents/<id>/`; creating a
 workspace agent from that definition copies those packaged skills into
-the user's agent root so Actions appear in chat immediately. The picker
+the user's agent root so Skills appear in chat immediately. The picker
 only selects the workflow; the chat composer stays visible so the user
-can add free-form context, or send the Action by itself and let the
+can add free-form context, or send the Skill by itself and let the
 agent ask for missing details.
 
-The body is a regular markdown file Claude Code uses as the procedure when the action runs. The frontmatter drives both **tool discovery** (Claude reads `name` + `description`) and current **UI rendering** fields such as category, featured, image, and integrations.
+The body is a regular markdown file Claude Code uses as the procedure when the Skill runs. The frontmatter drives both **tool discovery** (Claude reads `name` + `description`) and current **UI rendering** fields such as category, featured, image, and integrations.
 
 ## Frontmatter schema
 
@@ -46,7 +44,7 @@ integrations: [tavily, gmail]      # Composio toolkit slugs (lowercase)
 ---
 
 ## Procedure
-Step-by-step instructions Claude follows when the action runs.
+Step-by-step instructions Claude follows when the Skill runs.
 ```
 
 ### Field details
@@ -59,7 +57,7 @@ Step-by-step instructions Claude follows when the action runs.
 | `created` / `last_used` | string | unset | YYYY-MM-DD. Engine maintains. |
 | `category` | string | unset | Picker tab grouping. Missing → falls under "Other". |
 | `featured` | bool | `false` | Accepts `yes` / `true` / `1` / `on`. Surfaces on the empty-chat showcase. |
-| `image` | string | unset | Either an `https://...` URL OR a Fluent 3D Emoji slug (lowercased folder name from [microsoft/fluentui-emoji/assets](https://github.com/microsoft/fluentui-emoji/tree/main/assets), spaces → dashes). Resolved frontend-side via `resolveActionImage`. |
+| `image` | string | unset | Either an `https://...` URL OR a Fluent 3D Emoji slug (lowercased folder name from [microsoft/fluentui-emoji/assets](https://github.com/microsoft/fluentui-emoji/tree/main/assets), spaces → dashes). Resolved frontend-side via `resolveSkillImage`. |
 | `integrations` | string[] | `[]` | Composio toolkit slugs. Drives the small logo row on the card. |
 
 ## Render pipeline
@@ -67,15 +65,15 @@ Step-by-step instructions Claude follows when the action runs.
 1. **Engine** parses SKILL.md frontmatter via `serde_yml` (`engine/houston-skills/src/format.rs`). Unknown fields are silently ignored — old skills with `icon:` / `starter_prompt:` still parse.
 2. Engine returns the full `SkillSummaryResponse` on `GET /v1/skills`.
 3. **App** (`useSkills` query → `tauri.ts` → `engine-client`) maps the snake/camel-case wire shape back to app's `SkillSummary`.
-4. **Action cards** use `app/src/components/skill-card.tsx` across the chat empty state, picker, and Actions tab. Keep these in sync by reusing the component, not recreating card markup.
+4. **Skill cards** use `app/src/components/skill-card.tsx` across the chat empty state, picker, and Skills tab. Keep these in sync by reusing the component, not recreating card markup.
 5. **`useAgentChatPanel`** (`app/src/components/use-agent-chat-panel.tsx`) — single source of truth for the per-agent panel UX. Owns:
    - skill discovery (featured cards on empty state)
-   - selected Action chip above the composer
-   - Action-only send interception
-   - composer model selector + Actions button
+   - selected Skill chip above the composer
+   - Skill-only send interception
+   - composer model selector + Skills button
    - Composio link card renderer
    - file-tool result renderer
-   - `renderUserMessage` — decodes action + attachment markers into cards
+   - `renderUserMessage` — decodes skill + attachment markers into cards
 6. Both **BoardTab** (per-agent kanban) and **Dashboard** (Mission Control / cross-agent kanban) consume this hook so the right panel is identical in both views.
 
 ## Community search behavior
@@ -87,12 +85,12 @@ temporary 429/network failure. App search callers handle remaining failures
 inline in the Add Skills UI; they should not show global "Houston problem" bug
 toasts for marketplace search misses.
 
-## Action invocation marker (chat persistence)
+## Skill invocation marker (chat persistence)
 
-When the user runs an action, the persisted user_message body is:
+When the user runs a Skill, the persisted user_message body is:
 
 ```
-<!--houston:action {"skill":"research-company","displayName":"Research a company","image":"...","description":"...","integrations":["tavily"],"fields":[],"message":"Focus on pricing.","attachments":[]}-->
+<!--houston:skill {"skill":"research-company","displayName":"Research a company","image":"...","description":"...","integrations":["tavily"],"fields":[],"message":"Focus on pricing.","attachments":[]}-->
 
 Use the research-company skill.
 
@@ -101,14 +99,14 @@ Focus on pricing.
 
 - The HTML-comment marker is inert text to Claude (it ignores it) but carries everything the chat renderer needs to draw the card. Single source of truth = single persisted body.
 - The marker `message` is the user's optional composer text. The body is the Claude-facing prompt and always starts with `Use the <skill> skill.`.
-- If files were uploaded with the action, `attachments` carries `{name,path}` entries. The renderer shows only the count badge; the Claude-facing body still contains the `[User attached these files...]` path block.
-- Decoder lives in `@houston-ai/chat`'s `action-message.ts` so desktop AND mobile render the same card from the same payload.
-- Encoder (`encodeActionMessage`) + Claude-prompt assembler (`buildActionClaudePrompt`) live in `app/src/lib/action-message.ts` — only the desktop sends actions today.
+- If files were uploaded with the Skill, `attachments` carries `{name,path}` entries. The renderer shows only the count badge; the Claude-facing body still contains the `[User attached these files...]` path block.
+- Decoder lives in `@houston-ai/chat`'s `skill-message.ts` so desktop AND mobile render the same card from the same payload. The decoder also accepts a legacy `<!--houston:action ...-->` prefix so chat history persisted before the rename keeps rendering as a card.
+- Encoder (`encodeSkillMessage`) + Claude-prompt assembler (`buildSkillClaudePrompt`) live in `app/src/lib/skill-message.ts` — only the desktop sends Skills today.
 
 ## Attachment message marker (chat persistence)
 
 Regular messages with uploaded files follow the same "single persisted body"
-pattern as Actions:
+pattern as Skills:
 
 ```
 <!--houston:attachments {"message":"Summarize this","files":[{"name":"brief.pdf","path":"/Users/.../brief.pdf"}]}-->
@@ -123,13 +121,13 @@ Summarize this
 - The UI decodes the marker and renders the user text plus a compact paperclip badge ("1 file attached" / "N files attached"). Absolute paths are never displayed.
 - Decoder + shared badge renderer live in `@houston-ai/chat` (`attachment-message.ts`, `user-attachment-message.tsx`). Desktop encoder lives in `app/src/lib/attachment-message.ts`.
 
-## Authoring an action via Claude
+## Authoring a Skill via Claude
 
-When the user asks "create an action that does X", Claude should:
+When the user asks "create a skill that does X", Claude should:
 1. Pick a slug (kebab-case, descriptive).
 2. Write `~/.houston/workspaces/<Workspace>/<Agent>/.agents/skills/<slug>/SKILL.md` with the full frontmatter schema above.
 3. Set `description` carefully — it's the trigger phrase Claude itself will use for tool matching later.
-4. Default to `featured: yes` for new actions until proven otherwise (so the user actually finds them).
+4. Default to `featured: yes` for new Skills until proven otherwise (so the user actually finds them).
 5. Include an `image` slug — pick a relevant Fluent 3D emoji (browse the assets folder).
 6. Body: at least an `## Instructions` or `## Procedure` section.
 
@@ -155,9 +153,9 @@ The user never sees the `name` slug — they see `humanize(name)` (e.g. `"Resear
 
 Cross-references between skills live inside bodies, never in user-facing wording. When you rename a primitive slug, update every cross-reference.
 
-### When you rename or remove a packaged Action
+### When you rename or remove a packaged Skill
 
-A renamed Action that ships in a Store-bundled package needs a migration step in the package's `.migrations.json`, otherwise existing users end up with the old slug AND the new slug both present in their picker (the sync logic only adds, never deletes).
+A renamed Skill that ships in a Store-bundled package needs a migration step in the package's `.migrations.json`, otherwise existing users end up with the old slug AND the new slug both present in their picker (the sync logic only adds, never deletes).
 
 Format:
 
@@ -184,7 +182,7 @@ The engine applies the rename per workspace on the next sync. If only the old sl
 | Engine DTO | [`engine/houston-engine-core/src/skills.rs`](../engine/houston-engine-core/src/skills.rs) |
 | TS wire types | [`ui/engine-client/src/types.ts`](../ui/engine-client/src/types.ts) |
 | App shared hook | [`app/src/components/use-agent-chat-panel.tsx`](../app/src/components/use-agent-chat-panel.tsx) |
-| Selected Action chip | [`app/src/components/selected-action-chip.tsx`](../app/src/components/selected-action-chip.tsx) |
-| Card on user message | [`app/src/components/user-action-message.tsx`](../app/src/components/user-action-message.tsx) (desktop) and [`mobile/src/components/user-action-message.tsx`](../mobile/src/components/user-action-message.tsx) |
-| Marker codec | [`ui/chat/src/action-message.ts`](../ui/chat/src/action-message.ts) (decode) and [`app/src/lib/action-message.ts`](../app/src/lib/action-message.ts) (encode) |
-| System prompt template | [`app/src-tauri/src/houston_prompt/actions_memory.rs`](../app/src-tauri/src/houston_prompt/actions_memory.rs) (`SELF_IMPROVEMENT_GUIDANCE`) |
+| Selected Skill chip | [`app/src/components/selected-skill-chip.tsx`](../app/src/components/selected-skill-chip.tsx) |
+| Card on user message | [`app/src/components/user-skill-message.tsx`](../app/src/components/user-skill-message.tsx) (desktop) and [`mobile/src/components/user-skill-message.tsx`](../mobile/src/components/user-skill-message.tsx) |
+| Marker codec | [`ui/chat/src/skill-message.ts`](../ui/chat/src/skill-message.ts) (decode) and [`app/src/lib/skill-message.ts`](../app/src/lib/skill-message.ts) (encode) |
+| System prompt template | [`app/src-tauri/src/houston_prompt/skills_memory.rs`](../app/src-tauri/src/houston_prompt/skills_memory.rs) (`SELF_IMPROVEMENT_GUIDANCE`) |

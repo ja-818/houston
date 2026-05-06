@@ -150,7 +150,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
         onDelete={handleDelete}
         labels={{
           addItem: t("shell:sidebar.addAgent"),
-          moreActions: t("shell:sidebar.agentActions"),
+          moreOptions: t("shell:sidebar.agentMenu"),
           renameItem: t("common:actions.rename"),
           deleteItem: t("common:actions.delete"),
         }}
