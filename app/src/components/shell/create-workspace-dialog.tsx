@@ -20,6 +20,7 @@ export function CreateAgentDialog() {
   const { t } = useTranslation("shell");
   const open = useUIStore((s) => s.createAgentDialogOpen);
   const setOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
+  const uiTourActive = useUIStore((s) => s.uiTourActive);
   const agentDefs = useAgentCatalogStore((s) => s.agents);
   const storeCatalog = useAgentCatalogStore((s) => s.storeCatalog);
   const installAgent = useAgentCatalogStore((s) => s.installAgent);
@@ -96,7 +97,17 @@ export function CreateAgentDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="sm:max-w-[900px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent
+        className="sm:max-w-[900px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden"
+        // While the guided tour is showing, the tour's Next button lives
+        // outside DialogContent — Radix would interpret that click as
+        // outside-dismiss, swallow it, and the user would have to click
+        // again. Block outside-dismiss for the tour's lifetime; the tour
+        // explicitly closes the dialog when it ends.
+        onPointerDownOutside={(e) => { if (uiTourActive) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (uiTourActive) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (uiTourActive) e.preventDefault(); }}
+      >
         {step === 1 ? (
           <>
             <DialogHeader className="shrink-0 px-6 pt-6 pb-3">
