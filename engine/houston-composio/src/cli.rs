@@ -97,7 +97,7 @@ pub async fn status() -> ComposioStatus {
 /// tokio pipe involvement.
 pub async fn start_login() -> Result<StartLoginResponse, String> {
     let bin = cli_binary()?;
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = crate::install::home_dir().to_string_lossy().to_string();
     let path = std::env::var("PATH").unwrap_or_default();
 
     let result = tokio::time::timeout(
@@ -108,16 +108,17 @@ pub async fn start_login() -> Result<StartLoginResponse, String> {
             let stdout_file = std::fs::File::create(&tmp)
                 .map_err(|e| format!("Failed to create temp file: {e}"))?;
 
-            let status = std::process::Command::new(&bin)
-                .args(["login", "--no-wait", "--no-skill-install", "-y"])
+            let mut cmd = std::process::Command::new(&bin);
+            cmd.args(["login", "--no-wait", "--no-skill-install", "-y"])
                 .env("CI", "1")
                 .env("TERM", "dumb")
                 .env("NO_COLOR", "1")
-                .env("HOME", &home)
                 .env("PATH", &path)
                 .stdin(std::process::Stdio::null())
                 .stdout(stdout_file)
-                .stderr(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null());
+            crate::install::set_home_env(&mut cmd, &home);
+            let status = cmd
                 .status()
                 .map_err(|e| format!("Failed to spawn composio login: {e}"))?;
 
@@ -328,12 +329,13 @@ async fn run_cli_with_timeout(
         timeout
     );
 
-    // Explicitly pass HOME and PATH: macOS `.app` bundles launched
-    // from Finder can spawn subprocesses with a stripped environment,
-    // which leaves the CLI unable to find its own config at
-    // `~/.composio`. Houston's own process has HOME set, so we
-    // propagate it.
-    let home = std::env::var("HOME").unwrap_or_default();
+    // Explicitly pass HOME (and USERPROFILE on Windows) plus PATH:
+    // macOS `.app` bundles launched from Finder can spawn subprocesses
+    // with a stripped environment, leaving the CLI unable to find its
+    // own config at `~/.composio`. Windows never sets HOME, so the
+    // Bun-compiled composio.exe needs USERPROFILE to resolve
+    // `os.homedir()` for the same lookup.
+    let home = crate::install::home_dir().to_string_lossy().to_string();
     let path = std::env::var("PATH").unwrap_or_default();
 
     let mut cmd = Command::new(&bin);
@@ -341,12 +343,12 @@ async fn run_cli_with_timeout(
         .env("CI", "1")
         .env("TERM", "dumb")
         .env("NO_COLOR", "1")
-        .env("HOME", &home)
         .env("PATH", &path)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .kill_on_drop(true);
+    crate::install::set_home_env_tokio(&mut cmd, &home);
 
     let fut = cmd.output();
     let result = match tokio::time::timeout(timeout, fut).await {

@@ -6,11 +6,12 @@
 //! launch, local CLI probes) would be meaningless there and stay
 //! desktop-only.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::process::Command;
 
 fn shell_command_exists(bin: &str) -> bool {
-    std::process::Command::new("which")
+    let probe = if cfg!(windows) { "where" } else { "which" };
+    std::process::Command::new(probe)
         .arg(bin)
         .output()
         .map(|o| o.status.success())
@@ -31,34 +32,112 @@ fn expand(p: &str) -> PathBuf {
 
 #[tauri::command(rename_all = "snake_case")]
 pub async fn pick_directory() -> Result<Option<String>, String> {
-    let output = Command::new("osascript")
-        .arg("-e")
-        .arg(r#"POSIX path of (choose folder with prompt "Select your project directory")"#)
-        .output()
-        .await
-        .map_err(|e| format!("Failed to open folder picker: {e}"))?;
+    #[cfg(target_os = "macos")]
+    {
+        let output = Command::new("osascript")
+            .arg("-e")
+            .arg(r#"POSIX path of (choose folder with prompt "Select your project directory")"#)
+            .output()
+            .await
+            .map_err(|e| format!("Failed to open folder picker: {e}"))?;
 
-    if !output.status.success() {
-        // User cancelled — not an error
-        return Ok(None);
-    }
+        if !output.status.success() {
+            return Ok(None);
+        }
 
-    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if path.is_empty() {
-        return Ok(None);
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if path.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(path))
     }
-    Ok(Some(path))
+    #[cfg(target_os = "windows")]
+    {
+        // PowerShell's FolderBrowserDialog is the closest stdlib-only
+        // equivalent on Windows. STA threading is required for COM
+        // dialogs; -Sta makes that explicit.
+        let script = r#"
+Add-Type -AssemblyName System.Windows.Forms | Out-Null
+$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialog.Description = 'Select your project directory'
+if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+  Write-Output $dialog.SelectedPath
+}
+"#;
+        let output = Command::new("powershell")
+            .args(["-NoProfile", "-Sta", "-Command", script])
+            .output()
+            .await
+            .map_err(|e| format!("Failed to open folder picker: {e}"))?;
+
+        if !output.status.success() {
+            return Ok(None);
+        }
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if path.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(path))
+    }
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
+    {
+        // Linux: zenity is the lowest-common-denominator GTK picker.
+        let output = Command::new("zenity")
+            .args(["--file-selection", "--directory", "--title=Select your project directory"])
+            .output()
+            .await
+            .map_err(|e| format!("Failed to open folder picker (install zenity): {e}"))?;
+
+        if !output.status.success() {
+            return Ok(None);
+        }
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if path.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(path))
+    }
 }
 
 // -- Open a URL in the default browser --
 
+/// Spawn the OS-native "open this in the default app" command. Path-or-URL
+/// flavor — caller passes either a URL or a filesystem path; on every
+/// platform the same shell verb opens both.
+fn spawn_default_open(target: &str) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(target)
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Failed to open: {e}"))
+    }
+    #[cfg(target_os = "windows")]
+    {
+        // `cmd /C start "" "<target>"` is the canonical way to invoke the
+        // Windows shell handler. The empty `""` is the *window title* arg
+        // — without it `start` treats a quoted target as the title and
+        // opens nothing.
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", target])
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Failed to open: {e}"))
+    }
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(target)
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Failed to open (install xdg-utils): {e}"))
+    }
+}
+
 #[tauri::command(rename_all = "snake_case")]
 pub async fn open_url(url: String) -> Result<(), String> {
-    std::process::Command::new("open")
-        .arg(&url)
-        .spawn()
-        .map_err(|e| format!("Failed to open URL: {e}"))?;
-    Ok(())
+    spawn_default_open(&url).map_err(|e| format!("Failed to open URL: {e}"))
 }
 
 // -- File reveal / open --
@@ -70,11 +149,8 @@ pub async fn open_file(agent_path: String, relative_path: String) -> Result<(), 
     if !full.exists() {
         return Err(format!("File does not exist: {}", full.display()));
     }
-    std::process::Command::new("open")
-        .arg(&full)
-        .spawn()
-        .map_err(|e| format!("Failed to open file: {e}"))?;
-    Ok(())
+    spawn_default_open(&full.to_string_lossy())
+        .map_err(|e| format!("Failed to open file: {e}"))
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -84,20 +160,50 @@ pub async fn reveal_file(agent_path: String, relative_path: String) -> Result<()
     if !full.exists() {
         return Err(format!("File does not exist: {}", full.display()));
     }
-    std::process::Command::new("open")
-        .arg("-R")
-        .arg(&full)
-        .spawn()
-        .map_err(|e| format!("Failed to reveal file: {e}"))?;
-    Ok(())
+    reveal_in_file_manager(&full).map_err(|e| format!("Failed to reveal file: {e}"))
 }
 
 #[tauri::command(rename_all = "snake_case")]
 pub async fn reveal_agent(agent_path: String) -> Result<(), String> {
     let root = expand(&agent_path);
-    std::process::Command::new("open")
-        .arg(&root)
-        .spawn()
-        .map_err(|e| format!("Failed to open folder: {e}"))?;
-    Ok(())
+    spawn_default_open(&root.to_string_lossy())
+        .map_err(|e| format!("Failed to open folder: {e}"))
+}
+
+/// Open the OS file manager with the given path selected (Finder reveal /
+/// Explorer /select / xdg-open on parent dir).
+fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("-R")
+            .arg(path)
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+    #[cfg(target_os = "windows")]
+    {
+        // explorer.exe /select,<path> opens the parent folder with the
+        // file highlighted. Note: no quotes around the path arg — explorer
+        // parses the comma + path as a single token, and quoting it
+        // breaks the selection.
+        let select_arg = format!("/select,{}", path.display());
+        std::process::Command::new("explorer")
+            .arg(select_arg)
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
+    {
+        // No portable "select" verb on Linux — fall back to opening the
+        // parent directory. Better than failing.
+        let parent = path.parent().unwrap_or(path);
+        std::process::Command::new("xdg-open")
+            .arg(parent)
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
 }

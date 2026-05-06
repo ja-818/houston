@@ -89,6 +89,9 @@ pub fn bundled_bin_dir_for(exe: &Path) -> Option<PathBuf> {
     if let Some(dir) = sibling_resources_bin_dir(exe) {
         return Some(dir);
     }
+    if let Some(dir) = sibling_bin_dir(exe) {
+        return Some(dir);
+    }
     None
 }
 
@@ -318,6 +321,18 @@ fn sibling_resources_bin_dir(exe: &Path) -> Option<PathBuf> {
     bin.is_dir().then_some(bin)
 }
 
+/// Windows MSI/NSIS layout: Tauri's `bundle.resources` map
+/// `{"resources/bin": "bin"}` lands files at `<install_dir>\bin\` on
+/// Windows (the resource_dir is the install dir, no separate
+/// Resources/ tree like macOS). Both `houston-app.exe` and the
+/// `houston-engine.exe` sidecar live at the install root, so the
+/// bundled CLI dir is the engine's own sibling `bin/`.
+fn sibling_bin_dir(exe: &Path) -> Option<PathBuf> {
+    let exe_dir = exe.parent()?;
+    let bin = exe_dir.join(BIN_SUBDIR);
+    bin.is_dir().then_some(bin)
+}
+
 fn codex_binary_name() -> &'static str {
     if cfg!(windows) {
         "codex.exe"
@@ -410,6 +425,22 @@ mod tests {
         let exe = exe_dir.join("houston-engine");
         fs::write(&exe, b"").unwrap();
         let bin = exe_dir.join("resources").join(BIN_SUBDIR);
+        fs::create_dir_all(&bin).unwrap();
+        assert_eq!(bundled_bin_dir_for(&exe), Some(bin));
+    }
+
+    #[test]
+    fn detects_windows_msi_install_layout() {
+        // Windows MSI / NSIS: Tauri stages bundle.resources directly under
+        // the install root, so resources/bin/<files> ends up at
+        // `<install>\bin\<files>`. The engine sidecar lives at the
+        // install root next to houston-app.exe.
+        let tmp = tempfile::tempdir().unwrap();
+        let install = tmp.path().join("Houston");
+        fs::create_dir_all(&install).unwrap();
+        let exe = install.join("houston-engine.exe");
+        fs::write(&exe, b"").unwrap();
+        let bin = install.join(BIN_SUBDIR);
         fs::create_dir_all(&bin).unwrap();
         assert_eq!(bundled_bin_dir_for(&exe), Some(bin));
     }

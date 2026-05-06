@@ -118,8 +118,11 @@ pub(crate) async fn get_valid_token() -> Option<String> {
 // -- Config: read Composio URL from ~/.claude.json --
 
 pub(crate) fn read_composio_url() -> Option<String> {
-    let home = std::env::var("HOME").ok()?;
-    let path = std::path::PathBuf::from(home).join(".claude.json");
+    let home = crate::install::home_dir();
+    if home.as_os_str().is_empty() {
+        return None;
+    }
+    let path = home.join(".claude.json");
     let content = std::fs::read_to_string(&path).ok()?;
     let config: serde_json::Value = serde_json::from_str(&content).ok()?;
     let composio = config.pointer("/mcpServers/composio")?;

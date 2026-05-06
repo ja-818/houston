@@ -103,22 +103,23 @@ pub async fn ensure_and_upgrade(sink: DynEventSink, db: Database) {
 /// signed binary inside the `.app`).
 async fn run_upgrade() -> Result<(), String> {
     let bin = install::cli_path();
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = install::home_dir().to_string_lossy().to_string();
     let path = std::env::var("PATH").unwrap_or_default();
 
     let result = tokio::time::timeout(
         std::time::Duration::from_secs(180),
         tokio::task::spawn_blocking(move || {
-            let status = std::process::Command::new(&bin)
-                .arg("upgrade")
+            let mut cmd = std::process::Command::new(&bin);
+            cmd.arg("upgrade")
                 .env("CI", "1")
                 .env("TERM", "dumb")
                 .env("NO_COLOR", "1")
-                .env("HOME", &home)
                 .env("PATH", &path)
                 .stdin(std::process::Stdio::null())
                 .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped());
+            install::set_home_env(&mut cmd, &home);
+            let status = cmd
                 .status()
                 .map_err(|e| format!("Failed to spawn composio upgrade: {e}"))?;
 

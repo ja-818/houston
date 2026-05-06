@@ -7,8 +7,15 @@
 //! showing the webview.
 //!
 //! Lifecycle:
-//! - Parent exit → child dies (Unix: `setpgid` + `kill(-pgrp)` on Drop;
-//!   Windows: Job Objects — TODO: not yet implemented).
+//! - Parent exit → child dies. On Unix the child runs in its own process
+//!   group via `setpgid` and `Drop` calls `killpg(-pgrp)`. On Windows the
+//!   child is spawned with `CREATE_NEW_PROCESS_GROUP` so console events
+//!   sent to the parent (CTRL_C_EVENT, CTRL_CLOSE_EVENT) do NOT propagate
+//!   to the engine — without this the child catches the parent's Ctrl-C
+//!   and exits with `STATUS_CONTROL_C_EXIT` (0xC000013A), which we saw on
+//!   Windows MSI builds. Termination still happens through the stdin
+//!   watchdog: dropping the supervisor closes the pipe and the engine
+//!   exits cleanly on the next read.
 //! - Child crash → [`spawn_supervisor`] restarts with 1s..30s exponential
 //!   backoff and emits a `houston-event` toast to the webview on each
 //!   restart.
@@ -85,6 +92,20 @@ impl EngineSubprocess {
                 // New process group — killing the parent won't orphan the child.
                 libc_setpgid()
             });
+        }
+
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            // CREATE_NEW_PROCESS_GROUP (0x00000200) detaches the child
+            // from the parent's console process group. Without it,
+            // CTRL_C_EVENT and CTRL_CLOSE_EVENT delivered to the parent
+            // propagate to the engine and it dies with
+            // STATUS_CONTROL_C_EXIT (0xC000013A) — observed on Windows
+            // MSI builds. We never need to send Ctrl+C to the child
+            // ourselves; the stdin watchdog handles graceful shutdown.
+            const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+            cmd.creation_flags(CREATE_NEW_PROCESS_GROUP);
         }
 
         let mut child = cmd

@@ -130,7 +130,7 @@ pub async fn install() -> Result<PathBuf, String> {
 
     tracing::info!("[composio:install] running standalone install script…");
 
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = home_dir().to_string_lossy().to_string();
     let path = std::env::var("PATH").unwrap_or_default();
 
     let result = tokio::time::timeout(
@@ -207,10 +207,30 @@ pub async fn install() -> Result<PathBuf, String> {
     Ok(resolved)
 }
 
-fn home_dir() -> PathBuf {
-    // Cross-platform: macOS/Linux set HOME, Windows sets USERPROFILE.
-    // The `dirs` crate papers over both.
+/// Cross-platform home directory. macOS/Linux set `HOME`; Windows sets
+/// `USERPROFILE`. The `dirs` crate papers over both. Public so the
+/// rest of `houston-composio` doesn't read `$HOME` directly — that env
+/// var is unset on Windows and produces "HOME not set" failures when
+/// reading `~/.composio/user_data.json` (see apps.rs).
+pub fn home_dir() -> PathBuf {
     dirs::home_dir().unwrap_or_default()
+}
+
+/// Pass HOME (and USERPROFILE on Windows) into a subprocess. Composio's
+/// Bun-compiled CLI reads `os.homedir()` which on Windows checks
+/// `USERPROFILE`; on macOS .app bundles launched from Finder strip the
+/// env, so explicit HOME re-passing is also needed there.
+pub fn set_home_env(cmd: &mut std::process::Command, home: &str) {
+    cmd.env("HOME", home);
+    #[cfg(windows)]
+    cmd.env("USERPROFILE", home);
+}
+
+/// Tokio variant of [`set_home_env`].
+pub fn set_home_env_tokio(cmd: &mut tokio::process::Command, home: &str) {
+    cmd.env("HOME", home);
+    #[cfg(windows)]
+    cmd.env("USERPROFILE", home);
 }
 
 #[cfg(test)]

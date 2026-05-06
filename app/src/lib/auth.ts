@@ -36,8 +36,22 @@ async function signInWithProvider(
       // Don't let Supabase touch window.location — we're in a webview and
       // need the consent page to open in the user's real browser.
       skipBrowserRedirect: true,
-      // Microsoft requires explicit scopes to surface email + profile.
-      ...(provider === "azure" ? { scopes: "email openid profile" } : {}),
+      // Microsoft (Entra) needs the standard OIDC trio plus
+      // `offline_access` to issue a refresh token; without it Supabase
+      // gets the ID token but no way to refresh, and the session goes
+      // stale on the first reload. Matches Supabase's documented azure
+      // default. We deliberately don't request `profile` / `User.Read`
+      // since Houston only needs the email + sub claims for sign-in.
+      ...(provider === "azure"
+        ? {
+            scopes: "openid email offline_access",
+            // Force the account picker so users with multiple Microsoft
+            // accounts (work + personal) can choose; otherwise Microsoft
+            // silently picks the last-used one which is the #1 source of
+            // "wrong account" sign-in confusion.
+            queryParams: { prompt: "select_account" },
+          }
+        : {}),
     },
   });
 
@@ -45,6 +59,30 @@ async function signInWithProvider(
   if (!data.url) throw new Error("Supabase returned no auth URL");
 
   await tauriSystem.openUrl(data.url);
+}
+
+/**
+ * Subscribers notified whenever the deep-link / PKCE exchange path
+ * surfaces an OAuth error (provider-side error, code exchange failure,
+ * malformed callback URL). Wired up so [`SignInScreen`] can display the
+ * real provider message instead of a generic "Something went wrong".
+ */
+type AuthErrorListener = (message: string) => void;
+const authErrorListeners = new Set<AuthErrorListener>();
+
+export function onAuthError(cb: AuthErrorListener): () => void {
+  authErrorListeners.add(cb);
+  return () => authErrorListeners.delete(cb);
+}
+
+function emitAuthError(message: string): void {
+  for (const cb of authErrorListeners) {
+    try {
+      cb(message);
+    } catch (e) {
+      logger.warn(`[auth] error listener threw: ${e}`);
+    }
+  }
 }
 
 export const signInWithGoogle = (): Promise<void> => signInWithProvider("google");
@@ -84,28 +122,43 @@ export function installDeepLinkListener(): () => void {
 
     try {
       const url = new URL(rawUrl);
+      // OAuth errors can land in the query string (PKCE code flow) OR the
+      // fragment (implicit flow / some Microsoft Entra paths). Check both.
+      const fragmentParams = new URLSearchParams(
+        url.hash.startsWith("#") ? url.hash.slice(1) : url.hash,
+      );
       const code = url.searchParams.get("code");
-      const errorParam = url.searchParams.get("error_description");
+      const errorParam =
+        url.searchParams.get("error_description") ||
+        url.searchParams.get("error") ||
+        fragmentParams.get("error_description") ||
+        fragmentParams.get("error");
 
       if (errorParam) {
         logger.error(`[auth] OAuth error: ${errorParam}`);
+        emitAuthError(errorParam);
         return;
       }
 
       if (!code) {
         logger.warn("[auth] deep-link had no `code` param — ignoring");
+        emitAuthError(
+          "Sign-in callback was missing the authorization code.",
+        );
         return;
       }
 
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
         logger.error(`[auth] exchangeCodeForSession failed: ${error.message}`);
+        emitAuthError(error.message);
         return;
       }
 
       logger.info(`[auth] session established for ${data.user?.email}`);
     } catch (e) {
       logger.error(`[auth] failed to handle deep-link: ${e}`);
+      emitAuthError(String(e));
     }
   });
 

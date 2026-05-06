@@ -54,12 +54,13 @@ pub async fn list_all_apps() -> Vec<ComposioAppEntry> {
 
 /// Read the user's API key, base URL, and org ID from `~/.composio/user_data.json`.
 pub fn read_user_config_full() -> Result<(String, String, String), String> {
-    let home = std::env::var("HOME").map_err(|_| "HOME not set".to_string())?;
-    let path = std::path::Path::new(&home)
-        .join(".composio")
-        .join("user_data.json");
-    let content =
-        std::fs::read_to_string(&path).map_err(|e| format!("Cannot read {}: {e}", path.display()))?;
+    let home = crate::install::home_dir();
+    if home.as_os_str().is_empty() {
+        return Err("could not resolve user home directory".to_string());
+    }
+    let path = home.join(".composio").join("user_data.json");
+    let content = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Cannot read {}: {e}", path.display()))?;
 
     #[derive(Deserialize)]
     struct UserData {

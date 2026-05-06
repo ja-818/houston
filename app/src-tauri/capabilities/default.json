@@ -14,6 +14,7 @@
     "notification:allow-request-permission",
     "notification:allow-register-listener",
     "updater:default",
-    "deep-link:default"
+    "deep-link:default",
+    "sentry:default"
   ]
 }
