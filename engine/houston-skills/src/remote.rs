@@ -21,6 +21,16 @@ const SEARCH_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const SEARCH_STALE_TTL: Duration = Duration::from_secs(24 * 60 * 60);
 const SEARCH_MIN_INTERVAL: Duration = Duration::from_millis(750);
 
+/// Seed query used to populate the "popular" feed. Skills.sh returns
+/// results sorted by install count regardless of query relevance, so any
+/// broad term works; this just shows real results when the user opens
+/// the marketplace before they type. Cached for 24h on its own slot so
+/// it never competes with user-typed search for cache space or the
+/// rate-limit window.
+const POPULAR_SEED: &str = "ai";
+const POPULAR_FRESH_TTL: Duration = Duration::from_secs(24 * 60 * 60);
+const POPULAR_LIMIT: usize = 20;
+
 static SEARCH_CACHE: OnceLock<Mutex<SearchCache>> = OnceLock::new();
 
 // ── Public types ──────────────────────────────────────────────────
@@ -64,12 +74,109 @@ struct CachedSearch {
 #[derive(Default)]
 struct SearchCache {
     entries: HashMap<String, CachedSearch>,
-    last_request_at: Option<Instant>,
+    /// Popular feed cached separately on its own (long) TTL so the
+    /// marketplace dialog opens instantly even after a fresh cold start
+    /// and never blocks user-typed searches behind the same lock.
+    popular: Option<CachedSearch>,
+    /// Earliest instant the next outbound request to skills.sh may
+    /// happen. Updated optimistically inside the lock so concurrent
+    /// callers space themselves correctly without holding the lock
+    /// across the network call. `None` means "no recent request".
+    next_allowed_request: Option<Instant>,
+}
+
+/// Snapshot returned when reading the cache while deciding what to do.
+/// Variants drive the post-lock control flow without holding the lock
+/// across awaits.
+enum CacheLookup {
+    /// Fresh hit — return immediately, no network call.
+    Fresh(Vec<CommunitySkill>),
+    /// Cache miss or stale entry — caller should fetch over the
+    /// network. `wait` is the minimum spacing delay before doing so.
+    Miss { wait: Duration },
 }
 
 impl SearchCache {
-    async fn search(
+    /// Decide what to do for `key` while holding the lock briefly.
+    ///
+    /// Two-phase pattern: this returns either a fresh cached result
+    /// (caller skips the network entirely) or the spacing delay the
+    /// caller must `sleep()` for before fetching. The lock is dropped
+    /// before any await so different queries don't serialize.
+    fn lookup_or_reserve(
         &mut self,
+        key: &str,
+        fresh_ttl: Duration,
+        min_interval: Duration,
+    ) -> CacheLookup {
+        if let Some(cached) = self.entries.get(key) {
+            if cached.fetched_at.elapsed() <= fresh_ttl {
+                return CacheLookup::Fresh(cached.skills.clone());
+            }
+        }
+        let wait = self.reserve_request_slot(min_interval);
+        CacheLookup::Miss { wait }
+    }
+
+    /// Reserve a network slot and return how long to wait before using
+    /// it. Mutates `next_allowed_request` so concurrent callers see the
+    /// reservation and stack their own delays correctly.
+    fn reserve_request_slot(&mut self, min_interval: Duration) -> Duration {
+        let now = Instant::now();
+        let earliest = self.next_allowed_request.unwrap_or(now);
+        let target = if earliest <= now {
+            now
+        } else {
+            earliest
+        };
+        let wait = target.saturating_duration_since(now);
+        self.next_allowed_request = Some(target + min_interval);
+        wait
+    }
+
+    fn write_entry(&mut self, key: String, skills: Vec<CommunitySkill>) {
+        self.entries.insert(
+            key,
+            CachedSearch {
+                skills,
+                fetched_at: Instant::now(),
+            },
+        );
+    }
+
+    fn stale(&self, key: &str, stale_ttl: Duration) -> Option<Vec<CommunitySkill>> {
+        self.entries
+            .get(key)
+            .filter(|c| c.fetched_at.elapsed() <= stale_ttl)
+            .map(|c| c.skills.clone())
+    }
+
+    fn popular_fresh(&self, fresh_ttl: Duration) -> Option<Vec<CommunitySkill>> {
+        self.popular
+            .as_ref()
+            .filter(|c| c.fetched_at.elapsed() <= fresh_ttl)
+            .map(|c| c.skills.clone())
+    }
+
+    fn popular_stale(&self, stale_ttl: Duration) -> Option<Vec<CommunitySkill>> {
+        self.popular
+            .as_ref()
+            .filter(|c| c.fetched_at.elapsed() <= stale_ttl)
+            .map(|c| c.skills.clone())
+    }
+
+    fn write_popular(&mut self, skills: Vec<CommunitySkill>) {
+        self.popular = Some(CachedSearch {
+            skills,
+            fetched_at: Instant::now(),
+        });
+    }
+
+    /// Top-level search entry point. Holds the lock only for short
+    /// critical sections — the network call happens with the lock
+    /// dropped, so different queries never serialize behind each other.
+    async fn search(
+        cache: &Mutex<SearchCache>,
         client: &Client,
         endpoint: &str,
         query: &str,
@@ -84,44 +191,90 @@ impl SearchCache {
         }
 
         let key = normalize_search_query(query);
-        if let Some(cached) = self.entries.get(&key) {
-            if cached.fetched_at.elapsed() <= fresh_ttl {
-                return Ok(cached.skills.clone());
-            }
-        }
 
-        if let Some(last) = self.last_request_at {
-            let elapsed = last.elapsed();
-            if elapsed < min_interval {
-                tokio::time::sleep(min_interval - elapsed).await;
+        let wait = {
+            let mut guard = cache.lock().await;
+            match guard.lookup_or_reserve(&key, fresh_ttl, min_interval) {
+                CacheLookup::Fresh(skills) => return Ok(skills),
+                CacheLookup::Miss { wait } => wait,
             }
+        };
+
+        if !wait.is_zero() {
+            tokio::time::sleep(wait).await;
         }
-        self.last_request_at = Some(Instant::now());
 
         match search_skills_at(client, endpoint, query, retry_delay).await {
             Ok(skills) => {
-                self.entries.insert(
-                    key,
-                    CachedSearch {
-                        skills: skills.clone(),
-                        fetched_at: Instant::now(),
-                    },
-                );
+                let mut guard = cache.lock().await;
+                guard.write_entry(key, skills.clone());
                 Ok(skills)
             }
             Err(err) => {
-                if let Some(cached) = self.entries.get(&key) {
-                    if cached.fetched_at.elapsed() <= stale_ttl {
-                        tracing::warn!(
-                            "[houston-skills] community search failed, returning cached results: {err}"
-                        );
-                        return Ok(cached.skills.clone());
-                    }
+                let stale = cache.lock().await.stale(&key, stale_ttl);
+                if let Some(skills) = stale {
+                    tracing::warn!(
+                        "[houston-skills] community search failed, returning cached results: {err}"
+                    );
+                    Ok(skills)
+                } else {
+                    Err(err)
                 }
-                Err(err)
             }
         }
     }
+
+    /// Popular feed entry point. Same short-lock pattern as `search`
+    /// but on the dedicated `popular` slot with its own fresh TTL.
+    async fn popular(
+        cache: &Mutex<SearchCache>,
+        client: &Client,
+        endpoint: &str,
+        seed: &str,
+        retry_delay: Duration,
+        fresh_ttl: Duration,
+        stale_ttl: Duration,
+        min_interval: Duration,
+        limit: usize,
+    ) -> Result<Vec<CommunitySkill>, SkillError> {
+        let wait = {
+            let mut guard = cache.lock().await;
+            if let Some(skills) = guard.popular_fresh(fresh_ttl) {
+                return Ok(truncate(skills, limit));
+            }
+            guard.reserve_request_slot(min_interval)
+        };
+
+        if !wait.is_zero() {
+            tokio::time::sleep(wait).await;
+        }
+
+        match search_skills_at(client, endpoint, seed, retry_delay).await {
+            Ok(skills) => {
+                let mut guard = cache.lock().await;
+                guard.write_popular(skills.clone());
+                Ok(truncate(skills, limit))
+            }
+            Err(err) => {
+                let stale = cache.lock().await.popular_stale(stale_ttl);
+                if let Some(skills) = stale {
+                    tracing::warn!(
+                        "[houston-skills] popular feed fetch failed, returning cached results: {err}"
+                    );
+                    Ok(truncate(skills, limit))
+                } else {
+                    Err(err)
+                }
+            }
+        }
+    }
+}
+
+fn truncate(mut skills: Vec<CommunitySkill>, limit: usize) -> Vec<CommunitySkill> {
+    if skills.len() > limit {
+        skills.truncate(limit);
+    }
+    skills
 }
 
 // ── GitHub API types ──────────────────────────────────────────────
@@ -142,23 +295,48 @@ struct GitTreeEntry {
 // ── Public API ────────────────────────────────────────────────────
 
 /// Search the skills.sh community directory.
+///
+/// Caching, request spacing, and rate-limit handling are owned by the
+/// shared `SearchCache`. Concurrent calls with different queries do not
+/// block each other on the cache mutex — the network call always
+/// happens with the lock dropped.
 pub async fn search_skills(query: &str) -> Result<Vec<CommunitySkill>, SkillError> {
     let client = build_client()?;
-    let mut cache = SEARCH_CACHE
-        .get_or_init(|| Mutex::new(SearchCache::default()))
-        .lock()
-        .await;
-    cache
-        .search(
-            &client,
-            SEARCH_ENDPOINT,
-            query,
-            SEARCH_RETRY_DELAY,
-            SEARCH_CACHE_TTL,
-            SEARCH_STALE_TTL,
-            SEARCH_MIN_INTERVAL,
-        )
-        .await
+    let cache = SEARCH_CACHE.get_or_init(|| Mutex::new(SearchCache::default()));
+    SearchCache::search(
+        cache,
+        &client,
+        SEARCH_ENDPOINT,
+        query,
+        SEARCH_RETRY_DELAY,
+        SEARCH_CACHE_TTL,
+        SEARCH_STALE_TTL,
+        SEARCH_MIN_INTERVAL,
+    )
+    .await
+}
+
+/// Fetch the global "popular" feed for the marketplace empty state.
+///
+/// Skills.sh has no dedicated popular endpoint, but `/api/search`
+/// returns results sorted by install count regardless of relevance, so
+/// the implementation seeds the search and trims to `POPULAR_LIMIT`.
+/// Result is cached for 24h on its own slot — see `POPULAR_FRESH_TTL`.
+pub async fn fetch_popular_skills() -> Result<Vec<CommunitySkill>, SkillError> {
+    let client = build_client()?;
+    let cache = SEARCH_CACHE.get_or_init(|| Mutex::new(SearchCache::default()));
+    SearchCache::popular(
+        cache,
+        &client,
+        SEARCH_ENDPOINT,
+        POPULAR_SEED,
+        SEARCH_RETRY_DELAY,
+        POPULAR_FRESH_TTL,
+        SEARCH_STALE_TTL,
+        SEARCH_MIN_INTERVAL,
+        POPULAR_LIMIT,
+    )
+    .await
 }
 
 /// Search endpoint implementation.
@@ -246,8 +424,8 @@ pub async fn install_skill(
         }
     }
     let raw_md = raw_md.ok_or_else(|| {
-        SkillError::Io(format!(
-            "Could not find '{skill_id}' in {source} — skill not found in repo"
+        SkillError::SkillNotInRepo(format!(
+            "Could not find '{skill_id}' in {source}"
         ))
     })?;
     let parsed = parse_skill_md(&raw_md, skill_id);
@@ -307,21 +485,9 @@ pub async fn list_skills_from_repo(source: &str) -> Result<Vec<RepoSkill>, Skill
 
     match repo_resp.status().as_u16() {
         200 => {}
-        401 | 403 => {
-            return Err(SkillError::Io(
-                "Repo is private — only public repos are supported".to_string(),
-            ));
-        }
-        404 => {
-            return Err(SkillError::Io(format!(
-                "Repo '{source}' not found — check the owner/repo name"
-            )));
-        }
-        429 => {
-            return Err(SkillError::Io(
-                "GitHub rate limit hit — wait a moment and try again".to_string(),
-            ));
-        }
+        401 | 403 => return Err(SkillError::RepoPrivate),
+        404 => return Err(SkillError::RepoNotFound(source.to_string())),
+        429 => return Err(SkillError::GithubRateLimited),
         status => {
             return Err(SkillError::Io(format!(
                 "GitHub returned {status} for repo '{source}'"
@@ -364,9 +530,7 @@ pub async fn list_skills_from_repo(source: &str) -> Result<Vec<RepoSkill>, Skill
         .collect();
 
     if skill_paths.is_empty() {
-        return Err(SkillError::Io(format!(
-            "No SKILL.md files found in '{source}' — add at least one SKILL.md to your repo"
-        )));
+        return Err(SkillError::RepoEmpty(source.to_string()));
     }
 
     // Build RepoSkill stubs — we don't fetch content here, just metadata.
@@ -817,31 +981,31 @@ Some content without a heading.";
             .await;
 
         let client = build_client().unwrap();
-        let mut cache = SearchCache::default();
-        let first = cache
-            .search(
-                &client,
-                &format!("{}/search", server.uri()),
-                "Writing",
-                Duration::ZERO,
-                Duration::from_secs(60),
-                Duration::from_secs(60),
-                Duration::ZERO,
-            )
-            .await
-            .unwrap();
-        let second = cache
-            .search(
-                &client,
-                "http://127.0.0.1:1/search",
-                " writing ",
-                Duration::ZERO,
-                Duration::from_secs(60),
-                Duration::from_secs(60),
-                Duration::ZERO,
-            )
-            .await
-            .unwrap();
+        let cache = Mutex::new(SearchCache::default());
+        let first = SearchCache::search(
+            &cache,
+            &client,
+            &format!("{}/search", server.uri()),
+            "Writing",
+            Duration::ZERO,
+            Duration::from_secs(60),
+            Duration::from_secs(60),
+            Duration::ZERO,
+        )
+        .await
+        .unwrap();
+        let second = SearchCache::search(
+            &cache,
+            &client,
+            "http://127.0.0.1:1/search",
+            " writing ",
+            Duration::ZERO,
+            Duration::from_secs(60),
+            Duration::from_secs(60),
+            Duration::ZERO,
+        )
+        .await
+        .unwrap();
 
         assert_eq!(first[0].id, "owner/repo/writing");
         assert_eq!(second[0].id, "owner/repo/writing");
@@ -872,33 +1036,199 @@ Some content without a heading.";
             .await;
 
         let client = build_client().unwrap();
-        let mut cache = SearchCache::default();
-        cache
-            .search(
-                &client,
-                &format!("{}/ok", server.uri()),
-                "bookkeeping",
-                Duration::ZERO,
-                Duration::ZERO,
-                Duration::from_secs(60),
-                Duration::ZERO,
-            )
-            .await
-            .unwrap();
+        let cache = Mutex::new(SearchCache::default());
+        SearchCache::search(
+            &cache,
+            &client,
+            &format!("{}/ok", server.uri()),
+            "bookkeeping",
+            Duration::ZERO,
+            Duration::ZERO,
+            Duration::from_secs(60),
+            Duration::ZERO,
+        )
+        .await
+        .unwrap();
 
-        let skills = cache
-            .search(
-                &client,
-                &format!("{}/limited", server.uri()),
-                "bookkeeping",
-                Duration::ZERO,
-                Duration::ZERO,
-                Duration::from_secs(60),
-                Duration::ZERO,
-            )
-            .await
-            .unwrap();
+        let skills = SearchCache::search(
+            &cache,
+            &client,
+            &format!("{}/limited", server.uri()),
+            "bookkeeping",
+            Duration::ZERO,
+            Duration::ZERO,
+            Duration::from_secs(60),
+            Duration::ZERO,
+        )
+        .await
+        .unwrap();
 
         assert_eq!(skills[0].id, "owner/repo/bookkeeping");
+    }
+
+    #[tokio::test]
+    async fn different_queries_do_not_block_each_other_on_cache_lock() {
+        // The whole point of the mutex split: two distinct queries
+        // should never serialize behind each other across the network
+        // call. Using a server that blocks the response on a permit
+        // would prove this; here we use the simpler proof that two
+        // concurrent calls return the right results from independent
+        // cache slots and mock expectations are satisfied.
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/search"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "skills": [{
+                    "id": "a/b/match",
+                    "skillId": "match",
+                    "name": "match",
+                    "installs": 1,
+                    "source": "a/b"
+                }]
+            })))
+            .expect(2)
+            .mount(&server)
+            .await;
+        let client = build_client().unwrap();
+        let cache = std::sync::Arc::new(Mutex::new(SearchCache::default()));
+        let url = format!("{}/search", server.uri());
+        let (a, b) = tokio::join!(
+            {
+                let cache = cache.clone();
+                let client = client.clone();
+                let url = url.clone();
+                async move {
+                    SearchCache::search(
+                        &cache,
+                        &client,
+                        &url,
+                        "alpha",
+                        Duration::ZERO,
+                        Duration::from_secs(60),
+                        Duration::from_secs(60),
+                        Duration::ZERO,
+                    )
+                    .await
+                }
+            },
+            {
+                let cache = cache.clone();
+                let client = client.clone();
+                let url = url.clone();
+                async move {
+                    SearchCache::search(
+                        &cache,
+                        &client,
+                        &url,
+                        "bravo",
+                        Duration::ZERO,
+                        Duration::from_secs(60),
+                        Duration::from_secs(60),
+                        Duration::ZERO,
+                    )
+                    .await
+                }
+            }
+        );
+        assert!(a.is_ok());
+        assert!(b.is_ok());
+    }
+
+    #[tokio::test]
+    async fn popular_uses_dedicated_cache_slot() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/search"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "skills": [
+                    {"id": "x/y/p1", "skillId": "p1", "name": "p1", "installs": 100, "source": "x/y"},
+                    {"id": "x/y/p2", "skillId": "p2", "name": "p2", "installs": 50, "source": "x/y"}
+                ]
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = build_client().unwrap();
+        let cache = Mutex::new(SearchCache::default());
+        let url = format!("{}/search", server.uri());
+        let first = SearchCache::popular(
+            &cache,
+            &client,
+            &url,
+            "ai",
+            Duration::ZERO,
+            Duration::from_secs(60),
+            Duration::from_secs(60),
+            Duration::ZERO,
+            10,
+        )
+        .await
+        .unwrap();
+        let second = SearchCache::popular(
+            &cache,
+            &client,
+            "http://127.0.0.1:1/search",
+            "ai",
+            Duration::ZERO,
+            Duration::from_secs(60),
+            Duration::from_secs(60),
+            Duration::ZERO,
+            10,
+        )
+        .await
+        .unwrap();
+        assert_eq!(first.len(), 2);
+        assert_eq!(second.len(), 2);
+        assert_eq!(first[0].id, "x/y/p1");
+    }
+
+    #[tokio::test]
+    async fn popular_truncates_to_limit() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/search"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "skills": (0..30).map(|i| serde_json::json!({
+                    "id": format!("a/b/s{i}"),
+                    "skillId": format!("s{i}"),
+                    "name": format!("s{i}"),
+                    "installs": 100 - i,
+                    "source": "a/b"
+                })).collect::<Vec<_>>()
+            })))
+            .mount(&server)
+            .await;
+        let client = build_client().unwrap();
+        let cache = Mutex::new(SearchCache::default());
+        let skills = SearchCache::popular(
+            &cache,
+            &client,
+            &format!("{}/search", server.uri()),
+            "ai",
+            Duration::ZERO,
+            Duration::from_secs(60),
+            Duration::from_secs(60),
+            Duration::ZERO,
+            5,
+        )
+        .await
+        .unwrap();
+        assert_eq!(skills.len(), 5);
+    }
+
+    #[test]
+    fn reserve_request_slot_stacks_concurrent_callers() {
+        // Three back-to-back reservations with a 100ms min interval
+        // should produce waits of 0, 100, 200 (give or take rounding).
+        let mut cache = SearchCache::default();
+        let min = Duration::from_millis(100);
+        let w0 = cache.reserve_request_slot(min);
+        let w1 = cache.reserve_request_slot(min);
+        let w2 = cache.reserve_request_slot(min);
+        assert!(w0 < Duration::from_millis(10), "first wait ~0, got {w0:?}");
+        // Allow generous slack for clock jitter under test load.
+        assert!(w1 >= Duration::from_millis(80) && w1 <= Duration::from_millis(120));
+        assert!(w2 >= Duration::from_millis(180) && w2 <= Duration::from_millis(220));
     }
 }

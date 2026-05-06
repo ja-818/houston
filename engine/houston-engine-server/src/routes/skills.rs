@@ -20,6 +20,7 @@ pub fn router() -> Router<Arc<ServerState>> {
         .route("/skills", get(list).post(create))
         .route("/skills/:name", get(load).put(save).delete(remove))
         .route("/skills/community/search", post(community_search))
+        .route("/skills/community/popular", post(community_popular))
         .route("/skills/community/install", post(community_install))
         .route("/skills/repo/list", post(repo_list))
         .route("/skills/repo/install", post(repo_install))
@@ -89,6 +90,12 @@ async fn community_search(
     Json(req): Json<CommunitySearchRequest>,
 ) -> Result<Json<Vec<CommunitySkill>>, ApiError> {
     Ok(Json(skills::search_community(&req.query).await?))
+}
+
+async fn community_popular(
+    State(_st): State<Arc<ServerState>>,
+) -> Result<Json<Vec<CommunitySkill>>, ApiError> {
+    Ok(Json(skills::popular_community().await?))
 }
 
 async fn community_install(

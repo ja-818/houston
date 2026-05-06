@@ -8,7 +8,6 @@ export {
   useListSkillsFromRepo,
   useInstallSkillFromRepo,
   useInstallCommunitySkill,
-  useSearchCommunitySkills,
 } from "./use-skills";
 export { useFiles, useDeleteFile, useRenameFile, useCreateFolder } from "./use-files";
 export { useInstructions, useSaveInstructions } from "./use-instructions";

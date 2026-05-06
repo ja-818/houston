@@ -93,6 +93,7 @@ export class HoustonClient {
     path: string,
     body?: unknown,
     query?: Record<string, string | undefined>,
+    signal?: AbortSignal,
   ): Promise<T> {
     let url = `${this.baseUrl}/v1${path}`;
     if (query) {
@@ -110,6 +111,7 @@ export class HoustonClient {
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal,
     });
     if (!res.ok) {
       throw await this.toError(res);
@@ -396,17 +398,20 @@ export class HoustonClient {
   deleteSkill(workspacePath: string, name: string): Promise<void> {
     return this.request("DELETE", `/skills/${this.seg(name)}`, undefined, { workspacePath });
   }
-  searchCommunitySkills(query: string): Promise<CommunitySkill[]> {
-    return this.request("POST", "/skills/community/search", { query });
+  searchCommunitySkills(query: string, signal?: AbortSignal): Promise<CommunitySkill[]> {
+    return this.request("POST", "/skills/community/search", { query }, undefined, signal);
   }
-  installCommunitySkill(req: InstallCommunityRequest): Promise<string> {
-    return this.request("POST", "/skills/community/install", req);
+  popularCommunitySkills(signal?: AbortSignal): Promise<CommunitySkill[]> {
+    return this.request("POST", "/skills/community/popular", undefined, undefined, signal);
   }
-  listSkillsFromRepo(source: string): Promise<RepoSkill[]> {
-    return this.request("POST", "/skills/repo/list", { source });
+  installCommunitySkill(req: InstallCommunityRequest, signal?: AbortSignal): Promise<string> {
+    return this.request("POST", "/skills/community/install", req, undefined, signal);
   }
-  installSkillsFromRepo(req: InstallFromRepoRequest): Promise<string[]> {
-    return this.request("POST", "/skills/repo/install", req);
+  listSkillsFromRepo(source: string, signal?: AbortSignal): Promise<RepoSkill[]> {
+    return this.request("POST", "/skills/repo/list", { source }, undefined, signal);
+  }
+  installSkillsFromRepo(req: InstallFromRepoRequest, signal?: AbortSignal): Promise<string[]> {
+    return this.request("POST", "/skills/repo/install", req, undefined, signal);
   }
 
   // ---------- preferences ----------
@@ -663,4 +668,25 @@ export class HoustonEngineError extends Error {
   get code(): string | undefined {
     return this.body?.error.code;
   }
+
+  /**
+   * Stable machine-readable tag set by the engine for typed errors
+   * (e.g. `rate_limited`, `offline`, `already_installed`,
+   * `repo_private`). UI matches on this to render plain-English copy
+   * instead of parsing `message`. See `engine/houston-engine-core/src/skills.rs`
+   * for the canonical kind list.
+   */
+  get kind(): string | undefined {
+    const details = this.body?.error.details;
+    if (details && typeof details === "object" && "kind" in details) {
+      const k = (details as { kind?: unknown }).kind;
+      return typeof k === "string" ? k : undefined;
+    }
+    return undefined;
+  }
+}
+
+/** Type guard for engine errors. Convenient in catch blocks. */
+export function isHoustonEngineError(e: unknown): e is HoustonEngineError {
+  return e instanceof HoustonEngineError;
 }

@@ -102,20 +102,81 @@ pub struct InstallCommunityRequest {
 }
 
 // ── Error mapping ──────────────────────────────────────────────────
+//
+// The `kind` strings here are part of the engine-client's typed error
+// surface — UI matches on them to render plain-English copy. Keep in
+// sync with `ui/skills/src/skill-error-kinds.ts`.
 
 impl From<SkillError> for CoreError {
     fn from(err: SkillError) -> Self {
+        use houston_engine_protocol::ErrorCode;
         match err {
-            SkillError::NotFound(s) => CoreError::NotFound(s),
-            SkillError::AlreadyExists(s) => CoreError::Conflict(s),
-            SkillError::Validation(s) => CoreError::BadRequest(s),
-            SkillError::Parse(s) => CoreError::BadRequest(s),
-            SkillError::PatchNotFound => {
-                CoreError::BadRequest("patch target not found".into())
-            }
+            SkillError::NotFound(s) => CoreError::Labeled {
+                code: ErrorCode::NotFound,
+                kind: "skill_not_found",
+                message: format!("Skill not found: {s}"),
+            },
+            SkillError::AlreadyExists(s) => CoreError::Labeled {
+                code: ErrorCode::Conflict,
+                kind: "already_installed",
+                message: format!("'{s}' is already installed."),
+            },
+            SkillError::Validation(s) => CoreError::Labeled {
+                code: ErrorCode::BadRequest,
+                kind: "validation",
+                message: s,
+            },
+            SkillError::Parse(s) => CoreError::Labeled {
+                code: ErrorCode::BadRequest,
+                kind: "parse_failed",
+                message: s,
+            },
+            SkillError::SkillMalformed(s) => CoreError::Labeled {
+                code: ErrorCode::BadRequest,
+                kind: "skill_malformed",
+                message: s,
+            },
+            SkillError::SkillNotInRepo(s) => CoreError::Labeled {
+                code: ErrorCode::NotFound,
+                kind: "skill_not_in_repo",
+                message: s,
+            },
+            SkillError::PatchNotFound => CoreError::Labeled {
+                code: ErrorCode::BadRequest,
+                kind: "patch_not_found",
+                message: "Patch target not found".into(),
+            },
+            SkillError::RateLimited(_) => CoreError::Labeled {
+                code: ErrorCode::Unavailable,
+                kind: "rate_limited",
+                message: "Skills.sh is busy. Wait a moment and try again.".into(),
+            },
+            SkillError::Unavailable(_) => CoreError::Labeled {
+                code: ErrorCode::Unavailable,
+                kind: "offline",
+                message: "Couldn't reach Skills.sh. Check your connection and try again.".into(),
+            },
+            SkillError::RepoPrivate => CoreError::Labeled {
+                code: ErrorCode::Forbidden,
+                kind: "repo_private",
+                message: "That repo is private. Only public repos are supported.".into(),
+            },
+            SkillError::RepoNotFound(s) => CoreError::Labeled {
+                code: ErrorCode::NotFound,
+                kind: "repo_not_found",
+                message: format!("Couldn't find a repo named '{s}'. Check the owner/repo."),
+            },
+            SkillError::RepoEmpty(s) => CoreError::Labeled {
+                code: ErrorCode::BadRequest,
+                kind: "repo_no_skills",
+                message: format!("'{s}' has no SKILL.md files."),
+            },
+            SkillError::GithubRateLimited => CoreError::Labeled {
+                code: ErrorCode::Unavailable,
+                kind: "github_rate_limited",
+                message: "GitHub is busy. Wait a moment and try again.".into(),
+            },
             SkillError::Io(s) => CoreError::Internal(s),
-            SkillError::RateLimited(s) => CoreError::Unavailable(s),
-            SkillError::Unavailable(s) => CoreError::Unavailable(s),
         }
     }
 }
@@ -287,6 +348,15 @@ pub async fn search_community(query: &str) -> CoreResult<Vec<CommunitySkill>> {
         .map_err(Into::into)
 }
 
+/// Popular skills feed for the marketplace empty state. Backed by a
+/// dedicated 24h cache slot so opening the dialog never blocks the
+/// user's first search.
+pub async fn popular_community() -> CoreResult<Vec<CommunitySkill>> {
+    houston_skills::remote::fetch_popular_skills()
+        .await
+        .map_err(Into::into)
+}
+
 pub async fn install_community(
     events: &DynEventSink,
     req: InstallCommunityRequest,
@@ -374,7 +444,8 @@ mod tests {
             },
         )
         .unwrap_err();
-        assert!(matches!(err, CoreError::Conflict(_)));
+        assert_eq!(err.code(), houston_engine_protocol::ErrorCode::Conflict);
+        assert_eq!(err.kind(), Some("already_installed"));
     }
 
     #[test]
@@ -432,6 +503,7 @@ mod tests {
         let d = TempDir::new().unwrap();
         let ws = d.path().to_string_lossy().to_string();
         let err = load(&ws, "nope").unwrap_err();
-        assert!(matches!(err, CoreError::NotFound(_)));
+        assert_eq!(err.code(), houston_engine_protocol::ErrorCode::NotFound);
+        assert_eq!(err.kind(), Some("skill_not_found"));
     }
 }

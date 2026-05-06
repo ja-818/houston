@@ -23,10 +23,18 @@ import type { RepoViewLabels } from "./add-skill-dialog-repo-labels"
 export interface AddSkillDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSearch: (query: string) => Promise<CommunitySkill[]>
-  onInstallCommunity: (skill: CommunitySkill) => Promise<string>
+  onSearch: (query: string, signal?: AbortSignal) => Promise<CommunitySkill[]>
+  /** Optional dedicated "popular skills" fetcher for the dialog empty state. */
+  onPopular?: (signal?: AbortSignal) => Promise<CommunitySkill[]>
+  onInstallCommunity: (
+    skill: CommunitySkill,
+    signal?: AbortSignal,
+  ) => Promise<string>
   onListFromRepo?: (source: string) => Promise<RepoSkill[]>
   onInstallFromRepo?: (source: string, skills: RepoSkill[]) => Promise<string[]>
+  /** Lowercase set of slugs already installed locally. Used to render
+   *  "Already installed" badges and disable repeat install attempts. */
+  installedSkillNames?: Set<string>
   labels?: AddSkillDialogLabels
 }
 
@@ -54,9 +62,11 @@ export function AddSkillDialog({
   open,
   onOpenChange,
   onSearch,
+  onPopular,
   onInstallCommunity,
   onListFromRepo,
   onInstallFromRepo,
+  installedSkillNames,
   labels,
 }: AddSkillDialogProps) {
   const l = { ...DEFAULT_LABELS, ...labels }
@@ -101,7 +111,9 @@ export function AddSkillDialog({
           <StoreView
             open={open}
             onSearch={onSearch}
+            onPopular={onPopular}
             onInstall={onInstallCommunity}
+            installedSkillNames={installedSkillNames}
             labels={labels?.store}
           />
         ) : (

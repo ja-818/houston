@@ -6,6 +6,8 @@ export type {
   LearningCategory,
   SkillLearning,
 } from "./types"
+export type { SkillErrorKind } from "./skill-error-kinds"
+export { getSkillErrorKind, classifySkillError } from "./skill-error-kinds"
 export { CATEGORY_LABELS } from "./types"
 
 // Components

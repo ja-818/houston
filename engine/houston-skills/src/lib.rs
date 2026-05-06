@@ -32,10 +32,27 @@ pub enum SkillError {
     AlreadyExists(String),
     #[error("Patch failed: old text not found")]
     PatchNotFound,
-    #[error("Remote rate limited: {0}")]
+    #[error("Skills.sh is busy. Wait a moment and try again.")]
     RateLimited(String),
-    #[error("Remote unavailable: {0}")]
+    #[error("Couldn't reach Skills.sh. Check your connection and try again.")]
     Unavailable(String),
+    /// Skill source repo couldn't be parsed (bad SKILL.md, malformed
+    /// frontmatter). Distinct from `Parse` so we can show an actionable
+    /// message in the marketplace UI.
+    #[error("This skill's file is malformed. Try a different one or contact the author.")]
+    SkillMalformed(String),
+    /// Skill source repo doesn't exist or doesn't include a SKILL.md at the
+    /// expected path. Different from `NotFound` (which is local).
+    #[error("Couldn't find that skill in the repo. The author may have renamed or removed it.")]
+    SkillNotInRepo(String),
+    #[error("That repo is private. Only public repos are supported.")]
+    RepoPrivate,
+    #[error("Couldn't find a repo named '{0}'. Check the owner/repo.")]
+    RepoNotFound(String),
+    #[error("'{0}' has no SKILL.md files. The repo author needs to add one.")]
+    RepoEmpty(String),
+    #[error("GitHub is busy. Wait a moment and try again.")]
+    GithubRateLimited,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -29,15 +29,34 @@ export function useSkillDialogLabels() {
     repoTab: t("addDialog.repoTab"),
     store: {
       searchPlaceholder: t("addDialog.store.searchPlaceholder"),
+      popularHeading: t("addDialog.store.popularHeading"),
+      alreadyInstalledHint: (count: number) =>
+        t("addDialog.store.alreadyInstalledHint", { count }),
       noResults: (query: string) => t("addDialog.store.noResults", { query }),
       minQuery: t("addDialog.store.minQuery"),
       searchUnavailable: t("addDialog.store.searchUnavailable"),
+      searchRateLimited: t("addDialog.store.searchRateLimited"),
+      searchOffline: t("addDialog.store.searchOffline"),
+      searchGeneric: t("addDialog.store.searchGeneric"),
+      loadingPopular: t("addDialog.store.loadingPopular"),
+      popularUnavailable: t("addDialog.store.popularUnavailable"),
+      retry: t("addDialog.store.retry"),
       typeToSearch: t("addDialog.store.typeToSearch"),
       installCount: (count: number, formatted: string) =>
         t("addDialog.store.installCount", { count, formatted }),
       installSkill: (name: string) => t("addDialog.store.installSkill", { name }),
       installedSkill: (name: string) =>
         t("addDialog.store.installedSkill", { name }),
+      alreadyInstalledBadge: t("addDialog.store.alreadyInstalledBadge"),
+      installedJustNow: t("addDialog.store.installedJustNow"),
+      installFailedAlready: t("addDialog.store.installFailedAlready"),
+      installFailedRepoMissing: t("addDialog.store.installFailedRepoMissing"),
+      installFailedMalformed: t("addDialog.store.installFailedMalformed"),
+      installFailedRateLimited: t("addDialog.store.installFailedRateLimited"),
+      installFailedOffline: t("addDialog.store.installFailedOffline"),
+      installFailedGeneric: t("addDialog.store.installFailedGeneric"),
+      installRetryAria: (name: string) =>
+        t("addDialog.store.installRetryAria", { name }),
     },
     repo: {
       sourcePlaceholder: t("addDialog.repo.sourcePlaceholder"),

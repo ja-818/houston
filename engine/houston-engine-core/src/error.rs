@@ -19,6 +19,15 @@ pub enum CoreError {
     Json(#[from] serde_json::Error),
     #[error("internal: {0}")]
     Internal(String),
+    /// Error with a stable machine-readable `kind` tag the UI matches on
+    /// to render plain-English copy without parsing the message string.
+    /// Surfaces as `error.details.kind` on the wire.
+    #[error("{message}")]
+    Labeled {
+        code: ErrorCode,
+        kind: &'static str,
+        message: String,
+    },
 }
 
 impl CoreError {
@@ -28,7 +37,16 @@ impl CoreError {
             Self::Conflict(_) => ErrorCode::Conflict,
             Self::BadRequest(_) => ErrorCode::BadRequest,
             Self::Unavailable(_) => ErrorCode::Unavailable,
+            Self::Labeled { code, .. } => *code,
             _ => ErrorCode::Internal,
+        }
+    }
+
+    /// Stable machine-readable tag for typed errors. UI matches on this.
+    pub fn kind(&self) -> Option<&'static str> {
+        match self {
+            Self::Labeled { kind, .. } => Some(kind),
+            _ => None,
         }
     }
 }

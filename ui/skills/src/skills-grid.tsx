@@ -37,13 +37,21 @@ export interface SkillsGridProps {
   /** Delete a skill by name. Enables per-row trash buttons when provided. */
   onDelete?: (name: string) => Promise<void>
   /** Search Skills.sh. Required to enable the marketplace modal. */
-  onSearch?: (query: string) => Promise<CommunitySkill[]>
+  onSearch?: (query: string, signal?: AbortSignal) => Promise<CommunitySkill[]>
+  /** Optional dedicated "popular skills" fetcher used for the marketplace empty state. */
+  onPopular?: (signal?: AbortSignal) => Promise<CommunitySkill[]>
   /** Install a single community skill. Returns installed skill name. */
-  onInstallCommunity?: (skill: CommunitySkill) => Promise<string>
+  onInstallCommunity?: (
+    skill: CommunitySkill,
+    signal?: AbortSignal,
+  ) => Promise<string>
   /** Discover all SKILL.md files in a GitHub repo. */
   onListFromRepo?: (source: string) => Promise<RepoSkill[]>
   /** Install selected skills from a repo. Returns installed names. */
   onInstallFromRepo?: (source: string, skills: RepoSkill[]) => Promise<string[]>
+  /** Lowercase set of slugs already installed locally. Drives "Already
+   *  installed" badges in the marketplace dialog. */
+  installedSkillNames?: Set<string>
   /** Override any/all user-visible strings. Unspecified fields fall back to English. */
   labels?: SkillsGridLabels
 }
@@ -54,9 +62,11 @@ export function SkillsGrid({
   onSkillClick,
   onDelete,
   onSearch,
+  onPopular,
   onInstallCommunity,
   onListFromRepo,
   onInstallFromRepo,
+  installedSkillNames,
   labels,
 }: SkillsGridProps) {
   const l = { ...DEFAULT_SKILLS_GRID_LABELS, ...labels }
@@ -111,9 +121,11 @@ export function SkillsGrid({
             open={dialogOpen}
             onOpenChange={setDialogOpen}
             onSearch={onSearch}
+            onPopular={onPopular}
             onInstallCommunity={onInstallCommunity}
             onListFromRepo={onListFromRepo}
             onInstallFromRepo={onInstallFromRepo}
+            installedSkillNames={installedSkillNames}
             labels={l.addDialog}
           />
         )}
@@ -167,9 +179,11 @@ export function SkillsGrid({
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           onSearch={onSearch}
+          onPopular={onPopular}
           onInstallCommunity={onInstallCommunity}
           onListFromRepo={onListFromRepo}
           onInstallFromRepo={onInstallFromRepo}
+          installedSkillNames={installedSkillNames}
           labels={l.addDialog}
         />
       )}

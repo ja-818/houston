@@ -29,13 +29,17 @@ impl IntoResponse for ApiError {
             ErrorCode::VersionMismatch => StatusCode::CONFLICT,
             ErrorCode::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         };
+        let details = self
+            .0
+            .kind()
+            .map(|kind| serde_json::json!({ "kind": kind }));
         (
             status,
             Json(ErrorBody {
                 error: ErrorDetail {
                     code,
                     message: self.0.to_string(),
-                    details: None,
+                    details,
                 },
             }),
         )
