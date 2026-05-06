@@ -18,6 +18,15 @@ export interface UiTourStep {
    * user sees the destination, not just a spotlight on the trigger.
    */
   onEnter?: () => void;
+  /**
+   * Override automatic tooltip placement. `viewport-right`/`viewport-left`
+   * pin the card to the corresponding viewport edge instead of anchoring to
+   * the cutout. Useful when the cutout is huge (e.g. a modal interior) and
+   * a card next to it would still cover the content.
+   */
+  placement?: "below" | "above" | "right" | "left" | "viewport-right" | "viewport-left";
+  /** Override the confirm button label on this step (defaults to next/done). */
+  confirmLabel?: string;
 }
 
 interface UiTourProps {
@@ -124,6 +133,21 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
   // (sidebar) prefer left / right. Picks the first side with enough room,
   // falls back to whichever has the most space.
   const tooltip = (() => {
+    // Viewport-anchored placements ignore the cutout entirely. Used when the
+    // cutout is so big a cutout-relative card would still cover content
+    // (e.g. spotlighting the interior of a near-fullscreen dialog).
+    if (step.placement === "viewport-right") {
+      return {
+        top: Math.max(VIEWPORT_MARGIN, viewport.height / 2 - TOOLTIP_H_EST / 2),
+        left: viewport.width - TOOLTIP_W - VIEWPORT_MARGIN,
+      };
+    }
+    if (step.placement === "viewport-left") {
+      return {
+        top: Math.max(VIEWPORT_MARGIN, viewport.height / 2 - TOOLTIP_H_EST / 2),
+        left: VIEWPORT_MARGIN,
+      };
+    }
     if (!cutout) {
       return {
         top: viewport.height / 2 - 140,
@@ -163,6 +187,12 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
     }
 
     const placement: Placement =
+      (step.placement === "below" ||
+      step.placement === "above" ||
+      step.placement === "right" ||
+      step.placement === "left"
+        ? step.placement
+        : undefined) ??
       order.find((p) => fits[p]) ??
       (Object.entries(space).sort((a, b) => b[1] - a[1])[0][0] as Placement);
 
@@ -286,7 +316,7 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
                 isLast ? onDismiss() : setIndex(index + 1)
               }
             >
-              {isLast ? t("uiTour.done") : t("uiTour.next")}
+              {step.confirmLabel ?? (isLast ? t("uiTour.done") : t("uiTour.next"))}
             </Button>
           </div>
         </div>

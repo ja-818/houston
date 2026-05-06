@@ -284,7 +284,14 @@ export function WorkspaceShell({ toasts, onDismissToast }: WorkspaceShellProps) 
               body: t("shell:uiTour.steps.agentStore.body"),
               targetSelector: "[data-tour-target='agentStore']",
               spotlightPadding: 4,
+              placement: "viewport-right",
               onEnter: () => setCreateAgentDialogOpen(true),
+            },
+            {
+              title: t("shell:uiTour.steps.outro.title"),
+              body: t("shell:uiTour.steps.outro.body"),
+              confirmLabel: t("shell:uiTour.steps.outro.confirm"),
+              onEnter: () => setCreateAgentDialogOpen(false),
             },
           ]}
           onDismiss={() => {

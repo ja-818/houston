@@ -94,6 +94,11 @@
       "agentStore": {
         "title": "Pick where to start",
         "body": "Choose Start from scratch for a blank agent, or pick one of ours from the store and tweak it to fit."
+      },
+      "outro": {
+        "title": "Now go build something amazing",
+        "body": "That's the whole tour. The rest is on you, have fun.",
+        "confirm": "I'll do something amazing"
       }
     }
   },
