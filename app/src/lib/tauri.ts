@@ -267,25 +267,53 @@ export const tauriSkills = {
         skills,
       }),
     ),
-  searchCommunity: (query: string) =>
-    call<CommunitySkillResult[]>("search_community_skills", async () =>
-      (await getEngine().searchCommunitySkills(query)).map((s) => ({
-        id: s.id,
-        skillId: s.skillId,
-        name: s.name,
-        installs: s.installs,
-        source: s.source,
-      })),
+  searchCommunity: (query: string, signal?: AbortSignal) =>
+    call<CommunitySkillResult[]>(
+      "search_community_skills",
+      async () =>
+        (await getEngine().searchCommunitySkills(query, signal)).map((s) => ({
+          id: s.id,
+          skillId: s.skillId,
+          name: s.name,
+          installs: s.installs,
+          source: s.source,
+        })),
       undefined,
       { toast: false },
     ),
-  installCommunity: (agentPath: string, source: string, skillId: string) =>
-    call<string>("install_community_skill", () =>
-      getEngine().installCommunitySkill({
-        workspacePath: agentPath,
-        source,
-        skillId,
-      }),
+  popularCommunity: (signal?: AbortSignal) =>
+    call<CommunitySkillResult[]>(
+      "popular_community_skills",
+      async () =>
+        (await getEngine().popularCommunitySkills(signal)).map((s) => ({
+          id: s.id,
+          skillId: s.skillId,
+          name: s.name,
+          installs: s.installs,
+          source: s.source,
+        })),
+      undefined,
+      { toast: false },
+    ),
+  installCommunity: (
+    agentPath: string,
+    source: string,
+    skillId: string,
+    signal?: AbortSignal,
+  ) =>
+    call<string>(
+      "install_community_skill",
+      () =>
+        getEngine().installCommunitySkill(
+          {
+            workspacePath: agentPath,
+            source,
+            skillId,
+          },
+          signal,
+        ),
+      undefined,
+      { toast: false },
     ),
 };
 

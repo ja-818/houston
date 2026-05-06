@@ -20,17 +20,24 @@ export function SkillsContent({
   loading,
   onSkillClick,
   onSearch,
+  onPopular,
   onInstallCommunity,
   onListFromRepo,
   onInstallFromRepo,
+  installedSkillNames,
 }: {
   skills: SkillSummary[];
   loading: boolean;
   onSkillClick: (name: string) => void;
-  onSearch?: (query: string) => Promise<CommunitySkill[]>;
-  onInstallCommunity?: (skill: CommunitySkill) => Promise<string>;
+  onSearch?: (query: string, signal?: AbortSignal) => Promise<CommunitySkill[]>;
+  onPopular?: (signal?: AbortSignal) => Promise<CommunitySkill[]>;
+  onInstallCommunity?: (
+    skill: CommunitySkill,
+    signal?: AbortSignal,
+  ) => Promise<string>;
   onListFromRepo?: (source: string) => Promise<RepoSkill[]>;
   onInstallFromRepo?: (source: string, skills: RepoSkill[]) => Promise<string[]>;
+  installedSkillNames?: Set<string>;
 }) {
   const { t } = useTranslation("skills");
   const addDialogLabels = useSkillDialogLabels();
@@ -43,9 +50,11 @@ export function SkillsContent({
     onSearch && onInstallCommunity
       ? {
           onSearch,
+          onPopular,
           onInstallCommunity,
           onListFromRepo,
           onInstallFromRepo,
+          installedSkillNames,
         }
       : null;
 

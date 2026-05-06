@@ -73,16 +73,17 @@ export function useInstallSkillFromRepo(agentPath: string | undefined) {
 export function useInstallCommunitySkill(agentPath: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ source, skillId }: { source: string; skillId: string }) =>
-      tauriSkills.installCommunity(agentPath!, source, skillId),
+    mutationFn: ({
+      source,
+      skillId,
+      signal,
+    }: {
+      source: string;
+      skillId: string;
+      signal?: AbortSignal;
+    }) => tauriSkills.installCommunity(agentPath!, source, skillId, signal),
     onSuccess: () => {
       if (agentPath) qc.invalidateQueries({ queryKey: queryKeys.skills(agentPath) });
     },
-  });
-}
-
-export function useSearchCommunitySkills() {
-  return useMutation({
-    mutationFn: (query: string) => tauriSkills.searchCommunity(query),
   });
 }

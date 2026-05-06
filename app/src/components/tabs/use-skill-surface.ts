@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { CommunitySkill, RepoSkill, Skill } from "@houston-ai/skills";
 import {
   useDeleteSkill,
@@ -6,10 +6,10 @@ import {
   useInstallSkillFromRepo,
   useListSkillsFromRepo,
   useSaveSkill,
-  useSearchCommunitySkills,
   useSkillDetail,
   useSkills,
 } from "../../hooks/queries";
+import { tauriSkills } from "../../lib/tauri";
 import { useSkillSurfaceLabels } from "./use-skill-surface-labels";
 
 export function useSkillSurface(agentPath: string) {
@@ -25,7 +25,6 @@ export function useSkillSurface(agentPath: string) {
   const installCommunity = useInstallCommunitySkill(agentPath);
   const listFromRepo = useListSkillsFromRepo();
   const installFromRepo = useInstallSkillFromRepo(agentPath);
-  const searchCommunity = useSearchCommunitySkills();
 
   const selectedSkill: Skill | undefined =
     selectedSkillName && skillDetail
@@ -37,6 +36,16 @@ export function useSkillSurface(agentPath: string) {
           file_path: selectedSkillName,
         }
       : undefined;
+
+  /**
+   * Lowercase set of locally-installed skill slugs. The marketplace UI
+   * uses this to render "Already installed" badges before the user
+   * even tries to click install, preventing a confusing failure-on-click.
+   */
+  const installedSkillNames = useMemo<Set<string>>(
+    () => new Set((summaries ?? []).map((s) => s.name.toLowerCase())),
+    [summaries],
+  );
 
   const clearSelectedSkill = useCallback(() => {
     setSelectedSkillName(null);
@@ -58,16 +67,22 @@ export function useSkillSurface(agentPath: string) {
   );
 
   const handleSearch = useCallback(
-    async (query: string) =>
-      (await searchCommunity.mutateAsync(query)) as CommunitySkill[],
-    [searchCommunity],
+    (query: string, signal?: AbortSignal) =>
+      tauriSkills.searchCommunity(query, signal),
+    [],
+  );
+
+  const handlePopular = useCallback(
+    (signal?: AbortSignal) => tauriSkills.popularCommunity(signal),
+    [],
   );
 
   const handleInstallCommunity = useCallback(
-    async (skill: CommunitySkill) =>
+    async (skill: CommunitySkill, signal?: AbortSignal) =>
       installCommunity.mutateAsync({
         source: skill.source,
         skillId: skill.skillId,
+        signal,
       }),
     [installCommunity],
   );
@@ -93,8 +108,10 @@ export function useSkillSurface(agentPath: string) {
     handleSkillSave,
     handleSkillDelete,
     handleSearch,
+    handlePopular,
     handleInstallCommunity,
     handleListFromRepo,
     handleInstallFromRepo,
+    installedSkillNames,
   };
 }
