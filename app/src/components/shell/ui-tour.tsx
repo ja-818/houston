@@ -12,6 +12,12 @@ export interface UiTourStep {
   targetSelector?: string;
   /** Padding (px) around the target element for the spotlight cutout. */
   spotlightPadding?: number;
+  /**
+   * Side-effect to run when this step becomes active (forward or backward).
+   * Use to actually open the tab/section/dialog the step talks about so the
+   * user sees the destination, not just a spotlight on the trigger.
+   */
+  onEnter?: () => void;
 }
 
 interface UiTourProps {
@@ -61,14 +67,25 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
   // the cutout/tooltip render in the right place on the same paint as the
   // step transition (avoids a 1-frame flash at the old position).
   useLayoutEffect(() => {
+    step?.onEnter?.();
     if (!step?.targetSelector) {
       setRect(null);
       return;
     }
+    // The target may not be in the DOM yet if onEnter just switched views or
+    // opened a dialog. Retry a few frames until it appears.
+    let cancelled = false;
+    let raf = 0;
+    let tries = 0;
     const measure = () => {
+      if (cancelled) return;
       const el = document.querySelector(step.targetSelector!);
       if (!el) {
-        setRect(null);
+        if (tries++ < 30) {
+          raf = window.requestAnimationFrame(measure);
+        } else {
+          setRect(null);
+        }
         return;
       }
       const r = el.getBoundingClientRect();
@@ -80,11 +97,16 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
       measure();
     };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      cancelled = true;
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
   }, [step]);
 
   if (!step) return null;
   const isLast = index === steps.length - 1;
+  const isFirst = index === 0;
 
   const pad = step.spotlightPadding ?? DEFAULT_PAD;
   const cutout = rect
@@ -236,8 +258,8 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
           {step.title}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">{step.body}</p>
-        <div className="mt-5 flex items-center justify-end gap-2">
-          {!isLast && (
+        <div className="mt-5 flex items-center justify-between gap-2">
+          {!isLast ? (
             <Button
               variant="ghost"
               className="rounded-full"
@@ -245,15 +267,28 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
             >
               {t("uiTour.skip")}
             </Button>
+          ) : (
+            <span />
           )}
-          <Button
-            className="rounded-full"
-            onClick={() =>
-              isLast ? onDismiss() : setIndex(index + 1)
-            }
-          >
-            {isLast ? t("uiTour.done") : t("uiTour.next")}
-          </Button>
+          <div className="flex items-center gap-2">
+            {!isFirst && (
+              <Button
+                variant="secondary"
+                className="rounded-full"
+                onClick={() => setIndex(index - 1)}
+              >
+                {t("uiTour.previous")}
+              </Button>
+            )}
+            <Button
+              className="rounded-full"
+              onClick={() =>
+                isLast ? onDismiss() : setIndex(index + 1)
+              }
+            >
+              {isLast ? t("uiTour.done") : t("uiTour.next")}
+            </Button>
+          </div>
         </div>
       </div>
     </>

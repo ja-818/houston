@@ -40,6 +40,8 @@ export interface SidebarProps {
   selectedId?: string | null;
   onSelect: (id: string) => void;
   onAdd?: () => void;
+  /** Extra DOM attributes (e.g. `data-tour-target`) on the add-item button. */
+  addItemDataAttrs?: Record<string, string>;
   onDelete?: (id: string) => void;
   onRename?: (id: string, newName: string) => void;
   sectionLabel?: string;
@@ -69,6 +71,7 @@ export function AppSidebar({
   selectedId,
   onSelect,
   onAdd,
+  addItemDataAttrs,
   onDelete,
   onRename,
   sectionLabel,
@@ -180,6 +183,7 @@ export function AppSidebar({
                 aria-label={l.addItem}
                 onClick={onAdd}
                 className={sidebarClasses.addButton}
+                {...(addItemDataAttrs ?? {})}
               >
                 <span className={sidebarClasses.addButtonInner}>
                   <Plus className={sidebarClasses.addButtonIcon} />

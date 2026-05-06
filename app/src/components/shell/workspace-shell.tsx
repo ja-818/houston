@@ -60,6 +60,12 @@ export function WorkspaceShell({ toasts, onDismissToast }: WorkspaceShellProps) 
   const needsYouCount = (activities ?? []).filter((a) => a.status === "needs_you").length;
   const isAgentView =
     viewMode !== "dashboard" && viewMode !== "connections" && viewMode !== "settings";
+  const tabIds = new Set(tabs.map((tab) => tab.id));
+  const firstAgentTab = agentDef?.config.defaultTab ?? tabs[0]?.id ?? "activity";
+  // Map a desired tab id to one this agent actually has, falling back to its
+  // default. Keeps the tour from spotlighting an absent tab on agents that
+  // don't expose every built-in.
+  const tabOr = (id: string) => (tabIds.has(id) ? id : firstAgentTab);
 
   useEffect(() => {
     if (isAgentView && tabs.length > 0 && !tabs.some((tab) => tab.id === viewMode)) {
@@ -205,54 +211,86 @@ export function WorkspaceShell({ toasts, onDismissToast }: WorkspaceShellProps) 
               title: t("shell:uiTour.steps.assistant.title"),
               body: t("shell:uiTour.steps.assistant.body"),
               targetSelector: "[data-tour-target='agents']",
+              onEnter: () => setViewMode(firstAgentTab),
             },
             {
               title: t("shell:uiTour.steps.board.title"),
               body: t("shell:uiTour.steps.board.body"),
               targetSelector: "[data-tour-target='main']",
+              onEnter: () => setViewMode(firstAgentTab),
             },
             {
               title: t("shell:uiTour.steps.newMission.title"),
               body: t("shell:uiTour.steps.newMission.body"),
               targetSelector: "[data-tour-target='newMission']",
+              onEnter: () => setViewMode(firstAgentTab),
             },
             {
               title: t("shell:uiTour.steps.tabActivity.title"),
               body: t("shell:uiTour.steps.tabActivity.body"),
               targetSelector: "[data-tour-target='tab-activity']",
+              onEnter: () => setViewMode(tabOr("activity")),
             },
             {
               title: t("shell:uiTour.steps.tabRoutines.title"),
               body: t("shell:uiTour.steps.tabRoutines.body"),
               targetSelector: "[data-tour-target='tab-routines']",
+              onEnter: () => setViewMode(tabOr("routines")),
             },
             {
               title: t("shell:uiTour.steps.tabFiles.title"),
               body: t("shell:uiTour.steps.tabFiles.body"),
               targetSelector: "[data-tour-target='tab-files']",
+              onEnter: () => setViewMode(tabOr("files")),
             },
             {
               title: t("shell:uiTour.steps.tabJobDescription.title"),
               body: t("shell:uiTour.steps.tabJobDescription.body"),
               targetSelector: "[data-tour-target='tab-job-description']",
+              onEnter: () => setViewMode(tabOr("job-description")),
             },
             {
               title: t("shell:uiTour.steps.missionControl.title"),
               body: t("shell:uiTour.steps.missionControl.body"),
               targetSelector: "[data-tour-target='nav-dashboard']",
+              onEnter: () => setViewMode("dashboard"),
             },
             {
               title: t("shell:uiTour.steps.integrations.title"),
               body: t("shell:uiTour.steps.integrations.body"),
               targetSelector: "[data-tour-target='nav-connections']",
+              onEnter: () => setViewMode("connections"),
             },
             {
               title: t("shell:uiTour.steps.appTour.title"),
               body: t("shell:uiTour.steps.appTour.body"),
               targetSelector: "[data-tour-target='appTour']",
+              onEnter: () => {
+                setCreateAgentDialogOpen(false);
+                setViewMode(firstAgentTab);
+              },
+            },
+            {
+              title: t("shell:uiTour.steps.newAgent.title"),
+              body: t("shell:uiTour.steps.newAgent.body"),
+              targetSelector: "[data-tour-target='newAgent']",
+              onEnter: () => {
+                setCreateAgentDialogOpen(false);
+                setViewMode(firstAgentTab);
+              },
+            },
+            {
+              title: t("shell:uiTour.steps.agentStore.title"),
+              body: t("shell:uiTour.steps.agentStore.body"),
+              targetSelector: "[data-tour-target='agentStore']",
+              spotlightPadding: 4,
+              onEnter: () => setCreateAgentDialogOpen(true),
             },
           ]}
-          onDismiss={() => setUiTourActive(false)}
+          onDismiss={() => {
+            setUiTourActive(false);
+            setCreateAgentDialogOpen(false);
+          }}
         />
       )}
     </DetailPanelProvider>

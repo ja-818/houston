@@ -43,6 +43,7 @@
   "uiTour": {
     "counter": "Tour {{current}} of {{total}}",
     "next": "Next",
+    "previous": "Back",
     "skip": "Skip tour",
     "done": "Got it",
     "steps": {
@@ -85,6 +86,14 @@
       "appTour": {
         "title": "Replay the tour",
         "body": "Forget how something works? Click this any time to run the tour again."
+      },
+      "newAgent": {
+        "title": "Add another agent",
+        "body": "You can spin up another agent here any time, or keep working with the one you have."
+      },
+      "agentStore": {
+        "title": "Pick where to start",
+        "body": "Choose Start from scratch for a blank agent, or pick one of ours from the store and tweak it to fit."
       }
     }
   },

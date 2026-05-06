@@ -68,7 +68,10 @@ export function StoreStep({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+      <div
+        data-tour-target="agentStore"
+        className="flex-1 min-h-0 overflow-y-auto px-6 pb-6"
+      >
         {totalResults > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {filteredAgents.map((def) => (
