@@ -20,6 +20,7 @@ export function CreateAgentDialog() {
   const { t } = useTranslation("shell");
   const open = useUIStore((s) => s.createAgentDialogOpen);
   const setOpen = useUIStore((s) => s.setCreateAgentDialogOpen);
+  const uiTourActive = useUIStore((s) => s.uiTourActive);
   const agentDefs = useAgentCatalogStore((s) => s.agents);
   const storeCatalog = useAgentCatalogStore((s) => s.storeCatalog);
   const installAgent = useAgentCatalogStore((s) => s.installAgent);
@@ -95,8 +96,24 @@ export function CreateAgentDialog() {
   const selectedDef = agentDefs.find((d) => d.config.id === selectedConfigId);
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="sm:max-w-[900px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+    <Dialog
+      open={open}
+      onOpenChange={(o) => { if (!o) handleClose(); }}
+      // Modal mode applies pointer-events:none to everything outside the
+      // dialog. While the tour is on, that would block the tour's own
+      // Next/Back buttons (rendered outside DialogContent). Drop modality
+      // for the tour and let the tour's overlay own the focus instead.
+      modal={!uiTourActive}
+    >
+      <DialogContent
+        className="sm:max-w-[900px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden"
+        // Even with modal=false, Radix still calls outside-dismiss on
+        // pointer-down outside the content. Suppress while the tour is
+        // active so clicking the tour's Next button doesn't kill the
+        // dialog mid-step; the tour closes it explicitly on the outro.
+        onPointerDownOutside={(e) => { if (uiTourActive) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (uiTourActive) e.preventDefault(); }}
+      >
         {step === 1 ? (
           <>
             <DialogHeader className="shrink-0 px-6 pt-6 pb-3">

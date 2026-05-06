@@ -146,6 +146,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
         selectedId={!isTopLevel ? currentAgent?.id ?? null : null}
         onSelect={handleSelectAgent}
         onAdd={() => setDialogOpen(true)}
+        addItemDataAttrs={{ "data-tour-target": "newAgent" }}
         onRename={handleRename}
         onDelete={handleDelete}
         labels={{

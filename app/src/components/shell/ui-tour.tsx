@@ -12,6 +12,21 @@ export interface UiTourStep {
   targetSelector?: string;
   /** Padding (px) around the target element for the spotlight cutout. */
   spotlightPadding?: number;
+  /**
+   * Side-effect to run when this step becomes active (forward or backward).
+   * Use to actually open the tab/section/dialog the step talks about so the
+   * user sees the destination, not just a spotlight on the trigger.
+   */
+  onEnter?: () => void;
+  /**
+   * Override automatic tooltip placement. `viewport-right`/`viewport-left`
+   * pin the card to the corresponding viewport edge instead of anchoring to
+   * the cutout. Useful when the cutout is huge (e.g. a modal interior) and
+   * a card next to it would still cover the content.
+   */
+  placement?: "below" | "above" | "right" | "left" | "viewport-right" | "viewport-left";
+  /** Override the confirm button label on this step (defaults to next/done). */
+  confirmLabel?: string;
 }
 
 interface UiTourProps {
@@ -61,14 +76,25 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
   // the cutout/tooltip render in the right place on the same paint as the
   // step transition (avoids a 1-frame flash at the old position).
   useLayoutEffect(() => {
+    step?.onEnter?.();
     if (!step?.targetSelector) {
       setRect(null);
       return;
     }
+    // The target may not be in the DOM yet if onEnter just switched views or
+    // opened a dialog. Retry a few frames until it appears.
+    let cancelled = false;
+    let raf = 0;
+    let tries = 0;
     const measure = () => {
+      if (cancelled) return;
       const el = document.querySelector(step.targetSelector!);
       if (!el) {
-        setRect(null);
+        if (tries++ < 30) {
+          raf = window.requestAnimationFrame(measure);
+        } else {
+          setRect(null);
+        }
         return;
       }
       const r = el.getBoundingClientRect();
@@ -80,11 +106,16 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
       measure();
     };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      cancelled = true;
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
   }, [step]);
 
   if (!step) return null;
   const isLast = index === steps.length - 1;
+  const isFirst = index === 0;
 
   const pad = step.spotlightPadding ?? DEFAULT_PAD;
   const cutout = rect
@@ -102,6 +133,21 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
   // (sidebar) prefer left / right. Picks the first side with enough room,
   // falls back to whichever has the most space.
   const tooltip = (() => {
+    // Viewport-anchored placements ignore the cutout entirely. Used when the
+    // cutout is so big a cutout-relative card would still cover content
+    // (e.g. spotlighting the interior of a near-fullscreen dialog).
+    if (step.placement === "viewport-right") {
+      return {
+        top: Math.max(VIEWPORT_MARGIN, viewport.height / 2 - TOOLTIP_H_EST / 2),
+        left: viewport.width - TOOLTIP_W - VIEWPORT_MARGIN,
+      };
+    }
+    if (step.placement === "viewport-left") {
+      return {
+        top: Math.max(VIEWPORT_MARGIN, viewport.height / 2 - TOOLTIP_H_EST / 2),
+        left: VIEWPORT_MARGIN,
+      };
+    }
     if (!cutout) {
       return {
         top: viewport.height / 2 - 140,
@@ -141,6 +187,12 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
     }
 
     const placement: Placement =
+      (step.placement === "below" ||
+      step.placement === "above" ||
+      step.placement === "right" ||
+      step.placement === "left"
+        ? step.placement
+        : undefined) ??
       order.find((p) => fits[p]) ??
       (Object.entries(space).sort((a, b) => b[1] - a[1])[0][0] as Placement);
 
@@ -181,7 +233,7 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
       {cutout ? (
         <div
           aria-hidden
-          className="pointer-events-auto fixed z-50 rounded-xl ring-2 ring-white/70 transition-[top,left,width,height] duration-200"
+          className="pointer-events-auto fixed z-[60] rounded-xl ring-2 ring-white/70 transition-[top,left,width,height] duration-200"
           style={{
             top: cutout.top,
             left: cutout.left,
@@ -193,7 +245,7 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
       ) : (
         <div
           aria-hidden
-          className="pointer-events-auto fixed inset-0 z-50 bg-foreground/45"
+          className="pointer-events-auto fixed inset-0 z-[60] bg-foreground/45"
         />
       )}
 
@@ -202,7 +254,7 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
       {cutout && (
         <div
           aria-hidden
-          className="pointer-events-none fixed z-50 rounded-xl ring-2 ring-white/40 motion-safe:animate-pulse"
+          className="pointer-events-none fixed z-[60] rounded-xl ring-2 ring-white/40 motion-safe:animate-pulse"
           style={{
             top: cutout.top - 4,
             left: cutout.left - 4,
@@ -216,7 +268,7 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
           is no target. */}
       <div
         className={cn(
-          "fixed z-50 rounded-2xl border border-black/5 bg-background p-5 shadow-[0_10px_40px_rgba(0,0,0,0.18)]",
+          "fixed z-[60] rounded-2xl border border-black/5 bg-background p-5 shadow-[0_10px_40px_rgba(0,0,0,0.18)]",
         )}
         style={{
           top: tooltip.top,
@@ -236,8 +288,8 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
           {step.title}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">{step.body}</p>
-        <div className="mt-5 flex items-center justify-end gap-2">
-          {!isLast && (
+        <div className="mt-5 flex items-center justify-between gap-2">
+          {!isLast ? (
             <Button
               variant="ghost"
               className="rounded-full"
@@ -245,15 +297,28 @@ export function UiTour({ steps, onDismiss }: UiTourProps) {
             >
               {t("uiTour.skip")}
             </Button>
+          ) : (
+            <span />
           )}
-          <Button
-            className="rounded-full"
-            onClick={() =>
-              isLast ? onDismiss() : setIndex(index + 1)
-            }
-          >
-            {isLast ? t("uiTour.done") : t("uiTour.next")}
-          </Button>
+          <div className="flex items-center gap-2">
+            {!isFirst && (
+              <Button
+                variant="secondary"
+                className="rounded-full"
+                onClick={() => setIndex(index - 1)}
+              >
+                {t("uiTour.previous")}
+              </Button>
+            )}
+            <Button
+              className="rounded-full"
+              onClick={() =>
+                isLast ? onDismiss() : setIndex(index + 1)
+              }
+            >
+              {step.confirmLabel ?? (isLast ? t("uiTour.done") : t("uiTour.next"))}
+            </Button>
+          </div>
         </div>
       </div>
     </>

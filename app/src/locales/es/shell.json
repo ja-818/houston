@@ -43,6 +43,7 @@
   "uiTour": {
     "counter": "Tour {{current}} de {{total}}",
     "next": "Siguiente",
+    "previous": "Atrás",
     "skip": "Saltar tour",
     "done": "Entendido",
     "steps": {
@@ -85,6 +86,19 @@
       "appTour": {
         "title": "Repite el tour",
         "body": "¿Olvidaste cómo funciona algo? Haz clic aquí cuando quieras para correr el tour de nuevo."
+      },
+      "newAgent": {
+        "title": "Agrega otro agente",
+        "body": "Puedes crear otro agente aquí cuando quieras, o seguir trabajando con el que ya tienes."
+      },
+      "agentStore": {
+        "title": "Elige por dónde empezar",
+        "body": "Elige Empezar desde cero para un agente en blanco, o toma uno de los nuestros desde la tienda y ajústalo a tu medida."
+      },
+      "outro": {
+        "title": "Ahora ve a construir algo increíble",
+        "body": "Ese es todo el tour. Lo demás depende de ti, diviértete.",
+        "confirm": "Voy a hacer algo increíble"
       }
     }
   },
