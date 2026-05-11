@@ -35,7 +35,9 @@ import {
   type UserAttachmentMessageLabels,
 } from "@houston-ai/chat";
 
+import { useDraftStore } from "../stores/drafts";
 import { useFeedStore } from "../stores/feeds";
+import { useUIStore } from "../stores/ui";
 import { useWorkspaceStore } from "../stores/workspaces";
 import {
   useConnectedToolkits,
@@ -51,6 +53,7 @@ import {
   withAttachmentPaths,
 } from "../lib/tauri";
 import { createMission } from "../lib/create-mission";
+import { deriveToolkitSuggestions } from "../lib/toolkit-suggestions";
 import { queryKeys } from "../lib/query-keys";
 import { humanizeSkillName } from "../lib/humanize-skill-name";
 import { useFileToolRenderer } from "../hooks/use-file-tool-renderer";
@@ -72,6 +75,7 @@ import {
 } from "../lib/skill-message";
 import { attachmentReferences } from "../lib/attachment-message";
 import { SkillCard } from "./skill-card";
+import { ToolkitSuggestionsEmptyState } from "./toolkit-suggestions-empty-state";
 import { NewMissionPickerDialog } from "./new-mission-picker-dialog";
 import { UserSkillMessage } from "./user-skill-message";
 import { SelectedSkillChip } from "./selected-skill-chip";
@@ -223,6 +227,26 @@ export function useAgentChatPanel({
     0,
     (allSkills?.length ?? 0) - emptySkillShowcase.length,
   );
+
+  const toolkitSuggestions = useMemo(
+    () => deriveToolkitSuggestions(connectedSet),
+    [connectedSet],
+  );
+  const handlePickSuggestion = useCallback(
+    (prompt: string) => {
+      const key = selectedSessionKey ?? "new-conversation";
+      useDraftStore.getState().setDraftText(key, prompt);
+      requestAnimationFrame(() => {
+        document
+          .querySelector<HTMLTextAreaElement>('textarea[name="message"]')
+          ?.focus();
+      });
+    },
+    [selectedSessionKey],
+  );
+  const handleConnectClick = useCallback(() => {
+    useUIStore.getState().setViewMode("connections");
+  }, []);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeSkill, setActiveSkill] = useState<SkillSummary | null>(null);
@@ -445,7 +469,15 @@ export function useAgentChatPanel({
   const chatEmptyState = useMemo<AIBoardProps["chatEmptyState"]>(() => {
     if (!agent) return undefined;
     if (activeSkill) return null;
-    if (emptySkillShowcase.length === 0) return undefined;
+    if (emptySkillShowcase.length === 0) {
+      return (
+        <ToolkitSuggestionsEmptyState
+          suggestions={toolkitSuggestions}
+          onPick={handlePickSuggestion}
+          onConnectClick={handleConnectClick}
+        />
+      );
+    }
     return (
       <div className="self-stretch w-full h-full overflow-y-auto">
         <div className="max-w-3xl mx-auto w-full px-6 pt-6 pb-4 flex flex-col gap-3">
@@ -480,7 +512,18 @@ export function useAgentChatPanel({
         </div>
       </div>
     );
-  }, [agent, activeSkill, emptySkillShowcase, moreSkillsCount, t, applySkill]);
+  }, [
+    agent,
+    activeSkill,
+    emptySkillShowcase,
+    moreSkillsCount,
+    t,
+    applySkill,
+    toolkitSuggestions,
+    selectedSessionKey,
+    handlePickSuggestion,
+    handleConnectClick,
+  ]);
 
   const footer = useMemo<AIBoardProps["footer"]>(() => {
     if (!agent) return undefined;

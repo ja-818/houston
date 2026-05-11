@@ -39,7 +39,57 @@
     "heading": "¿En qué te ayudo?",
     "subheading": "Toca un skill para empezar, o escribe lo que necesitas abajo.",
     "seeMore_one": "Ver {{count}} skill más",
-    "seeMore_other": "Ver {{count}} skills más"
+    "seeMore_other": "Ver {{count}} skills más",
+    "suggestions": {
+      "heading": "¿Qué puede hacer tu agente?",
+      "subheading": "Elige un punto de partida según lo que tienes conectado.",
+      "headingEmpty": "Empieza aquí",
+      "subheadingEmpty": "Conecta una herramienta y tu agente sabrá qué hacer.",
+      "connectCta": {
+        "title": "Conecta una herramienta para empezar",
+        "description": "Gmail, LinkedIn, Notion, Sheets y más. Elige una para desbloquear sugerencias acá."
+      },
+      "findLeadsLinkedin": {
+        "title": "Encuentra leads de LinkedIn en una empresa objetivo",
+        "description": "Trae contactos de una empresa específica filtrando por cargo.",
+        "prompt": "Encuentra 20 contactos en [empresa] en cargos de [rol]. Devuelve nombre, cargo, URL de LinkedIn y empresa en una tabla."
+      },
+      "planMyDay": {
+        "title": "Planifica mi próximo día de trabajo",
+        "description": "Lee mi bandeja de entrada y calendario, destaca lo importante de hoy.",
+        "prompt": "Lee mi bandeja de entrada y calendario para hoy y mañana. Arma una lista de foco con respuestas pendientes, reuniones a preparar y lo urgente."
+      },
+      "researchAccount": {
+        "title": "Investiga una cuenta objetivo",
+        "description": "Busca noticias recientes, señales y contactos clave en fuentes públicas.",
+        "prompt": "Investiga [nombre de la empresa]. Comparte noticias recientes, cambios en liderazgo, financiación, señales de stack y 3 motivos plausibles para contactar esta semana."
+      },
+      "draftOutreach": {
+        "title": "Redacta un mensaje de primer contacto",
+        "description": "Email o mensaje de LinkedIn personalizado para un prospecto.",
+        "prompt": "Redacta un email corto y cercano de primer contacto para [nombre del prospecto] en [empresa]. Menciona algo específico de su trabajo y propón una llamada de 15 minutos."
+      },
+      "writeContent": {
+        "title": "Redacta un borrador de publicación o documento",
+        "description": "Borrador largo para blog, publicación de LinkedIn o documento interno.",
+        "prompt": "Escribe [una publicación de LinkedIn / borrador de blog / documento interno] sobre [tema]. La audiencia es [a quién]. Que sea concreto y humano, sin buzzwords."
+      },
+      "analyzeSpreadsheet": {
+        "title": "Analiza una hoja de cálculo de Google",
+        "description": "Resume tendencias, anomalías o arma un gráfico desde una hoja.",
+        "prompt": "Mira la hoja de cálculo de Google en [URL]. Resume las tres tendencias más importantes y señala cualquier cosa que se vea rara."
+      },
+      "manageCrm": {
+        "title": "Actualiza mi CRM después de una llamada",
+        "description": "Registra notas, próximos pasos y cambios de etapa desde un resumen de reunión.",
+        "prompt": "Acabo de tener una llamada con [contacto / empresa]. Esto fue lo que hablamos: [resumen]. Actualiza el registro del CRM con notas, próximos pasos y un cambio de etapa sugerido. Muéstrame el borrador antes de aplicar."
+      },
+      "summarizeCalls": {
+        "title": "Resume las llamadas de esta semana",
+        "description": "Temas, pedidos y acciones de las grabaciones recientes.",
+        "prompt": "Trae las grabaciones de las llamadas de esta semana y dame un resumen: temas principales, pedidos de clientes, bloqueos y acciones que me corresponden."
+      }
+    }
   },
   "composerSkill": {
     "browse": "Skills"

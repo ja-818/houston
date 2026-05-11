@@ -39,7 +39,57 @@
     "heading": "Em que posso ajudar?",
     "subheading": "Toque um skill para começar, ou escreva o que você precisa abaixo.",
     "seeMore_one": "Ver mais {{count}} skill",
-    "seeMore_other": "Ver mais {{count}} skills"
+    "seeMore_other": "Ver mais {{count}} skills",
+    "suggestions": {
+      "heading": "O que seu agente pode fazer?",
+      "subheading": "Escolha um ponto de partida com base no que você tem conectado.",
+      "headingEmpty": "Comece por aqui",
+      "subheadingEmpty": "Conecte uma ferramenta e seu agente vai saber o que fazer.",
+      "connectCta": {
+        "title": "Conecte uma ferramenta para começar",
+        "description": "Gmail, LinkedIn, Notion, Sheets e mais. Escolha uma para desbloquear sugestões aqui."
+      },
+      "findLeadsLinkedin": {
+        "title": "Encontre leads do LinkedIn em uma empresa-alvo",
+        "description": "Traga contatos de uma empresa específica filtrando por cargo.",
+        "prompt": "Encontre 20 contatos em [empresa] em cargos de [cargo]. Retorne nome, cargo, URL do LinkedIn e empresa em uma tabela."
+      },
+      "planMyDay": {
+        "title": "Planeje meu próximo dia de trabalho",
+        "description": "Leia minha caixa de entrada e agenda, destaque o que importa hoje.",
+        "prompt": "Leia minha caixa de entrada e agenda de hoje e amanhã. Monte uma lista de foco com respostas pendentes, reuniões a preparar e o que for urgente."
+      },
+      "researchAccount": {
+        "title": "Pesquise uma conta-alvo",
+        "description": "Busque notícias recentes, sinais e contatos-chave em fontes públicas.",
+        "prompt": "Pesquise [nome da empresa]. Compartilhe notícias recentes, mudanças de liderança, captação, sinais de stack e 3 motivos plausíveis para entrar em contato esta semana."
+      },
+      "draftOutreach": {
+        "title": "Escreva uma mensagem de primeiro contato",
+        "description": "E-mail ou mensagem do LinkedIn personalizada para um prospect.",
+        "prompt": "Escreva um e-mail curto e amigável de primeiro contato para [nome do prospect] em [empresa]. Mencione algo específico do trabalho dele e proponha uma conversa de 15 minutos."
+      },
+      "writeContent": {
+        "title": "Escreva um rascunho de post ou documento",
+        "description": "Rascunho longo para blog, post no LinkedIn ou documento interno.",
+        "prompt": "Escreva [um post no LinkedIn / rascunho de blog / documento interno] sobre [tema]. O público é [quem]. Mantenha concreto e humano, sem buzzwords."
+      },
+      "analyzeSpreadsheet": {
+        "title": "Analise uma planilha do Google",
+        "description": "Resuma tendências, anomalias ou monte um gráfico a partir de uma planilha.",
+        "prompt": "Veja a planilha do Google em [URL]. Resuma as três tendências mais importantes e aponte qualquer coisa que pareça estranha."
+      },
+      "manageCrm": {
+        "title": "Atualize meu CRM depois de uma ligação",
+        "description": "Registre anotações, próximos passos e mudanças de estágio a partir de um resumo de reunião.",
+        "prompt": "Acabei de ter uma ligação com [contato / empresa]. Foi o que conversamos: [resumo]. Atualize o registro do CRM com anotações, próximos passos e uma mudança de estágio sugerida. Me mostre o rascunho antes de aplicar."
+      },
+      "summarizeCalls": {
+        "title": "Resuma as ligações desta semana",
+        "description": "Temas, pedidos e ações das gravações recentes.",
+        "prompt": "Traga as gravações das ligações desta semana e me dê um resumo: temas principais, pedidos dos clientes, bloqueios e ações que devo executar."
+      }
+    }
   },
   "composerSkill": {
     "browse": "Skills"

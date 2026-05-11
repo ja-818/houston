@@ -39,7 +39,57 @@
     "heading": "What can I help with?",
     "subheading": "Tap a skill to get started, or just type what you need below.",
     "seeMore_one": "See {{count}} more skill",
-    "seeMore_other": "See {{count}} more skills"
+    "seeMore_other": "See {{count}} more skills",
+    "suggestions": {
+      "heading": "What can your agent do?",
+      "subheading": "Pick a starting point based on what you have connected.",
+      "headingEmpty": "Get started",
+      "subheadingEmpty": "Connect a tool and your agent will know what to do.",
+      "connectCta": {
+        "title": "Connect a tool to get started",
+        "description": "Gmail, LinkedIn, Notion, Sheets, and more. Pick one to unlock starter prompts here."
+      },
+      "findLeadsLinkedin": {
+        "title": "Find LinkedIn leads at a target company",
+        "description": "Pull contacts at a specific company with role filters.",
+        "prompt": "Find me 20 contacts at [company] in [role] roles. Return name, title, LinkedIn URL, and company in a table."
+      },
+      "planMyDay": {
+        "title": "Plan my next working day",
+        "description": "Read my inbox and calendar, surface what matters today.",
+        "prompt": "Read my inbox and calendar for today and tomorrow. Build a focus list with replies I owe, meetings to prep, and anything urgent."
+      },
+      "researchAccount": {
+        "title": "Research a target account",
+        "description": "Pull recent news, signals, and key contacts from public sources.",
+        "prompt": "Research [company name]. Surface recent news, leadership changes, funding, tech-stack signals, and 3 plausible reasons to reach out this week."
+      },
+      "draftOutreach": {
+        "title": "Draft a cold outreach message",
+        "description": "Personalized first-touch email or LinkedIn message.",
+        "prompt": "Draft a short, friendly cold outreach email to [prospect name] at [company]. Mention one specific thing about their work and propose a 15-minute chat."
+      },
+      "writeContent": {
+        "title": "Write a draft post or doc",
+        "description": "Long-form draft for a blog, LinkedIn post, or internal doc.",
+        "prompt": "Write a [LinkedIn post / blog draft / internal doc] about [topic]. Audience is [who]. Keep it concrete and human, no buzzwords."
+      },
+      "analyzeSpreadsheet": {
+        "title": "Analyze a Google Sheet",
+        "description": "Summarize trends, anomalies, or build a chart from a sheet.",
+        "prompt": "Look at the Google Sheet at [URL]. Summarize the three most important trends and call out anything that looks off."
+      },
+      "manageCrm": {
+        "title": "Update my CRM after a call",
+        "description": "Log notes, next steps, and stage changes from a meeting recap.",
+        "prompt": "I just had a call with [contact / company]. Here is what we discussed: [summary]. Update the CRM record with notes, next steps, and a suggested stage change. Show me the draft before applying."
+      },
+      "summarizeCalls": {
+        "title": "Summarize this week's calls",
+        "description": "Themes, asks, and action items across recent recordings.",
+        "prompt": "Pull this week's call recordings and give me a recap: top themes, customer asks, blockers, and action items I owe."
+      }
+    }
   },
   "composerSkill": {
     "browse": "Skills"
