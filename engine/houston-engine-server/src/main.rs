@@ -38,6 +38,38 @@ async fn main() {
         houston_terminal_manager::claude_path::init();
     });
 
+    // Provision Git Bash on Windows BEFORE any spawn site needs it.
+    // Claude Code's claude.exe refuses to run without bash.exe; we
+    // bundle PortableGit-<arch>.7z.exe and extract it on first launch,
+    // then export CLAUDE_CODE_GIT_BASH_PATH so every child process
+    // (the provider auth probe, the login flow, the summarize call,
+    // the chat-session runner) inherits the path without each
+    // call-site having to know. Runs concurrently with claude_path
+    // init so first-boot extraction (~3-5s) overlaps with the
+    // login-shell PATH probe instead of stacking serially. Awaited
+    // before `axum::serve` so no route handler can read a
+    // half-provisioned env var.
+    #[cfg(target_os = "windows")]
+    let git_bash_init = tokio::task::spawn_blocking(|| {
+        if let Some(bash) = houston_engine_core::git_bash::ensure_bundled_bash() {
+            tracing::info!("[boot] CLAUDE_CODE_GIT_BASH_PATH={}", bash.display());
+            // SAFETY: this thread is the sole writer to this env var
+            // for the engine's lifetime, and we await this task
+            // before `axum::serve` starts so no route handler reads
+            // it concurrently. set_var's `unsafe` marker exists to
+            // make readers-during-write the caller's problem; we
+            // serialize.
+            unsafe {
+                std::env::set_var("CLAUDE_CODE_GIT_BASH_PATH", bash);
+            }
+        } else {
+            tracing::warn!(
+                "[boot] no bundled Git Bash found — Claude Code will fail until \
+                 the user installs Git for Windows manually"
+            );
+        }
+    });
+
     let cfg = ServerConfig::from_env();
     let listener = TcpListener::bind(cfg.bind).await.expect("bind failed");
     let actual: SocketAddr = listener.local_addr().expect("local_addr");
@@ -111,6 +143,10 @@ async fn main() {
     // but not fatal.
     if let Err(e) = path_init.await {
         tracing::warn!("[boot] claude_path::init panicked: {e}");
+    }
+    #[cfg(target_os = "windows")]
+    if let Err(e) = git_bash_init.await {
+        tracing::warn!("[boot] git_bash provisioning panicked: {e}");
     }
 
     if let Err(err) = axum::serve(listener, app).await {
