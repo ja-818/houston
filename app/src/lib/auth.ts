@@ -140,22 +140,56 @@ export function installDeepLinkListener(): () => void {
         return;
       }
 
-      if (!code) {
-        logger.warn("[auth] deep-link had no `code` param — ignoring");
-        emitAuthError(
-          "Sign-in callback was missing the authorization code.",
+      // Two callback shapes can land here:
+      //   PKCE   →  ?code=...                  (the `flowType: "pkce"`
+      //                                         path; client owns the
+      //                                         verifier in storage).
+      //   Implicit → #access_token=...&refresh_token=...
+      //
+      // Our client config asks for PKCE, but on Windows the desktop build
+      // has been observed to receive implicit-flow URLs (Supabase project
+      // config + an async Keychain adapter that silently swallows storage
+      // failures combine to make the JS lib generate an OAuth URL without
+      // `code_challenge`). The user got all the way through Google consent;
+      // the only thing left is installing the session — there is no reason
+      // to leave them stranded just because the URL shape doesn't match
+      // what we expected. Handle both, prefer PKCE when both are present
+      // (which never happens in practice — Supabase emits one or the other).
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          logger.error(`[auth] exchangeCodeForSession failed: ${error.message}`);
+          emitAuthError(error.message);
+          return;
+        }
+        logger.info(`[auth] session established (pkce) for ${data.user?.email}`);
+        return;
+      }
+
+      const accessToken = fragmentParams.get("access_token");
+      const refreshToken = fragmentParams.get("refresh_token");
+      if (accessToken && refreshToken) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) {
+          logger.error(`[auth] setSession failed: ${error.message}`);
+          emitAuthError(error.message);
+          return;
+        }
+        logger.info(
+          `[auth] session established (implicit) for ${data.user?.email}`,
         );
         return;
       }
 
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) {
-        logger.error(`[auth] exchangeCodeForSession failed: ${error.message}`);
-        emitAuthError(error.message);
-        return;
-      }
-
-      logger.info(`[auth] session established for ${data.user?.email}`);
+      logger.warn(
+        "[auth] deep-link had neither `code` nor `access_token` — ignoring",
+      );
+      emitAuthError(
+        "Sign-in callback was missing the authorization code.",
+      );
     } catch (e) {
       logger.error(`[auth] failed to handle deep-link: ${e}`);
       emitAuthError(String(e));
