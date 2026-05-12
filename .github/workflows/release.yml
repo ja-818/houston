@@ -710,26 +710,61 @@ jobs:
   #     ship to actual users we'll wire SignPath Foundation (free OSS) into
   #     a `sign-windows` job between this and the upload step.
   #
-  # Build pipeline:
-  #   1. Stage CLI deps via `scripts/fetch-cli-deps.sh windows-x64`.
+  # Build pipeline (runs once per matrix arch, x86_64 + aarch64):
+  #   1. Stage CLI deps via `scripts/fetch-cli-deps.sh windows-<arch>`.
   #      Codex is downloaded + zstd-decompressed; composio is BUILT FROM
   #      SOURCE on this Windows runner using a pinned commit on the
-  #      gethouston/composio fork — see `cli-deps.json`'s
-  #      `composio.build."windows-x64"` block for the pin and the
+  #      gethouston/composio fork (windows-x64 = houston-windows-support
+  #      branch, windows-arm64 = houston-windows-arm64 branch with the
+  #      bun:ffi fallback patch) — see `cli-deps.json`'s
+  #      `composio.build."windows-<arch>"` block for the pin and the
   #      `$build_comment` for why upstream can't ship Windows yet.
-  #   2. Build the houston-engine sidecar for x86_64-pc-windows-msvc.
+  #      git-bash-<arch>.7z.exe (PortableGit SFX) is also staged so the
+  #      first-launch extractor in houston-engine-core::git_bash gives
+  #      Claude Code its bash.exe dependency without user setup.
+  #   2. Build the houston-engine sidecar for the matrix target.
   #      Tauri's externalBin picks it up at `binaries/houston-engine.exe`
   #      (build.rs::stage_engine_sidecar names it
-  #      `houston-engine-x86_64-pc-windows-msvc.exe` per Tauri's per-target
-  #      convention).
-  #   3. Run `pnpm tauri build --target x86_64-pc-windows-msvc` to produce
-  #      the MSI under
-  #      `target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi`.
-  #   4. Upload the MSI + .sig to the draft release created by `prep`.
+  #      `houston-engine-<target>.exe` per Tauri's per-target convention).
+  #   3. Run `pnpm tauri build --target <matrix.target>` to produce the
+  #      MSI under `target/<matrix.target>/release/bundle/msi/*.msi`.
+  #   4. Upload the per-arch MSI + .sig to the draft release. `finalize`
+  #      then merges both into a single latest.json with separate
+  #      `windows-x86_64` and `windows-aarch64` entries the in-app
+  #      updater consumes.
   build-windows:
     needs: prep
-    runs-on: windows-latest
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
+    strategy:
+      # Both arches build in parallel. fail-fast=false so a transient
+      # ARM-runner outage doesn't kill the x64 release that 90%+ of
+      # Windows users actually install.
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            bun_arch: x64
+            fetch_mode: windows-x64
+            target: x86_64-pc-windows-msvc
+            runner: windows-latest
+          - arch: aarch64
+            bun_arch: arm64
+            fetch_mode: windows-arm64
+            target: aarch64-pc-windows-msvc
+            # GitHub-hosted Windows-on-ARM runner. Goes through the
+            # same VS 2022 toolchain as the x64 runner; the only
+            # practical difference is the host arch + which Bun /
+            # composio variants we pull. See:
+            # https://github.com/actions/partner-runner-images/issues/61
+            # If this label ever disappears, fall back by changing
+            # `runner: windows-latest` + adding
+            # `rustup target add aarch64-pc-windows-msvc` and the
+            # ARM64 component of VS Build Tools — but that path
+            # requires running the linker via /arm64 cross-toolchain
+            # which has subtle issues with mingw-w64-linked C deps in
+            # libsql, so prefer the native runner whenever it's up.
+            runner: windows-11-arm
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -752,7 +787,7 @@ jobs:
       - name: Setup Rust (windows-msvc target)
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-pc-windows-msvc
+          targets: ${{ matrix.target }}
 
       - name: Cache Rust artifacts
         uses: actions/cache@v4
@@ -762,14 +797,14 @@ jobs:
             ~/.cargo/git
             app/src-tauri/target
             target
-          key: ${{ runner.os }}-cargo-windows-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-windows-
+          key: ${{ runner.os }}-cargo-${{ matrix.arch }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-${{ matrix.arch }}-
 
       # Bun + jq + zstd are required by `scripts/fetch-cli-deps.sh`. Bun
       # is needed because the composio Windows binary is built FROM
       # SOURCE on this runner via `bun build:binary:cross
-      # --target=bun-windows-x64-modern`. The version MUST match the pin
-      # in `cli-deps.json#composio.build."windows-x64".bun_version` —
+      # --target=bun-windows-<arch>`. The version MUST match the pin
+      # in `cli-deps.json#composio.build."windows-<arch>".bun_version` —
       # mismatched Bun produces a binary with subtle behavioral
       # differences that bite at runtime, so we install via direct
       # GitHub release download (deterministic) rather than the
@@ -778,15 +813,22 @@ jobs:
       - name: Install Bun (pinned to cli-deps.json)
         shell: pwsh
         run: |
-          $bunVersion = (Get-Content cli-deps.json | ConvertFrom-Json).composio.build.'windows-x64'.bun_version
-          Write-Host "Installing Bun $bunVersion (direct GitHub release download)"
+          $platformKey = "windows-${{ matrix.bun_arch }}"
+          if ("${{ matrix.bun_arch }}" -eq "x64") {
+            $bunVersion = (Get-Content cli-deps.json | ConvertFrom-Json).composio.build.'windows-x64'.bun_version
+            $bunBundle = "bun-windows-x64"
+          } else {
+            $bunVersion = (Get-Content cli-deps.json | ConvertFrom-Json).composio.build.'windows-arm64'.bun_version
+            $bunBundle = "bun-windows-arm64"
+          }
+          Write-Host "Installing Bun $bunVersion ($bunBundle, direct GitHub release download)"
           $bunDir = "$HOME\.bun\bin"
           New-Item -ItemType Directory -Force -Path $bunDir | Out-Null
-          $url = "https://github.com/oven-sh/bun/releases/download/bun-v$bunVersion/bun-windows-x64.zip"
-          $zipPath = "$env:TEMP\bun-windows-x64.zip"
+          $url = "https://github.com/oven-sh/bun/releases/download/bun-v$bunVersion/$bunBundle.zip"
+          $zipPath = "$env:TEMP\$bunBundle.zip"
           Invoke-WebRequest -Uri $url -OutFile $zipPath
           Expand-Archive -Force -Path $zipPath -DestinationPath "$env:TEMP\bun-extract"
-          Copy-Item -Force "$env:TEMP\bun-extract\bun-windows-x64\bun.exe" "$bunDir\bun.exe"
+          Copy-Item -Force "$env:TEMP\bun-extract\$bunBundle\bun.exe" "$bunDir\bun.exe"
           Remove-Item -Recurse -Force "$env:TEMP\bun-extract", $zipPath
           # Add bun to PATH for subsequent steps.
           echo "$bunDir" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
@@ -804,16 +846,20 @@ jobs:
           jq --version
           zstd --version
 
-      # Stage bundled CLI binaries: codex.exe (downloaded + zstd) and
-      # composio-x86_64/composio.exe (built from gethouston/composio
-      # fork). The fetch script handles `pnpm install` + `tsdown` +
+      # Stage bundled CLI binaries: codex.exe (downloaded + zstd),
+      # composio-<arch>/composio.exe (built from gethouston/composio
+      # fork — windows-x64 from branch houston-windows-support,
+      # windows-arm64 from branch houston-windows-arm64 with the
+      # bun:ffi fallback patch), and git-bash-<arch>.7z.exe (PortableGit
+      # SFX, extracted on first launch by houston-engine-core::git_bash).
+      # The fetch script handles `pnpm install` + `tsdown` +
       # `bun build:binary:cross` for the composio fork; full build is
       # ~3-5 minutes on a warm runner.
-      - name: Stage bundled CLI dependencies (codex, composio Windows)
+      - name: Stage bundled CLI dependencies (codex, composio, git-bash)
         shell: bash
         run: |
           set -euo pipefail
-          ./scripts/fetch-cli-deps.sh windows-x64
+          ./scripts/fetch-cli-deps.sh ${{ matrix.fetch_mode }}
 
           echo "=== Staged bundle ==="
           ls -lah app/src-tauri/resources/bin/
@@ -822,30 +868,31 @@ jobs:
 
           # Sanity: every Windows artifact must be present.
           test -f app/src-tauri/resources/bin/codex.exe
-          test -f app/src-tauri/resources/bin/composio-x86_64/composio.exe
-          test -f app/src-tauri/resources/bin/composio-x86_64/run-helpers-runtime.mjs
-          test -f app/src-tauri/resources/bin/composio-x86_64/acp-adapters/codex/win32-x64/codex-acp.exe
+          test -f app/src-tauri/resources/bin/composio-${{ matrix.arch }}/composio.exe
+          test -f app/src-tauri/resources/bin/composio-${{ matrix.arch }}/run-helpers-runtime.mjs
+          test -f app/src-tauri/resources/bin/composio-${{ matrix.arch }}/acp-adapters/codex/win32-${{ matrix.bun_arch }}/codex-acp.exe
+          test -f app/src-tauri/resources/bin/git-bash-${{ matrix.arch }}.7z.exe
           test -f app/src-tauri/resources/bin/cli-deps.json
 
-      # Build the engine sidecar for x86_64-pc-windows-msvc BEFORE
+      # Build the engine sidecar for the matrix target BEFORE
       # `tauri build`. build.rs::stage_engine_sidecar copies it to
-      # `app/src-tauri/binaries/houston-engine-x86_64-pc-windows-msvc.exe`
-      # which is what Tauri's externalBin pattern expects.
-      - name: Build houston-engine sidecar (x86_64-pc-windows-msvc)
+      # `app/src-tauri/binaries/houston-engine-<target>.exe` which is
+      # what Tauri's externalBin pattern expects.
+      - name: Build houston-engine sidecar (${{ matrix.target }})
         shell: bash
         run: |
           set -euo pipefail
-          cargo build --release --target x86_64-pc-windows-msvc -p houston-engine-server
-          test -x "target/x86_64-pc-windows-msvc/release/houston-engine.exe" \
-            || { echo "::error::engine binary missing for x86_64-pc-windows-msvc"; exit 1; }
+          cargo build --release --target ${{ matrix.target }} -p houston-engine-server
+          test -x "target/${{ matrix.target }}/release/houston-engine.exe" \
+            || { echo "::error::engine binary missing for ${{ matrix.target }}"; exit 1; }
           echo "Sidecar size:"
-          ls -lah target/x86_64-pc-windows-msvc/release/houston-engine.exe
+          ls -lah target/${{ matrix.target }}/release/houston-engine.exe
 
       - name: Build Tauri app (Windows MSI)
         uses: tauri-apps/tauri-action@v0
         with:
           projectPath: app
-          args: --target x86_64-pc-windows-msvc
+          args: --target ${{ matrix.target }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # The Tauri updater key signs the MSI for the auto-updater
@@ -866,7 +913,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BUNDLE="target/x86_64-pc-windows-msvc/release/bundle"
+          BUNDLE="target/${{ matrix.target }}/release/bundle"
 
           MSI=$(ls -t "$BUNDLE/msi/"*.msi 2>/dev/null | head -1 || true)
           # Tauri's `createUpdaterArtifacts: true` emits an `<msi>.sig`
@@ -945,12 +992,14 @@ jobs:
         with:
           name: release-notes
 
-      # Pull `latest.json` (mac entries) and the Windows `*.msi.sig`
-      # straight from the draft release. Using assets-on-the-draft as
-      # the handoff (instead of cross-job artifacts) avoids extra
+      # Pull `latest.json` (mac entries) and all Windows `*.msi.sig`
+      # files straight from the draft release. Using assets-on-the-draft
+      # as the handoff (instead of cross-job artifacts) avoids extra
       # upload/download steps and keeps the source of truth in one
-      # place — the draft itself.
-      - name: Extend latest.json with Windows updater entry
+      # place — the draft itself. Two .sig files now ship: one per
+      # Windows arch (x64, arm64). Tauri's updater key for each entry
+      # is the platform string the in-app client polls for.
+      - name: Extend latest.json with Windows updater entries
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -966,33 +1015,45 @@ jobs:
             exit 1
           fi
 
-          SIG_FILE=$(ls "$tmpdir"/*.msi.sig 2>/dev/null | head -1 || true)
-          if [ -z "$SIG_FILE" ]; then
-            echo "::error::*.msi.sig not found in draft release; build-windows must have failed to upload it"
+          # Walk every *.msi.sig and append a Tauri-updater entry. The
+          # MSI bundler embeds the target triple in the filename so we
+          # can derive the platform key directly. Naming examples:
+          #   Houston_0.4.9_x64_en-US.msi.sig    → windows-x86_64
+          #   Houston_0.4.9_arm64_en-US.msi.sig  → windows-aarch64
+          shopt -s nullglob
+          sigs=("$tmpdir"/*.msi.sig)
+          if [ ${#sigs[@]} -eq 0 ]; then
+            echo "::error::no *.msi.sig in draft release; build-windows must have failed to upload them"
             exit 1
           fi
 
-          MSI_NAME=$(basename "$SIG_FILE" .sig)
-          MSI_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$MSI_NAME"
-          MSI_SIG=$(cat "$SIG_FILE")
+          cp "$tmpdir/latest.json" "$tmpdir/latest.next.json"
+          for SIG_FILE in "${sigs[@]}"; do
+            MSI_NAME=$(basename "$SIG_FILE" .sig)
+            MSI_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$MSI_NAME"
+            MSI_SIG=$(cat "$SIG_FILE")
 
-          # Tauri's updater checks `windows-x86_64` for both NSIS and MSI
-          # installers (the format is detected from the URL extension at
-          # update time). We add a single entry pointing at the MSI; if
-          # we ever ship NSIS too, we keep the same key and let users
-          # opt into one-or-the-other via the URL the updater receives.
-          jq \
-            --arg sig "$MSI_SIG" \
-            --arg url "$MSI_URL" \
-            '.platforms["windows-x86_64"] = {signature: $sig, url: $url}' \
-            "$tmpdir/latest.json" > "$tmpdir/latest.next.json"
+            case "$MSI_NAME" in
+              *_arm64*|*_aarch64*) PLATFORM="windows-aarch64" ;;
+              *)                   PLATFORM="windows-x86_64"  ;;
+            esac
+
+            echo "  + $PLATFORM ← $MSI_NAME"
+            jq \
+              --arg sig "$MSI_SIG" \
+              --arg url "$MSI_URL" \
+              --arg plat "$PLATFORM" \
+              '.platforms[$plat] = {signature: $sig, url: $url}' \
+              "$tmpdir/latest.next.json" > "$tmpdir/latest.merged.json"
+            mv "$tmpdir/latest.merged.json" "$tmpdir/latest.next.json"
+          done
 
           echo "Updated latest.json:"
           cat "$tmpdir/latest.next.json"
 
           mv "$tmpdir/latest.next.json" "$tmpdir/latest.json"
           gh release upload "$GITHUB_REF_NAME" "$tmpdir/latest.json" --clobber
-          echo "::notice::latest.json now advertises macOS + Windows for the in-app updater"
+          echo "::notice::latest.json now advertises macOS + Windows (x64 + arm64) for the in-app updater"
 
       # Pings the team Slack channel so anyone can grab the DMG and try
       # the build before we publish. No-ops when
