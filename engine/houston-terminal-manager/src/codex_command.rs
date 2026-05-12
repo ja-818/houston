@@ -8,6 +8,7 @@ pub(crate) fn build_args(
     resume_session_id: Option<&str>,
     working_dir: Option<&Path>,
     model: Option<&str>,
+    effort: Option<&str>,
     system_prompt: Option<&str>,
 ) -> Vec<OsString> {
     let mut args = vec![
@@ -21,6 +22,13 @@ pub(crate) fn build_args(
         let json_val = serde_json::to_string(sp).unwrap_or_else(|_| format!("\"{sp}\""));
         args.push(OsString::from("-c"));
         args.push(OsString::from(format!("developer_instructions={json_val}")));
+    }
+
+    // Override `model_reasoning_effort` so a global `~/.codex/config.toml`
+    // value (newer Codex CLIs allow `xhigh`, bundled doesn't) can't break us.
+    if let Some(e) = effort {
+        args.push(OsString::from("-c"));
+        args.push(OsString::from(format!("model_reasoning_effort=\"{e}\"")));
     }
 
     if let Some(m) = model {
@@ -67,6 +75,7 @@ mod tests {
             Some("019dd59b-5e8c-7f63-a8c6-18fb825874ad"),
             Some(&dir),
             Some("gpt-5.5"),
+            Some("medium"),
             Some("system"),
         ));
 
@@ -82,10 +91,21 @@ mod tests {
 
     #[test]
     fn fresh_args_read_prompt_from_stdin() {
-        let args = strings(build_args(None, None, None, None));
+        let args = strings(build_args(None, None, None, None, None));
 
         assert_eq!(args.last().map(String::as_str), Some("-"));
         assert!(!args.iter().any(|arg| arg == "resume"));
+    }
+
+    #[test]
+    fn effort_emits_model_reasoning_effort_override() {
+        let args = strings(build_args(None, None, None, Some("medium"), None));
+        let pos = args
+            .iter()
+            .position(|arg| arg == "model_reasoning_effort=\"medium\"")
+            .expect("effort override should be present");
+        // Override must arrive as a `-c key=value` pair.
+        assert_eq!(args[pos - 1], "-c");
     }
 
     #[test]

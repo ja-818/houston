@@ -83,12 +83,23 @@ async fn run_claude_summary(prompt: &str, model: Option<&str>) -> Result<String,
 }
 
 async fn run_codex_summary(prompt: &str, model: Option<&str>) -> Result<String, String> {
-    let mut cmd = tokio::process::Command::new("codex");
+    // Prefer the bundled codex (pinned in `cli-deps.json`) so the title
+    // summarizer can't get sabotaged by a stale `nvm`/`brew` codex on the
+    // user's PATH that doesn't recognize the model we picked.
+    let bin = houston_cli_bundle::bundled_codex_path()
+        .unwrap_or_else(|| std::path::PathBuf::from("codex"));
+    let mut cmd = tokio::process::Command::new(&bin);
     cmd.env("PATH", claude_path::shell_path());
     cmd.arg("exec")
         .arg("--json")
         .arg("--dangerously-bypass-approvals-and-sandbox")
         .arg("--skip-git-repo-check")
+        // Override `model_reasoning_effort` so a stale global
+        // `~/.codex/config.toml` (newer Codex CLIs allow `xhigh`, older ones
+        // reject it) can't kill title generation. We don't need much thought
+        // here — it's a 6-word title.
+        .arg("-c")
+        .arg("model_reasoning_effort=\"low\"")
         .arg("--model")
         .arg(model.unwrap_or(CODEX_TITLE_MODEL))
         .arg("-");

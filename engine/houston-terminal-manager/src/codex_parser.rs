@@ -74,6 +74,17 @@ pub struct CodexError {
 pub struct CodexAccumulator {
     text_buffer: String,
     thinking_buffer: String,
+    /// True between `turn.started` and the first event that takes over the
+    /// reasoning slot (real reasoning item, agent_message, command_execution,
+    /// etc.). Codex 0.130's `--json` output emits NO events during the
+    /// 5-10 seconds the model spends reasoning, so we seed an empty
+    /// `ThinkingStreaming` placeholder on `turn.started` to give the UI a
+    /// signal to render "Mission in progress…" immediately. When any
+    /// content-bearing event arrives — or when the turn completes without
+    /// any reasoning — we emit a final `Thinking("")` so the reasoning
+    /// block transitions out of its streaming state and doesn't strand a
+    /// permanent shimmer in the chat.
+    thinking_placeholder_open: bool,
 }
 
 impl CodexAccumulator {
@@ -108,11 +119,29 @@ pub fn parse_codex_event(line: &str, acc: &mut CodexAccumulator) -> Vec<FeedItem
     };
 
     match event.event_type.as_str() {
-        "thread.started" | "turn.started" => vec![],
+        "thread.started" => vec![],
 
-        "item.started" | "item.updated" => parse_item_streaming(&event, acc),
+        // Seed an empty streaming-thinking placeholder so the chat panel
+        // can render "Mission in progress…" without waiting 5-10 seconds
+        // for the first real `item.*` event. Codex 0.130's `--json` mode
+        // does not stream reasoning, so without this the UI looks frozen
+        // after the user hits send.
+        "turn.started" => {
+            acc.thinking_placeholder_open = true;
+            vec![FeedItem::ThinkingStreaming(String::new())]
+        }
 
-        "item.completed" => parse_item_completed(&event, acc),
+        "item.started" | "item.updated" => {
+            let mut items = close_thinking_placeholder_if_open(acc, &event);
+            items.extend(parse_item_streaming(&event, acc));
+            items
+        }
+
+        "item.completed" => {
+            let mut items = close_thinking_placeholder_if_open(acc, &event);
+            items.extend(parse_item_completed(&event, acc));
+            items
+        }
 
         "turn.completed" => {
             let mut items = vec![];
@@ -124,7 +153,13 @@ pub fn parse_codex_event(line: &str, acc: &mut CodexAccumulator) -> Vec<FeedItem
             }
             if !acc.thinking_buffer.is_empty() {
                 items.push(FeedItem::Thinking(std::mem::take(&mut acc.thinking_buffer)));
+            } else if acc.thinking_placeholder_open {
+                // The turn finished without codex ever emitting a reasoning
+                // item. Finalize the placeholder so the chat UI exits its
+                // streaming state instead of leaving a permanent shimmer.
+                items.push(FeedItem::Thinking(String::new()));
             }
+            acc.thinking_placeholder_open = false;
             // Emit usage as FinalResult
             if let Some(usage) = &event.usage {
                 let total = usage.input_tokens.unwrap_or(0) + usage.output_tokens.unwrap_or(0);
@@ -140,24 +175,63 @@ pub fn parse_codex_event(line: &str, acc: &mut CodexAccumulator) -> Vec<FeedItem
         "turn.failed" | "error" => {
             let msg = event
                 .message
-                .or_else(|| event.error.and_then(|e| e.message))
+                .clone()
+                .or_else(|| event.error.clone().and_then(|e| e.message))
                 .unwrap_or_else(|| "Unknown error".into());
             tracing::info!("[codex] error/turn.failed: {msg}");
+            // Close any pending reasoning placeholder so the UI doesn't
+            // strand a shimmer next to the error message.
+            let mut items = vec![];
+            if acc.thinking_placeholder_open {
+                acc.thinking_placeholder_open = false;
+                items.push(FeedItem::Thinking(std::mem::take(&mut acc.thinking_buffer)));
+            }
             // Auth retry noise (e.g. "Reconnecting... 1/5 (unexpected status 401 Unauthorized...)")
             // Show a single friendly "Checking connection..." instead of raw retries.
             if is_auth_retry_noise(&msg) {
                 tracing::info!("[codex] auth retry detected — suppressing raw error");
                 // Return a marker so session_runner can track it, but don't show raw noise.
-                vec![FeedItem::SystemMessage(AUTH_RETRY_MARKER.to_string())]
+                items.push(FeedItem::SystemMessage(AUTH_RETRY_MARKER.to_string()));
             } else {
-                vec![FeedItem::SystemMessage(format!("Error: {msg}"))]
+                items.push(FeedItem::SystemMessage(format!("Error: {msg}")));
             }
+            items
         }
 
         _ => {
             tracing::debug!("[codex] unhandled event type: {}", event.event_type);
             vec![]
         }
+    }
+}
+
+/// If a `turn.started` placeholder is open and the next item is NOT a
+/// reasoning item (which would naturally take over the buffer), emit a
+/// finalizing `Thinking("")` so the chat UI's reasoning block exits its
+/// streaming state. Returns the events to prepend in front of whatever the
+/// real `item.*` handler emits.
+fn close_thinking_placeholder_if_open(
+    acc: &mut CodexAccumulator,
+    event: &CodexEvent,
+) -> Vec<FeedItem> {
+    if !acc.thinking_placeholder_open {
+        return vec![];
+    }
+    // Real reasoning items take over the buffer naturally — let the existing
+    // parser logic populate it instead of pre-finalizing with "".
+    let is_reasoning = event
+        .item
+        .as_ref()
+        .map(|i| i.item_type == "reasoning")
+        .unwrap_or(false);
+    if is_reasoning {
+        return vec![];
+    }
+    acc.thinking_placeholder_open = false;
+    if acc.thinking_buffer.is_empty() {
+        vec![FeedItem::Thinking(String::new())]
+    } else {
+        vec![FeedItem::Thinking(std::mem::take(&mut acc.thinking_buffer))]
     }
 }
 
@@ -321,6 +395,64 @@ mod tests {
 
     fn acc() -> CodexAccumulator {
         CodexAccumulator::new()
+    }
+
+    #[test]
+    fn turn_started_emits_empty_thinking_placeholder() {
+        // Codex 0.130 stays silent between `turn.started` and the first
+        // real item for several seconds. The parser must surface a
+        // `ThinkingStreaming("")` so the chat UI can render
+        // "Mission in progress…" without waiting on the model.
+        let mut a = acc();
+        let items = parse_codex_event(r#"{"type":"turn.started"}"#, &mut a);
+        assert_eq!(items.len(), 1);
+        assert!(matches!(&items[0], FeedItem::ThinkingStreaming(t) if t.is_empty()));
+    }
+
+    #[test]
+    fn first_non_reasoning_item_finalizes_placeholder() {
+        // When the model returns text without any reasoning items, the
+        // placeholder must be finalized as `Thinking("")` so the chat
+        // reasoning block exits its streaming state. The finalizer is
+        // emitted BEFORE the real item, so the UI sees a complete
+        // reasoning block followed by the assistant text.
+        let mut a = acc();
+        let _ = parse_codex_event(r#"{"type":"turn.started"}"#, &mut a);
+        let items = parse_codex_event(
+            r#"{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Hi"}}"#,
+            &mut a,
+        );
+        assert_eq!(items.len(), 2);
+        assert!(matches!(&items[0], FeedItem::Thinking(t) if t.is_empty()));
+        assert!(matches!(&items[1], FeedItem::AssistantText(t) if t == "Hi"));
+    }
+
+    #[test]
+    fn real_reasoning_takes_over_placeholder() {
+        // If codex does emit a reasoning item (older protocol / fallback),
+        // the parser must NOT pre-finalize with `Thinking("")` — the real
+        // reasoning content owns the buffer instead.
+        let mut a = acc();
+        let _ = parse_codex_event(r#"{"type":"turn.started"}"#, &mut a);
+        let items = parse_codex_event(
+            r#"{"type":"item.updated","item":{"id":"item_0","type":"reasoning","text":"Let me think"}}"#,
+            &mut a,
+        );
+        assert_eq!(items.len(), 1);
+        assert!(matches!(&items[0], FeedItem::ThinkingStreaming(t) if t == "Let me think"));
+    }
+
+    #[test]
+    fn turn_completed_without_items_finalizes_placeholder() {
+        // Edge case: turn ends with no items at all (e.g. cancelled before
+        // any output). Placeholder must still be closed out.
+        let mut a = acc();
+        let _ = parse_codex_event(r#"{"type":"turn.started"}"#, &mut a);
+        let items = parse_codex_event(r#"{"type":"turn.completed"}"#, &mut a);
+        assert!(
+            items.iter().any(|i| matches!(i, FeedItem::Thinking(t) if t.is_empty())),
+            "expected an empty Thinking() to close the placeholder, got {items:?}"
+        );
     }
 
     #[test]

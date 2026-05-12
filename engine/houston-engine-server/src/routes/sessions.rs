@@ -72,6 +72,12 @@ pub struct StartRequest {
     /// Model override. Wins over any resolved default.
     #[serde(default)]
     pub model: Option<String>,
+    /// Reasoning effort override. Forwarded to the CLI as `--effort` (Claude)
+    /// or `-c model_reasoning_effort=<value>` (Codex). Used by the onboarding
+    /// tutorial to force a known-good value regardless of what the user has
+    /// in `~/.codex/config.toml`.
+    #[serde(default)]
+    pub effort: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -105,6 +111,7 @@ async fn start_session(
         source: req.source,
         provider,
         model,
+        effort: req.effort,
     };
 
     let rt = SessionRuntime::clone(&st.engine.sessions);

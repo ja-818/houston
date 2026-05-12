@@ -481,6 +481,13 @@ export interface SessionStartRequest {
   workingDir?: string;
   provider?: string;
   model?: string;
+  /**
+   * Reasoning-effort override. Forwarded to the CLI as `--effort` (Claude) or
+   * `-c model_reasoning_effort=<value>` (Codex). The tutorial uses this to
+   * force `"medium"` so a stale global `~/.codex/config.toml` value can't
+   * blow up the session.
+   */
+  effort?: string;
 }
 
 export interface SessionStartResponse {

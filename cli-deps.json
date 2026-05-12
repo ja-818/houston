@@ -23,7 +23,7 @@
     }
   },
   "codex": {
-    "version": "0.121.0",
+    "version": "0.130.0",
     "bundled": true,
     "binary_name": "codex",
     "license": "Apache-2.0",
@@ -36,10 +36,10 @@
       "windows-arm64": "https://github.com/openai/codex/releases/download/rust-v{version}/codex-aarch64-pc-windows-msvc.exe.zst"
     },
     "checksums": {
-      "darwin-arm64": "60f7039e63a7de8ae474136ac6f593ec1a913e1ddca0df59ade1f6d6eb5f7fd0",
-      "darwin-x64": "94e6ba8a552d4625beee857f513fb12bc20e560b9427c4a93733dbd86619f415",
-      "windows-x64": "92c0938d13e9e06e2844be1e50bfa2d246e295185aabe055a92d42fcdeb0b26d",
-      "windows-arm64": "cb1978aa318bd9180a8896bbfadc05b7581c752677df9ab6eb1f1903754fed20"
+      "darwin-arm64": "bc50a4b7f9a0c8ca99179189e4659b601107830770e21547dc0c246bce733577",
+      "darwin-x64": "feddb116bd96d7d83f8bb19b34fbabe6843cc64461baf2e49c017e1206ad5e67",
+      "windows-x64": "b941e5d2f3d59ef38d7b31885be1596566640f1c3b6c5d086bfdeade6c8ff9cd",
+      "windows-arm64": "087f12e44d6da8a6378e39e1448470db6b40836c9775f704de95cd9c84bfce0f"
     }
   },
   "composio": {

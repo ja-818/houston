@@ -178,6 +178,11 @@ export function TryMission({
   // Free-typing path. Wrapped by `useSessionMessageQueue` so messages typed
   // while the agent is mid-stream get queued instead of dropped — same
   // behavior as the workspace chat tab.
+  //
+  // Force `effort: "medium"` for both providers. Without it, Codex inherits
+  // whatever sits in `~/.codex/config.toml`, and newer Codex builds happily
+  // write `model_reasoning_effort = "xhigh"` — which the bundled Codex CLI
+  // rejects, killing the tutorial with "A local tool failed to start".
   const sendNow = useCallback(
     async (text: string, _files: File[]) => {
       const trimmed = text.trim();
@@ -190,6 +195,7 @@ export function TryMission({
         await tauriChat.send(agentPath, trimmed, missionSessionKey, {
           providerOverride: provider,
           modelOverride: model,
+          effortOverride: "medium",
         });
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
@@ -243,6 +249,7 @@ export function TryMission({
             title: chipLabel,
             providerOverride: provider,
             modelOverride: model,
+            effortOverride: "medium",
           },
         );
         setMissionSessionKey(result.sessionKey);

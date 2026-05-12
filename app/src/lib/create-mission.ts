@@ -68,6 +68,8 @@ export interface CreateMissionOptions {
   providerOverride?: string;
   /** Model override forwarded to tauriChat.send. */
   modelOverride?: string;
+  /** Reasoning-effort override forwarded to tauriChat.send. */
+  effortOverride?: string;
   /**
    * Explicit activity title. Overrides the default `autoTitleFromText(text)`.
    * Used by action invocations where `text` is a structured marker that
@@ -123,6 +125,7 @@ export async function createMission(
       workingDirOverride: opts.worktreePath,
       providerOverride: opts.providerOverride,
       modelOverride: opts.modelOverride,
+      effortOverride: opts.effortOverride,
     });
 
     if (!opts.title) {

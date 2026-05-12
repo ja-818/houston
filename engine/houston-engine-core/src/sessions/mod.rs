@@ -92,6 +92,12 @@ pub struct StartParams {
     /// [`resolve_provider`] first).
     pub provider: Provider,
     pub model: Option<String>,
+    /// Reasoning effort override. For Codex, this becomes
+    /// `-c model_reasoning_effort=<value>` (also overrides whatever the user
+    /// has in their global `~/.codex/config.toml`). For Claude, it becomes
+    /// `--effort <value>`. Accepted values vary per provider; the caller is
+    /// responsible for passing something each CLI understands (e.g. "medium").
+    pub effort: Option<String>,
 }
 
 /// Start a session turn. The request is accepted immediately. Turns with the
@@ -160,6 +166,7 @@ async fn run_start(
         source,
         provider,
         model,
+        effort,
     } = params;
 
     if !agent_dir.exists() {
@@ -270,6 +277,7 @@ async fn run_start(
         Some(rt.pid_map.clone()),
         provider,
         model,
+        effort,
     );
 
     // Own the end-of-session activity flip engine-side. Before this, the
@@ -506,6 +514,7 @@ pub async fn start_onboarding(
             source: Some("desktop".into()),
             provider: resolved.provider,
             model: resolved.model,
+            effort: None,
         },
     )
     .await
@@ -572,6 +581,7 @@ mod tests {
                     source: Some("test".to_string()),
                     provider: Provider::OpenAI,
                     model: None,
+                    effort: None,
                 },
             ),
         )

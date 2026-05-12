@@ -243,7 +243,9 @@ mod tests {
     #[test]
     fn cli_path_falls_back_to_standalone_in_dev() {
         // Tests run inside cargo's target dir, never inside an `.app`
-        // bundle — so the fallback should always be standalone here.
+        // bundle — so the fallback should always be standalone here. The
+        // dev-workspace resolver added in houston-cli-bundle is gated on
+        // the engine binary name, so cargo test binaries don't trigger it.
         let p = cli_path();
         assert!(p.ends_with(".composio/composio") || p.ends_with(".composio/composio.exe"));
     }

@@ -158,6 +158,7 @@ export const tauriChat = {
       workingDirOverride?: string;
       providerOverride?: string;
       modelOverride?: string;
+      effortOverride?: string;
     },
   ) =>
     call<string>("send_message", async () => {
@@ -168,6 +169,7 @@ export const tauriChat = {
         workingDir: opts?.workingDirOverride,
         provider: opts?.providerOverride,
         model: opts?.modelOverride,
+        effort: opts?.effortOverride,
       });
       return res.sessionKey;
     }),

@@ -92,6 +92,9 @@ pub fn bundled_bin_dir_for(exe: &Path) -> Option<PathBuf> {
     if let Some(dir) = sibling_bin_dir(exe) {
         return Some(dir);
     }
+    if let Some(dir) = dev_workspace_bin_dir(exe) {
+        return Some(dir);
+    }
     None
 }
 
@@ -349,6 +352,53 @@ fn sibling_bin_dir(exe: &Path) -> Option<PathBuf> {
     bin.is_dir().then_some(bin)
 }
 
+/// Dev fallback: when the engine is running from `<workspace>/target/{debug,
+/// release}/houston-engine` (i.e. `pnpm tauri dev` or `cargo run`), the
+/// bundled CLIs aren't staged next to the binary. Instead they live in
+/// `<workspace>/app/src-tauri/resources/bin/` after the user runs
+/// `./scripts/fetch-cli-deps.sh host`. Resolve that layout so dev sessions
+/// can use the pinned, version-controlled CLI (instead of whatever happens
+/// to be on the user's PATH, which is how we ended up serving an ancient
+/// `codex` from `nvm` to the tutorial).
+fn dev_workspace_bin_dir(exe: &Path) -> Option<PathBuf> {
+    // Only the real engine sidecar should trigger the dev fallback —
+    // otherwise `cargo test` binaries living at `target/debug/deps/<hash>`
+    // would also resolve to the staged bundle, and tests that assume "no
+    // bundled CLIs are visible in dev" (e.g. composio's not-installed
+    // smoke test) start failing whenever a developer has run
+    // `./scripts/fetch-cli-deps.sh`. Restricting to the canonical engine
+    // binary name keeps test isolation intact while still serving real
+    // `pnpm tauri dev` / `cargo run -p houston-engine-server` invocations.
+    let file_name = exe.file_name().and_then(|n| n.to_str())?;
+    let expected = if cfg!(windows) {
+        "houston-engine.exe"
+    } else {
+        "houston-engine"
+    };
+    if file_name != expected {
+        return None;
+    }
+    // The engine sits directly under `target/{debug,release}/`. Walk up two
+    // levels (engine → profile → target → workspace) and check that the
+    // shape matches before consulting the filesystem.
+    let profile_dir = exe.parent()?;
+    let profile = profile_dir.file_name().and_then(|n| n.to_str())?;
+    if profile != "debug" && profile != "release" {
+        return None;
+    }
+    let target_dir = profile_dir.parent()?;
+    if target_dir.file_name().and_then(|n| n.to_str()) != Some("target") {
+        return None;
+    }
+    let workspace = target_dir.parent()?;
+    let bin = workspace
+        .join("app")
+        .join("src-tauri")
+        .join("resources")
+        .join(BIN_SUBDIR);
+    bin.is_dir().then_some(bin)
+}
+
 fn codex_binary_name() -> &'static str {
     if cfg!(windows) {
         "codex.exe"
@@ -540,6 +590,69 @@ mod tests {
         let bin = exe_dir.join("resources").join(BIN_SUBDIR);
         fs::create_dir_all(&bin).unwrap();
         assert_eq!(bundled_bin_dir_for(&exe), Some(bin));
+    }
+
+    #[test]
+    fn detects_dev_workspace_layout() {
+        // Dev: engine spawned from `<workspace>/target/{debug,release}/`.
+        // The staged bin dir lives at `<workspace>/app/src-tauri/resources/bin/`.
+        let tmp = tempfile::tempdir().unwrap();
+        let workspace = tmp.path();
+        let target_debug = workspace.join("target").join("debug");
+        fs::create_dir_all(&target_debug).unwrap();
+        let engine_name = if cfg!(windows) {
+            "houston-engine.exe"
+        } else {
+            "houston-engine"
+        };
+        let exe = target_debug.join(engine_name);
+        fs::write(&exe, b"").unwrap();
+        let bin = workspace
+            .join("app")
+            .join("src-tauri")
+            .join("resources")
+            .join(BIN_SUBDIR);
+        fs::create_dir_all(&bin).unwrap();
+        assert_eq!(bundled_bin_dir_for(&exe), Some(bin));
+    }
+
+    #[test]
+    fn dev_workspace_layout_skips_when_unstaged() {
+        // If the user hasn't run `./scripts/fetch-cli-deps.sh`, the
+        // resources/bin dir doesn't exist and the resolver must fall through
+        // to None — not return a stale-looking phantom path.
+        let tmp = tempfile::tempdir().unwrap();
+        let target_release = tmp.path().join("target").join("release");
+        fs::create_dir_all(&target_release).unwrap();
+        let engine_name = if cfg!(windows) {
+            "houston-engine.exe"
+        } else {
+            "houston-engine"
+        };
+        let exe = target_release.join(engine_name);
+        fs::write(&exe, b"").unwrap();
+        assert_eq!(bundled_bin_dir_for(&exe), None);
+    }
+
+    #[test]
+    fn dev_workspace_layout_skips_for_cargo_test_binaries() {
+        // Cargo test binaries live at `target/debug/deps/<name>-<hash>` and
+        // must NOT trigger the dev bundle resolver — otherwise tests that
+        // assume an empty install state start using the developer's staged
+        // CLIs and fail in confusing ways.
+        let tmp = tempfile::tempdir().unwrap();
+        let deps_dir = tmp.path().join("target").join("debug").join("deps");
+        fs::create_dir_all(&deps_dir).unwrap();
+        let bin = tmp
+            .path()
+            .join("app")
+            .join("src-tauri")
+            .join("resources")
+            .join(BIN_SUBDIR);
+        fs::create_dir_all(&bin).unwrap();
+        let test_bin = deps_dir.join("composio-abc123");
+        fs::write(&test_bin, b"").unwrap();
+        assert_eq!(bundled_bin_dir_for(&test_bin), None);
     }
 
     #[test]

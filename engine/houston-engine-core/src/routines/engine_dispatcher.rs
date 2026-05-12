@@ -96,6 +96,7 @@ impl RoutineDispatcher for EngineRoutineDispatcher {
             Some(self.rt.pid_map.clone()),
             resolved.provider,
             resolved.model,
+            None,
         );
 
         match join_handle.await {
