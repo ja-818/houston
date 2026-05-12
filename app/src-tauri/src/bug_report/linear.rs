@@ -36,7 +36,7 @@ pub(super) async fn send_bug_report_to(
     team_id: &str,
     label_name: &str,
     payload: &BugReportPayload,
-) -> Result<(), String> {
+) -> Result<Option<String>, String> {
     let client = reqwest::Client::new();
     let label_id = resolve_label_id(&client, api_url, api_key, team_id, label_name).await?;
 
@@ -69,7 +69,7 @@ pub(super) async fn send_bug_report_to(
         "Linear bug report created"
     );
 
-    Ok(())
+    Ok(issue.identifier)
 }
 
 async fn resolve_label_id(

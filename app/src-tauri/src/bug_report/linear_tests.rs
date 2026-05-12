@@ -42,7 +42,7 @@ async fn send_bug_report_posts_linear_issue_create_mutation() {
         ),
     ]);
 
-    send_bug_report_to(
+    let identifier = send_bug_report_to(
         &url,
         "test-api-key",
         "team-id",
@@ -51,6 +51,7 @@ async fn send_bug_report_posts_linear_issue_create_mutation() {
     )
     .await
     .expect("send bug report");
+    assert_eq!(identifier.as_deref(), Some("BUG-1"));
 
     let requests = server.join().expect("join test server");
     let joined = requests.join("\n---REQUEST---\n");

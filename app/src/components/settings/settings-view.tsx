@@ -1,16 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Spinner } from "@houston-ai/core";
-import {
-  User,
-  Smartphone,
-  Folder,
-  Bot,
-  Clock,
-  Languages,
-  Palette,
-  Trash2,
-} from "lucide-react";
+import { User, Smartphone, Folder, Bot, Bug } from "lucide-react";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import {
   SidebarSectionNav,
@@ -19,13 +10,10 @@ import {
 
 type SettingsSectionId =
   | "account"
-  | "phone"
   | "workspace"
   | "provider"
-  | "timezone"
-  | "language"
-  | "appearance"
-  | "danger";
+  | "phone"
+  | "reportBug";
 import { AccountSection, useAccountAvailable } from "./sections/account";
 import { ConnectPhoneSection } from "./sections/connect-phone";
 import { WorkspaceSection } from "./sections/workspace";
@@ -34,6 +22,7 @@ import { TimezoneSection } from "./sections/timezone";
 import { LanguageSection } from "./sections/language";
 import { AppearanceSection } from "./sections/appearance";
 import { DangerSection } from "./sections/danger";
+import { ReportBugSection } from "./sections/report-bug";
 
 export function SettingsView() {
   const { t } = useTranslation(["settings", "common"]);
@@ -47,17 +36,9 @@ export function SettingsView() {
     }
     list.push(
       { id: "workspace", label: t("settings:nav.workspace"), icon: Folder },
-      { id: "phone", label: t("settings:nav.phone"), icon: Smartphone, beta: true },
       { id: "provider", label: t("settings:nav.provider"), icon: Bot },
-      { id: "timezone", label: t("settings:nav.timezone"), icon: Clock },
-      { id: "language", label: t("settings:nav.language"), icon: Languages },
-      { id: "appearance", label: t("settings:nav.appearance"), icon: Palette },
-      {
-        id: "danger",
-        label: t("settings:nav.danger"),
-        icon: Trash2,
-        destructive: true,
-      },
+      { id: "phone", label: t("settings:nav.phone"), icon: Smartphone, beta: true },
+      { id: "reportBug", label: t("settings:nav.reportBug"), icon: Bug },
     );
     return list;
   }, [accountAvailable, t]);
@@ -88,13 +69,18 @@ export function SettingsView() {
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-xl px-8 py-10">
           {activeVisible === "account" && <AccountSection />}
-          {activeVisible === "workspace" && <WorkspaceSection />}
-          {activeVisible === "phone" && <ConnectPhoneSection />}
+          {activeVisible === "workspace" && (
+            <div className="space-y-10">
+              <WorkspaceSection />
+              <LanguageSection />
+              <TimezoneSection />
+              <AppearanceSection />
+              <DangerSection />
+            </div>
+          )}
           {activeVisible === "provider" && <ProviderSection />}
-          {activeVisible === "timezone" && <TimezoneSection />}
-          {activeVisible === "language" && <LanguageSection />}
-          {activeVisible === "appearance" && <AppearanceSection />}
-          {activeVisible === "danger" && <DangerSection />}
+          {activeVisible === "phone" && <ConnectPhoneSection />}
+          {activeVisible === "reportBug" && <ReportBugSection />}
         </div>
       </div>
     </div>

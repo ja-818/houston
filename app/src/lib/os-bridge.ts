@@ -104,7 +104,8 @@ export function osReadRecentLogs(
   return invoke<{ backend: string; frontend: string }>("read_recent_logs", { lines });
 }
 
-/** Send a prepared bug report to Houston's native bug-report intake. */
-export function osReportBug(payload: unknown): Promise<void> {
-  return invoke<void>("report_bug", { payload });
+/** Send a prepared bug report to Houston's native bug-report intake.
+ * Resolves with the Linear issue identifier (e.g. "BUG-123") when known. */
+export function osReportBug(payload: unknown): Promise<string | null> {
+  return invoke<string | null>("report_bug", { payload });
 }

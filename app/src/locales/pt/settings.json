@@ -2,13 +2,10 @@
   "title": "Configurações",
   "nav": {
     "account": "Conta",
-    "phone": "Conectar celular",
     "workspace": "Espaço de trabalho",
     "provider": "Provedor de IA",
-    "timezone": "Fuso horário",
-    "language": "Idioma",
-    "appearance": "Aparência",
-    "danger": "Zona de perigo"
+    "phone": "Conectar celular",
+    "reportBug": "Reportar bug"
   },
   "account": {
     "title": "Conta",
@@ -64,6 +61,22 @@
     "confirmTitle": "Excluir \"{{name}}\"?",
     "confirmDescription": "Isso exclui este espaço de trabalho e todos os seus agentes de forma permanente. Não dá para desfazer.",
     "confirmLabel": "Excluir"
+  },
+  "reportBug": {
+    "title": "Reportar bug",
+    "intro": "Conte para a gente o que deu errado. Vamos enviar sua mensagem junto com os logs da sua última atividade para entender o que aconteceu.",
+    "timingTip": "A gente só recebe a atividade mais recente, então envie o reporte assim que o bug acontecer para a informação ser mais útil.",
+    "toastEquivalence": "Isso é a mesma coisa que tocar em Reportar bug na notificação vermelha de erro, você não precisa enviar os dois.",
+    "label": "O que aconteceu?",
+    "placeholder": "Descreva o bug. O que você estava fazendo, o que esperava e o que aconteceu na verdade?",
+    "send": "Enviar reporte",
+    "sending": "Enviando…",
+    "toasts": {
+      "successTitle": "Recebido, reporte registrado.",
+      "successBody": "O centro de controle já está trabalhando na correção.",
+      "successBodyWithId": "O centro de controle já está trabalhando na correção. Referência: {{id}}",
+      "errorTitle": "Não foi possível enviar o reporte"
+    }
   },
   "toasts": {
     "workspaceRenamed": "Espaço de trabalho renomeado",

@@ -30,10 +30,12 @@ export function showErrorToast(command: string, message: string): void {
           appVersion: __APP_VERSION__,
           userEmail: getCurrentUserEmail(),
         })
-          .then(() => {
+          .then((issueId) => {
             addToast({
               title: "Roger that, report received.",
-              description: "Mission control is on it, deploying a fix.",
+              description: issueId
+                ? `Mission control is on it, deploying a fix. Reference: ${issueId}`
+                : "Mission control is on it, deploying a fix.",
               variant: "success",
             });
           })

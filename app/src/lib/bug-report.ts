@@ -18,10 +18,12 @@ async function getRecentLogs(lines = 50): Promise<{ backend: string; frontend: s
   }
 }
 
-export async function reportBug(context: BugReportContext): Promise<void> {
+export async function reportBug(
+  context: BugReportContext,
+): Promise<string | null> {
   const logs = await getRecentLogs();
 
-  await osReportBug({
+  return await osReportBug({
     ...context,
     logs,
   });

@@ -2,13 +2,10 @@
   "title": "Settings",
   "nav": {
     "account": "Account",
-    "phone": "Connect phone",
     "workspace": "Workspace",
     "provider": "AI provider",
-    "timezone": "Timezone",
-    "language": "Language",
-    "appearance": "Appearance",
-    "danger": "Danger zone"
+    "phone": "Connect phone",
+    "reportBug": "Report bug"
   },
   "account": {
     "title": "Account",
@@ -64,6 +61,22 @@
     "confirmTitle": "Delete \"{{name}}\"?",
     "confirmDescription": "This will permanently delete this workspace and all its agents. This cannot be undone.",
     "confirmLabel": "Delete"
+  },
+  "reportBug": {
+    "title": "Report bug",
+    "intro": "Tell us what went wrong. We'll send your message along with the logs from your last activity so we can see what happened.",
+    "timingTip": "We only get the most recent activity, so send the report as soon as the bug happens for the most useful info.",
+    "toastEquivalence": "This is the same as tapping Report bug on the red error notification, you don't need to send both.",
+    "label": "What happened?",
+    "placeholder": "Describe the bug. What were you doing, what did you expect, what happened instead?",
+    "send": "Send bug report",
+    "sending": "Sending…",
+    "toasts": {
+      "successTitle": "Roger that, report received.",
+      "successBody": "Mission control is on it, deploying a fix.",
+      "successBodyWithId": "Mission control is on it, deploying a fix. Reference: {{id}}",
+      "errorTitle": "Couldn't send report"
+    }
   },
   "toasts": {
     "workspaceRenamed": "Workspace renamed",

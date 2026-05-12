@@ -35,7 +35,7 @@ struct LinearBugReportConfig {
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub async fn report_bug(payload: BugReportPayload) -> Result<(), String> {
+pub async fn report_bug(payload: BugReportPayload) -> Result<Option<String>, String> {
     let config = bug_report_config()?;
 
     linear::send_bug_report_to(
