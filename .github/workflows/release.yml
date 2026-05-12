@@ -819,7 +819,12 @@ jobs:
             $bunBundle = "bun-windows-x64"
           } else {
             $bunVersion = (Get-Content cli-deps.json | ConvertFrom-Json).composio.build.'windows-arm64'.bun_version
-            $bunBundle = "bun-windows-arm64"
+            # Bun's GitHub release artifact for Windows ARM64 is published
+            # as `bun-windows-aarch64.zip` (asymmetric with the
+            # `--target=bun-windows-arm64` CLI flag in cli-deps.json,
+            # which still uses `arm64`). Both the URL stem and the zip's
+            # inner folder use `aarch64`.
+            $bunBundle = "bun-windows-aarch64"
           }
           Write-Host "Installing Bun $bunVersion ($bunBundle, direct GitHub release download)"
           $bunDir = "$HOME\.bun\bin"
