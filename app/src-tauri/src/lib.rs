@@ -283,7 +283,6 @@ pub fn run() {
             commands::os::open_file,
             commands::os::reveal_file,
             commands::os::reveal_agent,
-            commands::clipboard::read_clipboard_image,
             commands::terminal::open_terminal,
             commands::os::check_claude_cli,
             commands::update::current_app_bundle_path,

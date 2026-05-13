@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import {
   filesFromClipboardData,
   filesFromClipboardItems,
-  shouldReadNativeClipboardFiles,
 } from "../src/clipboard-files.ts";
 
 test("extracts file items from clipboard data", () => {
@@ -55,26 +54,17 @@ test("deduplicates files exposed through both clipboard APIs", () => {
   );
 });
 
-test("only falls back to native clipboard for non-text paste data", () => {
-  assert.equal(shouldReadNativeClipboardFiles(null), true);
-  assert.equal(
-    shouldReadNativeClipboardFiles({
+test("extracts image from mixed clipboard with both text and image", () => {
+  const image = new File(["png"], "screenshot.png", { type: "image/png" });
+
+  assert.deepEqual(
+    filesFromClipboardData({
       files: [],
-      items: [{ kind: "string", type: "text/plain", getAsFile: () => null }],
+      items: [
+        { kind: "string", type: "text/plain", getAsFile: () => null },
+        { kind: "file", type: "image/png", getAsFile: () => image },
+      ],
     }),
-    false,
-  );
-  assert.equal(
-    shouldReadNativeClipboardFiles({
-      files: [],
-      items: [{ kind: "file", type: "image/png", getAsFile: () => null }],
-    }),
-    true,
-  );
-  // Linux webkitgtk gives empty items/files when an image-only clipboard
-  // is pasted (Wayland screenshots), so we must fall through to native.
-  assert.equal(
-    shouldReadNativeClipboardFiles({ files: [], items: [] }),
-    true,
+    [image],
   );
 });

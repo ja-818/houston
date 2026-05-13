@@ -29,7 +29,6 @@ import { MissionControlToolbar } from "./mission-control-toolbar";
 import { MissionBoardEmptyState } from "./mission-board-empty-state";
 import { useMissionSearch } from "./use-mission-search";
 import { buildMissionBoardColumns } from "./mission-board-columns";
-import { readClipboardImageFile } from "../lib/clipboard";
 
 export function Dashboard() {
   const { t } = useTranslation(["dashboard", "board", "common"]);
@@ -316,7 +315,6 @@ export function Dashboard() {
           onStopSession={handleStopSession}
           prepareAttachments={attachmentValidation.prepareAttachments}
           onAttachmentRejections={attachmentValidation.onAttachmentRejections}
-          readClipboardFiles={readClipboardImageFile}
           panelAgentName={activeAgent?.name ?? selectedItem?.subtitle}
           panelAvatar={
             <AgentPanelAvatar

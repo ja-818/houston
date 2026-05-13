@@ -78,17 +78,6 @@ export function osCheckClaudeCli(): Promise<boolean> {
   return invoke<boolean>("check_claude_cli");
 }
 
-export interface ClipboardImagePayload {
-  file_name: string;
-  mime: string;
-  data_base64: string;
-}
-
-/** Read an image from the OS clipboard, if one is present. */
-export function osReadClipboardImage(): Promise<ClipboardImagePayload | null> {
-  return invoke<ClipboardImagePayload | null>("read_clipboard_image");
-}
-
 /** Resolve the app bundle/executable path before updater install moves it. */
 export function osCurrentAppBundlePath(): Promise<string> {
   return invoke<string>("current_app_bundle_path");

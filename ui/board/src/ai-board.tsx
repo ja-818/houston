@@ -93,8 +93,6 @@ export interface AIBoardProps {
   prepareAttachments?: import("@houston-ai/chat").ChatPanelProps["prepareAttachments"]
   /** Emitted when `prepareAttachments` rejects any incoming files. */
   onAttachmentRejections?: import("@houston-ai/chat").ChatPanelProps["onAttachmentRejections"]
-  /** Optional host-native clipboard file reader. Forwarded to ChatPanel. */
-  readClipboardFiles?: import("@houston-ai/chat").ChatPanelProps["readClipboardFiles"]
   /** Called when the user clicks the open button on an inline link. Forwarded to ChatPanel. */
   onOpenLink?: import("@houston-ai/chat").ChatPanelProps["onOpenLink"]
   /** Custom renderer for markdown links. Forwarded to ChatPanel. */
@@ -200,7 +198,6 @@ export function AIBoard({
   onNotice,
   prepareAttachments,
   onAttachmentRejections,
-  readClipboardFiles,
   onOpenLink,
   renderLink,
   footer,
@@ -453,7 +450,6 @@ export function AIBoard({
           onNotice={onNotice}
           prepareAttachments={prepareAttachments}
           onAttachmentRejections={onAttachmentRejections}
-          readClipboardFiles={readClipboardFiles}
           onOpenLink={onOpenLink}
           renderLink={renderLink}
           footer={typeof footer === "function" ? footer({ hasMessages: activeFeed.length > 0 }) : footer}

@@ -38,22 +38,6 @@ export function ensureFileName(file: File): File {
   });
 }
 
-export function shouldReadNativeClipboardFiles(
-  data: ClipboardFileData | null | undefined,
-): boolean {
-  if (!data) return true;
-  if (data.files && data.files.length > 0) return false;
-  const items = data.items ? Array.from(data.items) : [];
-  if (items.some((item) => item.kind === "string")) return false;
-  // Empty items: webkitgtk on Wayland doesn't expose image-only clipboard
-  // to the web layer, so we must fall through to the native reader.
-  if (items.length === 0) return true;
-  return items.some((item) => {
-    if (item.kind === "file") return true;
-    return item.type?.startsWith("image/") ?? false;
-  });
-}
-
 export function filesFromClipboardItems(
   items: Iterable<ClipboardFileItem> | ArrayLike<ClipboardFileItem> | null | undefined,
 ): File[] {

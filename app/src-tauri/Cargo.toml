@@ -18,9 +18,6 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["devtools"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-arboard = "3"
-base64 = "0.22"
-png = "0.17"
 tokio = { version = "1", features = ["full"] }
 dirs = "5"
 chrono = { version = "0.4", features = ["serde"] }

@@ -13,10 +13,7 @@ import {
   ChatInputAttachButton,
   ChatInputAttachments,
 } from "./chat-input-attachments";
-import {
-  filesFromClipboardData,
-  shouldReadNativeClipboardFiles,
-} from "./clipboard-files";
+import { filesFromClipboardData } from "./clipboard-files";
 import { QueuedMessageList } from "./queued-message-list";
 import type { QueuedChatMessage, QueuedMessageLabels } from "./queued-message-list";
 import { useControllable, mergeUniqueFiles } from "./use-file-drop-zone";
@@ -42,7 +39,6 @@ export interface ChatInputProps {
   onNotice?: (message: string) => void;
   prepareAttachments?: PrepareAttachments;
   onAttachmentRejections?: (rejections: AttachmentRejection[]) => void;
-  readClipboardFiles?: () => Promise<File[]>;
   /** Optional content rendered in the composer footer (e.g. model selector). */
   footer?: ReactNode;
   /** Optional content rendered inside the composer above the textarea. */
@@ -67,7 +63,6 @@ export function ChatInput({
   onNotice,
   prepareAttachments,
   onAttachmentRejections,
-  readClipboardFiles,
   footer,
   header,
   queuedMessages = [],
@@ -142,22 +137,11 @@ export function ChatInput({
   const handlePaste = useCallback(
     (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
       const pasted = filesFromClipboardData(e.clipboardData);
-      if (pasted.length > 0) {
-        e.preventDefault();
-        addFiles(pasted);
-        return;
-      }
-      if (!readClipboardFiles || !shouldReadNativeClipboardFiles(e.clipboardData)) return;
+      if (pasted.length === 0) return;
       e.preventDefault();
-      readClipboardFiles()
-        .then((files) => {
-          if (files.length > 0) addFiles(files);
-        })
-        .catch((err: unknown) => {
-          onNotice?.(err instanceof Error ? err.message : String(err));
-        });
+      addFiles(pasted);
     },
-    [addFiles, onNotice, readClipboardFiles],
+    [addFiles],
   );
 
   const openFilePicker = useCallback(() => {

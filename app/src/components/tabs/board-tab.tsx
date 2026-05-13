@@ -37,7 +37,6 @@ import { MissionBoardEmptyState } from "../mission-board-empty-state";
 import { useMissionSearch } from "../use-mission-search";
 import { useAttachmentRejectionDialog } from "../attachment-rejection-dialog";
 import { buildMissionBoardColumns } from "../mission-board-columns";
-import { readClipboardImageFile } from "../../lib/clipboard";
 
 // Stable empty reference so the feed store selector doesn't return a new
 // object every render when this agent has no feeds yet (which would otherwise
@@ -587,7 +586,6 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           onNotice={handleNotice}
           prepareAttachments={attachmentValidation.prepareAttachments}
           onAttachmentRejections={attachmentValidation.onAttachmentRejections}
-          readClipboardFiles={readClipboardImageFile}
           onOpenLink={handleOpenLink}
           actions={agentModes ? cardActions : undefined}
           panelActions={panelActions}

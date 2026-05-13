@@ -29,7 +29,6 @@ import type { Agent } from "../../../lib/types";
 import type { MissionMeta } from "../mission-frame";
 import { MissionWithChatFrame } from "../mission-with-chat-frame";
 import { TryDoneScreen } from "../try-done-screen";
-import { readClipboardImageFile } from "../../../lib/clipboard";
 
 /**
  * Magic word the agent emits to signal "tutorial step done, frontend may
@@ -337,7 +336,6 @@ export function TryMission({
                 onValueChange={setComposerText}
                 attachments={composerFiles}
                 onAttachmentsChange={setComposerFiles}
-                readClipboardFiles={readClipboardImageFile}
                 queuedMessages={messageQueue.queuedMessages}
                 onRemoveQueuedMessage={messageQueue.removeQueuedMessage}
                 queuedLabels={queuedLabels}
