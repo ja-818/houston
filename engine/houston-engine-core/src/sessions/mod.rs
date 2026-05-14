@@ -190,6 +190,25 @@ async fn run_start(
     let _turn_guard = rt.acquire_turn(&identity).await;
     if rt.control.is_stale(&identity, generation).await {
         tracing::info!("[sessions] skipping cancelled queued turn session_key={session_key}");
+        // The queued turn never started, so no lease was attached, but
+        // the user explicitly cancelled — surface that on the board
+        // instead of leaving the row in `Queued`. clear_lease_and_set_status
+        // tolerates the no-lease case (it's a status-only mutation here).
+        match crate::agents::lifecycle::clear_lease_and_set_status(
+            &agent_dir,
+            &session_key,
+            crate::agents::ActivityStatus::Cancelled,
+        ) {
+            Ok(Some(_)) => {
+                events.emit(HoustonEvent::ActivityChanged {
+                    agent_path: agent_dir.to_string_lossy().to_string(),
+                });
+            }
+            Ok(None) => {} // ad-hoc session — no board row to flip
+            Err(e) => tracing::warn!(
+                "[sessions] failed to mark cancelled queued turn: {e} (session_key={session_key})"
+            ),
+        }
         rt.control.finish(&identity).await;
         return Ok(());
     }
@@ -462,14 +481,25 @@ async fn run_start(
             Err(_) => {}
         }
     }
-    let next_status = match session_result {
-        Ok(result) if result.error.is_none() => crate::agents::ActivityStatus::NeedsYou,
-        Ok(_) => crate::agents::ActivityStatus::Error,
-        Err(e) => {
-            tracing::warn!(
-                "[sessions] session runner panicked for session_key={session_key_for_end}: {e}"
-            );
-            crate::agents::ActivityStatus::Error
+    // Generation check: if `sessions::cancel` bumped the generation while
+    // this session was running, the user clicked Stop. The CLI was
+    // SIGTERM'd; cli_process treats SIGTERM-exit as `Completed`, so
+    // without this check the activity would flip to NeedsYou and look
+    // like a normal turn ended. The "Stop" intent is to mark the
+    // activity Cancelled, not NeedsYou.
+    let cancelled_by_user = rt.control.is_stale(&identity, generation).await;
+    let next_status = if cancelled_by_user {
+        crate::agents::ActivityStatus::Cancelled
+    } else {
+        match session_result {
+            Ok(result) if result.error.is_none() => crate::agents::ActivityStatus::NeedsYou,
+            Ok(_) => crate::agents::ActivityStatus::Error,
+            Err(e) => {
+                tracing::warn!(
+                    "[sessions] session runner panicked for session_key={session_key_for_end}: {e}"
+                );
+                crate::agents::ActivityStatus::Error
+            }
         }
     };
     if heartbeat_panicked {

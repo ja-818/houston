@@ -2639,6 +2639,7 @@ version = "0.4.19"
 dependencies = [
  "dirs 5.0.1",
  "houston-cli-bundle",
+ "libc",
  "serde",
  "serde_json",
  "tokio",
