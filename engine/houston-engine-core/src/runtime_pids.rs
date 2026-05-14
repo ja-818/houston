@@ -38,6 +38,16 @@ pub struct RegisteredPid {
     pub pid: u32,
     pub session_key: String,
     pub spawned_at: DateTime<Utc>,
+    /// Process identity fingerprint (exe_path + start_time) captured
+    /// at registration. Reap-time validates the live process at `pid`
+    /// has the same identity before terminating — without this, a
+    /// recycled pid would cause the reaper to SIGTERM an unrelated
+    /// process group. `None` on legacy rows written before identity
+    /// validation existed (those still reap on pid-only, with the
+    /// same risk the change here is meant to remove — they age out
+    /// quickly because reap_orphans truncates the file on every boot).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub identity: Option<crate::process_probe::ProcessIdentity>,
 }
 
 fn pid_file(home_dir: &Path) -> PathBuf {
@@ -88,6 +98,11 @@ fn write(home_dir: &Path, entries: &[RegisteredPid]) -> CoreResult<()> {
 /// any prior entry for the same key (rare but possible during racy
 /// session restarts).
 pub fn register(home_dir: &Path, session_key: &str, pid: u32) -> CoreResult<()> {
+    // Capture identity BEFORE entering the lock so the probe doesn't
+    // happen under contention. Identity is `None` if the probe fails
+    // (unsupported platform, /proc not mounted, etc.); reap-time falls
+    // back to pid-only matching with the same caveat.
+    let identity = crate::process_probe::identity(pid);
     // Process-wide lock keyed on the pid file. Without this, two
     // parallel `sessions::start` (one per agent — Houston's core value
     // prop) race the unlocked read-modify-write below and drop one pid
@@ -101,6 +116,7 @@ pub fn register(home_dir: &Path, session_key: &str, pid: u32) -> CoreResult<()> 
             pid,
             session_key: session_key.to_string(),
             spawned_at: Utc::now(),
+            identity,
         });
         write(home_dir, &entries)
     })
@@ -150,6 +166,44 @@ pub fn reap_orphans(home_dir: &Path) -> CoreResult<usize> {
                     "skipping orphan reap: pid matches our own"
                 );
                 continue;
+            }
+            // PID identity gate: if we recorded an identity at register
+            // time and the live process at `pid` doesn't match, the pid
+            // was recycled by the OS to an unrelated process. Killing it
+            // would SIGTERM a stranger's process group — the user's
+            // editor, another Tauri app, anything. Skip.
+            if let Some(ref recorded) = e.identity {
+                match crate::process_probe::identity(e.pid) {
+                    Some(live) if live == *recorded => {
+                        // matches — proceed to terminate below.
+                    }
+                    Some(live) => {
+                        tracing::warn!(
+                            target: "runtime_pids",
+                            pid = e.pid,
+                            session_key = %e.session_key,
+                            recorded_exe = %recorded.exe_path.display(),
+                            live_exe = %live.exe_path.display(),
+                            recorded_start = recorded.start_time_secs,
+                            live_start = live.start_time_secs,
+                            "skipping orphan reap: pid was recycled by another process"
+                        );
+                        continue;
+                    }
+                    None => {
+                        // Can't re-probe. On Linux/macOS this means the
+                        // process literally just died between is_alive()
+                        // above and identity() — extremely racy but
+                        // possible. Safer to skip than to fire SIGTERM
+                        // at whatever the kernel hands the pid to next.
+                        tracing::info!(
+                            target: "runtime_pids",
+                            pid = e.pid,
+                            "skipping orphan reap: live identity unavailable"
+                        );
+                        continue;
+                    }
+                }
             }
             match terminate(e.pid) {
                 Ok(()) => {
@@ -285,6 +339,59 @@ mod tests {
         let listed = read(d.path()).unwrap();
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0].pid, 9999);
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn reap_skips_pid_when_identity_mismatches() {
+        use crate::process_probe::ProcessIdentity;
+
+        // Simulate PID reuse: register a pid (PID 1, init — definitely
+        // alive on all Unix) with a FAKE identity that doesn't match
+        // init's real identity. The reaper must:
+        //   1. see is_alive(1) = true
+        //   2. probe identity(1) → some real identity for init
+        //   3. compare against the recorded fake identity
+        //   4. mismatch → skip termination
+        // If the gate weren't there, the reaper would try to SIGTERM
+        // init. We assert the file is still truncated (correct cleanup
+        // behaviour) and `killed == 0` (we didn't try to terminate
+        // because the gate fired).
+        let d = TempDir::new().unwrap();
+        let fake_identity = ProcessIdentity {
+            exe_path: std::path::PathBuf::from("/totally-not-init"),
+            start_time_secs: 0,
+        };
+        // Manually write the entry — `register` would compute the real
+        // identity for us, which is the opposite of what this test
+        // needs.
+        let entry = RegisteredPid {
+            pid: 1,
+            session_key: "fake-init".into(),
+            spawned_at: Utc::now(),
+            identity: Some(fake_identity),
+        };
+        write(d.path(), &[entry]).unwrap();
+
+        let killed = reap_orphans(d.path()).unwrap();
+        assert_eq!(killed, 0, "must NOT kill init when identity mismatches");
+        let listed = read(d.path()).unwrap();
+        assert!(listed.is_empty(), "file truncated regardless");
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn register_captures_real_identity() {
+        // The pid we register here is our own — its identity must
+        // round-trip through `register` and re-probe consistently.
+        let d = TempDir::new().unwrap();
+        let pid = std::process::id();
+        register(d.path(), "self-test", pid).unwrap();
+        let listed = read(d.path()).unwrap();
+        assert_eq!(listed.len(), 1);
+        let stored = listed[0].identity.as_ref().expect("identity recorded");
+        let live = crate::process_probe::identity(pid).expect("self identity probe");
+        assert_eq!(*stored, live);
     }
 
     #[test]
