@@ -44,7 +44,7 @@ Off only if user says "stop caveman" or "normal mode".
 
 Houston = desktop app + standalone engine + open library of agents.
 
-- **`app/`** — Tauri 2 desktop. React frontend, small Rust binary that spawns the engine as a sidecar subprocess and talks to it over HTTP/WS. OS-native glue only (file pickers, reveal-in-finder, logs). No domain logic.
+- **`app/`** — Tauri 2 desktop. React frontend, small Rust binary that spawns the engine as a sidecar subprocess and talks to it over HTTP/WS. OS-native glue only (file pickers, reveal-in-file-manager, logs). No domain logic.
 - **`engine/`** — Rust crates. `houston-engine-core` = runtime/domain. `houston-engine-protocol` = wire types. `houston-engine-server` = axum HTTP+WS binary (`houston-engine`). `houston-agent-files`, `houston-skills`, `houston-sessions`, `houston-file-watcher`, etc. are leaf crates. Frontend-agnostic: no Tauri, no React.
 - **`ui/`** — `@houston-ai/*` React packages (chat, board, layout, engine-client, …). Props-only, no store imports. `@houston-ai/engine-client` is the TS front door to the engine.
 - **User data** — `~/.houston/`: DB, logs, `engine.json`, and `workspaces/<Workspace>/<Agent>/`. Each agent has `.houston/` data files + `CLAUDE.md` + `.agents/skills/`.
