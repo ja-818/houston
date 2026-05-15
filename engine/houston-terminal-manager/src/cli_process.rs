@@ -136,7 +136,7 @@ pub(crate) async fn run_cli_process(
                 let _ = tx.send(SessionUpdate::Status(SessionStatus::Completed));
                 CliRunOutcome::Completed
             } else {
-                handle_failed_exit(tx, cli_name, provider, &stderr_lines)
+                handle_failed_exit(tx, cli_name, provider, &stderr_lines, &stdout_report)
             }
         }
         Err(e) => {
@@ -153,6 +153,7 @@ fn handle_failed_exit(
     cli_name: &str,
     provider: Provider,
     stderr_lines: &[String],
+    stdout_report: &session_io::StdoutReadReport,
 ) -> CliRunOutcome {
     if provider == Provider::OpenAI
         && stderr_lines
@@ -163,7 +164,12 @@ fn handle_failed_exit(
         return CliRunOutcome::CodexResumeMissing;
     }
 
-    let has_auth_error = stderr_lines.iter().any(|l| is_auth_error(l));
+    // Claude reports 401s as a JSON `result` event on stdout, not stderr.
+    // Without checking stdout_report.saw_auth_error here, stderr is empty
+    // and we'd fall through to the "no stderr output captured"
+    // ToolRuntimeError card on top of the legitimate AuthRequired UI.
+    let has_auth_error =
+        stdout_report.saw_auth_error || stderr_lines.iter().any(|l| is_auth_error(l));
     if has_auth_error {
         let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(
             "Authentication expired — sign in again to continue".to_string(),
@@ -212,4 +218,69 @@ fn configure_process_group(_cmd: &mut Command) {}
 #[cfg(unix)]
 extern "C" {
     fn setpgid(pid: i32, pgid: i32) -> i32;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::SessionStatus;
+
+    fn drain(rx: &mut mpsc::UnboundedReceiver<SessionUpdate>) -> Vec<SessionUpdate> {
+        let mut out = Vec::new();
+        while let Ok(u) = rx.try_recv() {
+            out.push(u);
+        }
+        out
+    }
+
+    #[test]
+    fn claude_stdout_auth_error_skips_tool_runtime_error() {
+        // Claude 401: empty stderr, stdout reported an auth SystemMessage.
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let stdout_report = session_io::StdoutReadReport {
+            malformed_provider_json: false,
+            saw_auth_error: true,
+        };
+
+        let outcome =
+            handle_failed_exit(&tx, "claude", Provider::Anthropic, &[], &stdout_report);
+        assert_eq!(outcome, CliRunOutcome::Failed);
+
+        let updates = drain(&mut rx);
+        assert!(
+            !updates.iter().any(|u| matches!(
+                u,
+                SessionUpdate::Feed(FeedItem::ToolRuntimeError { .. })
+            )),
+            "should not emit ToolRuntimeError when auth was seen on stdout: {updates:?}"
+        );
+        assert!(
+            updates.iter().any(|u| matches!(
+                u,
+                SessionUpdate::Status(SessionStatus::Error(msg))
+                    if msg.to_lowercase().contains("authentication expired")
+            )),
+            "should emit auth-expired status error: {updates:?}"
+        );
+    }
+
+    #[test]
+    fn empty_stderr_without_auth_signal_still_emits_tool_runtime_error() {
+        // Pre-existing behaviour: genuine empty-stderr failures keep the
+        // "no stderr output captured" diagnostic so we don't silently lose
+        // the failure signal.
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let stdout_report = session_io::StdoutReadReport::default();
+
+        let outcome =
+            handle_failed_exit(&tx, "claude", Provider::Anthropic, &[], &stdout_report);
+        assert_eq!(outcome, CliRunOutcome::Failed);
+
+        let updates = drain(&mut rx);
+        assert!(updates.iter().any(|u| matches!(
+            u,
+            SessionUpdate::Feed(FeedItem::ToolRuntimeError { details, .. })
+                if details == "no stderr output captured"
+        )));
+    }
 }
