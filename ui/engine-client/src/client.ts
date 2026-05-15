@@ -69,6 +69,14 @@ import type {
   VersionResponse,
   Workspace,
   WorktreeInfo,
+  PortableInventoryPreview,
+  PortableExportRequest,
+  PortableAnonymizeRequest,
+  PortableAnonymizeResponse,
+  PortableUploadPreviewResponse,
+  PortableScanResponse,
+  PortableInstallRequest,
+  PortableInstalledAgent,
 } from "./types";
 import { planAttachmentUploadBatches } from "./attachments";
 
@@ -659,6 +667,56 @@ export class HoustonClient {
    */
   composioWatchConnection(toolkit: string): Promise<void> {
     return this.request("POST", "/composio/connections/watch", { toolkit });
+  }
+
+  // ---------- portable agent share / import ----------
+
+  portablePreview(agentPath: string): Promise<PortableInventoryPreview> {
+    return this.request("GET", "/agents/portable/preview", undefined, {
+      agentPath,
+    });
+  }
+  async portablePackage(
+    agentPath: string,
+    req: PortableExportRequest,
+  ): Promise<ArrayBuffer> {
+    const res = await fetch(
+      `${this.baseUrl}/v1/agents/portable/package?agentPath=${encodeURIComponent(agentPath)}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(req),
+      },
+    );
+    if (!res.ok) throw await this.toError(res);
+    return await res.arrayBuffer();
+  }
+  portableAnonymize(
+    agentPath: string,
+    req: PortableAnonymizeRequest,
+  ): Promise<PortableAnonymizeResponse> {
+    return this.request("POST", "/agents/portable/anonymize", req, {
+      agentPath,
+    });
+  }
+  async importPreview(
+    bytes: ArrayBuffer | Uint8Array,
+  ): Promise<PortableUploadPreviewResponse> {
+    return this.rawRequest(
+      "POST",
+      "/store/imports/preview",
+      bytes as BodyInit,
+      "application/zip",
+    );
+  }
+  importScan(packageId: string): Promise<PortableScanResponse> {
+    return this.request("POST", "/store/imports/scan", { packageId });
+  }
+  importInstall(req: PortableInstallRequest): Promise<PortableInstalledAgent> {
+    return this.request("POST", "/store/imports/install", req);
   }
 
   // ---------- WebSocket access (see ws.ts) ----------

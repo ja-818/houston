@@ -12,6 +12,7 @@ pub mod conversations;
 pub mod error;
 pub mod git_bash;
 pub mod paths;
+pub mod portable;
 pub mod preferences;
 pub mod provider;
 pub mod routines;
