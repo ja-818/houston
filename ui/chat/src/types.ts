@@ -25,7 +25,7 @@ export type FeedItem =
     };
 
 export interface ToolRuntimeErrorEntry {
-  kind: "local_tool" | "provider_process";
+  kind: "local_tool" | "provider_process" | "provider_model_unsupported";
   details: string;
 }
 

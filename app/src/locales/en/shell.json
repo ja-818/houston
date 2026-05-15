@@ -132,7 +132,15 @@
     "reportSuccessDescription": "Houston received the logs.",
     "reportErrorTitle": "Could not send report",
     "reportErrorDescription": "Try again in a moment.",
-    "retryErrorTitle": "Could not try again"
+    "retryErrorTitle": "Could not try again",
+    "modelUnsupported": {
+      "title": "Your ChatGPT plan doesn't include GPT-5.5 Codex",
+      "body": "Switch to GPT-5.5 to continue. The Codex variant is only available on some ChatGPT plans (Plus, Pro, Team), not on Business or Enterprise.",
+      "switchAction": "Switch to GPT-5.5",
+      "switching": "Switching...",
+      "switchErrorTitle": "Could not switch model",
+      "switchErrorDescription": "Open the model picker and choose GPT-5.5 manually."
+    }
   },
   "updateChecker": {
     "cardLabel": "Houston update available",

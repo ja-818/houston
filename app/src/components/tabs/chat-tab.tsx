@@ -245,11 +245,26 @@ export default function ChatTab({ agent }: TabProps) {
         renderTurnSummary={renderTurnSummary}
         renderSystemMessage={(msg) => {
           if (isToolRuntimeErrorMessage(msg)) {
+            const isModelUnsupported =
+              msg.runtimeError.kind === "provider_model_unsupported";
             return (
               <ToolRuntimeErrorCard
                 error={msg.runtimeError}
                 onRetry={() =>
                   messageQueue.sendOrQueue(t("toolRuntimeError.retryPrompt"), [])
+                }
+                onSwitchModel={
+                  isModelUnsupported
+                    ? async () => {
+                        if (workspace?.id) {
+                          await useWorkspaceStore
+                            .getState()
+                            .updateProvider(workspace.id, "openai", "gpt-5.5");
+                        }
+                        setChatProvider("openai");
+                        setChatModel("gpt-5.5");
+                      }
+                    : undefined
                 }
               />
             );

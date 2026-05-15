@@ -2,7 +2,9 @@ use super::session_io;
 use super::types::{FeedItem, Provider, SessionStatus, ToolRuntimeErrorKind};
 use crate::auth_error::is_auth_error;
 use crate::codex_command;
-use crate::provider_error::is_malformed_provider_json_error;
+use crate::provider_error::{
+    is_codex_model_unsupported_chatgpt_error, is_malformed_provider_json_error,
+};
 use crate::session_update::SessionUpdate;
 use std::process::Stdio;
 use tokio::io::AsyncWriteExt;
@@ -177,6 +179,30 @@ fn handle_failed_exit(
         return CliRunOutcome::Failed;
     }
 
+    // OpenAI returns a 400 when the configured model is not allowed on the
+    // user's ChatGPT plan (e.g. `gpt-5.5-codex` on Business). The stdout
+    // parser already emitted a dedicated `ProviderModelUnsupported` card,
+    // OR the same error surfaced on stderr — either way, route to the
+    // specific status and skip the generic ProviderProcess card.
+    let model_unsupported = stdout_report.saw_model_unsupported_error
+        || stderr_lines
+            .iter()
+            .any(|line| is_codex_model_unsupported_chatgpt_error(line));
+    if model_unsupported {
+        tracing::warn!("[houston:session] codex rejected model on this ChatGPT account");
+        if !stdout_report.saw_model_unsupported_error {
+            // stderr-only path — emit the card here so the UI still renders it.
+            let _ = tx.send(SessionUpdate::Feed(FeedItem::ToolRuntimeError {
+                kind: ToolRuntimeErrorKind::ProviderModelUnsupported,
+                details: stderr_lines.join("\n"),
+            }));
+        }
+        let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(
+            "Selected model is not available on this ChatGPT plan".to_string(),
+        )));
+        return CliRunOutcome::Failed;
+    }
+
     let stderr_summary = if stderr_lines.is_empty() {
         "no stderr output captured".to_string()
     } else {
@@ -240,6 +266,7 @@ mod tests {
         let stdout_report = session_io::StdoutReadReport {
             malformed_provider_json: false,
             saw_auth_error: true,
+            saw_model_unsupported_error: false,
         };
 
         let outcome =

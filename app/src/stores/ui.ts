@@ -82,10 +82,16 @@ export const useUIStore = create<UIState>((set) => ({
 
   addToast: (toast) =>
     set((s) => {
-      const isDuplicate = s.toasts.some(
-        (t) => t.title === toast.title && t.description === toast.description,
-      );
-      if (isDuplicate) return s;
+      // Error toasts must always render. Dedup hid genuine repeated failures:
+      // clicking "Report bug" after the first failure would silently no-op
+      // because the error toast title+description matched the previous one,
+      // making the button feel broken even when it was firing correctly.
+      if (toast.variant !== "error") {
+        const isDuplicate = s.toasts.some(
+          (t) => t.title === toast.title && t.description === toast.description,
+        );
+        if (isDuplicate) return s;
+      }
 
       const id = `toast-${++toastCounter}`;
       const timeout = toast.action ? 10000 : 5000;

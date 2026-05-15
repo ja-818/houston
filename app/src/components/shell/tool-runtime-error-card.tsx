@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BugIcon, RotateCcwIcon, WrenchIcon } from "lucide-react";
+import { BugIcon, RotateCcwIcon, WrenchIcon, ArrowRightLeftIcon } from "lucide-react";
 import { Button, Spinner } from "@houston-ai/core";
 import type { ToolRuntimeErrorEntry } from "@houston-ai/chat";
 import { reportBug } from "../../lib/bug-report";
@@ -11,17 +11,28 @@ import { useWorkspaceStore } from "../../stores/workspaces";
 interface ToolRuntimeErrorCardProps {
   error: ToolRuntimeErrorEntry;
   onRetry?: () => Promise<void> | void;
+  /**
+   * Invoked when the user clicks "Switch to GPT-5.5" on a
+   * `provider_model_unsupported` card. The caller is expected to update
+   * whatever scope still pins the unsupported model (workspace, activity,
+   * agent override) and then drive a retry.
+   */
+  onSwitchModel?: () => Promise<void> | void;
 }
 
 export function ToolRuntimeErrorCard({
   error,
   onRetry,
+  onSwitchModel,
 }: ToolRuntimeErrorCardProps) {
   const { t } = useTranslation(["shell", "common"]);
   const addToast = useUIStore((s) => s.addToast);
   const workspaceName = useWorkspaceStore((s) => s.current?.name);
   const [retrying, setRetrying] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [switching, setSwitching] = useState(false);
+
+  const isModelUnsupported = error.kind === "provider_model_unsupported";
 
   const retry = async () => {
     if (!onRetry || retrying) return;
@@ -55,16 +66,45 @@ export function ToolRuntimeErrorCard({
         description: t("shell:toolRuntimeError.reportSuccessDescription"),
         variant: "success",
       });
-    } catch {
+    } catch (e) {
+      // Surface the actual failure reason. The bare `catch {}` here used
+      // to mask "Bug reporting not configured (missing LINEAR_API_KEY ...)"
+      // for months on Windows builds, making the button look broken.
       addToast({
         title: t("shell:toolRuntimeError.reportErrorTitle"),
-        description: t("shell:toolRuntimeError.reportErrorDescription"),
+        description: e instanceof Error ? e.message : String(e),
         variant: "error",
       });
     } finally {
       setReporting(false);
     }
   };
+
+  const switchModel = async () => {
+    if (!onSwitchModel || switching) return;
+    setSwitching(true);
+    try {
+      await onSwitchModel();
+    } catch (e) {
+      addToast({
+        title: t("shell:toolRuntimeError.modelUnsupported.switchErrorTitle"),
+        description:
+          e instanceof Error
+            ? e.message
+            : t("shell:toolRuntimeError.modelUnsupported.switchErrorDescription"),
+        variant: "error",
+      });
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  const title = isModelUnsupported
+    ? t("shell:toolRuntimeError.modelUnsupported.title")
+    : t("shell:toolRuntimeError.title");
+  const body = isModelUnsupported
+    ? t("shell:toolRuntimeError.modelUnsupported.body")
+    : t("shell:toolRuntimeError.body");
 
   return (
     <div className="w-full px-1 py-2">
@@ -74,15 +114,28 @@ export function ToolRuntimeErrorCard({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="text-sm font-semibold text-foreground">
-            {t("shell:toolRuntimeError.title")}
-          </p>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {t("shell:toolRuntimeError.body")}
-          </p>
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">{body}</p>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {onRetry && (
+            {isModelUnsupported && onSwitchModel && (
+              <Button
+                onClick={switchModel}
+                className="h-8 gap-2 rounded-full px-3 text-xs"
+                size="sm"
+                disabled={switching}
+              >
+                {switching ? (
+                  <Spinner className="size-3.5" />
+                ) : (
+                  <ArrowRightLeftIcon className="size-3.5" />
+                )}
+                {switching
+                  ? t("shell:toolRuntimeError.modelUnsupported.switching")
+                  : t("shell:toolRuntimeError.modelUnsupported.switchAction")}
+              </Button>
+            )}
+            {!isModelUnsupported && onRetry && (
               <Button
                 onClick={retry}
                 className="h-8 gap-2 rounded-full px-3 text-xs"

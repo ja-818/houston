@@ -166,6 +166,11 @@ impl FileChanges {
 pub enum ToolRuntimeErrorKind {
     LocalTool,
     ProviderProcess,
+    /// Provider rejected the configured model for this account (e.g. OpenAI
+    /// returns 400 "model is not supported when using Codex with a ChatGPT
+    /// account" for `gpt-5.5-codex` on plans that don't include it). The
+    /// UI renders a dedicated card with a "Switch to GPT-5.5" action.
+    ProviderModelUnsupported,
 }
 
 /// Processed feed items for rendering in the UI.

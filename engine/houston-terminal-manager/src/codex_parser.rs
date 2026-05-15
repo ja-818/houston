@@ -4,7 +4,8 @@
 //! so the rest of the stack (session_runner, frontend) is provider-agnostic.
 
 use super::auth_error::{is_auth_retry_noise, AUTH_RETRY_MARKER};
-use super::types::FeedItem;
+use super::types::{FeedItem, ToolRuntimeErrorKind};
+use crate::provider_error::is_codex_model_unsupported_chatgpt_error;
 use serde::Deserialize;
 
 /// Top-level Codex NDJSON event envelope.
@@ -192,6 +193,17 @@ pub fn parse_codex_event(line: &str, acc: &mut CodexAccumulator) -> Vec<FeedItem
                 tracing::info!("[codex] auth retry detected — suppressing raw error");
                 // Return a marker so session_runner can track it, but don't show raw noise.
                 items.push(FeedItem::SystemMessage(AUTH_RETRY_MARKER.to_string()));
+            } else if is_codex_model_unsupported_chatgpt_error(&msg) {
+                // OpenAI rejected the configured model for this ChatGPT plan.
+                // Surface as a dedicated card with a one-click "switch model"
+                // action instead of dumping the raw 400 JSON into the feed.
+                tracing::warn!(
+                    "[codex] model not supported on this ChatGPT account — emitting card"
+                );
+                items.push(FeedItem::ToolRuntimeError {
+                    kind: ToolRuntimeErrorKind::ProviderModelUnsupported,
+                    details: msg,
+                });
             } else {
                 items.push(FeedItem::SystemMessage(format!("Error: {msg}")));
             }
@@ -593,6 +605,20 @@ mod tests {
         let items = parse_codex_event(line, &mut acc());
         assert_eq!(items.len(), 1);
         assert!(matches!(&items[0], FeedItem::SystemMessage(m) if m.contains("Context window")));
+    }
+
+    #[test]
+    fn parse_turn_failed_model_unsupported_emits_card() {
+        let line = r#"{"type":"turn.failed","error":{"message":"The 'gpt-5.5-codex' model is not supported when using Codex with a ChatGPT account."}}"#;
+        let items = parse_codex_event(line, &mut acc());
+        assert_eq!(items.len(), 1);
+        match &items[0] {
+            FeedItem::ToolRuntimeError { kind, details } => {
+                assert_eq!(*kind, ToolRuntimeErrorKind::ProviderModelUnsupported);
+                assert!(details.contains("gpt-5.5-codex"));
+            }
+            other => panic!("expected ProviderModelUnsupported card, got {other:?}"),
+        }
     }
 
     #[test]

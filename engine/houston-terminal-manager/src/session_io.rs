@@ -1,7 +1,7 @@
 use super::codex_parser;
 use super::parser;
 use super::stderr_filter::{stderr_feed_item, StderrState};
-use super::types::{FeedItem, Provider};
+use super::types::{FeedItem, Provider, ToolRuntimeErrorKind};
 use crate::auth_error::is_auth_error;
 use crate::provider_error::is_malformed_provider_json_error;
 use crate::session_update::SessionUpdate;
@@ -17,6 +17,12 @@ pub struct StdoutReadReport {
     /// failed-exit path would emit a generic "no stderr output captured"
     /// ToolRuntimeError on top of the legitimate AuthRequired reconnect UI.
     pub saw_auth_error: bool,
+    /// True when codex's `turn.failed` carried OpenAI's "model is not
+    /// supported when using Codex with a ChatGPT account" 400. The parser
+    /// already emitted a dedicated `ProviderModelUnsupported` runtime-error
+    /// card, so `handle_failed_exit` must NOT also emit the generic
+    /// `ProviderProcess` card on top of it.
+    pub saw_model_unsupported_error: bool,
 }
 
 /// Read all stderr lines, emitting only user-actionable feed items.
@@ -107,6 +113,7 @@ async fn read_codex_stdout(
         }
         let items = codex_parser::parse_codex_event(&line, &mut acc);
         mark_auth_error(&items, &mut report);
+        mark_model_unsupported(&items, &mut report);
         item_count += log_and_send(&tx, items);
     }
     tracing::debug!(
@@ -126,6 +133,23 @@ fn mark_auth_error(items: &[FeedItem], report: &mut StdoutReadReport) {
                 return;
             }
         }
+    }
+}
+
+fn mark_model_unsupported(items: &[FeedItem], report: &mut StdoutReadReport) {
+    if report.saw_model_unsupported_error {
+        return;
+    }
+    if items.iter().any(|item| {
+        matches!(
+            item,
+            FeedItem::ToolRuntimeError {
+                kind: ToolRuntimeErrorKind::ProviderModelUnsupported,
+                ..
+            }
+        )
+    }) {
+        report.saw_model_unsupported_error = true;
     }
 }
 

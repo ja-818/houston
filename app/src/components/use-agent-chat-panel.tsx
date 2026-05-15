@@ -419,6 +419,8 @@ export function useAgentChatPanel({
   const renderSystemMessage = useCallback(
     (msg: ChatMessage) => {
       if (isToolRuntimeErrorMessage(msg)) {
+        const isModelUnsupported =
+          msg.runtimeError.kind === "provider_model_unsupported";
         return (
           <ToolRuntimeErrorCard
             error={msg.runtimeError}
@@ -434,6 +436,35 @@ export function useAgentChatPanel({
                 data: text,
               });
             }}
+            onSwitchModel={
+              isModelUnsupported
+                ? async () => {
+                    // Demote the workspace default first so future sessions
+                    // use a model the user's ChatGPT plan accepts.
+                    if (workspace?.id) {
+                      await useWorkspaceStore
+                        .getState()
+                        .updateProvider(workspace.id, "openai", "gpt-5.5");
+                    }
+                    // If this activity carries an explicit codex override,
+                    // clear it too — otherwise the resolver will keep using
+                    // the activity-level value and the workspace fix won't
+                    // take effect for this mission.
+                    if (
+                      path &&
+                      selectedActivityId &&
+                      activityModel === "gpt-5.5-codex"
+                    ) {
+                      await tauriActivity.update(path, selectedActivityId, {
+                        provider: "openai",
+                        model: "gpt-5.5",
+                      });
+                      setChatProvider("openai");
+                      setChatModel("gpt-5.5");
+                    }
+                  }
+                : undefined
+            }
           />
         );
       }
