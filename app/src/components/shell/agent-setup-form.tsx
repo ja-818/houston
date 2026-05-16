@@ -1,29 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Switch, cn } from "@houston-ai/core";
-
-const FOCUS_LABELS: Record<string, string> = {
-  personalProductivity: "Personal productivity",
-  workBusiness: "Work and business",
-  researchLearning: "Research and learning",
-  writingEditing: "Writing and editing",
-  codingDev: "Coding and development",
-  customerSupport: "Customer support",
-  dataAnalysis: "Data and analysis",
-  creativeDesign: "Creative and design",
-};
-
-const TRAIT_LABELS: Record<string, string> = {
-  concise: "Concise",
-  thorough: "Thorough",
-  friendly: "Friendly",
-  professional: "Professional",
-  creative: "Creative",
-  analytical: "Analytical",
-  proactive: "Proactive",
-  cautious: "Cautious",
-  structured: "Structured",
-  casual: "Casual",
-};
+import { FOCUS_LABELS, TRAIT_LABELS } from "./agent-setup-utils";
 
 export interface AgentSetupFormValues {
   focus: string;
@@ -39,30 +16,9 @@ interface AgentSetupFormProps {
   disabled?: boolean;
 }
 
-const FOCUS_KEYS = [
-  "personalProductivity",
-  "workBusiness",
-  "researchLearning",
-  "writingEditing",
-  "codingDev",
-  "customerSupport",
-  "dataAnalysis",
-  "creativeDesign",
-] as const;
-
-const TRAIT_KEYS = [
-  "concise",
-  "thorough",
-  "friendly",
-  "professional",
-  "creative",
-  "analytical",
-  "proactive",
-  "cautious",
-  "structured",
-  "casual",
-] as const;
-
+// Derived from the label maps — single source of truth for ordering and slugs.
+const FOCUS_KEYS = Object.keys(FOCUS_LABELS);
+const TRAIT_KEYS = Object.keys(TRAIT_LABELS);
 const MAX_TRAITS = 3;
 
 export function AgentSetupForm({ values, onChange, disabled }: AgentSetupFormProps) {
@@ -73,13 +29,14 @@ export function AgentSetupForm({ values, onChange, disabled }: AgentSetupFormPro
   const toggleTrait = (trait: string) => {
     const has = values.traits.includes(trait);
     if (has) {
-      onChange({ ...values, traits: values.traits.filter((t) => t !== trait) });
+      onChange({ ...values, traits: values.traits.filter((tr) => tr !== trait) });
     } else if (values.traits.length < MAX_TRAITS) {
       onChange({ ...values, traits: [...values.traits, trait] });
     }
   };
 
-  const verbosityLabel = t(`aiAssist.verbosity.${values.verbosity}` as Parameters<typeof t>[0]);
+  // verbosity is always 1–5 (clamped by slider min/max), key is always valid.
+  const verbosityKey = `aiAssist.verbosity.${values.verbosity}` as Parameters<typeof t>[0];
 
   return (
     <div className="space-y-7">
@@ -150,7 +107,7 @@ export function AgentSetupForm({ values, onChange, disabled }: AgentSetupFormPro
           <label htmlFor="verbosity-slider" className="text-sm font-medium">
             {t("aiAssist.form.verbosityLabel")}
           </label>
-          <span className="text-xs text-muted-foreground">{verbosityLabel}</span>
+          <span className="text-xs text-muted-foreground">{t(verbosityKey)}</span>
         </div>
         <input
           id="verbosity-slider"
@@ -212,22 +169,4 @@ export function AgentSetupForm({ values, onChange, disabled }: AgentSetupFormPro
       </div>
     </div>
   );
-}
-
-/** Serialize form values into a plain English description string for the AI. */
-export function serializeFormValues(values: AgentSetupFormValues): string {
-  const lines: string[] = [];
-
-  if (values.focus) {
-    lines.push(`Focus: ${FOCUS_LABELS[values.focus] ?? values.focus}`);
-  }
-  if (values.traits.length > 0) {
-    lines.push(`Traits: ${values.traits.map((k) => TRAIT_LABELS[k] ?? k).join(", ")}`);
-  }
-  lines.push(`Response detail level: ${values.verbosity}/5`);
-  lines.push(`Ask clarifying questions before answering: ${values.askFirst ? "yes" : "no"}`);
-  if (values.extra.trim()) {
-    lines.push(`Additional instructions: ${values.extra.trim()}`);
-  }
-  return lines.join("\n");
 }

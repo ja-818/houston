@@ -49,6 +49,7 @@ export function CreateAgentDialog() {
   const [name, setName] = useState("");
   const [color, setColor] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
   const [existingPath, setExistingPath] = useState<string | null>(null);
   const wsProvider = currentWorkspace?.provider ?? "anthropic";
@@ -68,6 +69,7 @@ export function CreateAgentDialog() {
       setName("");
       setColor(undefined);
       setError(null);
+      setCreating(false);
       setSearch("");
       setExistingPath(null);
       setProvider(wsProvider);
@@ -83,6 +85,7 @@ export function CreateAgentDialog() {
     const trimmed = name.trim();
     if (!trimmed || !selectedConfigId || !currentWorkspace) return;
     setError(null);
+    setCreating(true);
     // AI-generated instructions take priority over the template's claudeMd.
     const claudeMd = generatedClaudeMd ?? selectedDef?.config.claudeMd;
     try {
@@ -134,6 +137,8 @@ export function CreateAgentDialog() {
       handleClose();
     } catch (err) {
       setError(String(err));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -262,6 +267,7 @@ export function CreateAgentDialog() {
             onInstructionsChange={setGeneratedClaudeMd}
             onBack={() => setStep(aiReviewBackStep())}
             onSubmit={handleCreateAgent}
+            creating={creating}
             error={error}
           />
         ) : (

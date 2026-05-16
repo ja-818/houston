@@ -4,7 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { Button, DialogTitle, Spinner } from "@houston-ai/core";
 import type { SuggestedIntegration, SuggestedRoutine } from "@houston-ai/engine-client";
 import { tauriAgents } from "../../lib/tauri";
-import { AgentSetupForm, serializeFormValues, type AgentSetupFormValues } from "./agent-setup-form";
+import { AgentSetupForm, type AgentSetupFormValues } from "./agent-setup-form";
+import { serializeFormValues } from "./agent-setup-utils";
 
 interface AiAssistStepProps {
   provider: string;
@@ -41,9 +42,16 @@ export function AiAssistStep({ provider, model, onBack, onContinue }: AiAssistSt
     setGenerating(true);
     try {
       const result = await tauriAgents.generateInstructions(description, { provider, model });
+      const name = result.name ?? "";
+      // Ensure a # Name heading is always present. The engine sometimes includes
+      // it and sometimes doesn't, so we add it only when it's missing.
+      const body = result.instructions;
+      const instructions = body.trimStart().startsWith("# ")
+        ? body
+        : name ? `# ${name}\n\n${body}` : body;
       onContinue(
-        result.instructions,
-        result.name ?? "",
+        instructions,
+        name,
         result.suggestedIntegrations,
         result.suggestedRoutine ?? null,
       );

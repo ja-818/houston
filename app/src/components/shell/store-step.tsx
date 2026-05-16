@@ -59,6 +59,8 @@ export function StoreStep({
     if (!query) {
       const result = [...filteredAgents];
       const paIndex = result.findIndex((a) => a.config.id === "personal-assistant");
+      // Pin personal-assistant to array index 1 (grid slot 1) so it sits right
+      // after the SkillCard tile, which renders outside this map at grid slot 0.
       if (paIndex >= 0 && paIndex !== 1) {
         const [pa] = result.splice(paIndex, 1);
         result.splice(1, 0, pa);

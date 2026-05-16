@@ -7,6 +7,7 @@ import {
   DialogTitle,
   HoustonAvatar,
   Input,
+  Spinner,
   cn,
   colorHex,
   resolveAgentColor,
@@ -21,6 +22,7 @@ interface AiReviewStepProps {
   onInstructionsChange: (v: string) => void;
   onBack: () => void;
   onSubmit: () => void;
+  creating: boolean;
   error: string | null;
 }
 
@@ -33,6 +35,7 @@ export function AiReviewStep({
   onInstructionsChange,
   onBack,
   onSubmit,
+  creating,
   error,
 }: AiReviewStepProps) {
   const { t } = useTranslation("shell");
@@ -40,7 +43,7 @@ export function AiReviewStep({
 
   useEffect(() => {
     if (!color) onColorChange(AGENT_COLORS[0].id);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <button
@@ -121,10 +124,14 @@ export function AiReviewStep({
           <Button
             type="button"
             onClick={onSubmit}
-            disabled={!name.trim()}
+            disabled={!name.trim() || creating}
             className="mx-auto w-fit rounded-full"
           >
-            {t("naming.createAgent")}
+            {creating ? (
+              <><Spinner className="size-4" />{t("naming.createAgent")}</>
+            ) : (
+              t("naming.createAgent")
+            )}
           </Button>
         </div>
       </div>
