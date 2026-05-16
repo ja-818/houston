@@ -147,7 +147,7 @@ export const tauriAgents = {
     description: string,
     opts: { provider?: string; model?: string } = {},
   ) =>
-    call<{ name: string; instructions: string; suggestedIntegrations: string[] }>(
+    call<{ name: string; instructions: string; suggestedIntegrations: { slug: string; displayName: string }[] }>(
       "generate_agent_instructions",
       () => getEngine().generateAgentInstructions(description, opts),
       undefined,

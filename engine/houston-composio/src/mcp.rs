@@ -371,6 +371,10 @@ const FALLBACK_TOOLKITS: &[&str] = &[
     "exa", "tavily", "firecrawl",
 ];
 
+pub fn toolkit_display_name(slug: &str) -> &str {
+    toolkit_meta(slug).0
+}
+
 fn toolkit_meta(tk: &str) -> (&str, &str, &str) {
     match tk {
         "gmail" => (
@@ -433,6 +437,46 @@ fn toolkit_meta(tk: &str) -> (&str, &str, &str) {
             "https://airtable.com/images/favicon/baymax/apple-touch-icon.png",
             "airtable.com",
         ),
+        "googledocs" => (
+            "Google Docs",
+            "https://www.gstatic.com/images/branding/product/2x/docs_2020q4_48dp.png",
+            "docs.google.com",
+        ),
+        "jira" => (
+            "Jira",
+            "https://wac-cdn.atlassian.com/assets/img/favicons/atlassian/apple-touch-icon.png",
+            "atlassian.com",
+        ),
+        "asana" => (
+            "Asana",
+            "https://asana.com/images/fav/apple-touch-icon.png",
+            "asana.com",
+        ),
+        "hubspot" => (
+            "HubSpot",
+            "https://www.hubspot.com/hubfs/HubSpot_Logos/HubSpot-Inversed-Favicon.png",
+            "hubspot.com",
+        ),
+        "salesforce" => (
+            "Salesforce",
+            "https://www.salesforce.com/favicon.ico",
+            "salesforce.com",
+        ),
+        "shopify" => (
+            "Shopify",
+            "https://cdn.shopify.com/shopifycloud/web/assets/v1/favicon.ico",
+            "shopify.com",
+        ),
+        "stripe" => (
+            "Stripe",
+            "https://stripe.com/favicon.ico",
+            "stripe.com",
+        ),
+        "excel" => (
+            "Microsoft Excel",
+            "https://res.cdn.office.net/assets/mail/pwa/v1/pngs/favicon_excel.ico",
+            "microsoft.com",
+        ),
         _ => (tk, "", tk),
     }
 }
@@ -454,4 +498,27 @@ fn short_description(toolkit: &str) -> String {
         _ => "Connected",
     }
     .to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn known_slugs_return_display_name() {
+        assert_eq!(toolkit_display_name("gmail"), "Gmail");
+        assert_eq!(toolkit_display_name("slack"), "Slack");
+        assert_eq!(toolkit_display_name("googlecalendar"), "Google Calendar");
+        assert_eq!(toolkit_display_name("googlesheets"), "Google Sheets");
+        assert_eq!(toolkit_display_name("github"), "GitHub");
+        assert_eq!(toolkit_display_name("hubspot"), "HubSpot");
+        assert_eq!(toolkit_display_name("excel"), "Microsoft Excel");
+        assert_eq!(toolkit_display_name("jira"), "Jira");
+    }
+
+    #[test]
+    fn unknown_slug_falls_back_to_slug() {
+        assert_eq!(toolkit_display_name("somerandometool"), "somerandometool");
+        assert_eq!(toolkit_display_name("my-custom-app"), "my-custom-app");
+    }
 }

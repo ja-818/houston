@@ -21,7 +21,7 @@ export function AiAssistStep({ provider, model, onBack, onContinue }: AiAssistSt
   const [error, setError] = useState<string | null>(null);
   const [suggestedName, setSuggestedName] = useState("");
   const [instructions, setInstructions] = useState<string | null>(null);
-  const [suggestedIntegrations, setSuggestedIntegrations] = useState<string[]>([]);
+  const [suggestedIntegrations, setSuggestedIntegrations] = useState<{ slug: string; displayName: string }[]>([]);
 
   const handleGenerate = async (e: FormEvent) => {
     e.preventDefault();

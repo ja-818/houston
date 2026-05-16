@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { Button, Input, cn } from "@houston-ai/core";
-import { toolkitDisplayName, normalizeToolkitSlug } from "../../lib/composio-toolkits";
 import { IntegrationLogos } from "../integration-logos";
 
 interface AiAssistResultProps {
@@ -8,7 +7,7 @@ interface AiAssistResultProps {
   onNameChange: (v: string) => void;
   instructions: string;
   onInstructionsChange: (v: string) => void;
-  suggestedIntegrations: string[];
+  suggestedIntegrations: { slug: string; displayName: string }[];
   onContinue: () => void;
 }
 
@@ -65,18 +64,15 @@ export function AiAssistResult({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {suggestedIntegrations.map((toolkit) => {
-              const slug = normalizeToolkitSlug(toolkit);
-              return (
-                <span
-                  key={toolkit}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium"
-                >
-                  <IntegrationLogos toolkits={[slug]} small={true} />
-                  {toolkitDisplayName(toolkit)}
-                </span>
-              );
-            })}
+            {suggestedIntegrations.map(({ slug, displayName }) => (
+              <span
+                key={slug}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium"
+              >
+                <IntegrationLogos toolkits={[slug]} small={true} />
+                {displayName}
+              </span>
+            ))}
           </div>
         </div>
       )}

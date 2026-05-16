@@ -12,4 +12,5 @@ pub mod connection_watcher;
 pub mod install;
 pub mod lifecycle;
 pub mod mcp;
+pub use mcp::toolkit_display_name;
 pub mod toolkits;

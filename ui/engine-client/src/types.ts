@@ -514,10 +514,15 @@ export interface SummarizeOptions {
   model?: string;
 }
 
+export interface SuggestedIntegration {
+  slug: string;
+  displayName: string;
+}
+
 export interface GenerateInstructionsResult {
   name: string;
   instructions: string;
-  suggestedIntegrations: string[];
+  suggestedIntegrations: SuggestedIntegration[];
 }
 
 // ---------- Attachments ----------
