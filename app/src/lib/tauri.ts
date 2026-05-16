@@ -27,6 +27,7 @@ import type {
   ComposioStatus as EngineComposioStatus,
   ProviderAuthState,
   ProviderStatus as EngineProviderStatus,
+  GenerateInstructionsResult,
 } from "@houston-ai/engine-client";
 import { getEngine } from "./engine";
 import { osPickDirectory } from "./os-bridge";
@@ -147,7 +148,7 @@ export const tauriAgents = {
     description: string,
     opts: { provider?: string; model?: string } = {},
   ) =>
-    call<{ name: string; instructions: string; suggestedIntegrations: { slug: string; displayName: string }[] }>(
+    call<GenerateInstructionsResult>(
       "generate_agent_instructions",
       () => getEngine().generateAgentInstructions(description, opts),
       undefined,

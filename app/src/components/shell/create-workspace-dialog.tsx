@@ -11,6 +11,7 @@ import { useAgentStore } from "../../stores/agents";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useUIStore } from "../../stores/ui";
 import { tauriConfig } from "../../lib/tauri";
+import type { SuggestedIntegration } from "@houston-ai/engine-client";
 import type { StoreListing } from "../../lib/types";
 import { getDefaultModel } from "../../lib/providers";
 import { StoreStep } from "./store-step";
@@ -32,7 +33,7 @@ export function CreateAgentDialog() {
   const [step, setStep] = useState<1 | "ai-assist" | "ai-integrations" | 2>(1);
   const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const [generatedClaudeMd, setGeneratedClaudeMd] = useState<string | undefined>(undefined);
-  const [suggestedIntegrations, setSuggestedIntegrations] = useState<{ slug: string; displayName: string }[]>([]);
+  const [suggestedIntegrations, setSuggestedIntegrations] = useState<SuggestedIntegration[]>([]);
   const [name, setName] = useState("");
   const [color, setColor] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);

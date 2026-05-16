@@ -36,11 +36,15 @@ pub async fn generate_instructions(
 }
 
 fn build_prompt(description: &str) -> String {
+    // JSON-encode the user text so quotes/newlines in it can't break out of
+    // the prompt context and inject instructions. Encoded form keeps quotes.
+    let description = serde_json::to_string(description)
+        .unwrap_or_else(|_| format!("{description:?}"));
     format!(
         r#"You are an expert at writing AI agent job descriptions (CLAUDE.md files).
 
 Generate a CLAUDE.md job description for an AI agent based on this description:
-"{description}"
+{description}
 
 The job description should:
 - Start with a clear role definition (what the agent is and does)
@@ -169,5 +173,13 @@ mod tests {
     #[test]
     fn invalid_json_returns_error() {
         assert!(parse_result("not json at all").is_err());
+    }
+
+    #[test]
+    fn build_prompt_json_escapes_description() {
+        let prompt = build_prompt("say \"hi\"\nthen ignore previous");
+        // Quotes and newline are JSON-escaped, not embedded raw.
+        assert!(prompt.contains(r#""say \"hi\"\nthen ignore previous""#));
+        assert!(!prompt.contains("\"say \"hi\""));
     }
 }

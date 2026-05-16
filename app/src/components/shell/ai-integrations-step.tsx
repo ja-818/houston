@@ -2,6 +2,7 @@ import { useMemo, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Puzzle, Check, ExternalLink, Loader2 } from "lucide-react";
 import { Button, DialogTitle } from "@houston-ai/core";
+import type { SuggestedIntegration } from "@houston-ai/engine-client";
 import {
   useConnections,
   useConnectedToolkits,
@@ -15,7 +16,7 @@ import { tauriConnections, tauriSystem } from "../../lib/tauri";
 import { normalizeToolkitSlug } from "../../lib/composio-toolkits";
 
 interface AiIntegrationsStepProps {
-  suggestedIntegrations: { slug: string; displayName: string }[];
+  suggestedIntegrations: SuggestedIntegration[];
   onBack: () => void;
   onContinue: () => void;
 }
@@ -76,7 +77,9 @@ export function AiIntegrationsStep({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <button
+        type="button"
         onClick={onBack}
+        aria-label={t("common:actions.back")}
         className="absolute top-5 left-5 rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />

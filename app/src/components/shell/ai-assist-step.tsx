@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { Button, DialogTitle, Spinner, cn } from "@houston-ai/core";
+import type { SuggestedIntegration } from "@houston-ai/engine-client";
 import { tauriAgents } from "../../lib/tauri";
 import { AiAssistResult } from "./ai-assist-result";
 
@@ -10,7 +11,7 @@ interface AiAssistStepProps {
   model: string;
   onBack: () => void;
   /** Called with the final CLAUDE.md content, suggested name, and suggested integrations. */
-  onContinue: (instructions: string, suggestedName: string, integrations: { slug: string; displayName: string }[]) => void;
+  onContinue: (instructions: string, suggestedName: string, integrations: SuggestedIntegration[]) => void;
 }
 
 export function AiAssistStep({ provider, model, onBack, onContinue }: AiAssistStepProps) {
@@ -21,7 +22,7 @@ export function AiAssistStep({ provider, model, onBack, onContinue }: AiAssistSt
   const [error, setError] = useState<string | null>(null);
   const [suggestedName, setSuggestedName] = useState("");
   const [instructions, setInstructions] = useState<string | null>(null);
-  const [suggestedIntegrations, setSuggestedIntegrations] = useState<{ slug: string; displayName: string }[]>([]);
+  const [suggestedIntegrations, setSuggestedIntegrations] = useState<SuggestedIntegration[]>([]);
 
   const handleGenerate = async (e: FormEvent) => {
     e.preventDefault();
@@ -57,7 +58,9 @@ export function AiAssistStep({ provider, model, onBack, onContinue }: AiAssistSt
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <button
+        type="button"
         onClick={onBack}
+        aria-label={t("common:actions.back")}
         className="absolute top-5 left-5 rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -115,6 +118,7 @@ export function AiAssistStep({ provider, model, onBack, onContinue }: AiAssistSt
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 space-y-1">
               <p className="text-sm font-medium text-destructive">{t("aiAssist.errorTitle")}</p>
               <p className="text-xs text-muted-foreground">{t("aiAssist.errorDescription")}</p>
+              <p className="text-xs font-mono text-muted-foreground/80 break-words whitespace-pre-wrap">{error}</p>
             </div>
           )}
 
