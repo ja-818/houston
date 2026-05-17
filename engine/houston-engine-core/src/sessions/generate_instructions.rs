@@ -61,7 +61,7 @@ The job description should:
 
 Also suggest:
 - A short agent name (2-4 words, title case, no generic words like "Agent" or "Assistant" unless truly fitting, e.g. "Email Inbox Manager", "Quant Analyst", "Sales Pipeline Bot")
-- 1-4 relevant Composio integrations (toolkit names) that this agent would benefit from.
+- 0-4 relevant Composio integrations (toolkit names) that this agent would genuinely benefit from. Use an empty array if no external service integration is needed.
 Common toolkits: GMAIL, GOOGLECALENDAR, GOOGLESHEETS, GOOGLEDOCS, SLACK, NOTION, GITHUB, JIRA, TRELLO, ASANA, HUBSPOT, SALESFORCE, SHOPIFY, STRIPE, TWITTER, LINKEDIN, DISCORD, AIRTABLE, EXCEL, GOOGLEDRIVE
 - Optionally, exactly ONE routine, but ONLY if the agent's job clearly involves a recurring scheduled task (e.g. a daily inbox digest, a weekly report). If the agent is reactive / on-demand / one-off, set suggestedRoutine to null. Do not invent a schedule just to fill the field.
   Allowed scheduleType values ONLY: "daily", "weekdays", "weekly". Give timeOfDay as 24h "HH:MM". For "weekly" also give dayOfWeek (0=Sunday .. 6=Saturday). Keep the routine prompt to one sentence describing what it should do each run.
