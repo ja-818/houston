@@ -23,6 +23,7 @@ export interface KanbanBoardProps {
 export function KanbanBoard({
   columns,
   items,
+  selectedId,
   onSelect,
   onDelete,
   onApprove,
@@ -63,6 +64,7 @@ export function KanbanBoard({
           key={col.id}
           label={col.label}
           items={col.items}
+          selectedId={selectedId}
           onAdd={col.onAdd}
           addLabel={col.addLabel}
           onSelect={onSelect ?? (() => {})}

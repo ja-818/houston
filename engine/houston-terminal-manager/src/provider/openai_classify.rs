@@ -8,7 +8,7 @@
 use crate::auth_error::is_auth_error;
 use crate::codex_command;
 use crate::provider_error_kind::{
-    truncate_excerpt, AuthFailureCause, ProviderError, QuotaScope,
+    truncate_excerpt, AuthFailureCause, ModelUnavailableReason, ProviderError, QuotaScope,
 };
 
 const PROVIDER: &str = "openai";
@@ -24,6 +24,22 @@ pub(crate) fn classify_stderr(line: &str) -> Option<ProviderError> {
         return Some(ProviderError::SessionResumeMissing {
             provider: PROVIDER.into(),
             session_id,
+        });
+    }
+
+    // OpenAI rejects coding-specialised models (gpt-5.5-codex, gpt-5-codex)
+    // with a 400 when the user is authenticated via a ChatGPT account
+    // whose plan does not include them. Surface as a typed
+    // ModelUnavailable card with a "switch model" CTA rather than dumping
+    // the raw 400 JSON into the feed.
+    if lower.contains("is not supported when using codex with a chatgpt account") {
+        let model = extract_quoted_model(line).unwrap_or_else(|| "this model".into());
+        return Some(ProviderError::ModelUnavailable {
+            provider: PROVIDER.into(),
+            model,
+            reason: ModelUnavailableReason::PreviewGated,
+            suggested_fallback: Some("gpt-5.5".into()),
+            message: truncate_excerpt(line.trim()),
         });
     }
 
@@ -126,6 +142,21 @@ fn extract_thread_id_from_rollout_error(line: &str) -> Option<String> {
         None
     } else {
         Some(id)
+    }
+}
+
+/// Pull a model name out of the "The 'gpt-5.5-codex' model is not
+/// supported when using Codex with a ChatGPT account" pattern. Falls
+/// back to None when no single-quoted token is present.
+fn extract_quoted_model(line: &str) -> Option<String> {
+    let first = line.find('\'')?;
+    let rest = &line[first + 1..];
+    let end = rest.find('\'')?;
+    let model = rest[..end].trim();
+    if model.is_empty() {
+        None
+    } else {
+        Some(model.to_string())
     }
 }
 

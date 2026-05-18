@@ -914,7 +914,8 @@ jobs:
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SLACK_BUG_WEBHOOK_URL: ${{ secrets.SLACK_BUG_WEBHOOK_URL }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
       - name: Locate MSI + updater signature artifacts

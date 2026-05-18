@@ -154,7 +154,7 @@ pub(crate) async fn run_cli_process(
                 let _ = tx.send(SessionUpdate::Status(SessionStatus::Completed));
                 CliRunOutcome::Completed
             } else {
-                handle_failed_exit(tx, cli_name, provider, &stderr_lines)
+                handle_failed_exit(tx, cli_name, provider, &stderr_lines, &stdout_report)
             }
         }
         Err(e) => {
@@ -171,6 +171,7 @@ fn handle_failed_exit(
     cli_name: &str,
     provider: Provider,
     stderr_lines: &[String],
+    stdout_report: &session_io::StdoutReadReport,
 ) -> CliRunOutcome {
     // Codex resume-rollout-missing is a control-flow signal (the runner
     // restarts fresh) rather than a user-visible error, so keep it
@@ -187,37 +188,59 @@ fn handle_failed_exit(
         return CliRunOutcome::CodexResumeMissing;
     }
 
-    // If a typed classifier matched any stderr line we've already
-    // emitted that variant from `read_stderr_lines`. Skip the catch-all
-    // emit so the user doesn't see two cards. We don't rely on the
-    // already-emitted bookkeeping there because the channel is
-    // fire-and-forget; instead we reclassify the lines here. Cheap:
-    // classification is substring matching.
+    // Claude reports 401s as a JSON `result` event on stdout, not stderr.
+    // Without checking stdout_report.saw_auth_error here, stderr is empty
+    // and we'd fall through to the generic spawn-failure card on top of
+    // the AuthRequired UI the parser already emitted.
+    let has_auth_error = stdout_report.saw_auth_error
+        || stderr_lines
+            .iter()
+            .any(|l| crate::auth_error::is_auth_error(l));
+    if has_auth_error {
+        let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(
+            "Authentication expired. Sign in again to continue.".to_string(),
+        )));
+        return CliRunOutcome::Failed;
+    }
+
+    // Model-not-allowed (e.g. `gpt-5.5-codex` on a Business ChatGPT
+    // plan). The stdout parser may have already emitted a
+    // `ProviderError::ModelUnavailable` card via the typed classifier;
+    // if it came in only on stderr, `read_stderr_lines` already typed
+    // it too. Either way, surface a clean status without duplicating
+    // the card.
+    if stdout_report.saw_model_unsupported_error {
+        let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(
+            "Selected model is not available on this ChatGPT plan.".to_string(),
+        )));
+        return CliRunOutcome::Failed;
+    }
+
+    // Generic fallback. Skip emitting the typed card if the stderr
+    // classifier already produced one (`read_stderr_lines` walks the
+    // same lines, so re-classifying here tells us whether a typed
+    // variant was sent), or if the line matched the local-tool runtime
+    // filter (codex_core router exec_command failures keep their
+    // dedicated card path).
     let already_emitted_typed = stderr_lines
         .iter()
         .any(|line| provider.classify_stderr(line).is_some());
-
-    if !already_emitted_typed {
+    let is_tool_runtime = stderr_lines
+        .iter()
+        .any(|line| crate::stderr_filter::is_tool_runtime_stderr(line));
+    if !already_emitted_typed && !is_tool_runtime {
         let stderr_summary = if stderr_lines.is_empty() {
             "no stderr output captured".to_string()
         } else {
             stderr_lines.join("\n")
         };
-        // Only emit a fallback typed error if the line wasn't already
-        // surfaced as a local-tool runtime error (codex_core router
-        // failures), which keep their dedicated card.
-        if !stderr_lines
-            .iter()
-            .any(|line| crate::stderr_filter::is_tool_runtime_stderr(line))
-        {
-            // Use the spawn-failure classifier as the umbrella for
-            // "process exited non-zero with no recognised pattern". It
-            // defaults to ProviderError::SpawnFailed; providers can
-            // override for spawn-specific patterns. Truncate to keep
-            // the wire frame small; full stderr stays in engine logs.
-            let err: ProviderError = provider.classify_spawn_failure(None, &stderr_summary);
-            let _ = tx.send(SessionUpdate::Feed(FeedItem::ProviderError(err)));
-        }
+        // Use the spawn-failure classifier as the umbrella for
+        // "process exited non-zero with no recognised pattern". It
+        // defaults to ProviderError::SpawnFailed; providers can
+        // override for spawn-specific patterns. Truncate to keep
+        // the wire frame small; full stderr stays in engine logs.
+        let err: ProviderError = provider.classify_spawn_failure(None, &stderr_summary);
+        let _ = tx.send(SessionUpdate::Feed(FeedItem::ProviderError(err)));
     }
 
     let _ = tx.send(SessionUpdate::Status(SessionStatus::Error(format!(
@@ -247,4 +270,73 @@ fn configure_process_group(_cmd: &mut Command) {}
 #[cfg(unix)]
 extern "C" {
     fn setpgid(pid: i32, pgid: i32) -> i32;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::SessionStatus;
+
+    fn drain(rx: &mut mpsc::UnboundedReceiver<SessionUpdate>) -> Vec<SessionUpdate> {
+        let mut out = Vec::new();
+        while let Ok(u) = rx.try_recv() {
+            out.push(u);
+        }
+        out
+    }
+
+    #[test]
+    fn claude_stdout_auth_error_skips_tool_runtime_error() {
+        // Claude 401: empty stderr, stdout reported an auth SystemMessage.
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let stdout_report = session_io::StdoutReadReport {
+            malformed_provider_json: false,
+            saw_auth_error: true,
+            saw_model_unsupported_error: false,
+        };
+
+        let outcome =
+            handle_failed_exit(&tx, "claude", Provider::default(), &[], &stdout_report);
+        assert_eq!(outcome, CliRunOutcome::Failed);
+
+        let updates = drain(&mut rx);
+        assert!(
+            !updates.iter().any(|u| matches!(
+                u,
+                SessionUpdate::Feed(FeedItem::ToolRuntimeError { .. })
+            )),
+            "should not emit ToolRuntimeError when auth was seen on stdout: {updates:?}"
+        );
+        assert!(
+            updates.iter().any(|u| matches!(
+                u,
+                SessionUpdate::Status(SessionStatus::Error(msg))
+                    if msg.to_lowercase().contains("authentication expired")
+            )),
+            "should emit auth-expired status error: {updates:?}"
+        );
+    }
+
+    #[test]
+    fn empty_stderr_without_auth_signal_still_emits_typed_provider_error() {
+        // Pre-existing behaviour (preserved across the typed-classifier
+        // migration): genuine empty-stderr failures keep a diagnostic so
+        // the user always gets feedback. Post-migration the diagnostic
+        // is a typed `ProviderError::SpawnFailed` instead of the legacy
+        // generic `ToolRuntimeError`, but the "no stderr output captured"
+        // detail string is preserved so log readers can still grep for it.
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let stdout_report = session_io::StdoutReadReport::default();
+
+        let outcome =
+            handle_failed_exit(&tx, "claude", Provider::default(), &[], &stdout_report);
+        assert_eq!(outcome, CliRunOutcome::Failed);
+
+        let updates = drain(&mut rx);
+        assert!(updates.iter().any(|u| matches!(
+            u,
+            SessionUpdate::Feed(FeedItem::ProviderError(ProviderError::SpawnFailed { message, .. }))
+                if message == "no stderr output captured"
+        )));
+    }
 }

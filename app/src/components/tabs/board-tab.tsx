@@ -38,6 +38,7 @@ import { MissionBoardEmptyState } from "../mission-board-empty-state";
 import { useMissionSearch } from "../use-mission-search";
 import { useAttachmentRejectionDialog } from "../attachment-rejection-dialog";
 import { buildMissionBoardColumns } from "../mission-board-columns";
+import { navigateBoard } from "../../lib/board-navigate";
 
 // Stable empty reference so the feed store selector doesn't return a new
 // object every render when this agent has no feeds yet (which would otherwise
@@ -67,6 +68,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   const updateActivity = useUpdateActivity(path);
   const queryClient = useQueryClient();
   const setOnStartMission = useUIStore((s) => s.setOnStartMission);
+  const setOnBoardNavigate = useUIStore((s) => s.setOnBoardNavigate);
   const setBoardActions = useUIStore((s) => s.setBoardActions);
   const missionSearchQuery = useUIStore((s) => s.agentMissionSearchQueries[path] ?? "");
   const setAgentMissionSearchQuery = useUIStore((s) => s.setAgentMissionSearchQuery);
@@ -270,12 +272,23 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       variant: "error",
     });
   }, [addToast, t]);
+  // Arrow-key kanban navigator refs. Declared before `missionSearch`
+  // so the assignment below uses the latest visible items.
+  const navItemsRef = useRef<KanbanItem[]>(items);
+  const navColumnsRef = useRef(boardColumns);
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
+  navColumnsRef.current = boardColumns;
+
   const missionSearch = useMissionSearch({
     items,
     query: missionSearchQuery,
     loadHistory,
     onHistoryLoadError: handleMissionSearchError,
   });
+  // Keep arrow-nav items aligned with what's actually rendered on the
+  // board (filtered + searched), not the raw set.
+  navItemsRef.current = missionSearch.items;
 
   useEffect(() => {
     setAgentMissionSearchLoading(path, missionSearch.isSearchingText);
@@ -311,6 +324,24 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       setBoardActions([]);
     };
   }, [setOnStartMission, setBoardActions]);
+
+  // Register the arrow-key navigator scoped to THIS agent's board.
+  // Refs declared above keep the callback stable while always reading
+  // the latest items, selection, and column config.
+  useEffect(() => {
+    setOnBoardNavigate((dir) => {
+      const next = navigateBoard(
+        {
+          items: navItemsRef.current,
+          columns: navColumnsRef.current,
+          selectedId: selectedIdRef.current,
+        },
+        dir,
+      );
+      if (next) setSelectedId(next);
+    });
+    return () => setOnBoardNavigate(null);
+  }, [setOnBoardNavigate]);
 
   const handleDelete = useCallback(
     async (item: KanbanItem) => {

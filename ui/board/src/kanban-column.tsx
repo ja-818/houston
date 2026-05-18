@@ -24,6 +24,7 @@ export interface KanbanColumnProps {
 export function KanbanColumn({
   label,
   items,
+  selectedId,
   onAdd,
   addLabel = "Add item",
   onSelect,
@@ -51,8 +52,9 @@ export function KanbanColumn({
         </div>
       </div>
 
-      {/* Cards */}
-      <div className="flex-1 px-1.5 pb-1.5 space-y-1.5 overflow-y-auto">
+      {/* Cards. `pt-1` so the selected ring on the first card isn't
+          clipped by the scroll container's top edge. */}
+      <div className="flex-1 px-1.5 pt-1 pb-1.5 space-y-1.5 overflow-y-auto">
         <AnimatePresence mode="popLayout">
           {items.map((item) => (
             <motion.div
@@ -68,6 +70,7 @@ export function KanbanColumn({
               ) : (
                 <KanbanCard
                   item={item}
+                  selected={selectedId === item.id}
                   onSelect={() => onSelect(item)}
                   onDelete={onDelete ? () => onDelete(item) : undefined}
                   onApprove={onApprove ? () => onApprove(item) : undefined}

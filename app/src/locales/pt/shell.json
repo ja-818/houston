@@ -132,7 +132,15 @@
     "reportSuccessDescription": "Houston recebeu os registros.",
     "reportErrorTitle": "Não foi possível enviar o relatório",
     "reportErrorDescription": "Tente de novo em instantes.",
-    "retryErrorTitle": "Não foi possível tentar de novo"
+    "retryErrorTitle": "Não foi possível tentar de novo",
+    "modelUnsupported": {
+      "title": "Seu plano do ChatGPT não inclui GPT-5.5 Codex",
+      "body": "Mude para GPT-5.5 para continuar. A variante Codex só está disponível em alguns planos do ChatGPT (Plus, Pro, Team), não em Business ou Enterprise.",
+      "switchAction": "Mudar para GPT-5.5",
+      "switching": "Mudando...",
+      "switchErrorTitle": "Não foi possível mudar o modelo",
+      "switchErrorDescription": "Abra o seletor de modelo e escolha GPT-5.5 manualmente."
+    }
   },
   "updateChecker": {
     "cardLabel": "Atualização do Houston disponível",
@@ -231,6 +239,42 @@
       "body": "O Houston não conseguiu classificar este erro do {{provider}}. Relate para que possamos aprender a tratar.",
       "reportBug": "Relatar problema",
       "rawLabel": "Saída bruta"
+    }
+  },
+  "palette": {
+    "title": "Paleta de comandos",
+    "description": "Vá para qualquer lugar do Houston",
+    "placeholder": "Buscar agentes, missões, ações...",
+    "empty": "Nada encontrado. Tente outra palavra.",
+    "groups": {
+      "actions": "Ações",
+      "agents": "Agentes",
+      "recentMissions": "Missões recentes"
+    },
+    "actions": {
+      "newMission": "Iniciar nova missão",
+      "missionControl": "Ir para o Centro de Missões",
+      "integrations": "Abrir Integrações",
+      "settings": "Abrir Configurações",
+      "shortcuts": "Ver atalhos do teclado"
+    }
+  },
+  "cheatsheet": {
+    "title": "Atalhos do teclado",
+    "description": "Use o Houston sem encostar no mouse.",
+    "sections": {
+      "navigation": "Navegação",
+      "cycle": "Percorrer",
+      "help": "Ajuda"
+    },
+    "rows": {
+      "palette": "Abrir paleta de comandos",
+      "missionControl": "Ir para o Centro de Missões",
+      "newMission": "Iniciar nova missão",
+      "prevAgent": "Agente anterior",
+      "nextAgent": "Próximo agente",
+      "boardNavigate": "Mover entre missões",
+      "cheatsheet": "Mostrar esta lista"
     }
   }
 }

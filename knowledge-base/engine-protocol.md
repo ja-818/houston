@@ -95,6 +95,8 @@ module.
 | DELETE | `/v1/workspaces/:id` | Delete |
 | POST | `/v1/workspaces/:id/rename` | Rename |
 | PATCH | `/v1/workspaces/:id/provider` | Set provider/model |
+| GET | `/v1/workspaces/:id/context` | Read shared `WORKSPACE.md` + `USER.md` |
+| PUT | `/v1/workspaces/:id/context` | Write shared `WORKSPACE.md` + `USER.md` |
 | GET | `/v1/workspaces/:id/agents` | List agents in workspace |
 | POST | `/v1/workspaces/:id/agents` | Create agent |
 | DELETE | `/v1/workspaces/:id/agents/:agent_id` | Delete agent |

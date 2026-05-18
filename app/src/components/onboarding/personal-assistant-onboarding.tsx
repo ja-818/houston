@@ -12,6 +12,9 @@ import { MeetMission } from "./missions/meet";
 import { BrainMission } from "./missions/brain";
 import { ToolsMission } from "./missions/tools";
 import { TryMission } from "./missions/try";
+import { SkillMission } from "./missions/skill";
+import { RoutineMission } from "./missions/routine";
+import { SummaryScreen } from "./summary-screen";
 import { WelcomeScreen } from "./welcome-screen";
 import { createPersonalAssistantForWorkspace } from "./create-personal-assistant";
 import {
@@ -42,6 +45,15 @@ export function PersonalAssistantOnboarding({
   const [agent, setAgent] = useState<Agent | null>(null);
   const [provider, setProvider] = useState<string | null>(null);
   const [model, setModel] = useState<string | null>(null);
+  /**
+   * Activity session key minted by the Try mission's `createMission` call.
+   * The Routine mission re-uses the same session so the chat history (the
+   * agent's full day-plan reply with the bold sections) carries over and
+   * the agent can reference it while writing the routine prompt.
+   */
+  const [missionSessionKey, setMissionSessionKey] = useState<string | null>(
+    null,
+  );
   const [assistantName, setAssistantName] = useState(() =>
     t("setup:tutorial.defaults.assistantName"),
   );
@@ -59,6 +71,7 @@ export function PersonalAssistantOnboarding({
   // whose first paint briefly falls through `workspaces.length === 0` is not
   // trapped here once their real workspaces arrive.
   const startTutorial = () => {
+    analytics.track("onboarding_started", { source: "tutorial" });
     setTutorialActive(true);
     setStep("meet");
   };
@@ -100,6 +113,7 @@ export function PersonalAssistantOnboarding({
   const handleSkip = async () => {
     // Skip path: create the workspace + assistant, but no UI tour and no
     // tutorial artifacts. User lands directly in the workspace shell.
+    analytics.track("onboarding_started", { source: "skip" });
     setTutorialActive(true);
     try {
       const fallbackProvider = provider ?? "anthropic";
@@ -115,10 +129,22 @@ export function PersonalAssistantOnboarding({
     }
   };
 
-  // Final hand-off after M3 Try completes. We arm the UI tour BEFORE clearing
-  // `tutorialActive` so the workspace shell mounts with the tour overlay
-  // already up — no flicker of bare workspace.
-  const handleTryComplete = () => {
+  // Step transitions for the back-half of the tutorial (Try → Skill →
+  // Routine → Summary → app tour). None of them clear `tutorialActive`
+  // — each next step still owns the screen, and clearing here would
+  // let the workspace shell race in behind. `onboarding_completed`
+  // fires at the very end (after the Summary "Enter Houston" CTA or
+  // an explicit Skip).
+  const handleTryComplete = () => setStep("skill");
+  const handleSkillComplete = () => setStep("routine");
+  const handleRoutineComplete = () => setStep("summary");
+
+  // Terminal hand-off. Arm the UI tour BEFORE clearing `tutorialActive`
+  // so the workspace shell mounts with the tour overlay already up —
+  // no flicker of bare workspace. Called by the Summary CTA AND by
+  // every always-on Skip link in M4-M6 so a user who bails midway
+  // still lands in the workspace shell cleanly.
+  const finishOnboarding = () => {
     analytics.track("onboarding_completed", {
       mission: TUTORIAL_MISSION.id,
       integrations_skipped: false,
@@ -140,6 +166,7 @@ export function PersonalAssistantOnboarding({
             t("setup:tutorial.welcome.steps.brain"),
             t("setup:tutorial.welcome.steps.tools"),
             t("setup:tutorial.welcome.steps.try"),
+            t("setup:tutorial.welcome.steps.routine"),
           ]}
           startLabel={t("setup:tutorial.welcome.start")}
           skipLabel={t("setup:tutorial.welcome.skip")}
@@ -189,7 +216,41 @@ export function PersonalAssistantOnboarding({
           assistantColor={assistantColor}
           provider={provider ?? "anthropic"}
           model={model ?? "sonnet"}
+          onSessionKey={setMissionSessionKey}
           onContinue={handleTryComplete}
+          onSkip={finishOnboarding}
+        />
+      )}
+      {meta && frame && step === "skill" && agent && missionSessionKey && (
+        <SkillMission
+          meta={meta}
+          frame={frame}
+          agent={agent}
+          assistantColor={assistantColor}
+          sessionKey={missionSessionKey}
+          onContinue={handleSkillComplete}
+          onSkip={finishOnboarding}
+        />
+      )}
+      {meta && frame && step === "routine" && agent && missionSessionKey && (
+        <RoutineMission
+          meta={meta}
+          frame={frame}
+          agent={agent}
+          assistantColor={assistantColor}
+          provider={provider ?? "anthropic"}
+          model={model ?? "sonnet"}
+          sessionKey={missionSessionKey}
+          onContinue={handleRoutineComplete}
+          onSkip={finishOnboarding}
+        />
+      )}
+      {frame && step === "summary" && agent && (
+        <SummaryScreen
+          frame={frame}
+          agent={agent}
+          assistantColor={assistantColor}
+          onContinue={finishOnboarding}
         />
       )}
       <ToastContainer toasts={toasts} onDismiss={onDismissToast} />

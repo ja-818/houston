@@ -181,7 +181,7 @@ export function NamingStep({
 }
 
 /** Bigger model selector for the agent creation dialog. */
-function InlineModelSelector({
+export function InlineModelSelector({
   provider,
   model,
   onSelect,

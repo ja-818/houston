@@ -244,6 +244,18 @@ export function AIBoard({
   // Hydrate on mount if there's an initial controlled selection
   useEffect(() => { if (selectedId) hydrateSession(selectedId) }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When the selection changes from OUTSIDE (e.g. arrow-key navigation
+  // sets selectedId via the controlled prop, or session-notifications
+  // jumps to a different mission), hydrate the new session, close any
+  // "new mission" panel, and bump the composer focus token so the user
+  // can start typing immediately without reaching for the mouse.
+  useEffect(() => {
+    if (!selectedId) return
+    hydrateSession(selectedId)
+    setNewPanelOpen(false)
+    setComposerFocusToken((prev) => (prev ?? 0) + 1)
+  }, [selectedId, hydrateSession])
+
   const selectedItem = items.find((i) => i.id === selectedId) ?? null
 
   const openNewPanel = useCallback((options?: NewPanelOptions) => {
@@ -434,9 +446,7 @@ export function AIBoard({
           value={drafts ? (drafts[activeDraftKey] ?? "") : undefined}
           onValueChange={onDraftChange ? (text: string) => onDraftChange(activeDraftKey, text) : undefined}
           composerFocusToken={
-            newPanelOpen && !selectedItem && composerFocusToken !== null
-              ? composerFocusToken
-              : undefined
+            composerFocusToken !== null ? composerFocusToken : undefined
           }
           isSpecialTool={isSpecialTool}
           renderToolResult={renderToolResult}
