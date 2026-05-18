@@ -98,9 +98,12 @@
       "errorTitle": "Não foi possível enviar o reporte"
     }
   },
+  "version": "Versão {{version}}",
   "toasts": {
     "workspaceRenamed": "Espaço de trabalho renomeado",
     "providerSwitched": "Mudou para {{provider}} ({{model}})",
-    "timezoneSet": "Fuso horário definido como {{zone}}"
+    "timezoneSet": "Fuso horário definido como {{zone}}",
+    "versionCopied": "Versão copiada",
+    "versionCopyFailed": "Não foi possível copiar a versão"
   }
 }
