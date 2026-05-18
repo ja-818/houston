@@ -82,6 +82,8 @@
   "toasts": {
     "workspaceRenamed": "Workspace renamed",
     "providerSwitched": "Switched to {{provider}} ({{model}})",
-    "timezoneSet": "Timezone set to {{zone}}"
+    "timezoneSet": "Timezone set to {{zone}}",
+    "versionCopied": "Version copied",
+    "versionCopyFailed": "Couldn't copy version"
   }
 }

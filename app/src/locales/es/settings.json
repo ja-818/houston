@@ -82,6 +82,8 @@
   "toasts": {
     "workspaceRenamed": "Espacio de trabajo renombrado",
     "providerSwitched": "Cambiaste a {{provider}} ({{model}})",
-    "timezoneSet": "Zona horaria establecida en {{zone}}"
+    "timezoneSet": "Zona horaria establecida en {{zone}}",
+    "versionCopied": "Versión copiada",
+    "versionCopyFailed": "No se pudo copiar la versión"
   }
 }
