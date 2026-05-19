@@ -2497,6 +2497,7 @@ name = "houston-engine-core"
 version = "0.4.10"
 dependencies = [
  "async-trait",
+ "base64 0.22.1",
  "chrono",
  "chrono-tz",
  "cron 0.12.1",
@@ -2513,11 +2514,13 @@ dependencies = [
  "houston-terminal-manager",
  "houston-ui-events",
  "once_cell",
+ "rand 0.8.5",
  "regex",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
  "sevenz-rust2",
+ "sha2",
  "tempfile",
  "thiserror 1.0.69",
  "tokio",
@@ -2656,6 +2659,7 @@ dependencies = [
  "houston-cli-bundle",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tracing",
 ]
