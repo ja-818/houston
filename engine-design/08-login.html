@@ -35,75 +35,184 @@
   <main class="content">
     <div class="content-label">
       Chapter 08
-      <span class="status partial">Partial</span>
+      <span class="status partial">Partial · finishes in M3</span>
     </div>
     <h1>Logging in (still one click).</h1>
     <p class="lead">
-      Per-agent credentials sound expensive in clicks. They aren't. The
-      user clicks once per agent. The OAuth dance happens under the hood.
+      Per-agent credentials sound expensive in clicks. They aren't. For
+      solo desktop users, one click logs in once and Houston brokers
+      tokens to agents. For Teams and Cloud, each agent gets its own
+      login by default for stronger isolation.
     </p>
 
-    <div class="diagram">
-      <pre class="mermaid">
-sequenceDiagram
-  autonumber
-  actor User
-  participant UI as Desktop UI
-  participant Shell as Desktop Shell
-  participant E as Engine (in VM)
-  participant CLI as claude login<br/>(as hou_sales)
-  participant Browser as System Browser
-  participant Anthropic
-
-  User->>UI: click "Log into Claude for Sales"
-  UI->>E: POST /v1/agents/Sales/providers/anthropic/login
-  E->>CLI: spawn as hou_sales
-  CLI-->>E: print login URL
-  E-->>Shell: open URL via deep-link bridge
-  Shell->>Browser: open URL
-  User->>Anthropic: log in
-  Anthropic-->>Browser: redirect houston://anthropic-callback?code=...
-  Browser-->>Shell: deep link delivered
-  Shell->>E: POST callback code
-  E->>CLI: pass code
-  CLI->>Anthropic: exchange for token
-  CLI->>CLI: save to /home/hou_sales/.claude/
-  E-->>UI: WS event "Sales logged in"
-      </pre>
-      <div class="caption">One click for the user. About three redirects under the hood.</div>
+    <div class="flow-list">
+      <div class="flow-step">
+        <div class="num">01</div>
+        <div>
+          <div class="from-to"><span class="actor">User</span><span class="arrow">→</span><span class="actor">Desktop UI</span></div>
+          <div class="action">Clicks "Log into Claude for Sales".</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">02</div>
+        <div>
+          <div class="from-to"><span class="actor">Desktop UI</span><span class="arrow">→</span><span class="actor">Engine</span></div>
+          <div class="action"><code>POST /v1/agents/Sales/providers/anthropic/login</code>.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">03</div>
+        <div>
+          <div class="from-to"><span class="actor">Engine</span><span class="arrow">→</span><span class="actor">claude CLI</span></div>
+          <div class="action">Spawn as <code>hou_sales</code> inside the Linux runtime.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">04</div>
+        <div>
+          <div class="from-to"><span class="actor">claude CLI</span><span class="arrow">→</span><span class="actor">Engine</span></div>
+          <div class="action">Prints login URL on stdout.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">05</div>
+        <div>
+          <div class="from-to"><span class="actor">Engine</span><span class="arrow">→</span><span class="actor">Desktop shell</span></div>
+          <div class="action">Pushes URL to the host shell via the runtime bridge.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">06</div>
+        <div>
+          <div class="from-to"><span class="actor">Desktop shell</span><span class="arrow">→</span><span class="actor">System browser</span></div>
+          <div class="action">Opens the URL.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">07</div>
+        <div>
+          <div class="from-to"><span class="actor">User</span><span class="arrow">→</span><span class="actor">Anthropic</span></div>
+          <div class="action">Logs in.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">08</div>
+        <div>
+          <div class="from-to"><span class="actor">Anthropic</span><span class="arrow">→</span><span class="actor">Browser</span></div>
+          <div class="action">Redirects to <code>houston://anthropic-callback?code=...</code>.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">09</div>
+        <div>
+          <div class="from-to"><span class="actor">Browser</span><span class="arrow">→</span><span class="actor">Desktop shell</span></div>
+          <div class="action">Deep link delivered to the host shell (the OS routes <code>houston://</code> to the registered app).</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">10</div>
+        <div>
+          <div class="from-to"><span class="actor">Desktop shell</span><span class="arrow">→</span><span class="actor">Engine</span></div>
+          <div class="action">POSTs the OAuth code over the runtime's loopback port. <strong>The new piece.</strong></div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">11</div>
+        <div>
+          <div class="from-to"><span class="actor">Engine</span><span class="arrow">→</span><span class="actor">claude CLI</span></div>
+          <div class="action">Hands the code back to the waiting CLI subprocess.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">12</div>
+        <div>
+          <div class="from-to"><span class="actor">claude CLI</span><span class="arrow">→</span><span class="actor">Anthropic</span></div>
+          <div class="action">Exchanges the code for a token. Saves to <code>/home/hou_sales/.claude/</code>.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">13</div>
+        <div>
+          <div class="from-to"><span class="actor">Engine</span><span class="arrow">→</span><span class="actor">Desktop UI</span></div>
+          <div class="action">WS event "Sales logged in". UI updates.</div>
+        </div>
+      </div>
     </div>
+    <p style="font-size: 13px; color: var(--gray-500); text-align: center; margin-top: -16px; margin-bottom: 32px;">One click for the user. The new piece is steps 5 and 10, the host-to-runtime bridge.</p>
 
-    <h2>The pattern is already in Houston</h2>
+    <h2>What you already have</h2>
     <p>
-      This is the exact pattern Houston already uses for Google sign-in
-      via Supabase. A click in the UI starts an OAuth flow. The system
+      This is the exact pattern Houston uses today for Google sign-in via
+      Supabase. A click in the UI starts an OAuth flow. The system
       browser does the work. A custom URL scheme
       (<code>houston://...</code>) brings the result back into the app.
+      Same plumbing extends to per-provider logins.
+    </p>
+
+    <h2>The new piece: host-to-runtime bridge</h2>
+    <p>
+      When the engine lives inside a Linux runtime (Chapter 3), the OAuth
+      callback can't reach it directly. The browser redirects to
+      <code>houston://anthropic-callback?code=...</code>, which the Tauri
+      shell on the host catches. The shell then POSTs the code to the
+      engine over the runtime's localhost port.
     </p>
     <p>
-      The only new piece for the VM-based architecture is the
-      <strong>deep-link bridge</strong> between the desktop shell and the
-      VM. The shell catches the redirect, then posts the code over the
-      VM's local network to the engine.
+      Two things to get right:
+    </p>
+    <ul>
+      <li><strong>Only loopback.</strong> The runtime's HTTP port is bound to the host's loopback interface only. Other apps on the host cannot reach it, the network cannot reach it. Same posture as today's native engine.</li>
+      <li><strong>One-time auth code, not a long-lived token.</strong> The deep link carries an OAuth code that's only useful for the immediate exchange. The actual provider token never crosses the bridge in plaintext.</li>
+    </ul>
+
+    <h2>What about provider CLI callback URLs?</h2>
+    <p>
+      The Claude Code CLI and the Codex CLI each open their own hosted
+      OAuth flow. We don't control their callback URL. We capture it by:
+    </p>
+    <ol>
+      <li>Spawning the CLI inside the runtime.</li>
+      <li>Reading the login URL it prints to stdout.</li>
+      <li>Asking the host shell to open that URL.</li>
+      <li>Waiting for the CLI subprocess to finish the exchange.</li>
+    </ol>
+    <p>
+      No <code>houston://</code> hijack needed in the common path; the
+      CLI handles its own callback. The deep link is only used for our
+      own OAuth flows (Supabase, anything Houston-branded).
     </p>
 
     <h2>Per agent vs broker</h2>
     <p>
-      Two flavors of UX, both compatible with the same plumbing.
+      Two flavors, both compatible with the same plumbing. The honest
+      defaults differ by deployment.
     </p>
-    <ul>
-      <li><strong>Strict:</strong> log into Claude once per agent. Strongest isolation. Costs you N clicks for N agents.</li>
-      <li><strong>Broker:</strong> log into Claude once for the whole machine. The engine brokers tokens to individual agents. One click forever. Slightly weaker isolation because the broker has all tokens.</li>
-    </ul>
+
+    <h3>Desktop solo user: broker by default</h3>
     <p>
-      Which one ships first is an open question. The strict path is
-      simpler to build and the broker can be added later without breaking
-      the strict mode.
+      One Claude login for the whole machine. Houston brokers tokens to
+      individual agents. The user clicks once. This is the right default
+      because nobody in practice wants to OAuth ten times for ten agents,
+      and the threat model (one human, the agents are slices of their
+      own work) is bounded.
+    </p>
+
+    <h3>Teams or Cloud: per-agent by default</h3>
+    <p>
+      Each agent gets its own Claude account. Strongest isolation. Costs
+      N clicks for N agents, but in a Teams context different humans own
+      different agents anyway, so the click cost is distributed. This is
+      the mode the regulated-industry pitch leans on.
     </p>
 
     <div class="callout callout-info">
       <div class="callout-label">What works today</div>
-      <p>Single-account Anthropic, OpenAI, and Composio logins all work today, but they're machine-wide, not per-agent. Once Chapter 7 ships (per-agent UIDs), per-agent logins land naturally.</p>
+      <p>Single-account Anthropic, OpenAI, and Composio logins all work today, but they're machine-wide. The broker model is essentially what we have, minus the per-agent indirection. The work in M3 is the runtime-side plumbing (spawning the CLI as <code>hou_sales</code> inside the runtime) and the deep-link bridge.</p>
+    </div>
+
+    <div class="tech-box">
+      <div class="label">Where to look in the code</div>
+      <p>Today's provider login route: <code>engine/houston-engine-server/src/routes/providers.rs</code>. Today's Supabase OAuth deep-link handler: <code>app/src-tauri/src/commands/auth.rs</code> (host side). New bridge: <code>app/houston-tauri/runtime/bridge.rs</code> (new). CLI spawn for per-agent: same site as Chapter 7, <code>engine/houston-terminal-manager/src/cli_process.rs</code> with the <code>HOME</code> override.</p>
     </div>
 
     <div class="pager">
@@ -122,25 +231,6 @@ sequenceDiagram
 <footer class="footer">
   <div>Houston Engine Design Guide · Living document</div>
 </footer>
-
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'base',
-    themeVariables: {
-      primaryColor: '#ffffff',
-      primaryTextColor: '#0d0d0d',
-      primaryBorderColor: '#cdcdcd',
-      lineColor: '#676767',
-      actorBkg: '#ffffff',
-      actorBorder: '#cdcdcd',
-      actorTextColor: '#0d0d0d',
-      labelBoxBkgColor: '#f9f9f9',
-      labelBoxBorderColor: '#cdcdcd'
-    }
-  });
-</script>
 
 </body>
 </html>

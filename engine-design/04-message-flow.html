@@ -35,7 +35,7 @@
   <main class="content">
     <div class="content-label">
       Chapter 04
-      <span class="status partial">Partial</span>
+      <span class="status partial">Partial · finishes in M1</span>
     </div>
     <h1>How a message flows through.</h1>
     <p class="lead">
@@ -57,7 +57,7 @@
         <div class="num">02</div>
         <div>
           <div class="from-to"><span class="actor">Desktop UI</span><span class="arrow">→</span><span class="actor">Engine</span></div>
-          <div class="action"><code>POST /v1/agents/Sales/sessions</code> with the user message and a client-supplied <code>turnId</code>.</div>
+          <div class="action"><code>POST /v1/agents/Sales/sessions</code> with the user message and a client-generated <code>turnId</code> (UUID v4).</div>
         </div>
       </div>
 
@@ -65,7 +65,7 @@
         <div class="num">03</div>
         <div>
           <div class="from-to"><span class="actor">Engine</span><span class="arrow">→</span><span class="actor db">SQLite</span></div>
-          <div class="action"><strong>INSERT into <code>turns</code></strong> with status <code>queued</code>. This happens BEFORE any work starts. If the engine crashes here, the row is on disk and we can recover.</div>
+          <div class="action"><strong>INSERT into <code>turns</code></strong> with status <code>queued</code>. If <code>turnId</code> already exists in a terminal state (completed/failed/cancelled), return its outcome instead of starting a new turn. This is how retries are safe.</div>
         </div>
       </div>
 
@@ -89,7 +89,7 @@
         <div class="num">06</div>
         <div>
           <div class="from-to"><span class="actor">Engine</span><span class="arrow">→</span><span class="actor db">SQLite</span></div>
-          <div class="action"><strong>UPDATE <code>turns</code></strong> set status <code>running</code>.</div>
+          <div class="action"><strong>UPDATE <code>turns</code></strong> set status <code>running</code>, <code>started_at = now()</code>.</div>
         </div>
       </div>
 
@@ -100,7 +100,7 @@
           <div class="num">07</div>
           <div>
             <div class="from-to"><span class="actor">Claude CLI</span><span class="arrow">→</span><span class="actor">Engine</span></div>
-            <div class="action">Streams a chunk of assistant tokens.</div>
+            <div class="action">Streams a chunk of assistant tokens (~10-30 chunks/sec at sentence granularity).</div>
           </div>
         </div>
 
@@ -108,7 +108,7 @@
           <div class="num">08</div>
           <div>
             <div class="from-to"><span class="actor">Engine</span><span class="arrow">→</span><span class="actor db">SQLite</span></div>
-            <div class="action"><strong>INSERT into <code>turn_stream</code></strong> with the next <code>seq</code> number. Persisted before broadcast.</div>
+            <div class="action"><strong>INSERT into <code>turn_stream</code></strong> with the next <code>seq</code> number. Batched: a tokio interval flushes every 20-50ms so we don't drown SQLite with hundreds of single-row inserts.</div>
           </div>
         </div>
 
@@ -116,7 +116,7 @@
           <div class="num">09</div>
           <div>
             <div class="from-to"><span class="actor">Engine</span><span class="arrow">→</span><span class="actor">Desktop UI</span></div>
-            <div class="action">Broadcasts the chunk over the WebSocket. UI renders it live.</div>
+            <div class="action">Broadcasts the chunk over the WebSocket. UI renders it live. Broadcast happens immediately, even before the batched DB flush.</div>
           </div>
         </div>
       </div>
@@ -133,7 +133,7 @@
         <div class="num">11</div>
         <div>
           <div class="from-to"><span class="actor">Engine</span><span class="arrow">→</span><span class="actor db">SQLite</span></div>
-          <div class="action"><strong>UPDATE <code>turns</code></strong> set status <code>completed</code>.</div>
+          <div class="action"><strong>UPDATE <code>turns</code></strong> set status <code>completed</code>, <code>completed_at = now()</code>.</div>
         </div>
       </div>
 
@@ -153,7 +153,8 @@
       <strong>Writes to the database happen BEFORE the work, not
       AFTER.</strong> The turn row is inserted the moment the user's
       message is accepted, well before the CLI subprocess is even spawned.
-      Each streaming chunk is logged before being broadcast.
+      Each streaming chunk is logged before being broadcast (batched, but
+      committed within ~50ms).
     </p>
     <p>
       That single ordering decision is what makes everything else work.
@@ -162,27 +163,69 @@
     <h2>What this buys you</h2>
     <ul>
       <li><strong>Refresh mid-stream.</strong> The next page load replays from <code>turn_stream</code>. The user sees the streaming response continue.</li>
-      <li><strong>Engine crash mid-stream.</strong> The restarted engine sweeps the <code>turns</code> table, finds the orphan, surfaces a retry. The user clicks once and continues.</li>
-      <li><strong>Network blip during streaming.</strong> The client reconnects with <code>Last-Event-Seq</code> and gets the gap from <code>events_outbox</code>.</li>
+      <li><strong>Engine crash between turns.</strong> The restarted engine sweeps the <code>turns</code> table, finds the orphan, surfaces a retry. The user clicks once and continues.</li>
+      <li><strong>Network blip during streaming.</strong> The client reconnects with <code>since_seq</code> and gets the gap from <code>events_outbox</code>.</li>
       <li><strong>Cron fires at 7am while engine is restarting.</strong> The <code>cron_runs</code> audit log catches up on the next boot.</li>
+      <li><strong>Safe retry from the client.</strong> The same <code>turnId</code> won't run the turn twice. The server treats it as idempotent.</li>
+    </ul>
+    <p>
+      What this does NOT buy you on its own: engine restart MID-stream
+      survives the bounce. The CLI subprocess is a child of the engine,
+      so killing the engine kills the CLI. To survive that, we need the
+      detached <code>houston-turn-worker</code> from Chapter 6.
+    </p>
+
+    <h2>Protocol changes you need to know</h2>
+    <ul>
+      <li>
+        <strong><code>POST /v1/agents/:path/sessions</code> request body
+        gains <code>turnId: string</code> (UUID v4).</strong> Required.
+        Existing clients are missing this field. Major protocol bump.
+      </li>
+      <li>
+        <strong>Response body becomes <code>{ sessionKey, turnId, status
+        }</code></strong> where <code>status</code> is the current turn
+        state. If the engine recognizes the <code>turnId</code> as
+        already terminal, it returns the prior outcome.
+      </li>
+      <li>
+        <strong>New WebSocket event:</strong> <code>TurnStreamReplay</code>
+        with <code>{ turnId, fromSeq, items }</code> for replay.
+      </li>
+      <li>
+        <strong>WS subscription gains <code>since_seq</code>:</strong>
+        client reconnect sends the last seen sequence number, server
+        replays from <code>events_outbox</code>.
+      </li>
     </ul>
 
     <h2>What's there today</h2>
     <p>
       Most of the boxes in the diagram exist. The CLI gets spawned, the
       response streams, the final message gets saved to <code>chat_feed</code>.
-      What's missing is the four SQLite tables (<code>turns</code>,
-      <code>turn_stream</code>, <code>events_outbox</code>,
-      <code>cron_runs</code>) and the rule of writing before doing.
+      What's missing:
     </p>
+    <ul>
+      <li>The four SQLite tables (<code>turns</code>, <code>turn_stream</code>, <code>events_outbox</code>, <code>cron_runs</code>). See Chapter 6.</li>
+      <li>The rule of writing before doing. Today persistence is async, fire-and-forget via <code>tokio::spawn</code>.</li>
+      <li>Streaming deltas are explicitly dropped from persist today (<code>engine/houston-agents-conversations/src/session_runner.rs:405-406</code>) because they get replaced by their finals. The redesign keeps them in <code>turn_stream</code> for replay. Different problem, different table. The UI behavior stays the same.</li>
+      <li>Client-supplied <code>turnId</code> + retry semantics.</li>
+      <li>WebSocket replay-on-reconnect.</li>
+    </ul>
+
+    <h2>The five failure modes this prevents</h2>
     <p>
-      Chapter 5 covers what goes wrong because those tables aren't there.
-      Chapter 6 covers the fix.
+      Chapter 5 walks through what goes wrong because these tables aren't
+      there. Chapter 6 covers the fix. The fifth one is the one most
+      people miss: the CLI subprocess hangs without exiting. Without a
+      <code>started_at</code> timestamp and a sweep job, the engine has
+      no way to know a turn has been "running" for an hour with no
+      output.
     </p>
 
     <div class="tech-box">
       <div class="label">Where to look in the code</div>
-      <p>Today's flow: <code>engine/houston-engine-server/src/routes/sessions.rs</code> → <code>engine/houston-engine-core/src/sessions/mod.rs</code> → <code>engine/houston-agents-conversations/src/session_runner.rs</code>. Streaming tokens are dropped specifically at <code>session_runner.rs:406</code>.</p>
+      <p>Today's flow: <code>engine/houston-engine-server/src/routes/sessions.rs</code> → <code>engine/houston-engine-core/src/sessions/mod.rs</code> → <code>engine/houston-agents-conversations/src/session_runner.rs</code>. Streaming items dropped at <code>session_runner.rs:405-406</code>. Async persistence at <code>session_runner.rs:226-244</code>. Session identity model at <code>engine/houston-engine-core/src/sessions/control.rs:6-18</code> (no <code>turnId</code> today).</p>
     </div>
 
     <div class="pager">
@@ -201,25 +244,6 @@
 <footer class="footer">
   <div>Houston Engine Design Guide · Living document</div>
 </footer>
-
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'base',
-    themeVariables: {
-      primaryColor: '#ffffff',
-      primaryTextColor: '#0d0d0d',
-      primaryBorderColor: '#cdcdcd',
-      lineColor: '#676767',
-      actorBkg: '#ffffff',
-      actorBorder: '#cdcdcd',
-      actorTextColor: '#0d0d0d',
-      labelBoxBkgColor: '#f9f9f9',
-      labelBoxBorderColor: '#cdcdcd'
-    }
-  });
-</script>
 
 </body>
 </html>

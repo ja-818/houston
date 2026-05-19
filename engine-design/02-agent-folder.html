@@ -58,20 +58,43 @@
   <span class="dir">config/</span>             <span class="comment">← per-agent config</span>
   <span class="dir">learnings/</span>          <span class="comment">← memories the agent has built up</span>
   <span class="dir">prompts/modes/</span>      <span class="comment">← editable prompt overlays</span>
-  <span class="dir">sessions/</span>           <span class="comment">← one .sid file per conversation</span>
+  <span class="dir">sessions/</span>           <span class="comment">← per-provider resume ids (anthropic/, openai/)</span>
 <span class="dir">.agents/skills/</span>       <span class="comment">← installed skills</span>
-<span class="dir">.claude/skills/</span>       <span class="comment">← symlinks (Claude Code reads here)</span></div>
+<span class="dir">.claude/skills/</span>       <span class="comment">← symlinks (Claude Code reads here)</span>
+<span class="dir">AGENTS.md</span>             <span class="comment">← symlink → CLAUDE.md (Codex reads here)</span></div>
 
     <h2>Why files</h2>
     <p>
       Files are inspectable, portable, and ordinary. You back up an agent
       by copying its folder. You move it to another machine by copying its
-      folder. You open it in Finder.
+      folder. You restore it the same way.
     </p>
     <p>
       The engine reads from this folder. The CLI subprocess writes to it
       directly when it edits files. The user can hand-edit anything in it.
       All three actors work on the same files.
+    </p>
+
+    <h2>Where that folder physically lives</h2>
+    <p>
+      Today on Mac, Windows, and Linux: in your real home directory,
+      <code>~/.houston/workspaces/...</code>. You can open it in Finder.
+    </p>
+    <p>
+      After Chapter 3 lands: inside a Linux runtime that runs alongside
+      the desktop app. On Linux, that's the host filesystem (same as
+      today). On Windows, it's the WSL2 filesystem, which Windows Explorer
+      exposes natively at <code>\\wsl$\Houston\...</code>. On Mac, it
+      lives inside the VM's disk image and is reached through the app's
+      Files panel, with an explicit Import and Download flow.
+    </p>
+    <p>
+      The reason the folder moves is in Chapter 3. The short version: most
+      real users keep their data in Drive, Slack, Notion, and Gmail. They
+      don't browse <code>~/Documents</code>. Putting agents inside a Linux
+      runtime gives us per-agent isolation and ends the Windows tooling
+      tax. The cost is that "open in Finder" stops working uniformly. The
+      Files panel and the Download flow replace it.
     </p>
 
     <h2>Schemas as source of truth</h2>
@@ -82,6 +105,10 @@
       <code>include_str!</code>. On first launch, the engine seeds each
       agent's folder with a copy of the relevant schema so the LLM can
       validate before writing.
+    </p>
+    <p>
+      One source of truth, two consumers (Rust engine and TS client). One
+      PR changes both.
     </p>
 
     <h2>The reactivity stack</h2>
@@ -100,17 +127,17 @@
       doesn't update until refresh.</strong>
     </p>
 
-    <h2>What stays the same</h2>
+    <h2>What stays the same after the redesign</h2>
     <p>
-      This part of Houston is already exactly how it should be. The whole
-      reliability and deployment redesign keeps this layout untouched.
-      What changes is what happens between the user clicking and the
-      engine reading these files.
+      The folder layout. The schemas. The reactivity stack. The atomic
+      write rules. The migration story. All of that survives Chapter 3
+      untouched. What changes is the location of the folder and how the
+      desktop app gets bytes in and out of it.
     </p>
 
     <div class="tech-box">
       <div class="label">Where to look in the code</div>
-      <p>File I/O and migrations: <code>engine/houston-agent-files</code>. JSON schemas: <code>ui/agent-schemas/src/*.schema.json</code>. File watcher: <code>engine/houston-file-watcher</code>. Event invalidation: <code>app/src/hooks/use-agent-invalidation.ts</code>.</p>
+      <p>File I/O and migrations: <code>engine/houston-agent-files</code>. JSON schemas: <code>ui/agent-schemas/src/*.schema.json</code>. File watcher: <code>engine/houston-file-watcher</code>. Event invalidation: <code>app/src/hooks/use-agent-invalidation.ts</code>. Migrations: <code>houston_agent_files::migrate_agent_data</code>.</p>
     </div>
 
     <div class="pager">

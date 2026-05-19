@@ -35,34 +35,45 @@
   <main class="content">
     <div class="content-label">
       Chapter 05
-      <span class="status planned">Planned</span>
+      <span class="status planned">Diagnosis · feeds M1</span>
     </div>
     <h1>Why conversations die today.</h1>
     <p class="lead">
       The engine writes to disk only after the work is done. Everything in
-      flight is in-memory. In-memory means it dies when the process dies.
-      Here are the four failure modes.
+      flight lives in memory. In-memory means it dies when the process
+      dies, when the user closes the app, when the network blips. Five
+      failure modes. Same root cause.
     </p>
 
     <div class="fail-grid">
       <div class="fail-card">
         <div class="label">Failure mode #1</div>
-        <p><strong>Engine crashes between "accept message" and "spawn CLI".</strong> Your message disappears. No record anywhere. You click send again, the engine has no memory of the first attempt.</p>
+        <p><strong>User closes the app mid-stream.</strong> This is the most common one and it has nothing to do with crashes. The user clicks the red button, the app exits, the engine subprocess exits with it, the in-flight assistant tokens vanish. The user reopens Houston and the message is gone. Today this happens dozens of times a day in the dev loop alone.</p>
       </div>
 
       <div class="fail-card">
         <div class="label">Failure mode #2</div>
-        <p><strong>Engine crashes mid-stream.</strong> Whatever the assistant had already streamed: gone. Database has nothing. The user thinks the agent is broken.</p>
+        <p><strong>Engine crashes between "accept message" and "spawn CLI".</strong> Your message disappears. No record anywhere. You click send again, the engine has no memory of the first attempt. Rare but ugly when it happens.</p>
       </div>
 
       <div class="fail-card">
         <div class="label">Failure mode #3</div>
-        <p><strong>WebSocket reconnects after a network blip.</strong> Server has no record of what events it pushed during the disconnect. The frontend has to refetch state and pray nothing slipped through.</p>
+        <p><strong>Engine crashes mid-stream.</strong> Whatever the assistant had already streamed: gone. Database has nothing. The user thinks the agent is broken.</p>
       </div>
 
       <div class="fail-card">
         <div class="label">Failure mode #4</div>
-        <p><strong>Cron fire happens while engine is restarting.</strong> The 7am alarm rings, the engine is rebooting, the fire is dropped silently. No log, no alert, no catch-up.</p>
+        <p><strong>WebSocket reconnects after a network blip.</strong> Server has no record of what events it pushed during the disconnect. The frontend has to refetch state and pray nothing slipped through.</p>
+      </div>
+
+      <div class="fail-card">
+        <div class="label">Failure mode #5</div>
+        <p><strong>Cron fires while engine is restarting.</strong> The 7am alarm rings, the engine is rebooting, the fire is dropped silently. No log, no alert, no catch-up. Verified in <code>engine/houston-scheduler/src/cron_job.rs</code>: missed crons fire once on next boot if the schedule is past-due, but there's no record of how many fires were missed.</p>
+      </div>
+
+      <div class="fail-card">
+        <div class="label">Failure mode #6 (the one most people miss)</div>
+        <p><strong>CLI subprocess hangs without exiting.</strong> Provider gateway flakes, network stalls, model returns nothing. The CLI sits there for 20 minutes. Engine has no timeout, no <code>started_at</code> heartbeat, no idea anything is wrong. UI shows "thinking" forever.</p>
       </div>
     </div>
 
@@ -71,16 +82,17 @@
       Notice the common thread. The engine writes to the database
       <strong>after</strong> doing work, not <strong>before</strong>. So
       anything happening between "before" and "after" lives only in
-      memory, and that memory belongs to a process that can die.
+      memory, and that memory belongs to a process that can die or a
+      socket that can disconnect.
     </p>
     <p>
-      The fix is boring but life-changing. Flip the order. Chapter 6 shows
-      how, with the four SQLite tables that make it work.
+      The fix is boring but life-changing. Flip the order. Add timestamps.
+      Add sequence numbers. Sweep orphans on boot. Chapter 6 covers how.
     </p>
 
     <div class="callout callout-warning">
-      <div class="callout-label">Why this hasn't been fixed yet</div>
-      <p>Because it works most of the time. Engines don't usually crash. Networks don't usually blip. So the team shipped features instead. The point of the redesign is to make Houston work reliably for the cases where things DO go wrong.</p>
+      <div class="callout-label">"Why hasn't this been fixed yet?"</div>
+      <p>Because in the happy path it works. Engines don't crash often. The team shipped features. The pain falls on users in the long tail: someone with a flaky home network, someone who closes the app to take a call, someone whose engine got OOM-killed in dev. The redesign moves us from "works most of the time" to "designed for the times it doesn't." That's the line between a beta and a product.</p>
     </div>
 
     <div class="pager">

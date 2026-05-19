@@ -68,6 +68,15 @@
       links, tray icons. React gives us the chat, the board, the file
       browser, all the components in <code>@houston-ai/*</code>.
     </p>
+    <p>
+      The UX is not interchangeable. It is the actual product. Most of our
+      target users (non-technical people running agents) will never see the
+      engine. They see the desktop. The point of the split is not that the
+      desktop is unimportant. The point is that the engine doesn't know or
+      care that the desktop exists, so we can put a mobile app, a CLI, or a
+      third-party UI in front of the same engine without rewriting
+      anything.
+    </p>
 
     <h2>The engine</h2>
     <p>
@@ -79,6 +88,9 @@
     <p>
       The engine doesn't know about React or Tauri. It only speaks HTTP.
       That's the most important architectural decision Houston has made.
+      Today it runs natively on your Mac, your PC, or your Linux box. After
+      Chapter 3 lands, it always runs inside a Linux runtime, even on Mac
+      and Windows. The protocol does not change.
     </p>
 
     <h2>Agents</h2>
@@ -97,20 +109,20 @@
 
     <h2>Why the split matters</h2>
     <p>
-      The desktop app is <strong>interchangeable</strong>. You could
-      replace it with a mobile app, a CLI, a third-party UI. They all
-      speak the same protocol to the same engine. The engine doesn't care
-      what's talking to it.
+      The engine is reusable. You can put any frontend on it.
+      <code>examples/smartbooks/</code> is a 400-line React app that talks
+      to the same engine, with its own brand, zero <code>@houston-ai/*</code>
+      UI deps. The desktop is one consumer. Houston Mobile (the PWA at
+      <code>tunnel.gethouston.ai</code>) is another. Houston Cloud will
+      be another.
     </p>
     <p>
-      This split is what lets the engine run on a server. What lets the
-      engine be open source while the cloud product stays managed. What
-      lets a power user write their own frontend. Same engine.
+      Same engine. Same protocol. Different shells.
     </p>
 
     <div class="tech-box">
       <div class="label">Where to look in the code</div>
-      <p>Engine: <code>engine/houston-engine-server</code> plus 15 supporting crates under <code>engine/</code>. Desktop: <code>app/</code>. Wire protocol types: <code>engine/houston-engine-protocol</code> and <code>ui/engine-client</code>. Reference custom frontend: <code>examples/smartbooks/</code>.</p>
+      <p>Engine: <code>engine/houston-engine-server</code> plus 15 supporting crates under <code>engine/</code>. Desktop: <code>app/</code>. Wire protocol types: <code>engine/houston-engine-protocol</code> and <code>ui/engine-client</code>. Reference custom frontend: <code>examples/smartbooks/</code>. Mobile PWA: <code>mobile/</code> and the relay at <code>houston-relay/</code>.</p>
     </div>
 
     <div class="pager">

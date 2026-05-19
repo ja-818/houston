@@ -197,7 +197,7 @@ nav {
 
 /* ─── Content ─── */
 .content {
-  max-width: 760px;
+  max-width: 880px;
   min-width: 0;
 }
 
@@ -410,17 +410,109 @@ nav {
   background: var(--gray-50);
   border: 1px solid var(--border-light);
   border-radius: 12px;
-  padding: 32px 24px;
+  padding: 28px 24px 24px;
   margin: 32px 0;
-  text-align: center;
   overflow-x: auto;
 }
 .diagram .caption {
   color: var(--gray-500);
   font-size: 13px;
-  margin-top: 16px;
+  margin-top: 18px;
+  text-align: center;
 }
-.mermaid { display: inline-block; }
+
+/* Host-runtime grid (Ch3) */
+.host-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+.host-card {
+  background: white;
+  border: 1px solid var(--border-medium);
+  border-radius: 12px;
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.host-card .host-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+.host-card .runtime-pill {
+  font-size: 13px;
+  color: var(--gray-700);
+  padding: 7px 12px;
+  background: var(--gray-50);
+  border-radius: 8px;
+  border: 1px dashed var(--border-medium);
+  text-align: center;
+}
+.host-card .engine-pill {
+  background: var(--gray-950);
+  color: white;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: -0.005em;
+}
+.host-card .engine-pill .engine-sub {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+/* Deployment grid (Ch10) — vertical flow per column */
+.deploy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.deploy-col {
+  background: white;
+  border: 1px solid var(--border-medium);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.deploy-col .deploy-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+}
+.deploy-col .deploy-layer {
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  background: var(--gray-50);
+  border: 1px solid var(--border-light);
+  color: var(--gray-700);
+}
+.deploy-col .deploy-layer.engine {
+  background: var(--gray-950);
+  border-color: var(--gray-950);
+  color: white;
+  font-weight: 600;
+}
+.deploy-col .deploy-arrow {
+  text-align: center;
+  color: var(--gray-300);
+  font-size: 14px;
+  line-height: 1;
+}
 
 /* Flow steps (replaces sequence diagram) */
 .flow-list {

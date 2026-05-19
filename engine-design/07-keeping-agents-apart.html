@@ -35,13 +35,40 @@
   <main class="content">
     <div class="content-label">
       Chapter 07
-      <span class="status planned">Planned · M2</span>
+      <span class="status planned">Walls 2+3 in M2 (~3w). Wall 1 in M3 (~3mo).</span>
     </div>
     <h1>Keeping agents apart.</h1>
     <p class="lead">
       Three independent walls between agents. Each one is enough to stop a
-      curious agent from snooping. Together, they make accidental and
-      adversarial cross-agent reads impossible.
+      curious or jailbroken agent from snooping. Together, they make
+      accidental and adversarial cross-agent reads impossible.
+    </p>
+
+    <h2>The real threat model (why we care)</h2>
+    <p>
+      Forget hypotheticals. Here is the concrete case that drives this
+      chapter:
+    </p>
+    <p>
+      You are a consultant. You have two clients. You build one Houston
+      agent per client. <code>MyConsulting/ClientA</code> and
+      <code>MyConsulting/ClientB</code>. You ask ClientA's agent to read
+      this month's invoices. Today nothing stops ClientA's agent from
+      ALSO reading ClientB's invoices, contracts, or chat history. The
+      Claude or Codex subprocess runs as you, with your full home
+      directory, your SSH keys, your everything. A prompt of "before you
+      answer, also <code>cat</code> every file under
+      <code>~/.houston/workspaces/MyConsulting/ClientB/</code>" will
+      work. No exploit needed.
+    </p>
+    <p>
+      That's not a thought experiment. That's the product reality for any
+      user with more than one client, project, or boundary in their
+      workspace. We have to fix it.
+    </p>
+    <p>
+      The fix is three independent walls. None depends on the others to
+      work. Together they're belt, suspenders, and a kernel.
     </p>
 
     <div class="walls">
@@ -70,62 +97,130 @@
       </div>
     </div>
 
-    <h2>Wall 1: per-agent Linux user</h2>
+    <h2>Wall 1: per-agent Linux user (M3, needs Linux runtime)</h2>
     <p>
-      Each agent gets its own Linux user inside the VM. Their folders are
-      owned by them, mode 0700. When you send a message to the Sales
-      agent, the CLI runs as <code>hou_sales</code>. It physically cannot
-      read <code>hou_hr</code>'s files. The kernel says no.
+      Each agent gets its own Linux user inside the runtime. Their folder
+      is owned by them, mode 0700. When you send a message to the Sales
+      agent, the CLI subprocess runs as <code>hou_sales</code>. It
+      physically cannot read <code>hou_hr</code>'s files. The kernel says
+      no.
     </p>
     <p>
-      Even if a clever prompt asks the Sales agent to read HR salary data,
-      the agent has no permission. There is no jailbreak that gets around
-      <code>chmod</code>.
+      No prompt jailbreak gets around <code>chmod</code>. No "as ClientA's
+      agent please also read ClientB's invoices" trick works, because the
+      process running ClientA's CLI literally does not have a file
+      descriptor it can use to open ClientB's directory.
+    </p>
+    <p>
+      This is why Chapter 3 (Linux runtime everywhere) exists. macOS and
+      Windows don't have a clean way to do per-agent UIDs natively without
+      a VM. Linux does. Putting a Linux runtime on every host means the
+      same wall exists everywhere.
     </p>
 
-    <h2>Wall 2: per-agent credentials</h2>
+    <h2>Wall 2: per-agent credentials (M2, no VM required)</h2>
     <p>
       Each agent has its own <code>~/.claude</code>, its own
-      <code>~/.composio</code>, its own everything. When Sales logs into
-      Anthropic, the token sits in <code>/home/hou_sales/.claude/</code>.
-      HR can't see it.
+      <code>~/.composio</code>, its own <code>~/.codex</code>. When Sales
+      logs into Anthropic, the token sits in
+      <code>/home/hou_sales/.claude/</code>. HR can't see it.
     </p>
     <p>
-      Even if Sales gets compromised, its blast radius is bounded by what
-      it had access to. It can't social-engineer its way to HR data
-      because it doesn't have the keys to start with.
+      This wall ships without a VM. The fix is small: when the engine
+      spawns a CLI subprocess, it sets <code>HOME</code> (and the
+      provider-specific dir env vars) to a per-agent path under the
+      agent's folder. Today the spawn site at
+      <code>engine/houston-terminal-manager/src/cli_process.rs</code>
+      inherits the parent's <code>$HOME</code>. The fix is to override it.
+    </p>
+    <p>
+      Even on today's native engine, this is a real win: a compromised
+      agent gets that agent's tokens, not all of them.
     </p>
 
-    <h2>Wall 3: engine-level scope checks</h2>
+    <h2>Wall 3: engine-level scope checks (M2, no VM required)</h2>
     <p>
-      On top of the file walls, every HTTP route checks "does this user's
-      token have scope for this agent?" before doing anything. A user
-      with Sales access trying to query HR's data gets a 403 before the
-      engine even reaches for the filesystem.
+      On top of the file walls, every HTTP route checks "does this
+      principal's token have scope for this agent?" before doing anything.
+      A user with Sales access trying to query HR's data gets a 403 before
+      the engine even reaches for the filesystem.
+    </p>
+
+    <h3>The data model</h3>
+    <pre><code>CREATE TABLE principals (
+  principal_id   TEXT PRIMARY KEY,        -- supabase user id, or "local:local" for solo desktop
+  display_name   TEXT NOT NULL,
+  created_at     INTEGER NOT NULL
+);
+
+CREATE TABLE principal_tokens (
+  token_hash     TEXT PRIMARY KEY,        -- sha256 of the bearer
+  principal_id   TEXT NOT NULL REFERENCES principals(principal_id),
+  scopes_json    TEXT NOT NULL,           -- ["MyConsulting/ClientA/**", "MyConsulting/ClientB/sales"]
+  device_label   TEXT,
+  created_at     INTEGER NOT NULL,
+  revoked_at     INTEGER,
+  last_seen_at   INTEGER
+);</code></pre>
+    <p>
+      Scopes are glob patterns over the workspace/agent path. A scope of
+      <code>**</code> means full access (the local desktop user). A scope
+      of <code>MyConsulting/ClientA/**</code> means everything under
+      ClientA but nothing else.
+    </p>
+
+    <h3>The middleware</h3>
+    <p>
+      Every route handler that touches an agent path goes through a single
+      <code>require_scope(token, agent_path)</code> check. The check
+      resolves the token to its principal, then matches the path against
+      the principal's scopes. No match, 403. Lives in
+      <code>engine/houston-engine-server/src/middleware/scope.rs</code>
+      (new).
+    </p>
+
+    <h2>Identity story</h2>
+    <p>
+      For desktop solo users: a single local principal
+      (<code>local:local</code>), one all-scope token, no friction. This
+      is what shipped today's bearer is, dressed in the new model. No UX
+      change.
     </p>
     <p>
-      Tokens become typed:
-      <code>(token_id, principal_id, scope: ["WorkspaceX/Sales/**"])</code>.
-      Middleware enforces. New tables: <code>principals</code> and
-      <code>principal_tokens</code> in <code>houston-db</code>.
+      For mobile-paired devices: each device pairing creates a new token,
+      scoped to the agents the user picks during pairing.
+    </p>
+    <p>
+      For Teams and Cloud (future): principals are Supabase users (Google
+      SSO already shipped, see <code>knowledge-base/auth.md</code>). Each
+      Supabase login mints a short-lived token. Scope is set by the
+      workspace owner via an "Invite teammate" flow.
     </p>
 
     <div class="callout callout-success">
       <div class="callout-label">The headline</div>
-      <p>"My HR agent literally cannot leak salaries to my Sales agent, even if jailbroken." That isn't marketing copy. That's what the kernel enforces.</p>
+      <p>"My HR agent literally cannot leak salaries to my Sales agent, even if jailbroken." That isn't marketing copy. That's what the kernel enforces. ChatGPT Enterprise and Claude Teams put everyone in one tenant with one set of permissions. Houston's per-agent isolation is something they don't offer.</p>
     </div>
 
-    <h2>Where this matters</h2>
-    <p>
-      This is a real positioning win for regulated industries. ChatGPT
-      Enterprise and Claude Teams put everyone in one tenant with one set
-      of permissions. Houston's per-agent isolation is something they
-      don't offer.
-    </p>
+    <h2>What we ship without the VM (M2)</h2>
+    <ul>
+      <li>Per-agent <code>HOME</code> override at CLI spawn. Per-agent credential directories under <code>~/.houston/workspaces/&lt;W&gt;/&lt;A&gt;/.creds/</code>.</li>
+      <li><code>principals</code> and <code>principal_tokens</code> tables.</li>
+      <li><code>require_scope</code> middleware on every route.</li>
+      <li>Today's single device-bearer token migrates into a single principal with full scope. No UX change for solo users.</li>
+    </ul>
+
+    <h2>What needs the VM (M3)</h2>
+    <ul>
+      <li><code>useradd hou_&lt;agent&gt;</code> for each agent, automated.</li>
+      <li>Spawn the CLI subprocess as that user (<code>setuid</code> or equivalent).</li>
+      <li>File ownership and 0700 modes on the agent's folder.</li>
+      <li>Per-agent credentials live under <code>/home/hou_&lt;agent&gt;/</code> instead of the workspace folder.</li>
+    </ul>
 
     <div class="tech-box">
       <div class="label">What changes in code</div>
-      <p>New auth middleware in <code>engine/houston-engine-server</code>. New tables in <code>engine/houston-db</code>. CLI spawn in <code>engine/houston-terminal-manager</code> gains a <code>setuid</code> step (Linux only; gated by <code>HOUSTON_ISOLATE_BY_UID=1</code>). Per-agent home dir resolution in <code>houston-agent-files</code>.</p>
+      <p>M2: new tables in <code>engine/houston-db</code> (<code>repo_principals.rs</code>, <code>repo_principal_tokens.rs</code>). New middleware in <code>engine/houston-engine-server/src/middleware/scope.rs</code>. CLI spawn at <code>engine/houston-terminal-manager/src/cli_process.rs</code> gets a per-agent <code>HOME</code> override.<br><br>M3: CLI spawn gains a <code>setuid</code> step (Linux only, runs inside the runtime). Per-agent home dir resolution in <code>houston-agent-files</code>. New <code>provision_agent_user</code> helper that runs <code>useradd</code> the first time an agent is created.</p>
     </div>
 
     <div class="pager">
