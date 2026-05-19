@@ -170,6 +170,8 @@ export interface FileEntry {
   name: string;
   extension: string;
   size: number;
+  is_directory?: boolean;
+  dateModified?: number;
 }
 
 /** A listing from the Houston Store registry */

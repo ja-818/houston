@@ -34,12 +34,13 @@ export function buildTree(files: FileEntry[]): FolderNode {
     if (file.is_directory) {
       const parts = file.path.split("/")
       let node = root
-      for (const segment of parts) {
+      for (let i = 0; i < parts.length; i++) {
+        const segment = parts[i]
         let child = node.children.find(
           (c): c is FolderNode => c.kind === "folder" && c.name === segment,
         )
         if (!child) {
-          const folderPath = parts.slice(0, parts.indexOf(segment) + 1).join("/")
+          const folderPath = parts.slice(0, i + 1).join("/")
           child = { kind: "folder", name: segment, path: folderPath, children: [] }
           node.children.push(child)
         }

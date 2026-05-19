@@ -235,6 +235,9 @@ export interface ProjectFile {
   extension: string;
   size: number;
   is_directory: boolean;
+  /** Last modification time in milliseconds since the UNIX epoch. Omitted
+   * when the filesystem doesn't expose mtime for the entry. */
+  date_modified?: number;
 }
 
 export interface InstalledConfig {

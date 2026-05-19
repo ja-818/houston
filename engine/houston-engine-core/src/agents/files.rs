@@ -21,6 +21,7 @@ use houston_agent_files as files;
 use houston_ui_events::HoustonEvent;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::time::UNIX_EPOCH;
 
 // ---------------------------------------------------------------------------
 // Agent-data files
@@ -114,11 +115,39 @@ fn should_skip_dir(name: &str) -> bool {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProjectFile {
+    /// Relative path from the agent root, always forward-slash separated
+    /// regardless of host OS. The frontend file tree depends on this contract
+    /// to split path segments and nest entries correctly.
     pub path: String,
     pub name: String,
     pub extension: String,
     pub size: u64,
     pub is_directory: bool,
+    /// Last modification time in milliseconds since the UNIX epoch. `None`
+    /// when the filesystem doesn't expose mtime for the entry (rare; the
+    /// frontend renders an em-dash in that case).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub date_modified: Option<i64>,
+}
+
+/// Build the relative-path string used in `ProjectFile.path`: strip the agent
+/// root prefix and force forward slashes so the frontend tree builder works
+/// the same on Windows and Unix.
+fn relative_path_string(root: &Path, path: &Path) -> String {
+    let rel = path.strip_prefix(root).unwrap_or(path).to_string_lossy();
+    if std::path::MAIN_SEPARATOR == '/' {
+        rel.into_owned()
+    } else {
+        rel.replace(std::path::MAIN_SEPARATOR, "/")
+    }
+}
+
+/// Read the modification time as millis-since-epoch, returning `None` when
+/// the filesystem doesn't expose it (network mounts, exotic FSes).
+fn modified_millis(metadata: &std::fs::Metadata) -> Option<i64> {
+    let modified = metadata.modified().ok()?;
+    let since_epoch = modified.duration_since(UNIX_EPOCH).ok()?;
+    i64::try_from(since_epoch.as_millis()).ok()
 }
 
 /// List user-facing files in an agent folder. Returns an empty vec if the
@@ -253,18 +282,17 @@ pub fn import_files(
                     .extension()
                     .map(|e| e.to_string_lossy().to_lowercase())
                     .unwrap_or_default();
-                let size = dest.metadata().map(|m| m.len()).unwrap_or(0);
-                let relative = dest
-                    .strip_prefix(agent_root)
-                    .unwrap_or(&dest)
-                    .to_string_lossy()
-                    .to_string();
+                let metadata = dest.metadata().ok();
+                let size = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+                let date_modified = metadata.as_ref().and_then(modified_millis);
+                let relative = relative_path_string(agent_root, &dest);
                 imported.push(ProjectFile {
                     path: relative,
                     name: final_name,
                     extension: ext,
                     size,
                     is_directory: false,
+                    date_modified,
                 });
             }
             Err(e) => tracing::error!("[agents] import failed for {src_str}: {e}"),
@@ -287,13 +315,16 @@ pub fn write_file_bytes(
         .extension()
         .map(|e| e.to_string_lossy().to_lowercase())
         .unwrap_or_default();
-    let size = dest.metadata().map(|m| m.len()).unwrap_or(0);
+    let metadata = dest.metadata().ok();
+    let size = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+    let date_modified = metadata.as_ref().and_then(modified_millis);
     Ok(ProjectFile {
         path: final_name.clone(),
         name: final_name,
         extension: ext,
         size,
         is_directory: false,
+        date_modified,
     })
 }
 
@@ -321,17 +352,15 @@ fn collect_files(root: &Path, dir: &Path, out: &mut Vec<ProjectFile>) {
             if should_skip_dir(&name) {
                 continue;
             }
-            let relative = path
-                .strip_prefix(root)
-                .unwrap_or(&path)
-                .to_string_lossy()
-                .to_string();
+            let relative = relative_path_string(root, &path);
+            let date_modified = entry.metadata().ok().as_ref().and_then(modified_millis);
             out.push(ProjectFile {
                 path: relative,
                 name,
                 extension: String::new(),
                 size: 0,
                 is_directory: true,
+                date_modified,
             });
             collect_files(root, &path, out);
             continue;
@@ -343,18 +372,17 @@ fn collect_files(root: &Path, dir: &Path, out: &mut Vec<ProjectFile>) {
         if !USER_EXTENSIONS.contains(&ext.as_str()) {
             continue;
         }
-        let relative = path
-            .strip_prefix(root)
-            .unwrap_or(&path)
-            .to_string_lossy()
-            .to_string();
-        let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+        let relative = relative_path_string(root, &path);
+        let metadata = entry.metadata().ok();
+        let size = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+        let date_modified = metadata.as_ref().and_then(modified_millis);
         out.push(ProjectFile {
             path: relative,
             name,
             extension: ext,
             size,
             is_directory: false,
+            date_modified,
         });
     }
 }
@@ -427,6 +455,42 @@ mod tests {
         assert!(names.contains(&"notes.txt"));
         assert!(!names.contains(&"script.py"));
         assert!(!names.iter().any(|n| n.starts_with('.')));
+    }
+
+    #[test]
+    fn list_project_files_populates_date_modified() {
+        let d = tmp();
+        std::fs::create_dir_all(d.path().join("docs")).unwrap();
+        std::fs::write(d.path().join("docs/note.txt"), "x").unwrap();
+
+        let files = list_project_files(d.path()).unwrap();
+        let note = files
+            .iter()
+            .find(|f| f.path == "docs/note.txt")
+            .expect("note.txt missing");
+        let dir = files
+            .iter()
+            .find(|f| f.path == "docs")
+            .expect("docs missing");
+        assert!(note.date_modified.is_some(), "file mtime should populate");
+        assert!(dir.date_modified.is_some(), "dir mtime should populate");
+        assert!(note.date_modified.unwrap() > 0);
+    }
+
+    #[test]
+    fn list_project_files_uses_forward_slashes_on_all_platforms() {
+        let d = tmp();
+        std::fs::create_dir_all(d.path().join("docs/inner")).unwrap();
+        std::fs::write(d.path().join("docs/inner/note.txt"), "x").unwrap();
+        std::fs::create_dir_all(d.path().join("empty")).unwrap();
+
+        let files = list_project_files(d.path()).unwrap();
+        let paths: Vec<&str> = files.iter().map(|f| f.path.as_str()).collect();
+        assert!(paths.contains(&"docs"));
+        assert!(paths.contains(&"docs/inner"));
+        assert!(paths.contains(&"docs/inner/note.txt"));
+        assert!(paths.contains(&"empty"));
+        assert!(!paths.iter().any(|p| p.contains('\\')));
     }
 
     #[test]
