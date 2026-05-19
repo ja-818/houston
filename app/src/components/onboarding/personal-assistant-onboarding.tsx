@@ -5,7 +5,7 @@ import { analytics } from "../../lib/analytics";
 import { useUIStore } from "../../stores/ui";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useAgentStore } from "../../stores/agents";
-import { tauriWorkspaces } from "../../lib/tauri";
+import { tauriProvider, tauriWorkspaces } from "../../lib/tauri";
 import type { Agent } from "../../lib/types";
 import { MissionFrame } from "./mission-frame";
 import { MeetMission } from "./missions/meet";
@@ -87,11 +87,10 @@ export function PersonalAssistantOnboarding({
       approvalRule: t("setup:tutorial.defaults.approvalRule"),
     });
     setup.color = assistantColor;
-    const ws = await tauriWorkspaces.create(
-      setup.workspaceName.trim(),
-      pickedProvider,
-      pickedModel,
-    );
+    const ws = await tauriWorkspaces.create(setup.workspaceName.trim());
+    // Persist the picked pair as the new global default so the next new agent
+    // starts from the same place the user just chose during onboarding.
+    await tauriProvider.setLastUsed(pickedProvider, pickedModel);
     analytics.track("workspace_created", { provider: pickedProvider, source: "onboarding" });
     const created = await createPersonalAssistantForWorkspace(ws.id, {
       name: setup.assistantName.trim(),

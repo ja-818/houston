@@ -6,6 +6,10 @@
     "connectTitle": "Connect {{name}}",
     "signOutTitle": "Sign out of {{name}}"
   },
+  "row": {
+    "connect": "Connect",
+    "signOut": "Sign out"
+  },
   "setup": {
     "installHint": "Install the {{cli}} CLI on your machine. Houston will pick it up automatically.",
     "installGuide": "Install guide",

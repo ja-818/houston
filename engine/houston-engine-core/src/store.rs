@@ -371,11 +371,7 @@ pub async fn install_workspace_from_github(
 
     let ws = workspaces::create(
         docs_dir,
-        CreateWorkspace {
-            name: ws_name.clone(),
-            provider: None,
-            model: None,
-        },
+        CreateWorkspace { name: ws_name.clone() },
     )?;
     let ws_dir = docs_dir.join(&ws_name);
 

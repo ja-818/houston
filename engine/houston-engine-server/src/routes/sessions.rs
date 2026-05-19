@@ -104,9 +104,9 @@ async fn start_session(
         .map(|p| sessions::expand_tilde(std::path::Path::new(p)))
         .unwrap_or_else(|| agent_dir.clone());
 
-    // Override > agent config > workspace > default.
+    // Override > agent config > Anthropic default.
     let ResolvedProviderChoice { provider, model } =
-        resolve_provider_with_overrides(&st, &agent_dir, req.provider.as_deref(), req.model.clone())?;
+        resolve_provider_with_overrides(&agent_dir, req.provider.as_deref(), req.model.clone())?;
 
     let params = StartParams {
         agent_dir,
@@ -153,7 +153,6 @@ async fn start_onboarding(
         &rt,
         sink,
         db,
-        &st.engine.paths,
         &st.engine.app_system_prompt,
         &st.engine.app_onboarding_prompt,
         agent_dir,
@@ -194,7 +193,7 @@ async fn summarize_activity(
         (provider, req.model)
     } else if let Some(agent_path) = req.agent_path.as_deref() {
         let agent_dir = resolve_agent_dir(&st.engine.paths, agent_path);
-        let resolved = resolve_provider(&st.engine.paths, &agent_dir);
+        let resolved = resolve_provider(&agent_dir);
         (resolved.provider, req.model.or(resolved.model))
     } else {
         (Provider::default(), req.model)
@@ -301,7 +300,6 @@ struct ResolvedProviderChoice {
 }
 
 fn resolve_provider_with_overrides(
-    st: &Arc<ServerState>,
     agent_dir: &std::path::Path,
     provider_override: Option<&str>,
     model_override: Option<String>,
@@ -315,7 +313,7 @@ fn resolve_provider_with_overrides(
             model: model_override,
         });
     }
-    let mut resolved = resolve_provider(&st.engine.paths, agent_dir);
+    let mut resolved = resolve_provider(agent_dir);
     if let Some(m) = model_override {
         resolved.model = Some(m);
     }

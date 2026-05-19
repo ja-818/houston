@@ -14,11 +14,10 @@ import {
 } from "@houston-ai/core";
 import { useFeedStore } from "../../stores/feeds";
 import { useUIStore } from "../../stores/ui";
-import { useWorkspaceStore } from "../../stores/workspaces";
 import { useDraftStore, useDraftText, useDraftFiles } from "../../stores/drafts";
 import { isActiveSessionStatus, useSessionStatus } from "../../stores/session-status";
 import { useSessionMessageQueue } from "../../hooks/use-session-message-queue";
-import { tauriChat, tauriAttachments, tauriConfig } from "../../lib/tauri";
+import { tauriChat, tauriAttachments, tauriConfig, tauriProvider } from "../../lib/tauri";
 import { openAgentHref } from "../../lib/open-href";
 import { buildAttachmentPrompt } from "../../lib/attachment-message";
 import { useFileToolRenderer } from "../../hooks/use-file-tool-renderer";
@@ -91,13 +90,10 @@ export default function ChatTab({ agent }: TabProps) {
   const sendingRef = useRef(false);
   const loadedRef = useRef<string | null>(null);
 
-  // --- Model selector: three-tier resolution ---
-  // Workspace default → agent config override → chat-level override (ephemeral)
-  const workspace = useWorkspaceStore((s) => s.current);
-  const wsProvider = workspace?.provider ?? "anthropic";
-  const wsModel = workspace?.model ?? getDefaultModel(wsProvider);
-
-  // Agent-level config (loaded once per agent)
+  // --- Model selector ---
+  // Provider/model lives on the agent. The chat picker writes through to the
+  // agent's `.houston/config/config.json` so the next session opens with the
+  // user's last pick and no other ephemeral state is involved.
   const [agentProvider, setAgentProvider] = useState<string | null>(null);
   const [agentModel, setAgentModel] = useState<string | null>(null);
   useEffect(() => {
@@ -107,17 +103,10 @@ export default function ChatTab({ agent }: TabProps) {
     }).catch(() => {});
   }, [agentPath]);
 
-  // Chat-level override (ephemeral, resets per agent)
-  const [chatProvider, setChatProvider] = useState<string | null>(null);
-  const [chatModel, setChatModel] = useState<string | null>(null);
-  useEffect(() => {
-    setChatProvider(null);
-    setChatModel(null);
-  }, [agent.id]);
-
-  // Effective = chat override > agent config > workspace default
-  const effectiveProvider = chatProvider ?? agentProvider ?? wsProvider;
-  const effectiveModel = chatModel ?? agentModel ?? wsModel;
+  // Effective = agent config > Anthropic default. Workspace-level defaults
+  // were retired; existing values were migrated into agent configs at boot.
+  const effectiveProvider = agentProvider ?? "anthropic";
+  const effectiveModel = agentModel ?? getDefaultModel(effectiveProvider);
   const authSignalKey = useMemo(
     () => providerAuthSignalKey(feedItems ?? []),
     [feedItems],
@@ -127,10 +116,40 @@ export default function ChatTab({ agent }: TabProps) {
     [feedItems],
   );
 
-  const handleModelSelect = useCallback((prov: string, mod: string) => {
-    setChatProvider(prov);
-    setChatModel(mod);
-  }, []);
+  const handleModelSelect = useCallback(
+    async (prov: string, mod: string) => {
+      // Optimistic local update so the dropdown flips immediately; the engine
+      // round-trip is the slow part and re-reading config to confirm would
+      // add a flash of the previous label.
+      setAgentProvider(prov);
+      setAgentModel(mod);
+      try {
+        const cfg = await tauriConfig.read(agentPath);
+        await tauriConfig.write(agentPath, {
+          ...cfg,
+          provider: prov as "anthropic" | "openai",
+          model: mod,
+        });
+        // Keep the sticky default in sync so the next new agent inherits
+        // whatever the user just settled on.
+        await tauriProvider.setLastUsed(prov, mod);
+      } catch (e) {
+        // Roll back the optimistic update so the picker doesn't lie about
+        // persisted state. Toast surfacing happens through the `call`
+        // wrapper inside `tauriConfig.write` / `tauriProvider.setLastUsed`.
+        console.error("[chat-tab] persist model selection failed:", e);
+        try {
+          const cfg = await tauriConfig.read(agentPath);
+          setAgentProvider(cfg.provider ?? null);
+          setAgentModel(cfg.model ?? null);
+        } catch {
+          setAgentProvider(null);
+          setAgentModel(null);
+        }
+      }
+    },
+    [agentPath],
+  );
 
   // Variant-aware model switcher fed to ProviderErrorCard.
   // - ModelUnavailable with `suggested_fallback`: stay in same provider,
@@ -243,7 +262,7 @@ export default function ChatTab({ agent }: TabProps) {
         sendingRef.current = false;
       }
     },
-    [agentPath, sessionKey, attachmentScope, pushFeedItem, setComposerText, setComposerFiles, chatProvider, chatModel, t],
+    [agentPath, sessionKey, attachmentScope, pushFeedItem, setComposerText, setComposerFiles, effectiveProvider, effectiveModel, t],
   );
   const handleQueued = useCallback(() => {
     setComposerText("");
@@ -294,17 +313,7 @@ export default function ChatTab({ agent }: TabProps) {
                   messageQueue.sendOrQueue(t("toolRuntimeError.retryPrompt"), [])
                 }
                 onSwitchModel={
-                  isModelUnsupported
-                    ? async () => {
-                        if (workspace?.id) {
-                          await useWorkspaceStore
-                            .getState()
-                            .updateProvider(workspace.id, "openai", "gpt-5.5");
-                        }
-                        setChatProvider("openai");
-                        setChatModel("gpt-5.5");
-                      }
-                    : undefined
+                  isModelUnsupported ? () => handleModelSelect("openai", "gpt-5.5") : undefined
                 }
               />
             );

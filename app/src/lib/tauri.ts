@@ -71,19 +71,13 @@ async function surfaceError(
 
 export const tauriWorkspaces = {
   list: () => call<Workspace[]>("list_workspaces", () => getEngine().listWorkspaces()),
-  create: (name: string, provider?: string, model?: string) =>
-    call<Workspace>("create_workspace", () =>
-      getEngine().createWorkspace({ name, provider, model }),
-    ),
+  create: (name: string) =>
+    call<Workspace>("create_workspace", () => getEngine().createWorkspace({ name })),
   delete: (id: string) => call<void>("delete_workspace", () => getEngine().deleteWorkspace(id)),
   rename: (id: string, newName: string) =>
     call<void>("rename_workspace", async () => {
       await getEngine().renameWorkspace(id, { newName });
     }),
-  updateProvider: (id: string, provider: string, model?: string) =>
-    call<Workspace>("update_workspace_provider", () =>
-      getEngine().setWorkspaceProvider(id, { provider, model }),
-    ),
   getContext: (id: string) =>
     call<import("@houston-ai/engine-client").WorkspaceContext>(
       "get_workspace_context",
@@ -655,6 +649,7 @@ export interface ProviderStatus {
 }
 
 const DEFAULT_PROVIDER_PREF_KEY = "default_provider";
+const DEFAULT_MODEL_PREF_KEY = "default_model";
 
 export const tauriProvider = {
   checkStatus: (provider: string) =>
@@ -677,6 +672,35 @@ export const tauriProvider = {
     call<void>("set_default_provider", () =>
       getEngine().setPreference(DEFAULT_PROVIDER_PREF_KEY, provider),
     ),
+  /**
+   * Last (provider, model) pair the user picked anywhere — agent creation
+   * dialog, AI-assist step, or chat-tab model picker. Used as the default
+   * for the next new agent. Returns `(null, null)` on a fresh install.
+   *
+   * Provider is stored under the existing `default_provider` key so an
+   * already-onboarded install carries its old preference forward without a
+   * migration step. The companion model key is new (no upgrade path needed
+   * because a missing value just falls back to the provider's
+   * `defaultModel`).
+   */
+  getLastUsed: () =>
+    call<{ provider: string | null; model: string | null }>(
+      "get_last_used_provider",
+      async () => {
+        const eng = getEngine();
+        const [provider, model] = await Promise.all([
+          eng.getPreference(DEFAULT_PROVIDER_PREF_KEY),
+          eng.getPreference(DEFAULT_MODEL_PREF_KEY),
+        ]);
+        return { provider: provider ?? null, model: model ?? null };
+      },
+    ),
+  setLastUsed: (provider: string, model: string) =>
+    call<void>("set_last_used_provider", async () => {
+      const eng = getEngine();
+      await eng.setPreference(DEFAULT_PROVIDER_PREF_KEY, provider);
+      await eng.setPreference(DEFAULT_MODEL_PREF_KEY, model);
+    }),
   launchLogin: (provider: string) =>
     call<void>("launch_provider_login", () => getEngine().providerLogin(provider)),
   launchLogout: (provider: string) =>

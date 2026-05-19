@@ -6,8 +6,10 @@
 //! corrupted by the 0.4.19 concurrent-writer race.
 
 mod io;
+mod migrate;
 
 pub use io::read_all;
+pub use migrate::migrate_workspace_provider_into_agents;
 
 use crate::error::{CoreError, CoreResult};
 use serde::{Deserialize, Serialize};
@@ -22,6 +24,11 @@ pub struct Workspace {
     pub name: String,
     pub is_default: bool,
     pub created_at: String,
+    // Legacy fields. They're still parsed here so the migration can read
+    // pre-0.5 workspace files; once `migrate_workspace_provider_into_agents`
+    // runs they're stripped from disk and the resolver no longer consults
+    // them. Keep `skip_serializing_if = "Option::is_none"` so a freshly
+    // written `workspaces.json` doesn't carry the dead keys forward.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provider: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -32,15 +39,6 @@ pub struct Workspace {
 #[serde(rename_all = "camelCase")]
 pub struct CreateWorkspace {
     pub name: String,
-    pub provider: Option<String>,
-    pub model: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateProvider {
-    pub provider: String,
-    pub model: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -71,8 +69,8 @@ pub fn create(root: &Path, req: CreateWorkspace) -> CoreResult<Workspace> {
         name: req.name.clone(),
         is_default: false,
         created_at: now_iso(),
-        provider: req.provider,
-        model: req.model,
+        provider: None,
+        model: None,
     };
     let ws_dir = root.join(&req.name);
     fs::create_dir_all(ws_dir.join(".houston"))?;
@@ -134,21 +132,6 @@ pub fn delete(root: &Path, id: &str) -> CoreResult<()> {
     Ok(())
 }
 
-pub fn update_provider(root: &Path, id: &str, req: UpdateProvider) -> CoreResult<Workspace> {
-    let mut workspaces = read_all(root)?;
-    let ws = workspaces
-        .iter_mut()
-        .find(|w| w.id == id)
-        .ok_or_else(|| CoreError::NotFound(format!("workspace {id}")))?;
-    ws.provider = Some(req.provider);
-    if let Some(m) = req.model {
-        ws.model = Some(m);
-    }
-    let updated = ws.clone();
-    io::write_all(root, &workspaces)?;
-    Ok(updated)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -167,15 +150,7 @@ mod tests {
     #[test]
     fn create_then_list() {
         let d = tmp();
-        let ws = create(
-            d.path(),
-            CreateWorkspace {
-                name: "alpha".into(),
-                provider: Some("anthropic".into()),
-                model: None,
-            },
-        )
-        .unwrap();
+        let ws = create(d.path(), CreateWorkspace { name: "alpha".into() }).unwrap();
         assert_eq!(ws.name, "alpha");
         let all = list(d.path()).unwrap();
         assert_eq!(all.len(), 1);
@@ -185,34 +160,31 @@ mod tests {
     #[test]
     fn create_duplicate_conflicts() {
         let d = tmp();
-        create(d.path(), CreateWorkspace { name: "a".into(), provider: None, model: None }).unwrap();
-        let err = create(d.path(), CreateWorkspace { name: "a".into(), provider: None, model: None }).unwrap_err();
+        create(d.path(), CreateWorkspace { name: "a".into() }).unwrap();
+        let err = create(d.path(), CreateWorkspace { name: "a".into() }).unwrap_err();
         assert!(matches!(err, CoreError::Conflict(_)));
     }
 
     #[test]
     fn rename_and_delete() {
         let d = tmp();
-        let ws = create(d.path(), CreateWorkspace { name: "a".into(), provider: None, model: None }).unwrap();
+        let ws = create(d.path(), CreateWorkspace { name: "a".into() }).unwrap();
         let renamed = rename(d.path(), &ws.id, RenameWorkspace { new_name: "b".into() }).unwrap();
         assert_eq!(renamed.name, "b");
         delete(d.path(), &ws.id).unwrap();
         assert!(list(d.path()).unwrap().is_empty());
     }
 
-    /// Concurrent writers must not corrupt the target. With the shared
-    /// `workspaces.json.tmp` path this test produced trailing-garbage files;
-    /// with per-call tmp paths every read parses cleanly.
+    /// Concurrent writers must not corrupt `workspaces.json`. Mirrors the
+    /// original `update_provider` race test (since retired with the
+    /// workspace-level provider field) — same code path through
+    /// `io::write_all`, exercised here via `rename`.
     #[test]
-    fn concurrent_update_provider_never_corrupts() {
+    fn concurrent_renames_never_corrupt_index() {
         use std::sync::Arc;
         use std::thread;
         let d = tmp();
-        let ws = create(
-            d.path(),
-            CreateWorkspace { name: "alpha".into(), provider: Some("anthropic".into()), model: None },
-        )
-        .unwrap();
+        let ws = create(d.path(), CreateWorkspace { name: "alpha".into() }).unwrap();
         let root = Arc::new(d.path().to_path_buf());
         let id = Arc::new(ws.id.clone());
         let mut handles = Vec::new();
@@ -220,11 +192,11 @@ mod tests {
             let root = root.clone();
             let id = id.clone();
             handles.push(thread::spawn(move || {
-                let provider = if i % 2 == 0 { "anthropic" } else { "openai" };
-                let _ = update_provider(
+                let next = if i % 2 == 0 { "alpha" } else { "beta" };
+                let _ = rename(
                     &root,
                     &id,
-                    UpdateProvider { provider: provider.into(), model: None },
+                    RenameWorkspace { new_name: next.into() },
                 );
             }));
         }

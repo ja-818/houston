@@ -175,6 +175,7 @@
     "dialogTitle": "Nuevo agente"
   },
   "aiAssist": {
+    "brainLabel": "Configurar con",
     "cardTitle": "Crear con IA",
     "cardDescription": "Responde algunas preguntas rápidas y escribiremos las instrucciones de tu agente",
     "stepTitle": "Configura tu agente",

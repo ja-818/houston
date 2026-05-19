@@ -727,11 +727,7 @@ mod tests {
 
         let ws = workspaces::create(
             docs.path(),
-            CreateWorkspace {
-                name: "Acme".into(),
-                provider: None,
-                model: None,
-            },
+            CreateWorkspace { name: "Acme".into() },
         )
         .unwrap();
         agents_crud::create(
@@ -810,11 +806,7 @@ Package v2 body
 
         let ws = workspaces::create(
             docs.path(),
-            CreateWorkspace {
-                name: "Acme".into(),
-                provider: None,
-                model: None,
-            },
+            CreateWorkspace { name: "Acme".into() },
         )
         .unwrap();
         agents_crud::create(
@@ -882,11 +874,7 @@ User customized body
 
         let ws = workspaces::create(
             docs.path(),
-            CreateWorkspace {
-                name: "Acme".into(),
-                provider: None,
-                model: None,
-            },
+            CreateWorkspace { name: "Acme".into() },
         )
         .unwrap();
         agents_crud::create(
@@ -1174,11 +1162,7 @@ User customized body
         // 2. User creates a workspace agent and tweaks the body.
         let ws = workspaces::create(
             docs.path(),
-            CreateWorkspace {
-                name: "Acme".into(),
-                provider: None,
-                model: None,
-            },
+            CreateWorkspace { name: "Acme".into() },
         )
         .unwrap();
         agents_crud::create(
@@ -1274,11 +1258,7 @@ User customized body
 
         let ws = workspaces::create(
             docs.path(),
-            CreateWorkspace {
-                name: "Acme".into(),
-                provider: None,
-                model: None,
-            },
+            CreateWorkspace { name: "Acme".into() },
         )
         .unwrap();
         agents_crud::create(

@@ -164,7 +164,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     selectedSessionKey,
     onSelectSession: setSelectedId,
   });
-  const { chatProvider, chatModel, effectiveProvider, effectiveModel } = panel;
+  const { effectiveProvider, effectiveModel } = panel;
 
   // Scope to this agent only — cross-agent bleeding is structurally blocked
   // because AIBoard can only see this agent's slice of the feed store.
@@ -454,7 +454,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
       analytics.track("mission_created", { agent_mode: agentMode ?? "default" });
       return conversationId;
     },
-    [path, agent.id, agent.name, agent.color, pushFeedItem, pendingAgentMode, agentModes, chatProvider, chatModel, queryClient, t],
+    [path, agent.id, agent.name, agent.color, pushFeedItem, pendingAgentMode, agentModes, effectiveProvider, effectiveModel, queryClient, t],
   );
 
   // Derive the session key for an activity, using custom key if set by routine runner
@@ -505,7 +505,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
         throw err;
       }
     },
-    [path, pushFeedItem, rawItems, agentModes, chatProvider, chatModel, t],
+    [path, pushFeedItem, rawItems, agentModes, effectiveProvider, effectiveModel, t],
   );
 
   const selectedSessionActive = selectedSessionKey

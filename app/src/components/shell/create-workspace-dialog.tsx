@@ -10,7 +10,7 @@ import { useAgentCatalogStore } from "../../stores/agent-catalog";
 import { useAgentStore } from "../../stores/agents";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useUIStore } from "../../stores/ui";
-import { tauriConfig, tauriRoutines } from "../../lib/tauri";
+import { tauriConfig, tauriProvider, tauriRoutines } from "../../lib/tauri";
 import { logger } from "../../lib/logger";
 import type { SuggestedIntegration, SuggestedRoutine } from "@houston-ai/engine-client";
 import type { RoutineFormData } from "@houston-ai/routines";
@@ -52,11 +52,13 @@ export function CreateAgentDialog() {
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
   const [existingPath, setExistingPath] = useState<string | null>(null);
-  const wsProvider = currentWorkspace?.provider ?? "anthropic";
-  const wsModel = currentWorkspace?.model ?? getDefaultModel(wsProvider);
-  const [provider, setProvider] = useState(wsProvider);
-  const [model, setModel] = useState(wsModel);
+  const [provider, setProvider] = useState<string>("anthropic");
+  const [model, setModel] = useState<string>(getDefaultModel("anthropic"));
 
+  // Reset form on close. On open, sync the picker to the sticky last-used
+  // pair. Reading on open (not mount) prevents the old "stale workspace
+  // default baked into the new agent's config" bug: the picker always
+  // reflects whatever the user actually picked last.
   useEffect(() => {
     if (!open) {
       setStep(1);
@@ -72,10 +74,19 @@ export function CreateAgentDialog() {
       setCreating(false);
       setSearch("");
       setExistingPath(null);
-      setProvider(wsProvider);
-      setModel(wsModel);
+      return;
     }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+    let cancelled = false;
+    tauriProvider.getLastUsed().then(({ provider: p, model: m }) => {
+      if (cancelled) return;
+      const nextProvider = p ?? "anthropic";
+      setProvider(nextProvider);
+      setModel(m ?? getDefaultModel(nextProvider));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   const handleClose = () => {
     setOpen(false);
@@ -99,15 +110,19 @@ export function CreateAgentDialog() {
         selectedDef?.config.agentSeeds,
         existingPath ?? undefined,
       );
-      // Write provider/model to agent config if different from workspace default
-      if (provider !== wsProvider || model !== wsModel) {
-        const cfg = await tauriConfig.read(agent.folderPath);
-        await tauriConfig.write(agent.folderPath, {
-          ...cfg,
-          provider: provider as "anthropic" | "openai",
-          model,
-        });
-      }
+      // Always write provider/model to the agent's own config. With workspace
+      // defaults retired, the agent is the single source of truth — leaving
+      // the field blank would make the engine resolver fall back to its
+      // platform default rather than the user's pick.
+      const cfg = await tauriConfig.read(agent.folderPath);
+      await tauriConfig.write(agent.folderPath, {
+        ...cfg,
+        provider: provider as "anthropic" | "openai",
+        model,
+      });
+      // Keep the sticky last-used in sync so the next new agent inherits
+      // the user's most recent choice.
+      await tauriProvider.setLastUsed(provider, model);
       if (routineAccepted && routineForm) {
         // The agent is brand new, so its scheduler was never started
         // (create() doesn't go through setCurrent, and use-houston-init
@@ -207,6 +222,10 @@ export function CreateAgentDialog() {
           <AiAssistStep
             provider={provider}
             model={model}
+            onProviderChange={(p, m) => {
+              setProvider(p);
+              setModel(m);
+            }}
             onBack={() => setStep(1)}
             onContinue={(instructions, suggestedName, integrations, routine) => {
               setGeneratedClaudeMd(instructions);

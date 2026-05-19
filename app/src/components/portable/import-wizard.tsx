@@ -15,7 +15,7 @@
  * `NamingStep` for name+color, so it feels exactly like creating an
  * agent from scratch.
  */
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -35,7 +35,7 @@ import { useUIStore } from "../../stores/ui";
 import { useWorkspaceStore } from "../../stores/workspaces";
 import { useAgentStore } from "../../stores/agents";
 import { getEngine } from "../../lib/engine";
-import { tauriConfig } from "../../lib/tauri";
+import { tauriConfig, tauriProvider } from "../../lib/tauri";
 import { getDefaultModel } from "../../lib/providers";
 import { IntegrationLogos } from "../integration-logos";
 import { InlineModelSelector } from "../shell/naming-step";
@@ -70,9 +70,6 @@ export function ImportAgentWizard() {
   const currentWorkspace = useWorkspaceStore((s) => s.current);
   const loadAgents = useAgentStore((s) => s.loadAgents);
 
-  const wsProvider = currentWorkspace?.provider ?? "anthropic";
-  const wsModel = currentWorkspace?.model ?? getDefaultModel(wsProvider);
-
   const [stepIndex, setStepIndex] = useState(0);
   const [uploaded, setUploaded] =
     useState<PortableUploadPreviewResponse | null>(null);
@@ -81,8 +78,26 @@ export function ImportAgentWizard() {
   const [scan, setScan] = useState<PortableScanResponse | null>(null);
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(AGENT_COLORS[0].id);
-  const [provider, setProvider] = useState(wsProvider);
-  const [model, setModel] = useState(wsModel);
+  const [provider, setProvider] = useState<string>("anthropic");
+  const [model, setModel] = useState<string>(getDefaultModel("anthropic"));
+
+  // Read the sticky default whenever the wizard opens so the picker starts
+  // from the user's last pick (made in the create-agent dialog, AI-assist
+  // step, or chat-tab picker). Falls back to Anthropic if nothing was ever
+  // stored (fresh install).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    tauriProvider.getLastUsed().then(({ provider: p, model: m }) => {
+      if (cancelled) return;
+      const next = p ?? "anthropic";
+      setProvider(next);
+      setModel(m ?? getDefaultModel(next));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
   const [selection, setSelection] = useState<Selection>({
     skillSlugs: new Set(),
     routineIds: new Set(),
@@ -113,14 +128,14 @@ export function ImportAgentWizard() {
     setWantScan(null);
     setName("");
     setColor(AGENT_COLORS[0].id);
-    setProvider(wsProvider);
-    setModel(wsModel);
+    // Provider/model intentionally NOT reset here — the open-effect above
+    // re-hydrates them from `tauriProvider.getLastUsed()` on the next open.
     setSelection({
       skillSlugs: new Set(),
       routineIds: new Set(),
       learningIds: new Set(),
     });
-  }, [wsProvider, wsModel]);
+  }, []);
 
   const runScan = async (packageId: string) => {
     setScanning(true);
@@ -192,16 +207,16 @@ export function ImportAgentWizard() {
           includeLearningIds: Array.from(selection.learningIds),
         },
       });
-      // Mirror NamingStep: if user picked a different model, persist it on
-      // the agent's local config so the chat starts on the right brain.
-      if (provider !== wsProvider || model !== wsModel) {
-        const cfg = await tauriConfig.read(installed.agentPath);
-        await tauriConfig.write(installed.agentPath, {
-          ...cfg,
-          provider: provider as "anthropic" | "openai",
-          model,
-        });
-      }
+      // Always persist provider/model on the imported agent's config — same
+      // contract as the create-agent dialog. Workspace-level defaults are
+      // gone, so a blank field would resolve to the platform default.
+      const cfg = await tauriConfig.read(installed.agentPath);
+      await tauriConfig.write(installed.agentPath, {
+        ...cfg,
+        provider: provider as "anthropic" | "openai",
+        model,
+      });
+      await tauriProvider.setLastUsed(provider, model);
       await loadAgents(currentWorkspace.id);
       addToast({
         variant: "success",

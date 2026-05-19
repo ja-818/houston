@@ -67,6 +67,17 @@ impl ServerState {
         let events = BroadcastEventSink::new(1024);
         let paths = EnginePaths::new(config.docs_dir.clone(), config.home_dir.clone());
 
+        // Retire `workspace.provider` / `workspace.model` in favor of
+        // per-agent storage. Idempotent — subsequent boots are a no-op.
+        // Logged-and-swallowed because a stale workspace default isn't worth
+        // failing the engine boot over; the resolver falls back to the
+        // platform default if a per-agent config doesn't exist yet.
+        if let Err(e) =
+            houston_engine_core::workspaces::migrate_workspace_provider_into_agents(paths.docs())
+        {
+            tracing::warn!("[boot] workspace provider migration failed: {e}");
+        }
+
         let engine = EngineState::new(paths, Arc::new(events.clone()), db.clone())
             .with_app_prompts(
                 config.app_system_prompt.clone(),

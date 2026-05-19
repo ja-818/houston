@@ -11,10 +11,6 @@ export interface Workspace {
   name: string;
   isDefault: boolean;
   createdAt: string;
-  /** AI provider for this workspace ("anthropic" or "openai"). */
-  provider?: string;
-  /** Default model for this workspace (e.g. "sonnet", "gpt-5.5"). */
-  model?: string;
 }
 
 /** Tab definition in an agent config */

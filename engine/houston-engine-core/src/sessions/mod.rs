@@ -10,7 +10,7 @@
 //!   sink (which WS clients subscribe to via `session:{key}` topics).
 //! - [`cancel`] — SIGTERM the running CLI for a given session_key and emit
 //!   a "Stopped by user" feed item + `completed` status.
-//! - [`resolve_provider`] — agent-config → workspace → default fallback.
+//! - [`resolve_provider`] — agent-config → Anthropic default fallback.
 //!
 //! Callers (REST handlers, Tauri adapter) supply the already-resolved
 //! `working_dir` and an optional pre-built `system_prompt`. Prompt assembly
@@ -539,7 +539,6 @@ pub async fn start_onboarding(
     rt: &SessionRuntime,
     events: DynEventSink,
     db: Database,
-    paths: &EnginePaths,
     app_system_prompt: &str,
     app_onboarding_prompt: &str,
     agent_dir: PathBuf,
@@ -551,7 +550,7 @@ pub async fn start_onboarding(
     // appends its own agent context in `start()` below.
     let product_prompt = format!("{app_system_prompt}{app_onboarding_prompt}");
 
-    let resolved = resolve_provider(paths, &agent_dir);
+    let resolved = resolve_provider(&agent_dir);
 
     start(
         rt,

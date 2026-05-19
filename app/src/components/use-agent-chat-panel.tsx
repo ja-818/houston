@@ -37,7 +37,6 @@ import {
 
 import { useFeedStore } from "../stores/feeds";
 import { useUIStore } from "../stores/ui";
-import { useWorkspaceStore } from "../stores/workspaces";
 import {
   useActivity,
   useConnectedToolkits,
@@ -49,6 +48,7 @@ import {
   tauriAttachments,
   tauriChat,
   tauriConfig,
+  tauriProvider,
   tauriShell,
   tauriWorktree,
   withAttachmentPaths,
@@ -134,9 +134,6 @@ interface AgentChatPanelProps {
   /** Effective provider/model for sending. */
   effectiveProvider: string;
   effectiveModel: string;
-  /** Per-chat overrides chosen via the model selector. */
-  chatProvider: string | null;
-  chatModel: string | null;
 }
 
 export function useAgentChatPanel({
@@ -153,10 +150,10 @@ export function useAgentChatPanel({
   const path = agent?.folderPath ?? null;
   const agentModes = agentDef?.config.agents;
 
-  // ── Workspace / agent / activity tier model resolution ─────────────────
-  const workspace = useWorkspaceStore((s) => s.current);
-  const wsProvider = workspace?.provider ?? "anthropic";
-  const wsModel = workspace?.model ?? getDefaultModel(wsProvider);
+  // ── Activity / agent tier model resolution ─────────────────────────────
+  // Activity is the per-mission override; agent config is the per-agent
+  // default. Workspace-level defaults were retired; existing values were
+  // migrated into agent configs at engine boot.
   const [agentProvider, setAgentProvider] = useState<string | null>(null);
   const [agentModel, setAgentModel] = useState<string | null>(null);
   useEffect(() => {
@@ -185,29 +182,36 @@ export function useAgentChatPanel({
   const activityModel = selectedActivity?.model ?? null;
   const selectedActivityId = selectedActivity?.id ?? null;
 
-  const [chatProvider, setChatProvider] = useState<string | null>(null);
-  const [chatModel, setChatModel] = useState<string | null>(null);
-  useEffect(() => {
-    setChatProvider(null);
-    setChatModel(null);
-  }, [selectedSessionKey]);
-  const effectiveProvider = chatProvider ?? activityProvider ?? agentProvider ?? wsProvider;
-  const effectiveModel = chatModel ?? activityModel ?? agentModel ?? wsModel;
+  const effectiveProvider = activityProvider ?? agentProvider ?? "anthropic";
+  const effectiveModel = activityModel ?? agentModel ?? getDefaultModel(effectiveProvider);
   const handleModelSelect = useCallback(
-    (prov: string, mod: string) => {
-      setChatProvider(prov);
-      setChatModel(mod);
-      if (!path || !selectedActivityId) return;
-      tauriActivity.update(path, selectedActivityId, {
-        provider: prov,
-        model: mod,
-      }).catch((err) => {
+    async (prov: string, mod: string) => {
+      // Optimistic UI: the picker flips instantly while the writes fan out.
+      setAgentProvider(prov);
+      setAgentModel(mod);
+      try {
+        if (path) {
+          const cfg = await tauriConfig.read(path);
+          await tauriConfig.write(path, {
+            ...cfg,
+            provider: prov as "anthropic" | "openai",
+            model: mod,
+          });
+        }
+        if (path && selectedActivityId) {
+          await tauriActivity.update(path, selectedActivityId, {
+            provider: prov,
+            model: mod,
+          });
+        }
+        await tauriProvider.setLastUsed(prov, mod);
+      } catch (err) {
         addToast({
           title: t("chat:errors.modelPersistFailed"),
           description: String(err),
           variant: "error",
         });
-      });
+      }
     },
     [path, selectedActivityId, addToast, t],
   );
@@ -387,8 +391,8 @@ export function useAgentChatPanel({
       agent,
       path,
       agentModes,
-      chatProvider,
-      chatModel,
+      effectiveProvider,
+      effectiveModel,
       pushFeedItem,
       queryClient,
       t,
@@ -449,31 +453,7 @@ export function useAgentChatPanel({
             }}
             onSwitchModel={
               isModelUnsupported
-                ? async () => {
-                    // Demote the workspace default first so future sessions
-                    // use a model the user's ChatGPT plan accepts.
-                    if (workspace?.id) {
-                      await useWorkspaceStore
-                        .getState()
-                        .updateProvider(workspace.id, "openai", "gpt-5.5");
-                    }
-                    // If this activity carries an explicit codex override,
-                    // clear it too — otherwise the resolver will keep using
-                    // the activity-level value and the workspace fix won't
-                    // take effect for this mission.
-                    if (
-                      path &&
-                      selectedActivityId &&
-                      activityModel === "gpt-5.5-codex"
-                    ) {
-                      await tauriActivity.update(path, selectedActivityId, {
-                        provider: "openai",
-                        model: "gpt-5.5",
-                      });
-                      setChatProvider("openai");
-                      setChatModel("gpt-5.5");
-                    }
-                  }
+                ? () => handleModelSelect("openai", "gpt-5.5")
                 : undefined
             }
           />
@@ -482,7 +462,7 @@ export function useAgentChatPanel({
       if (isProviderAuthMessage(msg.content)) return null;
       return undefined;
     },
-    [chatModel, chatProvider, path, pushFeedItem, selectedSessionKey, t],
+    [effectiveModel, effectiveProvider, handleModelSelect, path, pushFeedItem, selectedSessionKey, t],
   );
   const mapFeedItems = useCallback(
     ({ items }: { sessionKey: string; items: FeedItem[] }) =>
@@ -645,7 +625,5 @@ export function useAgentChatPanel({
     pickerDialog,
     effectiveProvider,
     effectiveModel,
-    chatProvider,
-    chatModel,
   };
 }

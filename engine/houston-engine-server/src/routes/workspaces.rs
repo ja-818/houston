@@ -9,9 +9,7 @@ use axum::{
 };
 use houston_engine_core::agents_crud::{self, Agent, CreateAgent, CreateAgentResult, UpdateAgent};
 use houston_engine_core::workspace_context::{self, WorkspaceContext};
-use houston_engine_core::workspaces::{
-    self, CreateWorkspace, RenameWorkspace, UpdateProvider, Workspace,
-};
+use houston_engine_core::workspaces::{self, CreateWorkspace, RenameWorkspace, Workspace};
 use serde::Deserialize;
 use std::sync::Arc;
 
@@ -20,7 +18,6 @@ pub fn router() -> Router<Arc<ServerState>> {
         .route("/workspaces", get(list).post(create))
         .route("/workspaces/:id", delete(remove))
         .route("/workspaces/:id/rename", post(rename))
-        .route("/workspaces/:id/provider", patch(set_provider))
         .route(
             "/workspaces/:id/context",
             get(get_context).put(put_context),
@@ -65,18 +62,6 @@ async fn rename(
     Json(req): Json<RenameWorkspace>,
 ) -> Result<Json<Workspace>, ApiError> {
     Ok(Json(workspaces::rename(st.engine.paths.docs(), &id, req)?))
-}
-
-async fn set_provider(
-    State(st): State<Arc<ServerState>>,
-    Path(id): Path<String>,
-    Json(req): Json<UpdateProvider>,
-) -> Result<Json<Workspace>, ApiError> {
-    Ok(Json(workspaces::update_provider(
-        st.engine.paths.docs(),
-        &id,
-        req,
-    )?))
 }
 
 async fn get_context(

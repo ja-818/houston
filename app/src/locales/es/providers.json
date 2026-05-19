@@ -6,6 +6,10 @@
     "connectTitle": "Conectar {{name}}",
     "signOutTitle": "Cerrar sesión de {{name}}"
   },
+  "row": {
+    "connect": "Conectar",
+    "signOut": "Cerrar sesión"
+  },
   "setup": {
     "installHint": "Instala la CLI de {{cli}} en tu computador. Houston la detecta sola.",
     "installGuide": "Guía de instalación",

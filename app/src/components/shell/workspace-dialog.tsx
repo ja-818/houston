@@ -10,7 +10,7 @@ import {
   cn,
 } from "@houston-ai/core";
 import { analytics } from "../../lib/analytics";
-import { tauriStore } from "../../lib/tauri";
+import { tauriProvider, tauriStore } from "../../lib/tauri";
 import { useAgentCatalogStore } from "../../stores/agent-catalog";
 import { useAgentStore } from "../../stores/agents";
 import { useWorkspaceStore } from "../../stores/workspaces";
@@ -99,7 +99,7 @@ export function CreateWorkspaceDialog({
           <WorkspaceSetupFlow
             mode="dialog"
             onComplete={async (name, provider, model) => {
-              const ws = await createWorkspace(name, provider, model);
+              const ws = await createWorkspace(name);
               const setup = defaultAssistantSetup({
                 workspaceName: name,
                 assistantName: t("setup:tutorial.defaults.assistantName"),
@@ -115,6 +115,7 @@ export function CreateWorkspaceDialog({
                 provider,
                 model,
               });
+              await tauriProvider.setLastUsed(provider, model);
               setCurrentWorkspace(ws);
               await loadAgents(ws.id);
               handleClose();
