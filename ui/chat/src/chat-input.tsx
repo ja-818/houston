@@ -182,7 +182,7 @@ export function ChatInput({
         </PromptInput>
 
         {footer && (
-          <div className="flex items-center px-1 pt-1">
+          <div className="flex items-center px-2.5 pt-1">
             {footer}
           </div>
         )}
