@@ -91,6 +91,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   );
 
   const openerRef = useRef<NewPanelOpener | null>(null);
+  const closerRef = useRef<(() => void) | null>(null);
   const emptyAutoOpenKeyRef = useRef<string | null>(null);
   const [newPanelOpenerReady, setNewPanelOpenerReady] = useState(false);
   const openDefaultMission = useCallback(() => {
@@ -264,6 +265,10 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
     [setOnStartMission, setBoardActions, agentModes, openDefaultMission],
   );
 
+  const handleCloserReady = useCallback((close: () => void) => {
+    closerRef.current = close;
+  }, []);
+
   const loadHistory = useCallback(
     async (sessionKey: string) => {
       const history = await tauriChat.loadHistory(path, sessionKey);
@@ -361,16 +366,30 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
   }, [setOnBoardNavigate, setOnBoardOpen]);
 
   // Wire the global Escape handler to close THIS board's chat panel
-  // when a card is open. The hook drops the registration when nothing
-  // is selected so a stray Escape can't fire into a stale callback.
+  // whenever the panel is open — covers both selected-card and the
+  // empty new-mission panel. For the new-mission case `selectedId` is
+  // null and the panel state lives inside AIBoard, so we delegate to
+  // the closer AIBoard hands back via `onPanelCloserReady`.
   useEffect(() => {
-    if (!selectedId) {
+    if (!missionPanelOpen) {
       setOnPanelClose(null);
       return;
     }
-    setOnPanelClose(() => setSelectedId(null));
+    setOnPanelClose(() => {
+      closerRef.current?.();
+      setSelectedId(null);
+    });
     return () => setOnPanelClose(null);
-  }, [selectedId, setOnPanelClose]);
+  }, [missionPanelOpen, setOnPanelClose]);
+
+  // Reset the pending agent mode (set by the New Mission button) when
+  // the panel closes without a card being selected — otherwise the next
+  // new-mission panel inherits the previous mode.
+  useEffect(() => {
+    if (!missionPanelOpen && !selectedId) {
+      setPendingAgentMode(null);
+    }
+  }, [missionPanelOpen, selectedId]);
 
   // Keep the highlight aligned with the currently-open card so that
   // closing the panel leaves the ring where the user last was.
@@ -662,6 +681,7 @@ export default function BoardTab({ agent, agentDef }: TabProps) {
           onLoadHistory={loadHistory}
           onHistoryLoaded={handleHistoryLoaded}
           onNewPanelOpenerReady={handleOpenerReady}
+          onPanelCloserReady={handleCloserReady}
           emptyState={emptyBoard}
           onPanelOpenChange={setMissionPanelOpen}
           onStopSession={handleStopSession}

@@ -83,37 +83,6 @@ export const PROVIDERS: readonly ProviderInfo[] = [
     ],
     defaultModel: "sonnet",
   },
-  {
-    id: "gemini",
-    name: "Google",
-    subtitle: "Gemini CLI",
-    cliName: "gemini",
-    installUrl: "https://github.com/google-gemini/gemini-cli",
-    // Gemini has no `gemini login` command. The engine returns BadRequest
-    // if `launchLogin` is called for this provider; the picker MUST
-    // short-circuit on `loginKind === "apiKey"` and open the API-key
-    // connect dialog instead.
-    loginCommand: "",
-    cost: "Your Google account (free tier) or Gemini API key",
-    // Pro Preview (`gemini-3.1-pro-preview`) is intentionally omitted — it
-    // is gated behind paid Google AI tiers and free-tier OAuth accounts
-    // get zero quota for it. Live test: 10 retries → "exhausted capacity"
-    // on every call → 4+ minute hang with no response. Adding it back
-    // requires either (a) an account-tier check that hides it for free
-    // users, or (b) an "advanced models" disclosure card the user opts
-    // into. Until then, ship the model that actually works.
-    models: [
-      {
-        id: "gemini-3.1-flash-lite",
-        label: "Gemini 3.1 Flash-Lite",
-        description: "Fast and efficient. Works on the free tier.",
-      },
-    ],
-    defaultModel: "gemini-3.1-flash-lite",
-    loginKind: "apiKey",
-    apiKeyConsoleUrl: "https://aistudio.google.com/app/apikey",
-    apiKeyEnvVar: "GEMINI_API_KEY",
-  },
 ] as const;
 
 /** Find a provider by id. */
@@ -131,6 +100,19 @@ export function getDefaultModel(providerId: string): string {
   return getProvider(providerId)?.defaultModel ?? "sonnet";
 }
 
+/**
+ * Return `providerId` only when it names a currently-active provider in
+ * `PROVIDERS`. Used by the chat model selector and the per-chat
+ * effective-provider fallback chain to skip stored values that point at
+ * providers Houston has moved to `COMING_SOON_PROVIDERS` (e.g. an
+ * activity record from a previous Houston version that selected Gemini
+ * before it was paused). Callers chain it with `??` to fall through to
+ * the next tier of preference.
+ */
+export function validProviderOrNull(providerId: string | null | undefined): string | null {
+  return providerId && getProvider(providerId) ? providerId : null;
+}
+
 export interface ComingSoonProviderInfo {
   readonly id: string;
   readonly name: string;
@@ -139,6 +121,11 @@ export interface ComingSoonProviderInfo {
 }
 
 export const COMING_SOON_PROVIDERS: readonly ComingSoonProviderInfo[] = [
+  // Gemini: engine support + bundled CLI machinery are intact in this
+  // codebase. The UI keeps it under "coming soon" until the broader
+  // rollout (account-tier gating, Windows fork-build) is ready. Listed
+  // first so the alphabetised "next up" slot stays prominent.
+  { id: "gemini", name: "Google", subtitle: "Gemini CLI", mark: "GM" },
   { id: "subq", name: "SubQ", subtitle: "SubQ Code", mark: "SQ" },
   { id: "deepseek", name: "DeepSeek", subtitle: "DeepSeek Coder", mark: "DS" },
   { id: "minimax", name: "MiniMax", subtitle: "M2", mark: "MM" },

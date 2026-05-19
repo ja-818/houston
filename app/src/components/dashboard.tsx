@@ -65,6 +65,7 @@ export function Dashboard() {
   // the user clicks a different card.
   const [pendingAgent, setPendingAgent] = useState<Agent | null>(null);
   const openerRef = useRef<NewPanelOpener | null>(null);
+  const closerRef = useRef<(() => void) | null>(null);
   const emptyAutoOpenKeyRef = useRef<string | null>(null);
   const openNewMission = useCallback(() => setAgentPickerOpen(true), [setAgentPickerOpen]);
   useEffect(() => {
@@ -118,16 +119,32 @@ export function Dashboard() {
     };
   }, [setOnBoardNavigate, setOnBoardOpen, setMissionControlSelectedId]);
 
-  // Register Escape-to-close while a card is open. Cleared when nothing
-  // is selected so the global handler can't fire into a stale callback.
+  // Register Escape-to-close whenever the panel is open — covers both a
+  // selected card AND the empty new-mission panel. For the new-mission
+  // case `selectedId` is null and the panel state lives inside AIBoard,
+  // so we delegate to the closer AIBoard hands back via
+  // `onPanelCloserReady`. Clearing the highlight too on close is a
+  // no-op when nothing's selected.
   useEffect(() => {
-    if (!mc.selectedId) {
+    if (!missionPanelOpen) {
       setOnPanelClose(null);
       return;
     }
-    setOnPanelClose(() => setMissionControlSelectedId(null));
+    setOnPanelClose(() => {
+      closerRef.current?.();
+      setMissionControlSelectedId(null);
+    });
     return () => setOnPanelClose(null);
-  }, [mc.selectedId, setOnPanelClose, setMissionControlSelectedId]);
+  }, [missionPanelOpen, setOnPanelClose, setMissionControlSelectedId]);
+
+  // Reset the pending agent (set by the New Mission picker) when the
+  // panel closes without a card being selected — otherwise the next
+  // panel open scopes to a stale agent.
+  useEffect(() => {
+    if (!missionPanelOpen && !mc.selectedId) {
+      setPendingAgent(null);
+    }
+  }, [missionPanelOpen, mc.selectedId]);
 
   // Mouse selection (or any external selection change) drags the
   // highlight ring along, so closing the panel leaves it in place.
@@ -150,6 +167,10 @@ export function Dashboard() {
   const handleOpenerReady = useCallback((opener: NewPanelOpener) => {
     openerRef.current = opener;
     setNewPanelOpenerReady(true);
+  }, []);
+
+  const handleCloserReady = useCallback((close: () => void) => {
+    closerRef.current = close;
   }, []);
 
   const handleStopSession = useCallback(
@@ -379,6 +400,7 @@ export function Dashboard() {
           onLoadHistory={mc.loadHistory}
           onHistoryLoaded={mc.handleHistoryLoaded}
           onNewPanelOpenerReady={handleOpenerReady}
+          onPanelCloserReady={handleCloserReady}
           emptyState={emptyBoard}
           panelContainer={panelContainer}
           onPanelOpenChange={setMissionPanelOpen}

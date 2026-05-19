@@ -50,6 +50,13 @@ export interface AIBoardProps {
   onHistoryLoaded?: (sessionKey: string, items: FeedItem[]) => void
   /** Called with the openNewPanel function so the parent can trigger it externally (e.g. from a header button). */
   onNewPanelOpenerReady?: (opener: NewPanelOpener) => void
+  /** Called with a panel-close function so the parent can dismiss the
+   *  detail panel from outside (e.g. global Escape handler). Necessary
+   *  for the empty new-mission panel where the parent has no
+   *  `selectedId` to clear — `closePanel` here also resets AIBoard's
+   *  internal `newPanelOpen` state, which `setSelectedId(null)` does
+   *  not touch. */
+  onPanelCloserReady?: (close: () => void) => void
   /** Custom empty state for the chat panel when no messages exist. */
   chatEmptyState?: ReactNode
   /** Custom thinking indicator for the chat panel. */
@@ -188,6 +195,7 @@ export function AIBoard({
   onLoadHistory,
   onHistoryLoaded,
   onNewPanelOpenerReady,
+  onPanelCloserReady,
   chatEmptyState,
   thinkingIndicator,
   cardAvatar,
@@ -384,32 +392,63 @@ export function AIBoard({
     setSelectedId(null)
   }, [setSelectedId])
 
+  // Expose closer to parent so external triggers (global Escape, etc.)
+  // can dismiss the panel without needing to know whether it's a
+  // selected-card panel or the empty new-mission panel.
+  useEffect(() => {
+    onPanelCloserReady?.(closePanel)
+  }, [onPanelCloserReady, closePanel])
+
   // Refs for outside-click detection.
   const boardRef = useRef<HTMLDivElement | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
 
-  // Close the panel when the user clicks anywhere outside the board or the
-  // detail panel (sidebar, tab bar, other app chrome, etc.).
+  // Close the panel when the user clicks anywhere outside the board or
+  // the detail panel (sidebar, tab bar, other app chrome, etc.).
+  //
+  // We listen for `pointerdown` at the CAPTURE phase rather than
+  // `mousedown` at bubble. Two reasons:
+  //  1. Radix DismissableLayer (used by every popover / dropdown /
+  //     select / menu) dismisses on `pointerdown`. By the time a
+  //     bubble-phase `mousedown` fires, Radix has already called
+  //     `onOpenChange(false)`, flipped `data-state` to "closed", and —
+  //     when the component has no exit animation — unmounted the
+  //     popper wrapper entirely. Any "is a popper currently open"
+  //     check we run from `mousedown` is too late: the DOM no longer
+  //     shows one.
+  //  2. Capture phase runs root → target. By listening at capture on
+  //     `document`, we see the event before any descendant handler
+  //     (including Radix's, which is registered later on the layer
+  //     after the popper opens). At that moment the popper is still
+  //     open with `data-state="open"`, so we can detect it reliably.
   useEffect(() => {
     if (!showPanel) return
-    const handler = (e: MouseEvent) => {
+    const handler = (e: PointerEvent) => {
       const target = e.target as Node | null
       if (!target) return
       if (boardRef.current?.contains(target)) return
       if (panelRef.current?.contains(target)) return
       if (target instanceof Element) {
-        // Radix popovers/dropdowns/menus render outside the panel DOM.
+        // Clicks INSIDE a Radix popper (its portal lives outside the
+        // panel DOM) — the user is interacting with a menu we opened
+        // from the panel, not dismissing the panel itself.
         if (target.closest("[data-radix-popper-content-wrapper]")) return
-        // Any Radix popper currently OPEN swallows this mousedown as its
-        // own dismiss gesture (e.g. clicking outside the chat-model
-        // dropdown). The detail panel should not also close — Radix
-        // closes the popper, the user can decide whether to dismiss the
-        // panel with a follow-up click.
-        if (document.querySelector('[data-radix-popper-content-wrapper] [data-state="open"]')) return
-        // Radix Dialog content + overlay also live in a portal outside both
-        // refs. Clicking inside a dialog (or its overlay) is the user
-        // interacting with a modal we just opened FROM the panel, not an
-        // intent to dismiss the panel.
+        // Any Radix popper currently open (anywhere in the document)
+        // intercepts this pointerdown as its own dismiss gesture. The
+        // panel should not also close — Radix dismisses the popper,
+        // user can decide whether to dismiss the panel with a follow-
+        // up click. Because we're at capture phase + pointerdown,
+        // Radix hasn't flipped `data-state` yet, so the open selector
+        // matches.
+        if (document.querySelector('[data-state="open"][data-slot$="-content"]')) return
+        // Belt-and-suspenders fallback for non-shadcn-styled poppers
+        // that don't carry the `data-slot$="-content"` marker but
+        // still use Radix Popper under the hood.
+        if (document.querySelector("[data-radix-popper-content-wrapper]")) return
+        // Radix Dialog content + overlay also live in a portal outside
+        // both refs. Clicking inside a dialog (or its overlay) is the
+        // user interacting with a modal we just opened FROM the panel,
+        // not an intent to dismiss the panel.
         if (target.closest("[data-slot='dialog-content']")) return
         if (target.closest("[data-slot='dialog-overlay']")) return
         // Generic opt-out: any ancestor with `data-keep-panel-open` is
@@ -420,8 +459,8 @@ export function AIBoard({
       }
       closePanel()
     }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
+    document.addEventListener("pointerdown", handler, true)
+    return () => document.removeEventListener("pointerdown", handler, true)
   }, [showPanel, closePanel])
 
   const board = (

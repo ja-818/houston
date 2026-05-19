@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ChangeEvent, ReactNode, RefObject } from "react";
-import { Paperclip } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@houston-ai/core";
 import { AttachmentChip } from "./attachment-chip";
 
@@ -73,7 +73,7 @@ export function ChatInputAttachButton({
       className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-accent transition-colors"
       aria-label={ariaLabel}
     >
-      <Paperclip className="size-5" />
+      <Plus className="size-5" />
     </button>
   );
 
