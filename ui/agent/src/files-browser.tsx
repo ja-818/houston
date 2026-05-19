@@ -146,7 +146,7 @@ export function FilesBrowser({
       className="relative flex flex-col overflow-hidden bg-background border border-border rounded-xl h-full"
       {...(onFilesDropped || onMove ? dragHandlers : {})}
     >
-      <div className="h-[24px] shrink-0 border-b border-border bg-muted/40 select-none flex items-center rounded-t-xl">
+      <div className="h-[24px] shrink-0 border-b border-border bg-muted/40 select-none flex items-center rounded-t-xl px-1">
         <div className="flex-1 min-w-0 items-center h-full" style={{ display: "grid", gridTemplateColumns: COL_GRID }}>
           <HeaderCell label={l.columnName} col="name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="pl-7" />
           <HeaderCell label={l.columnDateModified} col="dateModified" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />

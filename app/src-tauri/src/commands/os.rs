@@ -187,8 +187,12 @@ fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
         // explorer.exe /select,<path> opens the parent folder with the
         // file highlighted. Note: no quotes around the path arg — explorer
         // parses the comma + path as a single token, and quoting it
-        // breaks the selection.
-        let select_arg = format!("/select,{}", path.display());
+        // breaks the selection. Explorer also refuses mixed separators, so
+        // normalize / to \ first (relative paths arrive as forward-slash
+        // per the engine's ProjectFile.path contract, and Path::join keeps
+        // them when appended to a backslash agent root).
+        let native = path.to_string_lossy().replace('/', "\\");
+        let select_arg = format!("/select,{native}");
         std::process::Command::new("explorer")
             .arg(select_arg)
             .spawn()
